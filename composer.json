@@ -1,0 +1,22 @@
+{
+    "name": "azonmedia/guzaba2",
+    "type": "framework",
+    "description": "PHP Framework for swoole",
+    "keywords": ["framework","swoole"],
+    "homepage": "https://github.com/AzonMedia/guzaba2",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "Vesko Kenashkov",
+            "email": "kenashkov@azonmedia.com",
+            "homepage": "http://azonmedia.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.2.0"
+    },
+    "autoload": {
+	"files": ["src/Guzaba2/Kernel/Kernel.php"]
+    }
+}
