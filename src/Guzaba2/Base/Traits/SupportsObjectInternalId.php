@@ -23,6 +23,12 @@ namespace Guzaba2\Base\Traits;
  */
 trait SupportsObjectInternalId
 {
+
+    //traits do not support constants
+    private static $DEFAULT_CHARACTERS_LIST = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    private static $UNIQUE_ID_LENGTH = 4;
+
     /**
      * Unique ID
      * @var string
@@ -34,7 +40,7 @@ trait SupportsObjectInternalId
      */
     protected function set_object_internal_id() : void
     {
-        $this->object_internal_id = microtime(TRUE)self::generate_unique_id();
+        $this->object_internal_id = self::generate_unique_id(self::$UNIQUE_ID_LENGTH);
     }
 
     /**
@@ -53,7 +59,8 @@ trait SupportsObjectInternalId
      */
     protected static function generate_unique_id(int $length) : string
     {
-        $ret = microtime(TRUE).'_'.generate_random_string($length);
+        $ret = microtime(TRUE).'_'.self::generate_random_string($length);
+        return $ret;
     }
 
     /**
@@ -65,10 +72,10 @@ trait SupportsObjectInternalId
         $str = '';
         static $list_length;
         if ($list_length === NULL) {
-            $list_length = strlen(self::DEFAULT_CHARACTERS_LIST);
+            $list_length = strlen(self::$DEFAULT_CHARACTERS_LIST);
         }
         for ($aa = 0; $aa < $length; $aa++) {
-            $str .= self::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
+            $str .= self::$DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
         }
 
         return $str;

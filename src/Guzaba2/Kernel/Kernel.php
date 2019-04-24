@@ -25,12 +25,50 @@ class Kernel
 {
     public const EXIT_SUCCESS = 0;
 
+    /**
+     * @var string
+     */
+    protected static $cwd;
+
+    /**
+     * @var string
+     */
+    protected static $kernel_dir;
+
+    /**
+     * @var string
+     */
+    protected static $guzaba2_root_dir;
+
+    /**
+     *
+     */
+    public const FRAMEWORK_NAME = 'Guzaba2';
+
+    /**
+     * @var array
+     */
+    protected static $loaded_classes = [];
+
+    /**
+     * @var array
+     */
+    protected static $loaded_paths = [];
+
     private function __construct() {
 
     }
 
     public static function run(callable $callable) : int
     {
+
+        self::$cwd = getcwd();
+
+        self::$kernel_dir = dirname(__FILE__);
+
+        self::$guzaba2_root_dir = realpath(self::$kernel_dir.'/../../');
+        //print self::$guzaba2_root_dir.PHP_EOL;
+
         spl_autoload_register([__CLASS__, 'autoloader']);
 
         $ret = $callable();
@@ -53,6 +91,21 @@ class Kernel
 
     protected static function autoloader(string $class_name) : bool
     {
-        //print $class_name;
+        //print $class_name.PHP_EOL;
+        $ret = FALSE;
+        if (strpos($class_name,self::FRAMEWORK_NAME) === 0) { //starts with Guzaba2
+            $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, self::$guzaba2_root_dir.\DIRECTORY_SEPARATOR.$class_name).'.php';
+            if (is_readable($class_path)) {
+                require_once($class_path);
+                self::$loaded_classes[] = $class_name;
+                self::$loaded_paths[] = $class_path;
+                $ret = TRUE;
+            }
+        }
+        //print getcwd();
+
+
+
+        return $ret;
     }
 }

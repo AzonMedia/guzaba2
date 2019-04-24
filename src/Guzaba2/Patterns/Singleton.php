@@ -26,6 +26,12 @@ use Guzaba2\Base\Base;
  */
 abstract class Singleton extends Base
 {
+
+    protected function __construct()
+    {
+        parent::__construct();
+    }
+
     public abstract static function &get_instance() : self ;
 
     public abstract function destroy() : void;

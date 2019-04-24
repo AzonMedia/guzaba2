@@ -34,7 +34,7 @@ abstract class Base
      * Base constructor.
      * All children must invoke the parent constructor
      */
-    public function __construct() {
+    protected function __construct() {
         $this->set_object_internal_id();
     }
 
