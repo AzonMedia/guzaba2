@@ -4,7 +4,7 @@
     "description": "PHP Framework for swoole",
     "keywords": ["framework","swoole"],
     "homepage": "https://github.com/AzonMedia/guzaba2",
-    "license": "BSD",
+    "license": "BSD-3-Clause",
     "authors": [
         {
             "name": "Vesko Kenashkov",
