@@ -17,7 +17,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base;
 
-use \Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\SupportsObjectInternalId;
+
+use Guzaba2\Base\Exceptions\RunTimeException;
+
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class Base
@@ -44,5 +48,15 @@ abstract class Base
         if (method_exists($this, '_before_destruct')) {
             call_user_func_array([$this, '_before_destruct'], []);
         }
+    }
+
+    /**
+     * @param string $property
+     * @param $value
+     * @throws RunTimeException
+     */
+    public function __set(string $property, /* mixed */ $value) : void
+    {
+        throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is now allowed to set new object properties at run time.'), get_class($this), __CLASS__ ));
     }
 }

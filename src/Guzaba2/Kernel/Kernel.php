@@ -82,6 +82,10 @@ class Kernel
     public static function run_swoole(callable $callable) : int
     {
 
+        $http_server = new \Guzaba2\Http\HttpServer();
+        $http_server->on('start', )
+        $http_server->run();
+
     }
 
     public static function run_swoole_mvc(callable $callable) : int
