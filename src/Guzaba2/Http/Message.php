@@ -8,9 +8,22 @@ use Guzaba2\Base\Base;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
-abstract class HttpMessage extends Base
+abstract class Message extends Base
 implements MessageInterface
 {
+
+    protected $reasonPhrase = '';
+
+    /**
+     * @var array
+     */
+    protected $headers = [];
+
+    /**
+     * @var \Psr\Http\Message\StreamInterface
+     */
+    protected $body;
+
     /**
      * Retrieves the HTTP protocol version as a string.
      *
@@ -36,7 +49,8 @@ implements MessageInterface
      * @param string $version HTTP protocol version
      * @return static
      */
-    public function withProtocolVersion(string $version) : self
+    public function withProtocolVersion( /* string */ $version) /* self */
+    //public function withProtocolVersion(string $version) : self
     {
 
     }
@@ -79,7 +93,8 @@ implements MessageInterface
      *     name using a case-insensitive string comparison. Returns false if
      *     no matching header name is found in the message.
      */
-    public function hasHeader(string $name) : string
+    public function hasHeader( /* string */ $name) /* string */
+    //public function hasHeader(string $name) : string
     {
 
     }
@@ -192,7 +207,7 @@ implements MessageInterface
      */
     public function getBody() : StreamInterface
     {
-
+        return $this->body;
     }
 
     /**

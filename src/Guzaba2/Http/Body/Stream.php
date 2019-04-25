@@ -9,7 +9,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Psr\Http\Message\StreamInterface;
 use Guzaba2\Translator\Translator as t;
 
-class HttpBodyStream extends Base
+class Stream extends Base
 implements StreamInterface
 {
 
@@ -38,7 +38,7 @@ implements StreamInterface
     {
         $this->stream = $stream ?? fopen('php://memory/body', 'r+');
 
-        $this->write(self::DEFAULT_DOCTYPE . HttpResponse::EOL);
+        //$this->write(self::DEFAULT_DOCTYPE . Response::EOL);
     }
 
     /**

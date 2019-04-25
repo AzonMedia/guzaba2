@@ -19,7 +19,7 @@ use Guzaba2\Base\Base;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
-class HttpResponse extends Base
+class Response extends Message
 implements ResponseInterface
 {
 
@@ -32,16 +32,12 @@ implements ResponseInterface
 
     protected $status = StatusCode::HTTP_OK;//200
 
-    protected $headers = [];
-
-    protected $body;
-
     public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $body = NULL)
     {
         $this->checkStatus($status);
         $this->status = $status;
         $this->headers = $headers;
-        $this->body = $body ?? new HttpBodyStream();
+        $this->body = $body ?? new Stream();
     }
 
     /**
@@ -77,9 +73,20 @@ implements ResponseInterface
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus(int $code, string $reasonPhrase = '') : self
+    public function withStatus( /* int */ $code, /* string */ $reasonPhrase = '') /* self */
+    //public function withStatus(int $code, string $reasonPhrase = '') : self
     {
+        $this->checkStatus($code);
 
+        if (!$reasonPhrase) {
+            $reasonPhrase = StatusCode::MESSAGES_MAP[$code];
+        }
+
+        $new_response = clone ($this);
+        $new_response->status = $code;
+        $new_response->reasonPhrase = $reasonPhrase;
+
+        return $new_response;
     }
 
     /**
@@ -97,7 +104,7 @@ implements ResponseInterface
      */
     public function getReasonPhrase() : string
     {
-
+        return StatusCode::MESSAGES_MAP[$this->status];
     }
 
     private function checkStatus(int $status) : void

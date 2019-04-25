@@ -4,7 +4,7 @@
 namespace Guzaba2\Http;
 
 
-class HttpBodyXml
+class Xml
 {
 
 }

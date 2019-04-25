@@ -8,7 +8,7 @@ use Guzaba2\Base\Base;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
 
-class HttpRequest extends Base
+class Request extends Base
 implements ServerRequestInterface
 {
     /**

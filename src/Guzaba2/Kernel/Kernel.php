@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Kernel;
 
+use Guzaba2\Translator\Translator as t;
+
 /**
  * Class Kernel
  * @package Guzaba2\Kernel
@@ -69,7 +71,12 @@ class Kernel
         self::$guzaba2_root_dir = realpath(self::$kernel_dir.'/../../');
         //print self::$guzaba2_root_dir.PHP_EOL;
 
+
         spl_autoload_register([__CLASS__, 'autoloader']);
+        set_exception_handler([__CLASS__, 'exception_handler']);
+        set_error_handler([__CLASS__, 'error_handler']);
+
+
 
         $ret = $callable();
 
@@ -79,13 +86,25 @@ class Kernel
         return $ret;
     }
 
-    public static function run_swoole(callable $callable) : int
+    public static function run_swoole(?callable $request_handler = NULL) : int
     {
 
-        $http_server = new \Guzaba2\Http\HttpServer();
-        $http_server->on('start', )
-        $http_server->run();
+        self::run(function(){});
+        $o = new \Guzaba2\Http\Response();
 
+        /*
+        $callable = function() use ($request_handler) : int
+        {
+            $request_handler = $request_handler ?? new \Guzaba2\Swoole\RequestHandler();
+            $http_server = new \Guzaba2\Swoole\Server();
+            $http_server->on('request', $request_handler);
+            $http_server->start();
+
+            return self::EXIT_SUCCESS;
+        };
+
+        return self::run($callable);
+        */
     }
 
     public static function run_swoole_mvc(callable $callable) : int
@@ -104,12 +123,48 @@ class Kernel
                 self::$loaded_classes[] = $class_name;
                 self::$loaded_paths[] = $class_path;
                 $ret = TRUE;
+            } else {
+                $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
+                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
             }
+        } else {
+            //TODO implement project class loading
         }
-        //print getcwd();
-
-
 
         return $ret;
+    }
+
+    /**
+     * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
+     * @param \Throwable $exception
+     */
+    public static function exception_handler(\Throwable $exception) : void
+    {
+        $output = '';
+        $output .= sprintf(t::_('%s in %s#%s'), $exception->getMessage(), $exception->getFile(), $exception->getLine() );
+        $output .= PHP_EOL;
+        $output .= $exception->getTraceAsString();
+        self::logtofile('UNCAUGHT_EXCEPTIONS', $output);
+        die($output);
+    }
+
+    /**
+     * Error handler works even in Swoole worker context
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
+     * @param array $errcontext
+     * @throws Exceptions\ErrorException
+     */
+    public static function error_handler( int $errno , string $errstr, string $errfile, int $errline , array $errcontext = []) : void
+    {
+        throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline , $errcontext);
+    }
+
+    public static function logtofile(string $file_name, string $content) : void
+    {
+        $path = self::$guzaba2_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
+        file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
     }
 }

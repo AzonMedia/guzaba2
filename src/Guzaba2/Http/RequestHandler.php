@@ -38,7 +38,7 @@ implements RequestHandlerInterface
         if ($response_prototype) {
             $this->response = $response_prototype;
         } else {
-            $this->response = new HttpResponse();
+            $this->response = new Response();
         }
 
     }
@@ -46,7 +46,7 @@ implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request) : ResponseInterface
     {
         //no separate routing and authorization layers for now...
-        $response = new HttpResponse(
+        $response = new Response(
 
         );
         return $response;

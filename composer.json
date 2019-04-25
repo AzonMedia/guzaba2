@@ -19,6 +19,6 @@
         "psr/http-server-middleware": "^1.0"
     },
     "autoload": {
-	"files": ["src/Guzaba2/Kernel/Kernel.php"]
+	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
     }
 }

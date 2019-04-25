@@ -5,21 +5,32 @@ namespace Guzaba2\Swoole;
 //use Guzaba2\Base\Base as Base;
 
 /**
- * Class HttpServer
+ * Class Server
  * Swoole implementation of HTTP server
  * @package Guzaba2\Swoole
  */
-class HttpServer extends \Guzaba2\Http\HttpServer
+class Server extends \Guzaba2\Http\Server
 {
 
     protected $swoole_http_server;
 
     public const SUPPPORTED_EVENTS = [];
 
-    public function __construct(string $host, int $port, array $options = [])
+    protected const SWOOLE_HOST = '0.0.0.0';
+
+    protected const SWOOLE_PORT = 8081;
+
+    public function __construct(string $host = self::SWOOLE_HOST, int $port = self::SWOOLE_PORT, array $options = [])
     {
+        if (!$host) {
+            $host = self::SWOOLE_HOST;
+        }
+        if (!$port) {
+            $port = self::SWOOLE_PORT;
+        }
+
         parent::__construct($host, $port, $options);
-        $this->swoole_http_server = new Swoole\Http\Server($this->host, $this->port);
+        $this->swoole_http_server = new \Swoole\Http\Server($this->host, $this->port);
     }
 
     public function start() : void

@@ -5,11 +5,11 @@ namespace Guzaba2\Http;
 use Guzaba2\Base\Base as Base;
 
 /**
- * Class HttpServer
+ * Class Server
  * A generic HTTP Server implementation
  * @package Guzaba2\Http
  */
-abstract class HttpServer extends Base
+abstract class Server extends Base
 {
 
     protected $host;
