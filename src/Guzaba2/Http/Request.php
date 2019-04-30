@@ -5,12 +5,60 @@ namespace Guzaba2\Http;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Body\Stream;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
 
-class Request extends Base
+/**
+ * Class Request
+ * @package Guzaba2\Http
+ *
+ * This class uses code from Slim framework
+ * @see https://github.com/slimphp/Slim/blob/3.x/Slim/Http/Request.php
+ */
+class Request extends Message
 implements ServerRequestInterface
 {
+
+
+
+    /**
+     * @var string
+     */
+    protected $method;
+
+    /**
+     * @var UriInterface
+     */
+    protected $uri;
+
+    protected $cookies = [];
+
+
+    protected $attributes = [];
+
+    protected $server_params = [];
+
+    protected $uploaded_files = [];
+
+    public function __construct(
+        $method = '',
+        ?UriInterface $uri = NULL,
+        array $headers = [],
+        array $cookies = [],
+        array $server_params = [],
+        ?StreamInterface $body = NULL,
+        array $uploaded_files = []
+    ) {
+        $this->method = $method;
+        $this->uri = $uri;
+        $this->headers = $headers;
+        $this->cookies = $cookies;
+        $this->server_params = $server_params;
+        $this->body = $body ?? new Stream();
+        $this->uploaded_files = $uploaded_files;
+    }
+
     /**
      * Retrieves the message's request target.
      *
@@ -79,7 +127,8 @@ implements ServerRequestInterface
      * @return static
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
-    public function withMethod(string $method) : self
+    //public function withMethod(string $method) : self
+    public function withMethod( /* string */ $method) : self
     {
 
     }
@@ -128,7 +177,8 @@ implements ServerRequestInterface
      * @param bool $preserveHost Preserve the original state of the Host header.
      * @return static
      */
-    public function withUri(UriInterface $uri, bool $preserveHost = false) : self
+    //public function withUri(UriInterface $uri, bool $preserveHost = false) : self
+    public function withUri(UriInterface $uri, $preserveHost = FALSE) : self
     {
 
     }
@@ -349,7 +399,8 @@ implements ServerRequestInterface
      * @param mixed $default Default value to return if the attribute does not exist.
      * @return mixed
      */
-    public function getAttribute(string $name, /* mixed */ $default = NULL) /* mixed */
+    //public function getAttribute(string $name, /* mixed */ $default = NULL) /* mixed */
+    public function getAttribute( /* string */ $name, /* mixed */ $default = NULL) /* mixed */
     {
 
     }
@@ -369,9 +420,12 @@ implements ServerRequestInterface
      * @param mixed $value The value of the attribute.
      * @return static
      */
-    public function withAttribute(string $name, /* mixed */ $value) : self
+    //public function withAttribute(string $name, /* mixed */ $value) : self
+    public function withAttribute( /* string */ $name, /* mixed */ $value) : self
     {
-
+        $request = clone $this;
+        $request->attributes[$name] = $value;
+        return $request;
     }
 
     /**
@@ -388,9 +442,15 @@ implements ServerRequestInterface
      * @param string $name The attribute name.
      * @return static
      */
-    public function withoutAttribute(string $name) : self
+    //public function withoutAttribute(string $name) : self
+    public function withoutAttribute( /* string */ $name) : self
     {
 
+    }
+
+    public function __clone()
+    {
+        $this->body = clone $this->body;
     }
 
 }

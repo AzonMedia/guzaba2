@@ -16,17 +16,22 @@ class Server extends \Guzaba2\Http\Server
 
     public const SUPPPORTED_EVENTS = [];
 
+    protected const DEFAULT_CONFIG = [
+        'swoole_host'   => '0.0.0.0',
+        'swoole_port'   => 8081,
+    ];
+
     protected const SWOOLE_HOST = '0.0.0.0';
 
     protected const SWOOLE_PORT = 8081;
 
-    public function __construct(string $host = self::SWOOLE_HOST, int $port = self::SWOOLE_PORT, array $options = [])
+    public function __construct(string $host = self::DEFAULT_CONFIG['swoole_host'], int $port = self::DEFAULT_CONFIG['swoole_port'], array $options = [])
     {
         if (!$host) {
-            $host = self::SWOOLE_HOST;
+            $host = self::DEFAULT_CONFIG['swoole_host'];
         }
         if (!$port) {
-            $port = self::SWOOLE_PORT;
+            $port = self::DEFAULT_CONFIG['swoole_port'];
         }
 
         parent::__construct($host, $port, $options);

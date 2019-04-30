@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Guzaba2\Kernel;
 
 use Guzaba2\Translator\Translator as t;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class Kernel
@@ -86,17 +87,18 @@ class Kernel
         return $ret;
     }
 
-    public static function run_swoole(?callable $request_handler = NULL) : int
+    //public static function run_swoole(?LoggerInterface $logger = NULL, string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
+    public static function run_swoole(string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
     {
 
         //self::run(function(){});
         //$o = new \Guzaba2\Http\Response();
 
 
-        $callable = function() use ($request_handler) : int
+        $callable = function() use ($host, $port, $options, $request_handler) : int
         {
             $request_handler = $request_handler ?? new \Guzaba2\Swoole\RequestHandler();
-            $http_server = new \Guzaba2\Swoole\Server();
+            $http_server = new \Guzaba2\Swoole\Server($host, $port, $options);
             $http_server->on('request', $request_handler);
             $http_server->start();
 
@@ -144,8 +146,10 @@ class Kernel
         $output .= sprintf(t::_('%s in %s#%s'), $exception->getMessage(), $exception->getFile(), $exception->getLine() );
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
-        self::logtofile('UNCAUGHT_EXCEPTIONS', $output);
-        die($output);
+        //self::logtofile('UNCAUGHT_EXCEPTIONS', $output);
+        //die($output);
+        print $output;
+        die(1);//kill that worker
     }
 
     /**
@@ -164,7 +168,10 @@ class Kernel
 
     public static function logtofile(string $file_name, string $content) : void
     {
-        $path = self::$guzaba2_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
+        die('disabled');
+        //$path = self::$guzaba2_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
+        //die(self::$cwd);
+        $path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
     }
 }
