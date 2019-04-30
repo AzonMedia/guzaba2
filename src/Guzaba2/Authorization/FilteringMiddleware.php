@@ -6,7 +6,7 @@ use Guzaba2\Base\Base;
 use Psr\Http\Server\MiddlewareInterface;
 
 class FilteringMiddleware extends Base
-    implements MiddlewareInterface
+implements MiddlewareInterface
 {
 
 }

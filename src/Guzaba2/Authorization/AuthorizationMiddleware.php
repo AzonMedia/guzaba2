@@ -1,7 +1,12 @@
 <?php
 
+namespace Guzaba2\Authorization;
 
-class AuthorizationMiddleware
+use Guzaba2\Base\Base;
+use Psr\Http\Server\MiddlewareInterface;
+
+class AuthorizationMiddleware extends Base
+implements MiddlewareInterface
 {
 
 }

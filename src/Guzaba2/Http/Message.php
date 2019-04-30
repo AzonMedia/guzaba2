@@ -15,9 +15,10 @@ implements MessageInterface
     protected $reasonPhrase = '';
 
     /**
+     *
      * @var array
      */
-    protected $headers = [];
+    protected $headers = [];//TODO - convert to a collection as it is possible to have more than one header with the same name - like Set Cookie
 
     /**
      * @var \Psr\Http\Message\StreamInterface
@@ -184,7 +185,8 @@ implements MessageInterface
     public function withAddedHeader( /* string */ $name, /* mixed */ $value) : self
     //public function withAddedHeader(string $name, /* mixed */ $value) : self
     {
-
+        //$message = clone $this;
+        //$message->headers[$name] = $value;
     }
 
     /**
@@ -231,5 +233,16 @@ implements MessageInterface
     public function withBody(StreamInterface $body) : self
     {
 
+    }
+
+    ///////////////////// NON PSR methods follow
+    ///
+
+    public function withAddedHeaders(array $headers) : self
+    {
+        $message = clone $this;
+        foreach ($headers as $header_name => $header_value) {
+
+        }
     }
 }

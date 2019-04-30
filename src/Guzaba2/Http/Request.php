@@ -41,6 +41,13 @@ implements ServerRequestInterface
 
     protected $uploaded_files = [];
 
+    /**
+     * @var string
+     */
+    protected $request_target;
+
+    protected $query_params = [];
+
     public function __construct(
         $method = '',
         ?UriInterface $uri = NULL,
@@ -51,7 +58,7 @@ implements ServerRequestInterface
         array $uploaded_files = []
     ) {
         $this->method = $method;
-        $this->uri = $uri;
+        $this->uri = $uri ?? new Uri();
         $this->headers = $headers;
         $this->cookies = $cookies;
         $this->server_params = $server_params;
@@ -64,20 +71,38 @@ implements ServerRequestInterface
      *
      * Retrieves the message's request-target either as it will appear (for
      * clients), as it appeared at request (for servers), or as it was
-     * specified for the instance (see withRequestTarget()).
+     * specified for the instance (see withrequest_target()).
      *
      * In most cases, this will be the origin-form of the composed URI,
      * unless a value was provided to the concrete implementation (see
-     * withRequestTarget() below).
+     * withrequest_target() below).
      *
      * If no URI is available, and no request-target has been specifically
      * provided, this method MUST return the string "/".
      *
      * @return string
      */
-    public function getRequestTarget() : string
+    public function getRequestTarget()
     {
-
+        if ($this->request_target) {
+            return $this->request_target;
+        }
+        if ($this->uri === null) {
+            return '/';
+        }
+        if ($this->uri instanceof Uri) {
+            $basePath = $this->uri->getBasePath();
+        } else {
+            $basePath = '';
+        }
+        $path = $this->uri->getPath();
+        $path = $basePath . '/' . ltrim($path, '/');
+        $query = $this->uri->getQuery();
+        if ($query) {
+            $path .= '?' . $query;
+        }
+        $this->request_target = $path;
+        return $this->request_target;
     }
 
     /**
@@ -94,12 +119,19 @@ implements ServerRequestInterface
      *
      * @link http://tools.ietf.org/html/rfc7230#section-5.3 (for the various
      *     request-target forms allowed in request messages)
-     * @param mixed $requestTarget
+     * @param mixed $request_target
      * @return static
      */
-    public function withRequestTarget($requestTarget) : self
+    public function withRequestTarget($request_target) : self
     {
-
+        if (preg_match('#\s#', $request_target)) {
+            throw new InvalidArgumentException(
+                'Invalid request target provided; must be a string and cannot contain whitespace'
+            );
+        }
+        $clone = clone $this;
+        $clone->request_target = $request_target;
+        return $clone;
     }
 
     /**
@@ -109,7 +141,7 @@ implements ServerRequestInterface
      */
     public function getMethod() : string
     {
-
+        return $this->method;
     }
 
     /**
@@ -130,7 +162,9 @@ implements ServerRequestInterface
     //public function withMethod(string $method) : self
     public function withMethod( /* string */ $method) : self
     {
-
+        $request = clone $this;
+        $request->method = $method;
+        return $request;
     }
 
     /**
@@ -144,7 +178,7 @@ implements ServerRequestInterface
      */
     public function getUri() : UriInterface
     {
-
+        return $this->uri;
     }
 
     /**
@@ -178,9 +212,20 @@ implements ServerRequestInterface
      * @return static
      */
     //public function withUri(UriInterface $uri, bool $preserveHost = false) : self
-    public function withUri(UriInterface $uri, $preserveHost = FALSE) : self
+    public function withUri(UriInterface $uri, /* bool */ $preserveHost = FALSE) : self
     {
-
+        $request = clone $this;
+        $request->uri = $uri;
+        if (!$preserveHost) {
+            if ($uri->getHost() !== '') {
+                $request->headers['Host'] = $uri->getHost();
+            }
+        } else {
+            if ($uri->getHost() !== '' && (!$this->hasHeader('Host') || $this->getHeaderLine('Host') === '')) {
+                $request->headers->set('Host', $uri->getHost());
+            }
+        }
+        return $request;
     }
 
 
@@ -252,7 +297,14 @@ implements ServerRequestInterface
      */
     public function getQueryParams() : array
     {
-
+        if (is_array($this->query_params)) {
+            return $this->query_params;
+        }
+        if ($this->uri === null) {
+            return [];
+        }
+        parse_str($this->uri->getQuery(), $this->query_params); // <-- URL decodes data
+        return $this->query_params;
     }
 
     /**
@@ -279,7 +331,9 @@ implements ServerRequestInterface
      */
     public function withQueryParams(array $query) : self
     {
-
+        $request = clone $this;
+        $request->query_params = $query;
+        return $request;
     }
 
     /**

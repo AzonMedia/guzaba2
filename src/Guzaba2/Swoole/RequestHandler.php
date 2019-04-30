@@ -5,12 +5,16 @@ namespace Guzaba2\Swoole;
 
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Azonmedia\SwooleToPsr\SwooleToPsr;
+use Guzaba2\Authorization\AuthorizationMiddleware;
+use Guzaba2\Authorization\FilteringMiddleware;
 use Guzaba2\Base\Base;
+use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Request;
 use Guzaba2\Http\Response;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\Execution;
+use Guzaba2\Mvc\RoutingMiddleware;
 
 class RequestHandler extends Base
 {
@@ -39,9 +43,19 @@ class RequestHandler extends Base
             //$response->header("Content-Type", "text/plain");
             //$response->end("Hello World\n");
             //temp code
-            $psr_response = new Response(StatusCode::HTTP_OK, ['Content-Type' => 'text/html'] );
-            $psr_response->getBody()->write('test response'.Response::EOL);
-            PsrToSwoole::ConvertResponse($psr_response, $swoole_response);
+            //$psr_response = new Response(StatusCode::HTTP_OK, ['Content-Type' => 'text/html'] );
+            //$psr_response->getBody()->write('test response'.Response::EOL);
+            //PsrToSwoole::ConvertResponse($psr_response, $swoole_response);
+
+            //$r = new PsrToSwoole();
+            //$r2 = new SwooleToPsr();
+            //$psr_request = new Request();
+            $psr_request = SwooleToPsr::ConvertRequest($swoole_request, new Request() );
+            $queue_request_handler = new QueueRequestHandler(new RequestHandler());
+            $queue_request_handler->add_middleware(new RoutingMiddleware());
+            $queue_request_handler->add_middleware(new FilteringMiddleware());
+            $queue_request_handler->add_middleware(new AuthorizationMiddleware());
+            $queue_request_handler->
 
 
             $execution->destroy();
