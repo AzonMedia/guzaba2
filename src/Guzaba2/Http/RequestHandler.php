@@ -35,6 +35,7 @@ implements RequestHandlerInterface
 
     public function __construct(?ResponseInterface $response_prototype = NULL)
     {
+
         if ($response_prototype) {
             $this->response = $response_prototype;
         } else {

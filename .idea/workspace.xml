@@ -2,23 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="da949fb0-95e1-493a-906b-fc685867d7f5" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Body/Xml.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Kernel/Exceptions/AutoloadException.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Kernel/Exceptions/ErrorException.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Logger/Logger.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Guzaba2/Session/Session.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/source.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/source.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpBodyStream.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpBodyXml.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Body/Html.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpMessage.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Message.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Request.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpResponse.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Response.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/HttpServer.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Server.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/composer.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/Message.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Message.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Http/Response.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Http/Response.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Swoole/HttpServer.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Swoole/Server.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -34,87 +34,47 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="555">
-              <caret line="37" column="32" selection-start-line="37" selection-start-column="32" selection-end-line="37" selection-end-column="32" />
+            <state relative-caret-position="270">
+              <caret line="39" column="46" lean-forward="true" selection-start-line="39" selection-start-column="46" selection-end-line="39" selection-end-column="46" />
               <folding>
-                <element signature="e#35#57#0#PHP" expanded="true" />
+                <element signature="e#35#73#0#PHP" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Server.php">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Session/Session.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="7" selection-start-line="7" selection-end-line="7" selection-end-column="15" />
+            <state relative-caret-position="195">
+              <caret line="13" lean-forward="true" selection-start-line="13" selection-end-line="13" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Xml.php">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="90">
-              <caret line="6" column="6" selection-start-line="6" selection-start-column="6" selection-end-line="6" selection-end-column="6" />
+              <caret line="6" column="2" lean-forward="true" selection-start-line="6" selection-start-column="2" selection-end-line="6" selection-end-column="2" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Logger/Logger.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="322">
-              <caret line="42" selection-start-line="42" selection-end-line="42" />
-              <folding>
-                <element signature="e#34#56#0#PHP" expanded="true" />
-              </folding>
+            <state relative-caret-position="135">
+              <caret line="9" column="1" lean-forward="true" selection-start-line="9" selection-start-column="1" selection-end-line="9" selection-end-column="1" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="124" column="28" lean-forward="true" selection-start-line="124" selection-start-column="28" selection-end-line="124" selection-end-column="28" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test_entry_point.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="160">
-              <caret line="24" column="56" selection-start-line="24" selection-start-column="56" selection-end-line="25" selection-end-column="40" />
-              <folding>
-                <element signature="e#28#55#0#PHP" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Response.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="565">
-              <caret line="42" column="7" lean-forward="true" selection-start-line="42" selection-start-column="7" selection-end-line="42" selection-end-column="7" />
-              <folding>
-                <element signature="e#8#297#0#PHP" expanded="true" />
-                <element signature="e#325#347#0#PHP" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Message.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="241">
-              <caret line="95" column="43" selection-start-line="95" selection-start-column="43" selection-end-line="95" selection-end-column="43" />
-              <folding>
-                <element signature="e#34#56#0#PHP" expanded="true" />
-              </folding>
+            <state relative-caret-position="441">
+              <caret line="51" column="5" selection-start-line="51" selection-start-column="5" selection-end-line="51" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -122,17 +82,48 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/Server.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="26" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
+            <state relative-caret-position="165">
+              <caret line="11" column="6" selection-start-line="11" selection-start-column="6" selection-end-line="11" selection-end-column="6" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Html.php">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="1" selection-start-line="9" selection-start-column="1" selection-end-line="9" selection-end-column="1" />
+            <state relative-caret-position="300">
+              <caret line="20" column="1" lean-forward="true" selection-start-line="20" selection-start-column="1" selection-end-line="20" selection-end-column="1" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/composer.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="225">
+              <caret line="15" column="16" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="390">
+              <caret line="26" lean-forward="true" selection-start-line="26" selection-end-line="26" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Response.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="88">
+              <caret line="42" column="39" selection-start-line="42" selection-start-column="39" selection-end-line="42" selection-end-column="39" />
+              <folding>
+                <element signature="e#8#297#0#PHP" expanded="true" />
+                <element signature="e#325#347#0#PHP" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -154,6 +145,10 @@
       <find>ion withSta</find>
       <find>with</find>
       <find>ion hasHea</find>
+      <find>ion getHe</find>
+      <find>ion see</find>
+      <find>ion getHead</find>
+      <find>src</find>
     </findStrings>
     <replaceStrings>
       <replace>self::</replace>
@@ -170,17 +165,12 @@
         <option value="$PROJECT_DIR$/src/Guzaba2/Base/Exceptions/BaseException.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/Multiton.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerMultiton.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionMultiton.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Base/Traits/SupportsObjectInternalId.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Base/Exceptions/RunTimeException.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/HttpRequest.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/RequestProcessor.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/Middleware.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/StatusCode.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Base/Base.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Translator/Translator.php" />
@@ -195,12 +185,19 @@
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/HttpServer.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Swoole/HttpServer.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Swoole/Server.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php" />
         <option value="$PROJECT_DIR$/test_entry_point.php" />
-        <option value="$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/Response.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php" />
         <option value="$PROJECT_DIR$/src/Guzaba2/Http/Message.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Session/Session.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Logger/Logger.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php" />
+        <option value="$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php" />
       </list>
     </option>
   </component>
@@ -213,11 +210,12 @@
       <path value="$PROJECT_DIR$/vendor/psr/http-message" />
       <path value="$PROJECT_DIR$/vendor/psr/http-server-handler" />
       <path value="$PROJECT_DIR$/vendor/psr/http-server-middleware" />
+      <path value="$PROJECT_DIR$/vendor/azonmedia/psr-to-swoole" />
     </include_path>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="2180" />
-    <option name="y" value="93" />
+    <option name="x" value="2312" />
+    <option name="y" value="71" />
     <option name="width" value="1400" />
     <option name="height" value="1000" />
   </component>
@@ -252,30 +250,7 @@
               <item name="source" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
               <item name="Guzaba2" type="462c0819:PsiDirectoryNode" />
-              <item name="Http" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="source" type="b2602c69:ProjectViewProjectNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="Guzaba2" type="462c0819:PsiDirectoryNode" />
-              <item name="Http" type="462c0819:PsiDirectoryNode" />
-              <item name="Body" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="source" type="b2602c69:ProjectViewProjectNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="Guzaba2" type="462c0819:PsiDirectoryNode" />
-              <item name="Kernel" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="source" type="b2602c69:ProjectViewProjectNode" />
-              <item name="source" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="Guzaba2" type="462c0819:PsiDirectoryNode" />
-              <item name="Kernel" type="462c0819:PsiDirectoryNode" />
-              <item name="Exceptions" type="462c0819:PsiDirectoryNode" />
+              <item name="Patterns" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="source" type="b2602c69:ProjectViewProjectNode" />
@@ -283,6 +258,32 @@
               <item name="src" type="462c0819:PsiDirectoryNode" />
               <item name="Guzaba2" type="462c0819:PsiDirectoryNode" />
               <item name="Swoole" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="source" type="b2602c69:ProjectViewProjectNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="vendor" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="source" type="b2602c69:ProjectViewProjectNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="vendor" type="462c0819:PsiDirectoryNode" />
+              <item name="azonmedia" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="source" type="b2602c69:ProjectViewProjectNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="vendor" type="462c0819:PsiDirectoryNode" />
+              <item name="azonmedia" type="462c0819:PsiDirectoryNode" />
+              <item name="psr-to-swoole" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="source" type="b2602c69:ProjectViewProjectNode" />
+              <item name="source" type="462c0819:PsiDirectoryNode" />
+              <item name="vendor" type="462c0819:PsiDirectoryNode" />
+              <item name="azonmedia" type="462c0819:PsiDirectoryNode" />
+              <item name="psr-to-swoole" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -336,12 +337,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1556101192462</updated>
-      <workItem from="1556101195245" duration="29630000" />
+      <workItem from="1556101195245" duration="39819000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="29630000" />
+    <option name="totallyTimeSpent" value="39819000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1920" y="-3" width="1920" height="1100" extended-state="6" />
@@ -353,7 +354,7 @@
       <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" />
       <window_info anchor="bottom" id="Version Control" />
-      <window_info active="true" anchor="bottom" id="Terminal" visible="true" weight="0.26455566" />
+      <window_info active="true" anchor="bottom" id="Terminal" visible="true" weight="0.28396323" />
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3299285" />
@@ -393,27 +394,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="25" selection-start-line="25" selection-end-line="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="30" selection-start-line="11" selection-start-column="30" selection-end-line="11" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="33" column="7" selection-start-line="33" selection-start-column="7" selection-end-line="33" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Guzaba2/Base/Traits/SupportsObjectInternalId.php">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="796">
@@ -425,13 +405,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="225">
           <caret line="15" column="3" lean-forward="true" selection-start-line="15" selection-start-column="1" selection-end-line="15" selection-end-column="3" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="18" column="27" lean-forward="true" selection-start-line="18" selection-start-column="27" selection-end-line="18" selection-end-column="27" />
         </state>
       </provider>
     </entry>
@@ -456,16 +429,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
           <caret line="8" selection-start-line="8" selection-end-line="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Request.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="238" column="47" selection-start-line="238" selection-start-column="39" selection-end-line="238" selection-end-column="47" />
-          <folding>
-            <element signature="e#34#56#0#PHP" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -500,37 +463,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Base/Base.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="392">
-          <caret line="47" column="49" lean-forward="true" selection-start-line="47" selection-start-column="49" selection-end-line="47" selection-end-column="49" />
-          <folding>
-            <element signature="e#514#563#0#PHP" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/composer.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="8" selection-start-line="21" selection-start-column="8" selection-end-line="21" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/composer.lock">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="525">
           <caret line="35" column="14" selection-start-line="35" selection-start-column="14" selection-end-line="35" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" selection-start-line="12" selection-end-line="59" selection-end-column="1" />
-          <folding>
-            <element signature="e#34#56#0#PHP" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -569,37 +505,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/Server.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="26" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Html.php">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="135">
           <caret line="9" column="1" selection-start-line="9" selection-start-column="1" selection-end-line="9" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="322">
-          <caret line="42" selection-start-line="42" selection-end-line="42" />
-          <folding>
-            <element signature="e#34#56#0#PHP" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="37" column="32" selection-start-line="37" selection-start-column="32" selection-end-line="37" selection-end-column="32" />
-          <folding>
-            <element signature="e#35#57#0#PHP" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -615,15 +524,55 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Guzaba2/Kernel/Kernel.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="391">
-          <caret line="124" column="28" lean-forward="true" selection-start-line="124" selection-start-column="28" selection-end-line="124" selection-end-column="28" />
+        <state relative-caret-position="313">
+          <caret line="79" selection-start-line="79" selection-end-line="79" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Message.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="466">
+          <caret line="97" column="5" selection-start-line="97" selection-start-column="5" selection-end-line="97" selection-end-column="5" />
+          <folding>
+            <element signature="e#34#56#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Body/Stream.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="35" selection-start-line="35" selection-end-line="35" />
+          <folding>
+            <element signature="e#34#56#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/RequestHandler.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="37" selection-start-line="37" selection-end-line="37" />
+          <folding>
+            <element signature="e#34#56#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Base/Base.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret selection-end-line="3" selection-end-column="3" />
+          <folding>
+            <element signature="e#514#563#0#PHP" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Response.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="565">
-          <caret line="42" column="7" lean-forward="true" selection-start-line="42" selection-start-column="7" selection-end-line="42" selection-end-column="7" />
+        <state relative-caret-position="88">
+          <caret line="42" column="39" selection-start-line="42" selection-start-column="39" selection-end-line="42" selection-end-column="39" />
           <folding>
             <element signature="e#8#297#0#PHP" expanded="true" />
             <element signature="e#325#347#0#PHP" expanded="true" />
@@ -631,13 +580,86 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Message.php">
+    <entry file="file://$PROJECT_DIR$/vendor/azonmedia/psr-to-swoole/src/PsrToSwoole/PsrToSwoole.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="241">
-          <caret line="95" column="43" selection-start-line="95" selection-start-column="43" selection-end-line="95" selection-end-column="43" />
+        <state relative-caret-position="60">
+          <caret line="4" column="31" selection-start-line="4" selection-start-column="20" selection-end-line="4" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/Server.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="6" selection-start-line="11" selection-start-column="6" selection-end-line="11" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Http/Request.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2625">
+          <caret line="238" column="47" selection-start-line="238" selection-start-column="39" selection-end-line="238" selection-end-column="47" />
           <folding>
             <element signature="e#34#56#0#PHP" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/composer.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="15" column="16" selection-start-line="15" selection-start-column="16" selection-end-line="15" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Session/Session.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="13" lean-forward="true" selection-start-line="13" selection-end-line="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/Singleton.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="441">
+          <caret line="51" column="5" selection-start-line="51" selection-start-column="5" selection-end-line="51" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Execution/Execution.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="20" column="1" lean-forward="true" selection-start-line="20" selection-start-column="1" selection-end-line="20" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/WorkerSingleton.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" column="2" lean-forward="true" selection-start-line="6" selection-start-column="2" selection-end-line="6" selection-end-column="2" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Logger/Logger.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" column="1" lean-forward="true" selection-start-line="9" selection-start-column="1" selection-end-line="9" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Swoole/RequestHandler.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="39" column="46" lean-forward="true" selection-start-line="39" selection-start-column="46" selection-end-line="39" selection-end-column="46" />
+          <folding>
+            <element signature="e#35#73#0#PHP" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Guzaba2/Patterns/ExecutionSingleton.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="390">
+          <caret line="26" lean-forward="true" selection-start-line="26" selection-end-line="26" />
         </state>
       </provider>
     </entry>

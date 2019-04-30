@@ -89,10 +89,10 @@ class Kernel
     public static function run_swoole(?callable $request_handler = NULL) : int
     {
 
-        self::run(function(){});
-        $o = new \Guzaba2\Http\Response();
+        //self::run(function(){});
+        //$o = new \Guzaba2\Http\Response();
 
-        /*
+
         $callable = function() use ($request_handler) : int
         {
             $request_handler = $request_handler ?? new \Guzaba2\Swoole\RequestHandler();
@@ -104,7 +104,7 @@ class Kernel
         };
 
         return self::run($callable);
-        */
+
     }
 
     public static function run_swoole_mvc(callable $callable) : int

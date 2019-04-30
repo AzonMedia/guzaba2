@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Guzaba2\Http;
+namespace Guzaba2\Http\Body;
 
 
 use Guzaba2\Base\Base;
@@ -24,11 +24,7 @@ implements StreamInterface
      */
     protected $is_writable_flag = TRUE;
 
-    /**
-     * Will be raised when the processing is over
-     * @var bool
-     */
-    protected $is_readable_flag = FALSE;
+    protected $is_readable_flag = TRUE;
 
     protected $is_seekable_flag = TRUE;
 
@@ -36,7 +32,7 @@ implements StreamInterface
 
     public function __construct( /* resource */ $stream = NULL)
     {
-        $this->stream = $stream ?? fopen('php://memory/body', 'r+');
+        $this->stream = $stream ?? fopen('php://memory', 'r+');
 
         //$this->write(self::DEFAULT_DOCTYPE . Response::EOL);
     }
@@ -63,7 +59,7 @@ implements StreamInterface
             $this->rewind();
             $ret = $this->getContents();
         } else {
-            throw new RunTimeException(sprintf(t::_('Can not convert to string.')));
+            throw new RunTimeException(sprintf(t::_('Can not convert this stream to string because it is not readable.')));
         }
 
         return $ret;
@@ -86,7 +82,7 @@ implements StreamInterface
      *
      * @return resource|null Underlying PHP stream, if any
      */
-    public function detach() : /* ?resource */
+    public function detach() /* ?resource */
     {
 
         $stream = $this->stream;
@@ -157,7 +153,8 @@ implements StreamInterface
      * @throws RuntimeException on failure.
      *
      */
-    public function seek(int $offset, int $whence = SEEK_SET) : void
+    public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
+    //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
@@ -199,7 +196,8 @@ implements StreamInterface
      * @return int Returns the number of bytes written to the stream.
      * @throws RuntimeException on failure.
      */
-    public function write(string $string) : int
+    public function write( /* string */ $string) /* int */
+    //public function write(string $string) : int
     {
         if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
             throw new RuntimeException('Can not write to this stream.');
@@ -227,12 +225,13 @@ implements StreamInterface
      *     if no bytes are available.
      * @throws RuntimeException if an error occurs.
      */
-    public function read(int $length) : string
+    public function read( /* int */ $length) : string
+    //public function read(int $length) : string
     {
-        if (!$this->isReadable() || (str = fread($this->stream, $length)) === false) {
+        if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
         }
-        return str;
+        return $str;
     }
 
     /**
@@ -262,7 +261,8 @@ implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata(?string $key = NULL) /* mixed */
+    public function getMetadata( /* ?string */ $key = NULL) /* mixed */
+    //public function getMetadata(?string $key = NULL) /* mixed */
     {
         $meta = stream_get_meta_data($this->stream);
         if (is_null($key) === true) {

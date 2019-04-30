@@ -82,7 +82,7 @@ implements MessageInterface
      */
     public function getHeaders() : array
     {
-
+        return $this->headers;
     }
 
     /**
@@ -113,7 +113,8 @@ implements MessageInterface
      *    header. If the header does not appear in the message, this method MUST
      *    return an empty array.
      */
-    public function getHeader(string $name) : array
+    public function getHeader( /* string */ $name) : array
+    //public function getHeader(string $name) : array
     {
 
     }
@@ -137,7 +138,8 @@ implements MessageInterface
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
      */
-    public function getHeaderLine(string $name) : string
+    public function getHeaderLine( /* string */  $name) : string
+    //public function getHeaderLine(string $name) : string
     {
 
     }
@@ -157,7 +159,8 @@ implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withHeader(string $name, /* mixed */ $value) : self
+    public function withHeader( /* string */ $name, /* mixed */ $value) : self
+    //public function withHeader(string $name, /* mixed */ $value) : self
     {
 
     }
@@ -178,7 +181,8 @@ implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withAddedHeader(string $name, /* mixed */ $value) : self
+    public function withAddedHeader( /* string */ $name, /* mixed */ $value) : self
+    //public function withAddedHeader(string $name, /* mixed */ $value) : self
     {
 
     }
@@ -195,7 +199,8 @@ implements MessageInterface
      * @param string $name Case-insensitive header field name to remove.
      * @return static
      */
-    public function withoutHeader(string $name) : self
+    public function withoutHeader( /* string */ $name) : self
+    //public function withoutHeader(string $name) : self
     {
 
     }

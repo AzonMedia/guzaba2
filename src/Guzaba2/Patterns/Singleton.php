@@ -27,12 +27,34 @@ use Guzaba2\Base\Base;
 abstract class Singleton extends Base
 {
 
-    protected function __construct()
+    /**
+     * Array of ExecutionSingleton
+     * @var array
+     */
+    private static $instances = [];
+
+    /**
+     * @return ExecutionSingleton
+     */
+    //public static function &get_instance() : self //covariance issue?
+    public static function &get_instance() : parent
     {
-        parent::__construct();
+        $called_class = get_called_class();
+        if (!array_key_exists($called_class, self::$instances) || !self::$instances[$called_class] instanceof $called_class) {
+            self::$instances[$called_class] = new $called_class();
+        }
+        return self::$instances[$called_class];
     }
 
-    public abstract static function &get_instance() : self ;
+    public static function get_instances() : array
+    {
+        return self::$instances;
+    }
 
-    public abstract function destroy() : void;
+    public function destroy() : void
+    {
+        $called_class = get_class($this);
+        self::$instances[$called_class] = NULL;
+        unset(self::$instances[$called_class]);
+    }
 }

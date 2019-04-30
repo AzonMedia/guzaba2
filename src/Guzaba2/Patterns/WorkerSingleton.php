@@ -23,5 +23,15 @@ namespace Guzaba2\Patterns;
  */
 class WorkerSingleton extends Singleton
 {
-
+    public static function get_worker_instances() : array
+    {
+        $instances = parent::get_instances();
+        $ret = [];
+        foreach ($instances as $instance) {
+            if ($instance instanceof self) {
+                $ret[] = $instance;
+            }
+        }
+        return $ret;
+    }
 }

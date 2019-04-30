@@ -16,8 +16,11 @@ namespace Guzaba2\Http;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Body\Stream;
+
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+
 
 class Response extends Message
 implements ResponseInterface

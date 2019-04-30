@@ -25,28 +25,16 @@ namespace Guzaba2\Patterns;
 class ExecutionSingleton extends Singleton
 {
 
-    /**
-     * Array of ExecutionSingleton
-     * @var array
-     */
-    private static $instances = [];
-
-    /**
-     * @return ExecutionSingleton
-     */
-    //public static function &get_instance() : self //covariance issue?
-    public static function &get_instance() : parent
+    public static function get_execution_instances() : array
     {
-        $called_class = get_called_class();
-        if (!array_key_exists($called_class, self::$instances) || !self::$instances[$called_class] instanceof $called_class) {
-            self::$instances[$called_class] = new $called_class();
+        $instances = parent::get_instances();
+        $ret = [];
+        foreach ($instances as $instance) {
+            if ($instance instanceof self) {
+                $ret[] = $instance;
+            }
         }
-        return self::$instances[$called_class];
-    }
-
-    public static function get_instances() : array
-    {
-
+        return $ret;
     }
 
     /**
@@ -56,11 +44,13 @@ class ExecutionSingleton extends Singleton
      */
     public static function cleanup() : int
     {
+        $instances = self::get_execution_instances();
+        $ret = count($instances);
+        foreach ($instances as $instance) {
+            $instance->destroy();
+        }
 
+        return $ret;
     }
 
-    public function destroy() : void
-    {
-
-    }
 }
