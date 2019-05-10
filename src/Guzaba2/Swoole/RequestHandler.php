@@ -14,6 +14,7 @@ use Guzaba2\Http\Response;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\Execution;
+use Guzaba2\Mvc\ExecutorMiddleware;
 use Guzaba2\Mvc\RoutingMiddleware;
 
 class RequestHandler extends Base
@@ -51,12 +52,13 @@ class RequestHandler extends Base
             //$r2 = new SwooleToPsr();
             //$psr_request = new Request();
             $psr_request = SwooleToPsr::ConvertRequest($swoole_request, new Request() );
-            $queue_request_handler = new QueueRequestHandler(new RequestHandler());
-            $queue_request_handler->add_middleware(new RoutingMiddleware());
-            $queue_request_handler->add_middleware(new FilteringMiddleware());
-            $queue_request_handler->add_middleware(new AuthorizationMiddleware());
-            $queue_request_handler->
-
+            $queue_request_handler = new QueueRequestHandler(new \Guzaba2\Http\RequestHandler());//the default response prototype is a 404 message
+//            $queue_request_handler->add_middleware(new RoutingMiddleware());
+//            $queue_request_handler->add_middleware(new FilteringMiddleware());
+//            $queue_request_handler->add_middleware(new AuthorizationMiddleware());
+//            $queue_request_handler->add_middleware(new ExecutorMiddleware());
+            $psr_response = $queue_request_handler->handle($psr_request);
+            PsrToSwoole::ConvertResponse($psr_response, $swoole_response);
 
             $execution->destroy();
         } catch (\Throwable $exception) {

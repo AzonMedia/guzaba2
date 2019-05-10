@@ -35,12 +35,12 @@ implements ResponseInterface
 
     protected $status = StatusCode::HTTP_OK;//200
 
-    public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $body = NULL)
+    public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $Body = NULL)
     {
         $this->checkStatus($status);
         $this->status = $status;
         $this->headers = $headers;
-        $this->body = $body ?? new Stream();
+        $this->Body = $Body ?? new Stream();
     }
 
     /**

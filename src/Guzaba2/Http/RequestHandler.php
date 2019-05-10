@@ -5,6 +5,7 @@ namespace Guzaba2\Http;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Body\Stream;
 use http\Env\Response;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -14,27 +15,29 @@ class RequestHandler extends Base
 implements RequestHandlerInterface
 {
 
-    protected $response;
+    protected $Response;
 
-    public function __construct(?ResponseInterface $psr_response_prototype = NULL)
+    public function __construct(?ResponseInterface $ResponsePrototype = NULL)
     {
 
-        if ($psr_response_prototype) {
-            $this->response = $psr_response_prototype;
+        if ($ResponsePrototype) {
+            $this->Response = $ResponsePrototype;
         } else {
-            $this->response = (new \Guzaba2\Http\Response())->withStatus(StatusCode::HTTP_NOT_FOUND);
+            $Body = new Stream();
+            $Body->write('Content not found');
+            $this->Response = (new \Guzaba2\Http\Response())->withStatus(StatusCode::HTTP_NOT_FOUND)->withBody( $Body );
         }
 
     }
 
-    public function handle(ServerRequestInterface $request) : ResponseInterface
+    public function handle(ServerRequestInterface $Request) : ResponseInterface
     {
-        return $this->psr_response_prototype;
+        return $this->Response;
     }
 
 
-    public function __invoke(ServerRequestInterface $request) : ResponseInterface
+    public function __invoke(ServerRequestInterface $Request) : ResponseInterface
     {
-        return $this->handle($request);
+        return $this->handle($Request);
     }
 }

@@ -54,7 +54,7 @@ implements ServerRequestInterface
         array $headers = [],
         array $cookies = [],
         array $server_params = [],
-        ?StreamInterface $body = NULL,
+        ?StreamInterface $Body = NULL,
         array $uploaded_files = []
     ) {
         $this->method = $method;
@@ -62,7 +62,7 @@ implements ServerRequestInterface
         $this->headers = $headers;
         $this->cookies = $cookies;
         $this->server_params = $server_params;
-        $this->body = $body ?? new Stream();
+        $this->Body = $Body ?? new Stream();
         $this->uploaded_files = $uploaded_files;
     }
 
@@ -504,7 +504,7 @@ implements ServerRequestInterface
 
     public function __clone()
     {
-        $this->body = clone $this->body;
+        $this->Body = clone $this->Body;
     }
 
 }

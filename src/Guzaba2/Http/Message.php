@@ -23,7 +23,7 @@ implements MessageInterface
     /**
      * @var \Psr\Http\Message\StreamInterface
      */
-    protected $body;
+    protected $Body;
 
     /**
      * Retrieves the HTTP protocol version as a string.
@@ -214,7 +214,7 @@ implements MessageInterface
      */
     public function getBody() : StreamInterface
     {
-        return $this->body;
+        return $this->Body;
     }
 
     /**
@@ -230,9 +230,11 @@ implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
-    public function withBody(StreamInterface $body) : self
+    public function withBody(StreamInterface $Body) : self
     {
-
+        $Message = clone $this;
+        $Message->Body = $Body;
+        return $Message;
     }
 
     ///////////////////// NON PSR methods follow
