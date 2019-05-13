@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
@@ -9,6 +9,11 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Class Middleware
+ * NOT USED
+ * @package Guzaba2\Http
+ */
 class Middleware extends Base
 implements MiddlewareInterface
 {

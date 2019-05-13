@@ -58,9 +58,21 @@ class Kernel
      */
     protected static $loaded_paths = [];
 
+    /**
+     * Additional places where the autoloader should look.
+     * An associative array containing namespace prefix as key and lookup path as value.
+     * @var array
+     */
+    protected static $autoloader_lookup_paths = [];
+
+
     private function __construct() {
 
     }
+
+    //////////////////////
+    /// PUBLIC METHODS ///
+    //////////////////////
 
     public static function run(callable $callable) : int
     {
@@ -70,6 +82,8 @@ class Kernel
         self::$kernel_dir = dirname(__FILE__);
 
         self::$guzaba2_root_dir = realpath(self::$kernel_dir.'/../../');
+
+        self::register_autoloader_path(self::FRAMEWORK_NAME, self::$guzaba2_root_dir);
         //print self::$guzaba2_root_dir.PHP_EOL;
 
 
@@ -114,28 +128,6 @@ class Kernel
 
     }
 
-    protected static function autoloader(string $class_name) : bool
-    {
-        //print $class_name.PHP_EOL;
-        $ret = FALSE;
-        if (strpos($class_name,self::FRAMEWORK_NAME) === 0) { //starts with Guzaba2
-            $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, self::$guzaba2_root_dir.\DIRECTORY_SEPARATOR.$class_name).'.php';
-            if (is_readable($class_path)) {
-                require_once($class_path);
-                self::$loaded_classes[] = $class_name;
-                self::$loaded_paths[] = $class_path;
-                $ret = TRUE;
-            } else {
-                $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-            }
-        } else {
-            //TODO implement project class loading
-        }
-
-        return $ret;
-    }
-
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
@@ -173,5 +165,76 @@ class Kernel
         //die(self::$cwd);
         $path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
+    }
+
+    /**
+     * Registers a new namespace base that is to be looked up.
+     * To be used if the application needs to use the Guzaba2 autoloader
+     * @param string $namespace_prefix
+     * @param string $base_path
+     */
+    public static function register_autoloader_path(string $namespace_base, string $base_path) : void
+    {
+        self::$autoloader_lookup_paths[$namespace_base] = $base_path;
+    }
+
+    /**
+     * @return array
+     */
+    public static function get_registered_autoloader_paths() : array
+    {
+        return self::$autoloader_lookup_paths;
+    }
+
+    public static function namespace_base_is_registered(string $namespace_base) : bool
+    {
+        return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
+    }
+
+    /////////////////////////
+    /// PROTECTED METHODS ///
+    /////////////////////////
+
+    protected static function autoloader(string $class_name) : bool
+    {
+        //print $class_name.PHP_EOL;
+        $ret = FALSE;
+        /*
+        if (strpos($class_name,self::FRAMEWORK_NAME) === 0) { //starts with Guzaba2
+            $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, self::$guzaba2_root_dir.\DIRECTORY_SEPARATOR.$class_name).'.php';
+            if (is_readable($class_path)) {
+                require_once($class_path);
+                self::$loaded_classes[] = $class_name;
+                self::$loaded_paths[] = $class_path;
+                $ret = TRUE;
+            } else {
+                $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
+                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+            }
+
+        } else {
+            //not found - proceed with the next autoloader - probably this would be composer's autoloader
+        }
+        */
+        foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
+            if (strpos($class_name, $namespace_base) === 0) {
+                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path.\DIRECTORY_SEPARATOR.$class_name).'.php';
+                //$class_path = realpath($class_path);
+                if (is_readable($class_path)) {
+                    require_once($class_path);
+                    self::$loaded_classes[] = $class_name;
+                    self::$loaded_paths[] = $class_path;
+                    $ret = TRUE;
+                } else {
+                    $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
+                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                }
+            } else {
+                //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
+            }
+
+        }
+
+        return $ret;
     }
 }

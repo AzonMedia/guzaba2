@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
 
@@ -36,7 +36,7 @@ class RequestHandler extends Base
 
         if (!$DefaultResponse) {
             $Body = new Stream();
-            $Body->write('Content not found');
+            $Body->write('Content not found or request not understood (routing not configured).');
             $DefaultResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_NOT_FOUND, [], $Body);
         }
         $this->DefaultResponse = $DefaultResponse;
@@ -55,16 +55,6 @@ class RequestHandler extends Base
 
             $Execution =& Execution::get_instance();
 
-            //$response->header("Content-Type", "text/plain");
-            //$response->end("Hello World\n");
-            //temp code
-            //$psr_response = new Response(StatusCode::HTTP_OK, ['Content-Type' => 'text/html'] );
-            //$psr_response->getBody()->write('test response'.Response::EOL);
-            //PsrToSwoole::ConvertResponse($psr_response, $swoole_response);
-
-            //$r = new PsrToSwoole();
-            //$r2 = new SwooleToPsr();
-            //$psr_request = new Request();
             $PsrRequest = SwooleToPsr::ConvertRequest($SwooleRequest, new Request() );
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
@@ -79,8 +69,8 @@ class RequestHandler extends Base
             print 'Request served with response: code: '.$PsrResponse->getStatusCode().' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
             $Execution->destroy();
-        } catch (\Throwable $exception) {
-            Kernel::exception_handler($exception);
+        } catch (\Throwable $Exception) {
+            Kernel::exception_handler($Exception);
         }
 
     }
