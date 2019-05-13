@@ -16,16 +16,21 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\Execution;
 use Guzaba2\Mvc\ExecutorMiddleware;
 use Guzaba2\Mvc\RoutingMiddleware;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 class RequestHandler extends Base
 {
 
+    /**
+     * Array of MiddlewareInterface
+     * @var array
+     */
+    protected $middlewares = [];
 
-    protected $response;
-
-    public function __construct()
+    public function __construct(array $middlewares = [])
     {
-
+        $this->middlewares = $middlewares;
     }
 
     /**
@@ -34,12 +39,12 @@ class RequestHandler extends Base
      * @param \Swoole\Http\Request $request
      * @param \Swoole\Http\Response $response
      */
-    public function handle(\Swoole\Http\Request $swoole_request, \Swoole\Http\Response $swoole_response) : void
+    public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
 
-            $execution =& Execution::get_instance();
+            $Execution =& Execution::get_instance();
 
             //$response->header("Content-Type", "text/plain");
             //$response->end("Hello World\n");
@@ -51,16 +56,19 @@ class RequestHandler extends Base
             //$r = new PsrToSwoole();
             //$r2 = new SwooleToPsr();
             //$psr_request = new Request();
-            $psr_request = SwooleToPsr::ConvertRequest($swoole_request, new Request() );
-            $queue_request_handler = new QueueRequestHandler(new \Guzaba2\Http\RequestHandler());//the default response prototype is a 404 message
+            $PsrRequest = SwooleToPsr::ConvertRequest($SwooleRequest, new Request() );
+            $QueueRequestHandler = new QueueRequestHandler(new \Guzaba2\Http\RequestHandler());//the default response prototype is a 404 message
 //            $queue_request_handler->add_middleware(new RoutingMiddleware());
 //            $queue_request_handler->add_middleware(new FilteringMiddleware());
 //            $queue_request_handler->add_middleware(new AuthorizationMiddleware());
 //            $queue_request_handler->add_middleware(new ExecutorMiddleware());
-            $psr_response = $queue_request_handler->handle($psr_request);
-            PsrToSwoole::ConvertResponse($psr_response, $swoole_response);
+            foreach ($this->middlewares as $Middleware) {
+                $QueueRequestHandler->add_middleware($Middleware);
+            }
+            $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
+            PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
 
-            $execution->destroy();
+            $Execution->destroy();
         } catch (\Throwable $exception) {
             Kernel::exception_handler($exception);
         }
@@ -68,27 +76,9 @@ class RequestHandler extends Base
     }
 
 
-    public function __invoke(\Swoole\Http\Request $request, \Swoole\Http\Response $response) : void
+    public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void
     {
-        $this->handle($request, $response);
+        $this->handle($Request, $Response);
     }
 
-//    public static function SwooleToPsrRequest(\Swoole\Http\Request $request) : Request
-//    {
-//
-//    }
-//
-//    //public static function PsrToSwooleResponse(Response $psr_response) : \Swoole\Http\Response
-//    public static function PsrToSwooleResponse(Response $psr_response, \Swoole\Http\Response $swoole_response) : void
-//    {
-//
-//        $headers = $psr_response->getHeaders();
-//        foreach ($headers as $header_name => $header_value) {
-//            $swoole_response->header($header_name, $header_value);
-//        }
-//
-//        $body = $psr_response->getBody();
-//        $output = (string) $body;
-//        $swoole_response->write($output);
-//    }
 }

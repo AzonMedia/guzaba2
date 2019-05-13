@@ -73,7 +73,7 @@ class Kernel
         //print self::$guzaba2_root_dir.PHP_EOL;
 
 
-        spl_autoload_register([__CLASS__, 'autoloader']);
+        spl_autoload_register([__CLASS__, 'autoloader'], TRUE, TRUE);//prepend before Composer's autoloader
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
 
