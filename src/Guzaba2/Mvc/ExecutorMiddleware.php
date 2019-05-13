@@ -11,8 +11,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 class ExecutorMiddleware extends Base
 implements MiddlewareInterface
 {
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface
-    {
 
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
+    {
+        return $Handler->handle($Request);
     }
 }

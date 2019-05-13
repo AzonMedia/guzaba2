@@ -5,17 +5,14 @@ namespace Guzaba2\Swoole;
 
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Azonmedia\SwooleToPsr\SwooleToPsr;
-use Guzaba2\Authorization\AuthorizationMiddleware;
-use Guzaba2\Authorization\FilteringMiddleware;
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Request;
 use Guzaba2\Http\Response;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\Execution;
-use Guzaba2\Mvc\ExecutorMiddleware;
-use Guzaba2\Mvc\RoutingMiddleware;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -28,9 +25,21 @@ class RequestHandler extends Base
      */
     protected $middlewares = [];
 
-    public function __construct(array $middlewares = [])
+    /**
+     * @var Response
+     */
+    protected $DefaultResponse;
+
+    public function __construct(array $middlewares = [], ?Response $DefaultResponse = NULL)
     {
         $this->middlewares = $middlewares;
+
+        if (!$DefaultResponse) {
+            $Body = new Stream();
+            $Body->write('Content not found');
+            $DefaultResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_NOT_FOUND, [], $Body);
+        }
+        $this->DefaultResponse = $DefaultResponse;
     }
 
     /**
@@ -57,16 +66,17 @@ class RequestHandler extends Base
             //$r2 = new SwooleToPsr();
             //$psr_request = new Request();
             $PsrRequest = SwooleToPsr::ConvertRequest($SwooleRequest, new Request() );
-            $QueueRequestHandler = new QueueRequestHandler(new \Guzaba2\Http\RequestHandler());//the default response prototype is a 404 message
-//            $queue_request_handler->add_middleware(new RoutingMiddleware());
-//            $queue_request_handler->add_middleware(new FilteringMiddleware());
-//            $queue_request_handler->add_middleware(new AuthorizationMiddleware());
-//            $queue_request_handler->add_middleware(new ExecutorMiddleware());
+
+            $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
+            $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message
             foreach ($this->middlewares as $Middleware) {
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
+
+            //debug
+            print 'Request served with response: code: '.$PsrResponse->getStatusCode().' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
             $Execution->destroy();
         } catch (\Throwable $exception) {
@@ -74,7 +84,6 @@ class RequestHandler extends Base
         }
 
     }
-
 
     public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void
     {

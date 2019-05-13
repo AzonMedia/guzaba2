@@ -435,7 +435,7 @@ implements ServerRequestInterface
      */
     public function getAttributes() : array
     {
-
+        return $this->attributes;
     }
 
     /**
@@ -456,7 +456,11 @@ implements ServerRequestInterface
     //public function getAttribute(string $name, /* mixed */ $default = NULL) /* mixed */
     public function getAttribute( /* string */ $name, /* mixed */ $default = NULL) /* mixed */
     {
-
+        $ret = $default;
+        if (array_key_exists($name, $this->attributes)) {
+            $ret = $this->attributes[$name];
+        }
+        return $ret;
     }
 
     /**
@@ -477,9 +481,9 @@ implements ServerRequestInterface
     //public function withAttribute(string $name, /* mixed */ $value) : self
     public function withAttribute( /* string */ $name, /* mixed */ $value) : self
     {
-        $request = clone $this;
-        $request->attributes[$name] = $value;
-        return $request;
+        $Request = clone $this;
+        $Request->attributes[$name] = $value;
+        return $Request;
     }
 
     /**
@@ -499,7 +503,9 @@ implements ServerRequestInterface
     //public function withoutAttribute(string $name) : self
     public function withoutAttribute( /* string */ $name) : self
     {
-
+        $Request = clone $this;
+        unset($this->attributes[$name]);
+        return $Request;
     }
 
     public function __clone()

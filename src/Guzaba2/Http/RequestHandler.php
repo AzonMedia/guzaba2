@@ -11,6 +11,11 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Class RequestHandler
+ * This is just a basic request handler that will serve the provided $ResponsePrototype
+ * @package Guzaba2\Http
+ */
 class RequestHandler extends Base
 implements RequestHandlerInterface
 {
@@ -19,15 +24,7 @@ implements RequestHandlerInterface
 
     public function __construct(?ResponseInterface $ResponsePrototype = NULL)
     {
-
-        if ($ResponsePrototype) {
-            $this->Response = $ResponsePrototype;
-        } else {
-            $Body = new Stream();
-            $Body->write('Content not found');
-            $this->Response = (new \Guzaba2\Http\Response())->withStatus(StatusCode::HTTP_NOT_FOUND)->withBody( $Body );
-        }
-
+        $this->Response = $ResponsePrototype;
     }
 
     public function handle(ServerRequestInterface $Request) : ResponseInterface
