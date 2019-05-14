@@ -233,6 +233,7 @@ implements MessageInterface
     public function withBody(StreamInterface $Body) : self
     {
         $Message = clone $this;
+        $Body->rewind();
         $Message->Body = $Body;
         return $Message;
     }

@@ -41,6 +41,7 @@ class Server extends \Guzaba2\Http\Server
 
     public function start() : void
     {
+        printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL,$this->host, $this->port);
         $this->swoole_http_server->start();
     }
 

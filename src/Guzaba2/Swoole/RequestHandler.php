@@ -66,7 +66,7 @@ class RequestHandler extends Base
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
 
             //debug
-            print 'Request served with response: code: '.$PsrResponse->getStatusCode().' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            print 'Request served with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
             $Execution->destroy();
         } catch (\Throwable $Exception) {
