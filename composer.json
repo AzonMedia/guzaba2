@@ -1,6 +1,6 @@
 {
     "name": "azonmedia/guzaba2",
-    "type": "framework",
+    "type": "library",
     "description": "PHP Framework for swoole",
     "keywords": ["framework","swoole"],
     "homepage": "https://github.com/AzonMedia/guzaba2",
