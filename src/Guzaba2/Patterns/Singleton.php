@@ -19,13 +19,14 @@ declare(strict_types=1);
 namespace Guzaba2\Patterns;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Patterns\Interfaces\SingletonInterface;
 
 /**
  * Class Singleton
  * @package Guzaba2\Patterns
  */
 abstract class Singleton extends Base
-implements \Guzaba2\Patterns\Interfaces\Singleton
+implements SingletonInterface
 {
 
     /**

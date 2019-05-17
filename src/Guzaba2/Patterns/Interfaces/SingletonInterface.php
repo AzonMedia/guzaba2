@@ -2,7 +2,7 @@
 
 namespace Guzaba2\Patterns\Interfaces;
 
-interface Singleton
+interface SingletonInterface
 {
 
     public static function &get_instance() : self;

@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base;
 
+use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -30,9 +32,12 @@ use Guzaba2\Translator\Translator as t;
  * Kernel inherits nothing and the exceptions inherit BaseException
  */
 abstract class Base
+implements ConfigInterface
 {
 
     use SupportsObjectInternalId;
+
+    use SupportsConfig;
 
     /**
      * Base constructor.
@@ -41,7 +46,6 @@ abstract class Base
     protected function __construct() {
         $this->set_object_internal_id();
     }
-
 
     public function __destruct()
     {

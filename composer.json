@@ -20,7 +20,8 @@
         "azonmedia/psr-to-swoole": "dev-master",
         "azonmedia/swoole-to-psr": "dev-master",
         "azonmedia/reflection": "dev-master",
-        "azonmedia/registry": "dev-master"
+        "azonmedia/registry": "dev-master",
+        "psr/log": "^1.1"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
