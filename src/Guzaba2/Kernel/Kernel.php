@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Kernel;
 
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Log\LoggerInterface;
 
@@ -64,6 +66,16 @@ class Kernel
      * @var array
      */
     protected static $autoloader_lookup_paths = [];
+
+    /**
+     * @var string
+     */
+    protected static $env_var_prefix = '';
+
+    /**
+     * @var string
+     */
+    protected static $registry_class = '';
 
 
     private function __construct() {
@@ -191,6 +203,18 @@ class Kernel
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
     }
 
+    /**
+     * Sets the prefix used by the environment variables that will be used to set the config settings
+     * @param string $string
+     */
+    public static function set_env_var_prefix(string $env_var_prefix) : void
+    {
+        if (self::$env_var_prefix && self::$env_var_prefix != $env_var_prefix) {
+            throw new RunTimeException(t::_('The env_var_prefix is already set to %s.'), self::$env_var_prefix);
+        }
+        self::$env_var_prefix = strtoupper($env_var_prefix);
+    }
+
     /////////////////////////
     /// PROTECTED METHODS ///
     /////////////////////////
@@ -222,6 +246,7 @@ class Kernel
                 //$class_path = realpath($class_path);
                 if (is_readable($class_path)) {
                     require_once($class_path);
+                    self::initialize_class($class_name);
                     self::$loaded_classes[] = $class_name;
                     self::$loaded_paths[] = $class_path;
                     $ret = TRUE;
@@ -237,4 +262,30 @@ class Kernel
 
         return $ret;
     }
+
+    /**
+     * @param string $class_name
+     */
+    protected static function initialize_class(string $class_name) : void
+    {
+        $Rclass = new framework\reflection\classes\ReflectionClass($class_name);
+        if ($Rclass->hasOwnMethod('_initialize_class')) {
+            call_user_func([$class_name, '_initialize_class']);
+        }
+        //$config_array = $Rclass->getConstnat('CONFIG_DEFAULTS');//false if not found
+        if (defined($class_name.'::CONFIG_DEFAULTS') && !isset($class_name::$CONFIG_RUNTIME)) {
+            throw new ConfigurationException(sprintf(t::_('The class %s has CONFIG_DEFAULTS constant defined but has no $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
+        }
+        if (!defined($class_name.'::CONFIG_DEFAULTS') && isset($class_name::$CONFIG_RUNTIME)) {
+            throw new ConfigurationException(sprintf(t::_('The class %s has no CONFIG_DEFAULTS constant defined but has $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
+        }
+        $class_name::$CONFIG_RUNTIME += $class_name::CONFIG_DEFAULTS;
+
+        //check if the Registry class exists
+        if (class_exists(\Azonmedia\Registry::class)) {
+            $registry = \Azonmedia\Registry
+        }
+    }
+
+
 }

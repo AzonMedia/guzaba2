@@ -25,6 +25,7 @@ use Guzaba2\Base\Base;
  * @package Guzaba2\Patterns
  */
 abstract class Singleton extends Base
+implements \Guzaba2\Patterns\Interfaces\Singleton
 {
 
     /**
