@@ -204,7 +204,7 @@ class Kernel
         //die(self::$cwd);
         //$path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
-        $content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;
+        //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
     }
 
@@ -327,11 +327,13 @@ class Kernel
 
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
+
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
                         $runtime_config[$key_name] = $registry_config[$key_name];
                     }
                 }
+
                 $RProperty->setValue($runtime_config);
             } else {
                 //this class is not defining config values - will have access to the parent::$CONFIG_RUNTIME
