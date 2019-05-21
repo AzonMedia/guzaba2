@@ -147,6 +147,7 @@ class Kernel
     }
 
     //public static function run_swoole(?LoggerInterface $logger = NULL, string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
+    //NOT USED
     public static function run_swoole(string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
     {
 
@@ -323,8 +324,17 @@ class Kernel
                 $RProperty->setAccessible(TRUE);
 
                 $default_config = ( new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS') )->getValue();
+
                 $runtime_config = $default_config;
 
+                //get the configuration from the parent class
+                $RParentClass = $RClass->getParentClass();
+                $parent_class_name = $RParentClass->name;
+                $parent_config = $parent_class_name::get_runtime_configuration();
+
+                $runtime_config += $parent_config;
+
+                //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
 
@@ -340,8 +350,7 @@ class Kernel
             }
 
         } else {
-            //print $class_name.PHP_EOL;
-            //print_r(class_implements($class_name));
+            //do nothing - does not require configuration
         }
 
 

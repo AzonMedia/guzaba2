@@ -13,51 +13,70 @@ namespace Guzaba2\Swoole;
 class Server extends \Guzaba2\Http\Server
 {
 
-    protected $swoole_http_server;
+    protected $SwooleHttpServer;
 
     public const SUPPPORTED_EVENTS = [];
 
-    protected const DEFAULT_CONFIG = [
-        'swoole_host'   => '0.0.0.0',
-        'swoole_port'   => 8081,
+    /**
+     * @see https://www.swoole.co.uk/docs/modules/swoole-server/configuration
+     */
+    protected const SUPPORTED_OPTIONS = [
+
     ];
 
-    protected const SWOOLE_HOST = '0.0.0.0';
+    protected const SWOOLE_DEFAULTS = [
+        'host'              => '0.0.0.0',
+        'port'              => 8081,
+        'dispatch_mode'     => 2,
+    ];
 
-    protected const SWOOLE_PORT = 8081;
+    protected $host = self::SWOOLE_DEFAULTS['host'];
 
-    public function __construct(string $host = self::DEFAULT_CONFIG['swoole_host'], int $port = self::DEFAULT_CONFIG['swoole_port'], array $options = [])
+    protected $port = self::SWOOLE_DEFAULTS['port'];
+
+    protected $dispatch_mode = self::SWOOLE_DEFAULTS['dispatch_mode'];
+
+    protected $options = [];
+
+    public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
     {
-        if (!$host) {
-            $host = self::DEFAULT_CONFIG['swoole_host'];
-        }
-        if (!$port) {
-            $port = self::DEFAULT_CONFIG['swoole_port'];
-        }
+        $this->host = $host;
+        $this->port = $port;
+        $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
+        $this->options = $options;
 
-        parent::__construct($host, $port, $options);
-        $this->swoole_http_server = new \Swoole\Http\Server($this->host, $this->port);
+
+        parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
+
+
+        $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode);
+
+        foreach ($options as $option_name => $option_value) {
+            //if (isset(self::SWOOLE_DEFAULTS[$option_name])) {
+            //}
+            $this->SwooleHttpServer->set($options);
+        }
     }
 
     public function start() : void
     {
         printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL,$this->host, $this->port);
-        $this->swoole_http_server->start();
+        $this->SwooleHttpServer->start();
     }
 
     public function stop() : bool
     {
-        return $this->swoole_http_server->stop();
+        return $this->SwooleHttpServer->stop();
     }
 
     public function on(string $event_name, callable $callable) : void
     {
-        $this->swoole_http_server->on($event_name, $callable);
+        $this->SwooleHttpServer->on($event_name, $callable);
     }
 
     public function __call(string $method, array $args) /* mixed */
     {
-        return call_user_func_array([$this->swoole_http_server, $method], $args);
+        return call_user_func_array([$this->SwooleHttpServer, $method], $args);
     }
 
 

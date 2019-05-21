@@ -30,9 +30,16 @@ class RequestHandler extends Base
      */
     protected $DefaultResponse;
 
-    public function __construct(array $middlewares = [], ?Response $DefaultResponse = NULL)
+    /**
+     * @var \Guzaba2\Swoole\Server
+     */
+    protected $HttpServer;
+
+    public function __construct(array $middlewares = [], \Guzaba2\Swoole\Server $HttpServer, ?Response $DefaultResponse = NULL)
     {
         $this->middlewares = $middlewares;
+
+        $this->HttpServer = $HttpServer;
 
         if (!$DefaultResponse) {
             $Body = new Stream();
