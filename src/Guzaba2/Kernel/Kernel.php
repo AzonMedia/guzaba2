@@ -81,6 +81,10 @@ class Kernel
      */
     protected static $Registry;
 
+    /**
+     * Is the kernel initialized
+     * @var bool
+     */
     protected static $is_initialized_flag = FALSE;
 
 
