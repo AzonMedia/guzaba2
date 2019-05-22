@@ -21,6 +21,7 @@
         "azonmedia/swoole-to-psr": "dev-master",
         "azonmedia/reflection": "dev-master",
         "azonmedia/registry": "dev-master",
+        "azonmedia/routing": "dev-master",
         "psr/log": "^1.1"
     },
     "autoload": {
