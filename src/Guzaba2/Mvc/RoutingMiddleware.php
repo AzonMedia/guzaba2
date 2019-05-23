@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
+use Azonmedia\Routing\Interfaces\RouterInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Server;
 use Psr\Http\Message\ResponseInterface;
@@ -29,21 +30,31 @@ implements MiddlewareInterface
      * @var \Guzaba2\Http\Server
      */
     protected $HttpServer;
+
+    /**
+     * @var RouterInterface
+     */
+    protected $Router;
     
-    public function __construct(Server $HttpServer, )
+    public function __construct(Server $HttpServer, RouterInterface $Router)
     {
         parent::__construct();
 
         $this->HttpServer = $HttpServer;
+
+        $this->Router = $Router;
     }
 
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
-        //basic logic
-        if ($Request->getUri()->getPath() == '/') {
-            //server the home page
-        }
-        return $Handler->handle($Request);
 
+        $controller_callable = $this->Router->match_request($Request);
+        if ($controller_callable) {
+            $Request = $Request->withAttribute('controller_callable', $controller_callable);
+        }
+
+        $Response = $Handler->handle($Request);
+
+        return $Response;
     }
 }
