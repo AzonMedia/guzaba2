@@ -5,6 +5,7 @@ namespace Guzaba2\Http;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -15,15 +16,42 @@ implements MessageInterface
     protected $reasonPhrase = '';
 
     /**
+     * Protocol version
+     *
+     * @var string
+     */
+    protected $protocolVersion = '1.1';
+
+    /**
+     * A map of valid protocol versions
      *
      * @var array
      */
-    protected $headers = [];//TODO - convert to a collection as it is possible to have more than one header with the same name - like Set Cookie
+    protected static $validProtocolVersions = [
+        '1.0' => true,
+        '1.1' => true,
+        '2.0' => true,
+    ];
+
+    /**
+     *
+     * @var two dimentional array as it is possible to have more than one header 
+     * with the same name - like Set Cookie
+     */
+    protected $headers = [];
 
     /**
      * @var \Psr\Http\Message\StreamInterface
      */
     protected $Body;
+
+    /**
+     * Disable magic setter to ensure immutability
+     */
+    public function __set(string $property, $value): void
+    {
+        // Do nothing
+    }
 
     /**
      * Retrieves the HTTP protocol version as a string.
@@ -34,7 +62,7 @@ implements MessageInterface
      */
     public function getProtocolVersion() : string
     {
-
+        return $this->protocolVersion;
     }
 
     /**
@@ -48,12 +76,22 @@ implements MessageInterface
      * new protocol version.
      *
      * @param string $version HTTP protocol version
-     * @return static
+     * @return static     
+     * @throws InvalidArgumentException if the http version is an invalid number
      */
     public function withProtocolVersion( /* string */ $version) /* self */
     //public function withProtocolVersion(string $version) : self
     {
+        if (!isset(self::$validProtocolVersions[$version])) {
+            throw new InvalidArgumentException(
+                'Invalid HTTP version. Must be one of: '
+                . implode(', ', array_keys(self::$validProtocolVersions))
+            );
+        }
+        $Message = clone $this;
+        $Message->protocolVersion = $version;
 
+        return $Message;
     }
 
     /**
@@ -97,7 +135,7 @@ implements MessageInterface
     public function hasHeader( /* string */ $name) /* string */
     //public function hasHeader(string $name) : string
     {
-
+        return array_key_exists($name, $this->headers);
     }
 
     /**
@@ -117,7 +155,7 @@ implements MessageInterface
     public function getHeader( /* string */ $name) : array
     //public function getHeader(string $name) : array
     {
-
+        return array_key_exists($name, $this->headers) ? $this->headers[$name] : [];
     }
 
     /**
@@ -142,7 +180,7 @@ implements MessageInterface
     public function getHeaderLine( /* string */  $name) : string
     //public function getHeaderLine(string $name) : string
     {
-
+        return implode(',', array_key_exists($name, $this->headers) ? $this->headers[$name] : [] );
     }
 
     /**
@@ -163,7 +201,14 @@ implements MessageInterface
     public function withHeader( /* string */ $name, /* mixed */ $value) : self
     //public function withHeader(string $name, /* mixed */ $value) : self
     {
+        $Message = clone $this;
+        if ( !is_array( $value ) ) {
+            $value = [$value];
+        }
 
+        $Message->headers[$name] = $value;
+
+        return $Message;
     }
 
     /**
@@ -185,8 +230,13 @@ implements MessageInterface
     public function withAddedHeader( /* string */ $name, /* mixed */ $value) : self
     //public function withAddedHeader(string $name, /* mixed */ $value) : self
     {
-        //$message = clone $this;
-        //$message->headers[$name] = $value;
+        $Message = clone $this;
+
+        $oldValues = $this->headers[$name] ? $this->headers[$name] : [];
+        $newValues = is_array($value) ? $value : [$value];
+        $Message->headers[$name] = array_merge($oldValues, array_values($newValues));
+
+        return $Message;
     }
 
     /**
@@ -204,7 +254,16 @@ implements MessageInterface
     public function withoutHeader( /* string */ $name) : self
     //public function withoutHeader(string $name) : self
     {
+        $Message = clone $this;
 
+        $key = strtr(strtolower($name), '_', '-');
+        if (strpos($key, 'http-') === 0) {
+            $key = substr($key, 5);
+        }
+
+        unset($Message->headers[$key]);
+
+        return $Message;
     }
 
     /**
@@ -235,17 +294,46 @@ implements MessageInterface
         $Message = clone $this;
         $Body->rewind();
         $Message->Body = $Body;
+
         return $Message;
     }
 
     ///////////////////// NON PSR methods follow
     ///
 
+    /**
+     * Return an instance with the provided value replacing all headers.
+     *
+     * While header names are case-insensitive, the casing of the header will
+     * be preserved by this function, and returned from getHeaders().
+     *
+     * This method MUST be implemented in such a way as to retain the
+     * immutability of the message, and MUST return an instance that has the
+     * new and/or updated headers and value.
+     *
+     * @param string[] $value Header value(s).
+     * @return static
+     * @throws \InvalidArgumentException for invalid header names or values.
+     */
+
+    public function withHeaders(array $headers) : self
+    {
+        $Message = clone $this;
+        $Message->headers = [];
+        foreach ($headers as $header_name => $header_value) {
+            $Message->headers[$header_name][] = $header_value;
+        }
+        
+        return $Message;
+    }
+
     public function withAddedHeaders(array $headers) : self
     {
-        $message = clone $this;
+        $Message = clone $this;
         foreach ($headers as $header_name => $header_value) {
-
+            $Message->headers[$header_name][] = $header_value;
         }
+
+        return $Message;
     }
 }
