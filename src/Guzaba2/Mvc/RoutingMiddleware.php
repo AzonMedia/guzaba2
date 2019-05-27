@@ -35,7 +35,12 @@ implements MiddlewareInterface
      * @var RouterInterface
      */
     protected $Router;
-    
+
+    /**
+     * RoutingMiddleware constructor.
+     * @param Server $HttpServer
+     * @param RouterInterface $Router
+     */
     public function __construct(Server $HttpServer, RouterInterface $Router)
     {
         parent::__construct();
@@ -45,6 +50,12 @@ implements MiddlewareInterface
         $this->Router = $Router;
     }
 
+    /**
+     * {@inheritDoc}
+     * @param ServerRequestInterface $Request
+     * @param RequestHandlerInterface $Handler
+     * @return ResponseInterface
+     */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
 
