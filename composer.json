@@ -22,6 +22,7 @@
         "azonmedia/reflection": "dev-master",
         "azonmedia/registry": "dev-master",
         "azonmedia/routing": "dev-master",
+        "azonmedia/url-rewriting": "dev-master",
         "psr/log": "^1.1"
     },
     "autoload": {
