@@ -7,6 +7,7 @@ use Guzaba2\Base\Base;
 /**
  * Class Application
  * The children of this class are supposed to be instantiated before the Http Server is started.
+ * This is static class
  * @package Guzaba2\Application
  */
 abstract class Application extends Base
@@ -21,11 +22,6 @@ abstract class Application extends Base
     ];
 
     protected static $CONFIG_RUNTIME = [];
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public static function get_deployment() : string
     {
