@@ -23,6 +23,7 @@
         "azonmedia/registry": "dev-master",
         "azonmedia/routing": "dev-master",
         "azonmedia/url-rewriting": "dev-master",
+        "azonmedia/debug": "dev-master",
         "psr/log": "^1.1"
     },
     "autoload": {
