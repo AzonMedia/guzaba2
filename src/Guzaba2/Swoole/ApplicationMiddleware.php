@@ -39,6 +39,9 @@ class ApplicationMiddleware extends Base
         'xml',
     ];
 
+    /**
+     * ApplicationMiddleware constructor.
+     */
     public function __construct()
     {
         parent::__construct();
@@ -64,7 +67,6 @@ class ApplicationMiddleware extends Base
         }
 
         if (!$request_ok) {
-            //just for test - it is not allowed to access the app from localhost - use IP
             $Body = new Stream();
             $Body->write('It seems static content was requested through Swoole. Only application calls are to be servers through Swoole.');
             $BadRequestResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);

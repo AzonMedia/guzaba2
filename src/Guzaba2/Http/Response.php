@@ -21,7 +21,10 @@ use Guzaba2\Http\Body\Stream;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
-
+/**
+ * Class Response
+ * @package Guzaba2\Http
+ */
 class Response extends Message
 implements ResponseInterface
 {
@@ -115,5 +118,22 @@ implements ResponseInterface
         if (!isset(StatusCode::MESSAGES_MAP[$status])) {
             throw new Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid HTTP status code %s provided.'), $status));
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     * @return string|null
+     */
+    public function getContentType() : ?string
+    {
+        $ret = NULL;
+        $content_type_headers = $this->getHeader('Content-Type');
+        foreach ($content_type_headers as $content_type_header) {
+            $ret = ContentType::get_content_type($content_type_header);
+            if ($ret) {
+                break;
+            }
+        }
+        return $ret;
     }
 }

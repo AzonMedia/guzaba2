@@ -4,7 +4,7 @@
 namespace Guzaba2\Mvc;
 
 
-class PresenterMiddleware
+class PhpView extends View
 {
 
 }

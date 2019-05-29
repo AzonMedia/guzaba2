@@ -1,22 +1,26 @@
 <?php
-declare(strict_types=1);
+
 
 namespace Guzaba2\Http\Body;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Psr\Http\Message\StreamInterface;
 use Guzaba2\Translator\Translator as t;
+use Psr\Http\Message\StreamInterface;
 
-class Stream extends Base
+/**
+ * Class Arr
+ * Array is a reserved word
+ * @package Guzaba2\Http
+ */
+class Structured extends Base
 implements StreamInterface
 {
 
     /**
-     * @var resource
+     * @var array
      */
-    protected $stream;
+    protected $structure = [];
 
     /**
      * Will be lowered when the processing is over
@@ -26,22 +30,15 @@ implements StreamInterface
 
     protected $is_readable_flag = TRUE;
 
-    protected $is_seekable_flag = TRUE;
+    protected $is_seekable_flag = FALSE;
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
-    /**
-     * Stream constructor.
-     * @param null $stream
-     * @param string $content If content is provided it will be written to the body
-     */
-    public function __construct( /* resource */ $stream = NULL, string $content = '')
+    public function __construct(array $structure = [])
     {
-        $this->stream = $stream ?? fopen('php://memory', 'r+');
+        $this->structure = $structure;
 
-        if ($content) {
-            $this->write($content);
-        }
+        //$this->write(self::DEFAULT_DOCTYPE . Response::EOL);
     }
 
     /**
@@ -63,7 +60,6 @@ implements StreamInterface
     {
         $ret = '';
         if ($this->isReadable()) {
-            $this->rewind();
             $ret = $this->getContents();
         } else {
             throw new RunTimeException(sprintf(t::_('Can not convert this stream to string because it is not readable.')));
@@ -79,7 +75,7 @@ implements StreamInterface
      */
     public function close() : void
     {
-        fclose($this->stream);
+        //does nothing
     }
 
     /**
@@ -92,13 +88,12 @@ implements StreamInterface
     public function detach() /* ?resource */
     {
 
-        $stream = $this->stream;
 
         $this->is_writable_flag = FALSE;
         $this->is_readable_flag = FALSE;
         $this->stream = NULL;
 
-        return $stream;
+        return NULL;
     }
 
     /**
@@ -108,8 +103,7 @@ implements StreamInterface
      */
     public function getSize() : ?int
     {
-        $stats = fstat($this->stream);
-        $size = isset($stats['size']) ? $stats['size'] : null;
+        $size = count($this->structure);
         return $size;
     }
 
@@ -121,9 +115,7 @@ implements StreamInterface
      */
     public function tell() : int
     {
-        if (($position = ftell($this->stream)) === false) {
-            throw new RunTimeException(t::_('Can not retrieve the position of the pointer in the stream.'));
-        }
+        $position = 0;
         return $position;
     }
 
@@ -134,7 +126,7 @@ implements StreamInterface
      */
     public function eof() : bool
     {
-        return feof($this->stream);
+        return FALSE;
     }
 
     /**
@@ -161,9 +153,9 @@ implements StreamInterface
      *
      */
     public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
-    //public function seek(int $offset, int $whence = SEEK_SET) : void
+        //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
-        if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
+        if (!$this->isSeekable()) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
         }
 
@@ -181,7 +173,7 @@ implements StreamInterface
      */
     public function rewind() : void
     {
-        if (!$this->isSeekable() || rewind($this->stream) === false) {
+        if (!$this->isSeekable()) {
             throw new RuntimeException(t::_('Can not rewind this stream.'));
         }
     }
@@ -204,11 +196,12 @@ implements StreamInterface
      * @throws RuntimeException on failure.
      */
     public function write( /* string */ $string) /* int */
-    //public function write(string $string) : int
+        //public function write(string $string) : int
     {
-        if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
+        if (!$this->isWritable()) {
             throw new RuntimeException('Can not write to this stream.');
         }
+        throw new RunTimeException('Please use the Structured::getStructure() method.');
         return $size;
     }
 
@@ -233,11 +226,12 @@ implements StreamInterface
      * @throws RuntimeException if an error occurs.
      */
     public function read( /* int */ $length) : string
-    //public function read(int $length) : string
+        //public function read(int $length) : string
     {
-        if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
+        if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
         }
+        throw new RunTimeException('Please use the Structured::getStructure() method.');
         return $str;
     }
 
@@ -250,9 +244,10 @@ implements StreamInterface
      */
     public function getContents() : string
     {
-        if (!$this->isReadable() || ($contents = stream_get_contents($this->stream)) === false) {
+        if (!$this->isReadable() ) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
         }
+        $contents = print_r($this->structure, TRUE);
         return $contents;
     }
 
@@ -269,12 +264,19 @@ implements StreamInterface
      *     value is found, or null if the key is not found.
      */
     public function getMetadata( /* ?string */ $key = NULL) /* mixed */
-    //public function getMetadata(?string $key = NULL) /* mixed */
+        //public function getMetadata(?string $key = NULL) /* mixed */
     {
-        $meta = stream_get_meta_data($this->stream);
-        if (is_null($key) === true) {
-            return $meta;
-        }
-        return isset($meta[$key]) ? $meta[$key] : NULL;
+        return NULL;
+    }
+
+    /**
+     * Non PSR-7 method
+     * Returns a reference to the structure.
+     * This can be used for reading and writing.
+     * @return array
+     */
+    public function &getStructure() : array
+    {
+        return $this->structure;
     }
 }

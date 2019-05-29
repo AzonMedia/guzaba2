@@ -269,6 +269,14 @@ implements MessageInterface
     }
 
     /**
+     * Non PSR-7 method
+     * Returns a constant from ContentType corresponding to the requested or responded content type.
+     * Uses the Headers to retrieve this.
+     * @return string|null
+     */
+    abstract public function getContentType() : ?string;
+
+    /**
      * Gets the body of the message.
      *
      * @return StreamInterface Returns the body as a stream.

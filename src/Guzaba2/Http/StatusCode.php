@@ -17,7 +17,7 @@ namespace Guzaba2\Http;
  * Class StatusCode
  * @package Guzaba2\Http
  */
-class StatusCode
+abstract class StatusCode
 {
     const HTTP_CONTINUE = 100;
     const HTTP_SWITCHING_PROTOCOLS = 101;

@@ -6,6 +6,8 @@ namespace Guzaba2\Http;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException as InvalidArgumentException;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -61,7 +63,7 @@ implements ServerRequestInterface
     protected $query_params = [];
 
     public function __construct(
-        $method = '',
+        $method = Method::METHODS_MAP[Method::HTTP_GET],
         ?UriInterface $uri = NULL,
         array $headers = [],
         array $cookies = [],
@@ -69,6 +71,15 @@ implements ServerRequestInterface
         ?StreamInterface $Body = NULL,
         array $uploaded_files = []
     ) {
+
+        $method = strtoupper($method);
+        if (!$method) {
+            throw new InvalidArgumentException(sprintf(t::_('No HTTP method provided.')));
+        }
+        if (!in_array($method, Method::METHODS_MAP)) {
+            throw new InvalidArgumentException(sprintf(t::_('Wrong HTTP method %s provided.'), $method));
+        }
+
         $this->method = $method;
         $this->uri = $uri ?? new Uri();
         $this->headers = $headers;
@@ -156,6 +167,27 @@ implements ServerRequestInterface
     public function getMethod() : string
     {
         return $this->method;
+    }
+
+    /**
+     * Non PSR-7 method
+     * Returns the constant of the method as per Guzaba2\Http\Method::METHODS_MAP
+     * @return int
+     */
+    public function getMethodConstant() : int
+    {
+        $method_const = array_search( strtoupper($this->getMethod()), Method::METHODS_MAP );
+        return $method_const;
+    }
+
+    public function isGet() : bool
+    {
+
+    }
+
+    public function isPost() : bool
+    {
+
     }
 
     /**
@@ -532,6 +564,23 @@ implements ServerRequestInterface
     public function __clone()
     {
         $this->Body = clone $this->Body;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @return string|null
+     */
+    public function getContentType() : ?string
+    {
+        $ret = NULL;
+        $content_type_headers = $this->getHeader('Accept');
+        foreach ($content_type_headers as $content_type_header) {
+            $ret = ContentType::get_content_type($content_type_header);
+            if ($ret) {
+                break;
+            }
+        }
+        return $ret;
     }
 
 }
