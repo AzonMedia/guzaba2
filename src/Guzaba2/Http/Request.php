@@ -4,9 +4,8 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 
-use Guzaba2\Base\Exceptions\InvalidArgumentException as InvalidArgumentException;
-use Guzaba2\Http\Body\Stream;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Http\Body\Stream;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -82,7 +81,7 @@ implements ServerRequestInterface
 
         $this->method = $method;
         $this->uri = $uri ?? new Uri();
-        $this->headers = $headers;
+        $this->headers = array_change_key_case($headers, CASE_LOWER);
         $this->cookies = $cookies;
         $this->server_params = $server_params;
         $this->Body = $Body ?? new Stream();
@@ -574,6 +573,7 @@ implements ServerRequestInterface
     {
         $ret = NULL;
         $content_type_headers = $this->getHeader('Accept');
+        print_r($content_type_headers);
         foreach ($content_type_headers as $content_type_header) {
             $ret = ContentType::get_content_type($content_type_header);
             if ($ret) {

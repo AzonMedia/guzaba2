@@ -42,7 +42,7 @@ implements ResponseInterface
     {
         $this->checkStatus($status);
         $this->status = $status;
-        $this->headers = $headers;
+        $this->headers = array_change_key_case($headers, CASE_LOWER);
         $this->Body = $Body ?? new Stream();
     }
 

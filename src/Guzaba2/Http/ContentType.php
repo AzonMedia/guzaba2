@@ -38,7 +38,7 @@ abstract class ContentType
             $mime_types = (array) $content_data['mime'];
             foreach ($mime_types as $mime_type) {
                 if (stripos($header_content, $mime_type) !== FALSE) {
-                    $ret = constant(self::class.'::'.$content_constant);
+                    $ret = $content_constant;
                     break;
                 }
             }
