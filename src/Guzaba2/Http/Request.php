@@ -4,9 +4,10 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 
-use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException as InvalidArgumentException;
 use Guzaba2\Http\Body\Stream;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -19,9 +20,6 @@ use Psr\Http\Message\UriInterface;
 class Request extends Message
 implements ServerRequestInterface
 {
-
-
-
     /**
      * @var string
      */
@@ -32,13 +30,24 @@ implements ServerRequestInterface
      */
     protected $uri;
 
+    /**
+     * @var array
+     */
     protected $cookies = [];
 
-
+    /**
+     * @var array
+     */
     protected $attributes = [];
 
+    /**
+     * @var array
+     */
     protected $server_params = [];
 
+    /**
+     * @var array
+     */
     protected $uploaded_files = [];
 
     /**
@@ -46,6 +55,9 @@ implements ServerRequestInterface
      */
     protected $request_target;
 
+    /**
+     * @var array
+     */
     protected $query_params = [];
 
     public function __construct(
@@ -64,6 +76,7 @@ implements ServerRequestInterface
         $this->server_params = $server_params;
         $this->Body = $Body ?? new Stream();
         $this->uploaded_files = $uploaded_files;
+        parent::__construct();
     }
 
     /**
@@ -121,6 +134,7 @@ implements ServerRequestInterface
      *     request-target forms allowed in request messages)
      * @param mixed $request_target
      * @return static
+     * @throws InvalidArgumentException
      */
     public function withRequestTarget($request_target) : self
     {
@@ -222,13 +236,11 @@ implements ServerRequestInterface
             }
         } else {
             if ($uri->getHost() !== '' && (!$this->hasHeader('Host') || $this->getHeaderLine('Host') === '')) {
-                $request->headers->set('Host', $uri->getHost());
+                $request->headers['Host'] = $uri->getHost();
             }
         }
         return $request;
     }
-
-
 
     ///////////////////////////////////////////////
 
@@ -243,7 +255,7 @@ implements ServerRequestInterface
      */
     public function getServerParams() : array
     {
-
+        return $this->server_params;
     }
 
     /**
@@ -258,7 +270,7 @@ implements ServerRequestInterface
      */
     public function getCookieParams() : array
     {
-
+        return $this->cookies;
     }
 
     /**
@@ -280,7 +292,10 @@ implements ServerRequestInterface
      */
     public function withCookieParams(array $cookies) : self
     {
+        $clone = clone $this;
+        $clone->cookies = $cookies;
 
+        return $clone;
     }
 
     /**
@@ -350,7 +365,7 @@ implements ServerRequestInterface
      */
     public function getUploadedFiles() : array
     {
-
+        return $this->uploaded_files;
     }
 
     /**
@@ -366,7 +381,10 @@ implements ServerRequestInterface
      */
     public function withUploadedFiles(array $uploadedFiles) : self
     {
+        $clone = clone $this;
+        $clone->uploaded_files = $uploadedFiles;
 
+        return $clone;
     }
 
     /**
@@ -386,7 +404,8 @@ implements ServerRequestInterface
      */
     public function getParsedBody() /* mixed */
     {
-
+        // TODO implement
+        return null;
     }
 
     /**
@@ -419,7 +438,9 @@ implements ServerRequestInterface
      */
     public function withParsedBody( /* mixed */ $data) : self
     {
-
+        // TODO implement
+        $clone = clone $this;
+        return $clone;
     }
 
     /**

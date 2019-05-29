@@ -35,18 +35,20 @@ implements MessageInterface
 
     /**
      *
-     * @var two dimentional array as it is possible to have more than one header 
+     * @var array two dimentional array as it is possible to have more than one header
      * with the same name - like Set Cookie
      */
     protected $headers = [];
 
     /**
-     * @var \Psr\Http\Message\StreamInterface
+     * @var StreamInterface
      */
     protected $Body;
 
     /**
      * Disable magic setter to ensure immutability
+     * @param string $property
+     * @param $value
      */
     public function __set(string $property, $value): void
     {
@@ -285,7 +287,7 @@ implements MessageInterface
      * immutability of the message, and MUST return a new instance that has the
      * new body stream.
      *
-     * @param StreamInterface $body Body.
+     * @param StreamInterface $Body Body.
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
@@ -311,7 +313,7 @@ implements MessageInterface
      * immutability of the message, and MUST return an instance that has the
      * new and/or updated headers and value.
      *
-     * @param string[] $value Header value(s).
+     * @param string[] $headers Header value(s).
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
@@ -327,6 +329,10 @@ implements MessageInterface
         return $Message;
     }
 
+    /**
+     * @param array $headers
+     * @return Message
+     */
     public function withAddedHeaders(array $headers) : self
     {
         $Message = clone $this;
