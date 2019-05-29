@@ -7,6 +7,8 @@ use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
+
+use JBZoo\Utils\Str;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -22,7 +24,11 @@ class ApplicationMiddleware extends Base
     implements MiddlewareInterface
 {
 
-    public const FILTERED_EXTENSIONS = [
+    /**
+     * The file extensions that are to be filtered.
+     * If the request ends in any of there it will be filtered
+     */
+    public const FILE_EXTENSIONS_TO_FILTER = [
         'js',
         'css',
         'html',
@@ -38,15 +44,31 @@ class ApplicationMiddleware extends Base
         parent::__construct();
     }
 
+    /**
+     * {@inheritDoc}
+     * Will return HTTP_BAD_REQUEST in case a static file is requested (@see self::FILE_EXTENSIONS_TO_FILTER)
+     * @param ServerRequestInterface $Request
+     * @param RequestHandlerInterface $Handler
+     * @return ResponseInterface
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
 
-        if (strtolower($Request->getUri()->getPath() ) == strtolower('localhost')) {
+        $request_ok = TRUE;
+        $path = $Request->getUri()->getPath();
+        foreach (self::FILE_EXTENSIONS_TO_FILTER as $ext) {
+            if (Str::isEnd($path, '.'.$ext)) {
+                $request_ok = FALSE;
+            }
+        }
+
+        if (!$request_ok) {
             //just for test - it is not allowed to access the app from localhost - use IP
             $Body = new Stream();
-            $Body->write('You are not allowed to access the server over "localhost". Please use the IP instead.');
-            $ForbiddenResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_FORBIDDEN, [], $Body);
-            return $ForbiddenResponse;
+            $Body->write('It seems static content was requested through Swoole. Only application calls are to be servers through Swoole.');
+            $BadRequestResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
+            return $BadRequestResponse;
         }
 
         return $Handler->handle($Request);
