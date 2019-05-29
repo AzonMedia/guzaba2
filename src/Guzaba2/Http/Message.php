@@ -232,7 +232,7 @@ implements MessageInterface
     {
         $Message = clone $this;
 
-        $oldValues = $this->headers[$name] ? $this->headers[$name] : [];
+        $oldValues = isset($this->headers[$name]) ? $this->headers[$name] : [];
         $newValues = is_array($value) ? $value : [$value];
         $Message->headers[$name] = array_merge($oldValues, array_values($newValues));
 
