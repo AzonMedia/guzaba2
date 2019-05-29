@@ -25,7 +25,8 @@
         "azonmedia/url-rewriting": "dev-master",
         "azonmedia/debug": "dev-master",
         "psr/log": "^1.1",
-        "jbzoo/utils": "^2.3"
+        "jbzoo/utils": "^2.3",
+        "eaglewu/swoole-ide-helper": "dev-master"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]

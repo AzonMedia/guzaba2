@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 
-use Guzaba2\Base\Exceptions\InvalidArgumentException as InvalidArgumentException;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Translator\Translator as t;
@@ -288,6 +287,20 @@ implements ServerRequestInterface
     public function getServerParams() : array
     {
         return $this->server_params;
+    }
+
+    /**
+     * Return an instance with the specified server params.
+     *
+     * @param $server_params
+     * @return Request
+     */
+    public function withServerParams($server_params)
+    {
+        $clone = clone $this;
+        $clone->server_params = $server_params;
+
+        return $clone;
     }
 
     /**
