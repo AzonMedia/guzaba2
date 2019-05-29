@@ -81,7 +81,7 @@ implements ServerRequestInterface
 
         $this->method = $method;
         $this->uri = $uri ?? new Uri();
-        $this->headers = $headers;
+        $this->headers = array_change_key_case($headers, CASE_LOWER);
         $this->cookies = $cookies;
         $this->server_params = $server_params;
         $this->Body = $Body ?? new Stream();

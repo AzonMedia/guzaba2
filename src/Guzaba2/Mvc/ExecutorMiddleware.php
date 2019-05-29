@@ -96,16 +96,23 @@ implements MiddlewareInterface
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
             $view_class = str_replace('\\Controllers\\', '\\Views\\', $controller_class);
             if (class_exists($view_class)) {
-                ob_start();
-                [ new $view_class($Response), $controller_callable[1]]();
-                $view_output = ob_get_contents();
-                ob_end_clean();
-                $StreamBody = new Stream(NULL, $view_output);
-                $Response = $Response->
-                    withBody($StreamBody)->
-                    withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime'])->
-                    withHeader('Content-Length', (string) strlen($view_output));
-                return $Response;
+
+                if (method_exists($view_class, $controller_callable[1])) {
+                    ob_start();
+                    [new $view_class($Response), $controller_callable[1]]();
+                    $view_output = ob_get_contents();
+                    ob_end_clean();
+                    $StreamBody = new Stream(NULL, $view_output);
+                    $Response = $Response->
+                        withBody($StreamBody)->
+                        withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime'])->
+                        withHeader('Content-Length', (string) strlen($view_output));
+                    return $Response;
+                } else {
+                    throw new RunTimeException(sprintf(t::_('The view class %s has no method %s.'), $view_class, $controller_callable[1]));
+                }
+
+
             } else {
                 if ($content_type === NULL) {
                     //no content type is requested (or recognized) and we have a structured response

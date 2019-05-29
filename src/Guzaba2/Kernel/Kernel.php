@@ -268,6 +268,11 @@ class Kernel
                 //$class_path = realpath($class_path);
                 if (is_readable($class_path)) {
                     require_once($class_path);
+                    //the file may exist but it may not contain the needed file
+                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name) ) {
+                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
+                        throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                    }
                     self::initialize_class($class_name);
                     self::$loaded_classes[] = $class_name;
                     self::$loaded_paths[] = $class_path;
@@ -292,6 +297,8 @@ class Kernel
     protected static function initialize_class(string $class_name) : void
     {
 
+
+        
         $RClass = new ReflectionClass($class_name);
         
 
