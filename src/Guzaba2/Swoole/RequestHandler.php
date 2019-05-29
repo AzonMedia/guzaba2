@@ -74,6 +74,7 @@ class RequestHandler extends Base
 
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
+            //$memory_usage = $Exception->get_memory_usage();
             print 'Request of '.$request_raw_content_length.' bytes served with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
             $Execution->destroy();
