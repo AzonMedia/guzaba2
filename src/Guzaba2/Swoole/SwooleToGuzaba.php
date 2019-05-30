@@ -19,11 +19,11 @@ class SwooleToGuzaba extends SwooleToPsr
      * @return GuzabaRequest
      * @throws RunTimeException
      */
-    public static function ConvertRequestWithServerParams(SwooleRequest $SwooleRequest, GuzabaRequest $PsrRequest): GuzabaRequest
+    public static function convert_request_with_server_params(SwooleRequest $SwooleRequest, GuzabaRequest $PsrRequest): GuzabaRequest
     {
         /** @var GuzabaRequest $PsrRequest */
         $PsrRequest = self::ConvertRequest($SwooleRequest, $PsrRequest);
-        $PsrRequest->withServerParams($SwooleRequest->server);
+        $PsrRequest = $PsrRequest->withServerParams($SwooleRequest->server);
 
         return $PsrRequest;
     }

@@ -69,7 +69,7 @@ class RequestHandler extends Base
 
             $Execution =& Execution::get_instance();
 
-            $PsrRequest = SwooleToGuzaba::ConvertRequestWithServerParams($SwooleRequest, new Request());
+            $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
             $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message

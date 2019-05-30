@@ -293,9 +293,9 @@ implements ServerRequestInterface
      * Return an instance with the specified server params.
      *
      * @param $server_params
-     * @return Request
+     * @return $this
      */
-    public function withServerParams($server_params)
+    public function withServerParams($server_params) : self
     {
         $clone = clone $this;
         $clone->server_params = $server_params;
