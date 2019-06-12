@@ -6,7 +6,7 @@ namespace Guzaba2\Execution;
 use Guzaba2\Patterns\ExecutionSingleton;
 use Guzaba2\Workers\MemoryMonitor;
 
-class Execution extends ExecutionSingleton
+class Request extends ExecutionSingleton
 {
 
     /**

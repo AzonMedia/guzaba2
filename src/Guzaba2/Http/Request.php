@@ -61,6 +61,11 @@ implements ServerRequestInterface
      */
     protected $query_params = [];
 
+    /**
+     * @var Server
+     */
+    protected $Server;
+
     public function __construct(
         $method = Method::METHODS_MAP[Method::HTTP_GET],
         ?UriInterface $uri = NULL,
@@ -87,6 +92,16 @@ implements ServerRequestInterface
         $this->Body = $Body ?? new Stream();
         $this->uploaded_files = $uploaded_files;
         parent::__construct();
+    }
+
+    public function set_server(Server $Server) : void
+    {
+        $this->Server = $Server;
+    }
+
+    public function get_server() : ?Server
+    {
+        return $this->Server;
     }
 
     /**

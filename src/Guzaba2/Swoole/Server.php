@@ -38,6 +38,12 @@ class Server extends \Guzaba2\Http\Server
 
     protected $options = [];
 
+    /**
+     * @var int
+     */
+    protected $worker_id;
+
+
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
     {
         $this->host = $host;
@@ -77,6 +83,22 @@ class Server extends \Guzaba2\Http\Server
     public function __call(string $method, array $args) /* mixed */
     {
         return call_user_func_array([$this->SwooleHttpServer, $method], $args);
+    }
+
+    /**
+     * Sets the worker ID for the server after the server is started.
+     * After the server is started and the workers forked each worker has its own instance of the Server object.
+     * Each server object will have its own worker_id set
+     * @param int $worker_id
+     */
+    public function set_worker_id(int $worker_id) : void
+    {
+        $this->worker_id = $worker_id;
+    }
+
+    public function get_worker_id() : int
+    {
+        return $this->worker_id;
     }
 
 

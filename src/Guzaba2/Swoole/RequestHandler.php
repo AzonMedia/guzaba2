@@ -43,6 +43,8 @@ class RequestHandler extends Base
      */
     public function __construct(array $middlewares = [], Server $HttpServer, ?Response $DefaultResponse = NULL)
     {
+        parent::__construct();
+
         $this->middlewares = $middlewares;
 
         $this->HttpServer = $HttpServer;
@@ -53,23 +55,47 @@ class RequestHandler extends Base
             $DefaultResponse = new Response(StatusCode::HTTP_NOT_FOUND, [], $Body);
         }
         $this->DefaultResponse = $DefaultResponse;
-        parent::__construct();
+
     }
 
     /**
-     * Translates the \Swoole\Http\Request to \Guzaba2\Http\Request (PSR-7)
-     * and \Guzaba2\Http\Response (PSR-7) to \Swoole\Http\Response
+     *
      * @param \Swoole\Http\Request $SwooleRequest
      * @param \Swoole\Http\Response $SwooleResponse
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
+//        \Guzaba2\Coroutine\Coroutine::init();
+
+//        \Guzaba2\Coroutine\Coroutine::create(function(){
+//            \Guzaba2\Coroutine\Coroutine::create(function(){
+//                print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+//            });
+//        });
+//        \Guzaba2\Coroutine\Coroutine::create(function(){
+//
+//            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+//
+//        });
+
+        //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+
+        //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+        //print_r(\co::getBacktrace(0, DEBUG_BACKTRACE_IGNORE_ARGS));
+
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
+
+
+        //print \Co::getpcid().'GGGGGGGGGGGG';
         try {
 
-            $Execution =& Execution::get_instance();
+            //$Execution =& Execution::get_instance();
+            //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
+
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
+            $PsrRequest->set_server($this->HttpServer);
+
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
             $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message
@@ -82,9 +108,9 @@ class RequestHandler extends Base
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
             //$memory_usage = $Exception->get_memory_usage();
-            print 'Request of '.$request_raw_content_length.' bytes served with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            print 'Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
-            $Execution->destroy();
+            //$Execution->destroy();
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception);
         }

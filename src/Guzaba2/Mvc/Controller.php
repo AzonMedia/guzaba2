@@ -5,9 +5,10 @@ namespace Guzaba2\Mvc;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
-use Guzaba2\Http\Body\Structured;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -40,14 +41,15 @@ abstract class Controller extends Base
      * Factory for creating HTTP
      * @return ResponseInterface
      */
-    public static function get_structured_ok_response() : ResponseInterface
+    public static function get_structured_ok_response(array $structure = []) : ResponseInterface
     {
-        $Response = new Response(StatusCode::HTTP_OK, [], new Structured( [] ) );
+        $Response = new Response(StatusCode::HTTP_OK, [], new Structured( $structure ) );
         return $Response;
     }
 
-    public static function get_stream_ok_response() : ResponseInterface
+    public static function get_stream_ok_response(string $content) : ResponseInterface
     {
-
+        $Response = new Response(StatusCode::HTTP_OK, [], new Stream( NULL, $content ) );
+        return $Response;
     }
 }

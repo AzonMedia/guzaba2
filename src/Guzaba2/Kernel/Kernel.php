@@ -180,7 +180,7 @@ class Kernel
     public static function exception_handler(\Throwable $exception) : void
     {
         $output = '';
-        $output .= sprintf(t::_('%s in %s#%s'), $exception->getMessage(), $exception->getFile(), $exception->getLine() );
+        $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine() );
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
         self::logtofile($output);

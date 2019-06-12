@@ -27,12 +27,12 @@ trait SupportsConfig
      */
     public static function initialize_runtime_configuration(array $config_runtime) : void
     {
-        if (self::$is_configured_flag) {
+        if (static::$is_configured_flag) {
             $called_class = get_called_class();
             throw new RuntimeException(sprintf(t::_('The class %s is already configured. Can not invoke twice the %s::%s method.'), $called_class, $called_class, __FUNCTION__ ));
         }
-        self::$CONFIG_RUNTIME = $runtime_config;
-        self::$is_configured_flag = TRUE;
+        static::$CONFIG_RUNTIME = $runtime_config;
+        static::$is_configured_flag = TRUE;
     }
 
     /**
@@ -42,7 +42,7 @@ trait SupportsConfig
     public static function get_runtime_configuration() : array
     {
         //TODO add a check to allow to be called only by the Kernel
-        return self::$CONFIG_RUNTIME;
+        return static::$CONFIG_RUNTIME;
     }
 
     /**
@@ -52,11 +52,21 @@ trait SupportsConfig
      */
     public static function get_config_key(string $key) /* mixed */
     {
-        return self::$CONFIG_RUNTIME[$key];
+        return static::$CONFIG_RUNTIME[$key];
     }
 
     public static function has_config_key(string $key) : bool
     {
-        return array_key_exists($key, self::$CONFIG_RUNTIME);
+        return array_key_exists($key, static::$CONFIG_RUNTIME);
+    }
+
+
+    public static function update_runtime_configuration(array $options) : void
+    {
+        foreach ($options as $option_name=>$option_value) {
+            if (array_key_exists($option_name, static::$CONFIG_RUNTIME)) {
+                static::$CONFIG_RUNTIME[$option_name] = $option_value;
+            }
+        }
     }
 }

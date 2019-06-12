@@ -19,10 +19,13 @@ namespace Guzaba2\Patterns;
 
 /**
  * Class ExecutionSingleton
- * The instances from classes that inherit this one will be destroyed at the end of the execution.
+ * The instances from classes that inherit this one will be destroyed at the end of the request handling.
+ * Each request in Swoole is handled in a coroutine. This means that the coroutine ID must be taken into account when obtaining instances.
+ * The coroutine ID of the master coroutine started for the handling the request needs to be obtained, not the coroutine ID of the current coroutine which may be different.
+ * If singleton within the current coroutine is needed then use the CoroutineSingleton class.
  * @package Guzaba2\Patterns
  */
-class ExecutionSingleton extends Singleton
+class RequestSingleton extends Singleton
 {
 
     public static function get_execution_instances() : array
