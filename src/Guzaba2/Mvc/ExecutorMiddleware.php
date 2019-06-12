@@ -41,7 +41,7 @@ implements MiddlewareInterface
         ContentType::TYPE_HTML  => 'html_handler',
     ];
 
-    protected const DEFAULT_TYPE_HANDLER = 'default_hanlder';
+    protected const DEFAULT_TYPE_HANDLER = 'default_handler';
 
     public function __construct(Server $Server)
     {
@@ -86,9 +86,20 @@ implements MiddlewareInterface
         return $Response;
     }
 
+    /**
+     * Default html_handler
+     * Calls View object for parsing the response
+     * The view object is located PARENT_DIRECTORY_OF_CONTROLLER/Views/Controller_name.php::action_name
+     *
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     * @throws RunTimeException
+     */
     protected function html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
+        $content_type = $Request->getContentType();
         //html null and the rest...
         //if the callable is a class and this class is a controller then we can do a lookup for a corresponding view
         //the first element may be a class or an instance so is_a() should be used
@@ -114,34 +125,40 @@ implements MiddlewareInterface
 
 
             } else {
-                // TODO load content type
                 if ($content_type === NULL) {
                     //no content type is requested (or recognized) and we have a structured response
                     //JSON can be returned instead
                     //or throw an error
                     return $this->json_handler($Request, $Response);
                 } else {
-                    throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no corresponding view %s.'), $requested_content_type, $controller_class, $view_class));
+                    throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no corresponding view %s.'), $content_type, $controller_class, $view_class));
                 }
             }
         } else {
             if ($content_type === NULL) {
                 return $this->json_handler($Request, $Response);
             } else {
-                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $requested_content_type, $controller_class));
+                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, $controller_class));
             }
         }
     }
 
-    protected function default_hanlder(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    /**
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     * @throws RunTimeException
+     */
+    protected function default_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         return $this->html_handler($Request, $Response);
     }
 
     /**
+     * Alternative html_handler
      * Uses ordinary .phtml files for view scripts
      *
-     * The path to the view script is PARENT_DIRECTORY_OF_CONTROLLER/views/CONTROLLER_NAME/ACTION_NAME.phtml
+     * The path to the view script is PARENT_DIRECTORY_OF_CONTROLLER/views/controller_name/action_name.phtml
      *
      * @param RequestInterface $Request
      * @param ResponseInterface $Response
@@ -152,6 +169,7 @@ implements MiddlewareInterface
     protected function plain_views_html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
+        $content_type = $Request->getContentType();
         if (is_array($controller_callable) && isset($controller_callable[0]) && is_a($controller_callable[0], Controller::class, TRUE)) {
             // Resolving the view script file path
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
@@ -172,21 +190,20 @@ implements MiddlewareInterface
                 withHeader('Content-Length', (string) strlen($view_output));
                 return $Response;
             } else {
-                // TODO load content type
                 if ($content_type === NULL) {
                     //no content type is requested (or recognized) and we have a structured response
                     //JSON can be returned instead
                     //or throw an error
                     return $this->json_handler($Request, $Response);
                 } else {
-                    throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no corresponding view %s.'), $requested_content_type, $controller_class, $view_class));
+                    throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no corresponding view.'), $content_type, $controller_class));
                 }
             }
         } else {
             if ($content_type === NULL) {
                 return $this->json_handler($Request, $Response);
             } else {
-                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $requested_content_type, $controller_class));
+                throw new RunTimeException(t::_('Unable to return response; Controller not found.'));
             }
         }
     }
