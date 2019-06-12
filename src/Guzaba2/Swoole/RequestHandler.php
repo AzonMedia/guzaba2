@@ -6,6 +6,7 @@ namespace Guzaba2\Swoole;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Request;
@@ -65,18 +66,27 @@ class RequestHandler extends Base
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
-//        \Guzaba2\Coroutine\Coroutine::init();
+        \Guzaba2\Coroutine\Coroutine::init();
 
 //        \Guzaba2\Coroutine\Coroutine::create(function(){
 //            \Guzaba2\Coroutine\Coroutine::create(function(){
-//                print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+//                //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+//                print Coroutine::getRootCoroutine();
 //            });
 //        });
+
 //        \Guzaba2\Coroutine\Coroutine::create(function(){
-//
 //            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-//
 //        });
+
+//        \Guzaba2\Coroutine\Coroutine::create(function(){
+//            //\Co::sleep(2);
+//            //print 'AFTER SLEEP'.PHP_EOL;
+//            print '========='.PHP_EOL;
+//            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
+//            print '========='.PHP_EOL;
+//        });
+//        \Co::sleep(2);
 
         //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
 
@@ -89,7 +99,7 @@ class RequestHandler extends Base
         //print \Co::getpcid().'GGGGGGGGGGGG';
         try {
 
-            //$Execution =& Execution::get_instance();
+            $Execution =& Execution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
 
 
@@ -110,10 +120,13 @@ class RequestHandler extends Base
             //$memory_usage = $Exception->get_memory_usage();
             print 'Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
-            //$Execution->destroy();
+            $Execution->destroy();
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception);
+        } finally {
+            \Guzaba2\Coroutine\Coroutine::end();
         }
+        //print 'MASTER END'.PHP_EOL;
 
     }
 

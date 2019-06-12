@@ -39,7 +39,7 @@ implements SingletonInterface
      * @return ExecutionSingleton
      */
     //public static function &get_instance() : self //covariance issue?
-    public static function &get_instance() : parent
+    public static function &get_instance() : SingletonInterface
     {
         $called_class = get_called_class();
         if (!array_key_exists($called_class, self::$instances) || !self::$instances[$called_class] instanceof $called_class) {

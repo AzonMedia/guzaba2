@@ -43,7 +43,7 @@ implements ConnectionProviderInterface
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
-        print $this->object_internal_id.PHP_EOL;
+        //print $this->object_internal_id.PHP_EOL;
         $this->is_initialized_flag = TRUE;
     }
 
@@ -107,7 +107,7 @@ implements ConnectionProviderInterface
                 //suspend the current coroutine until some connections are freed
                 $current_cid = \Co::getcid();
                 $this->suspended_coroutines[] = $current_cid;
-                print 'SUSPEND'.PHP_EOL;
+                //print 'SUSPEND'.PHP_EOL;
                 \Co::suspend();
 
                 //the connection will be resumed here
@@ -140,7 +140,7 @@ implements ConnectionProviderInterface
                 //check for any suspended coroutines that can be resumed
                 if (count($this->suspended_coroutines)) {
                     $suspended_cid = array_pop($this->suspended_coroutines);
-                    print 'RESUME'.PHP_EOL;
+                    //print 'RESUME'.PHP_EOL;
                     \Co::resume($suspended_cid);
                 }
             }

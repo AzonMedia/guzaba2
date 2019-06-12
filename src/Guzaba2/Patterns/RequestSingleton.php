@@ -17,6 +17,9 @@ declare(strict_types=1);
 
 namespace Guzaba2\Patterns;
 
+use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Patterns\Interfaces\SingletonInterface;
+
 /**
  * Class ExecutionSingleton
  * The instances from classes that inherit this one will be destroyed at the end of the request handling.
@@ -28,9 +31,33 @@ namespace Guzaba2\Patterns;
 class RequestSingleton extends Singleton
 {
 
+    private static $instances = [];
+
+    /**
+     * @overrides
+     * @return RequestSingleton
+     */
+    public static function &get_instance() : SingletonInterface
+    {
+        $called_class = get_called_class();
+        $root_coroutine_id = Coroutine::getRootCoroutine();
+        if (!array_key_exists($root_coroutine_id, self::$instances)) {
+            self::$instances[$root_coroutine_id] = [];
+        }
+        if (!array_key_exists($called_class, self::$instances[$root_coroutine_id]) || !self::$instances[$root_coroutine_id][$called_class] instanceof $called_class) {
+            self::$instances[$root_coroutine_id][$called_class] = new $called_class();
+        }
+        return self::$instances[$root_coroutine_id][$called_class];
+    }
+
+    public static function get_instances() : array
+    {
+        return self::$instances;
+    }
+
     public static function get_execution_instances() : array
     {
-        $instances = parent::get_instances();
+        $instances = self::get_instances();
         $ret = [];
         foreach ($instances as $instance) {
             if ($instance instanceof self) {
