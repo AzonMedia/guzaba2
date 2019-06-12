@@ -114,6 +114,7 @@ implements MiddlewareInterface
 
 
             } else {
+                // TODO load content type
                 if ($content_type === NULL) {
                     //no content type is requested (or recognized) and we have a structured response
                     //JSON can be returned instead
@@ -135,6 +136,73 @@ implements MiddlewareInterface
     protected function default_hanlder(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         return $this->html_handler($Request, $Response);
+    }
+
+    /**
+     * Uses ordinary .phtml files for view scripts
+     *
+     * The path to the view script is PARENT_DIRECTORY_OF_CONTROLLER/views/CONTROLLER_NAME/ACTION_NAME.phtml
+     *
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     * @throws RunTimeException
+     * @throws \ReflectionException
+     */
+    protected function plain_views_html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    {
+        $controller_callable = $Request->getAttribute('controller_callable');
+        if (is_array($controller_callable) && isset($controller_callable[0]) && is_a($controller_callable[0], Controller::class, TRUE)) {
+            // Resolving the view script file path
+            $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
+            $reflection = new \ReflectionClass($controller_class);
+            $controller_class_path = $reflection->getFileName();
+            $controller_path_parts = pathinfo($controller_class_path);
+            $views_dir = str_replace('/Controllers', '/views', $controller_path_parts['dirname']);
+            $view_file_path = sprintf('%s/%s/%s.phtml', $views_dir, strtolower($controller_path_parts['filename']), $controller_callable[1]);
+
+            if (file_exists($view_file_path)) {
+                ob_start();
+                $this->render_view($view_file_path, $Response);
+                $view_output = ob_get_clean();
+                $StreamBody = new Stream(NULL, $view_output);
+                $Response = $Response->
+                withBody($StreamBody)->
+                withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime'])->
+                withHeader('Content-Length', (string) strlen($view_output));
+                return $Response;
+            } else {
+                // TODO load content type
+                if ($content_type === NULL) {
+                    //no content type is requested (or recognized) and we have a structured response
+                    //JSON can be returned instead
+                    //or throw an error
+                    return $this->json_handler($Request, $Response);
+                } else {
+                    throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no corresponding view %s.'), $requested_content_type, $controller_class, $view_class));
+                }
+            }
+        } else {
+            if ($content_type === NULL) {
+                return $this->json_handler($Request, $Response);
+            } else {
+                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $requested_content_type, $controller_class));
+            }
+        }
+    }
+
+    /**
+     * Renders the view script
+     * All the array keys passed in the Structure of the response body will be accessible through variables with the same names in the view script
+     * For example $struct['message'] will be accessible through $message
+     *
+     * @param $template
+     * @param ResponseInterface $Response
+     */
+    protected function render_view($template, ResponseInterface $Response)
+    {
+        extract($Response->getBody()->getStructure());
+        include $template;
     }
 
 }
