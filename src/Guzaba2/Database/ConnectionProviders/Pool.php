@@ -21,7 +21,7 @@ implements ConnectionProviderInterface
 
     protected const CONFIG_DEFAULTS = [
         'max_connections'   => 1,
-        'connections'       => [],
+        //'connections'       => [],
     ];
 
     protected static $CONFIG_RUNTIME = [];

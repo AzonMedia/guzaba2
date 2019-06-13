@@ -29,34 +29,5 @@ abstract class Singleton extends Base
 implements SingletonInterface
 {
 
-    /**
-     * Array of ExecutionSingleton
-     * @var array
-     */
-    private static $instances = [];
 
-    /**
-     * @return ExecutionSingleton
-     */
-    //public static function &get_instance() : self //covariance issue?
-    public static function &get_instance() : SingletonInterface
-    {
-        $called_class = get_called_class();
-        if (!array_key_exists($called_class, self::$instances) || !self::$instances[$called_class] instanceof $called_class) {
-            self::$instances[$called_class] = new $called_class();
-        }
-        return self::$instances[$called_class];
-    }
-
-    public static function get_instances() : array
-    {
-        return self::$instances;
-    }
-
-    public function destroy() : void
-    {
-        $called_class = get_class($this);
-        self::$instances[$called_class] = NULL;
-        unset(self::$instances[$called_class]);
-    }
 }

@@ -50,21 +50,24 @@ class RequestSingleton extends Singleton
         return self::$instances[$root_coroutine_id][$called_class];
     }
 
-    public static function get_instances() : array
+    public static function get_request_instances() : array
     {
-        return self::$instances;
+        $root_coroutine_id = Coroutine::getRootCoroutine();
+        return self::$instances[$root_coroutine_id];
     }
 
-    public static function get_execution_instances() : array
+    /**
+     * Alias of get_request_instances()
+     * @return array
+     */
+    public static function get_instances() : array
     {
-        $instances = self::get_instances();
-        $ret = [];
-        foreach ($instances as $instance) {
-            if ($instance instanceof self) {
-                $ret[] = $instance;
-            }
-        }
-        return $ret;
+        return self::get_request_instances();
+    }
+
+    public static function get_all_instance() : array
+    {
+        return self::$instances;
     }
 
     /**
@@ -74,13 +77,20 @@ class RequestSingleton extends Singleton
      */
     public static function cleanup() : int
     {
-        $instances = self::get_execution_instances();
+        $instances = self::get_request_instances();
         $ret = count($instances);
         foreach ($instances as $instance) {
             $instance->destroy();
         }
 
         return $ret;
+    }
+
+    public function destroy() : void
+    {
+        $called_class = get_class($this);
+        self::$instances[$called_class] = NULL;
+        unset(self::$instances[$called_class]);
     }
 
 }

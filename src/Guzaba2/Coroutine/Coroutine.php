@@ -2,6 +2,10 @@
 
 namespace Guzaba2\Coroutine;
 
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Translator\Translator as t;
+use Guzaba2\Execution\CoroutineExecution;
+
 abstract class Coroutine extends \Swoole\Coroutine
 {
 
@@ -75,7 +79,11 @@ abstract class Coroutine extends \Swoole\Coroutine
             $new_cid = parent::getcid();
             self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
             self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
+            $CoroutineExecution = CoroutineExecution::get_instance();
+
             $callable();
+
+            $CoroutineExecution->destroy();
         };
         parent::create($WrapperFunction, $params);
 
@@ -101,7 +109,9 @@ abstract class Coroutine extends \Swoole\Coroutine
                     break;
                 }
             } else {
-                break;
+                //break;
+                //throw new \RuntimeException(sprintf('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().', $current_cid, $coroutine_id, __CLASS__, 'create'));
+                throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $current_cid, $coroutine_id, __CLASS__, 'create'));
             }
         } while($current_cid);
 

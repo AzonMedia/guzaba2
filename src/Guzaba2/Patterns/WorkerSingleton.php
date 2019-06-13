@@ -17,21 +17,42 @@ declare(strict_types=1);
 
 namespace Guzaba2\Patterns;
 
+use Guzaba2\Patterns\Interfaces\SingletonInterface;
+
 /**
  * Class WorkerSingleton
  * @package Guzaba2\Patterns
  */
 class WorkerSingleton extends Singleton
 {
-    public static function get_worker_instances() : array
+
+    /**
+     * Array of ExecutionSingleton
+     * @var array
+     */
+    private static $instances = [];
+
+    /**
+     * @return ExecutionSingleton
+     */
+    public static function &get_instance() : SingletonInterface
     {
-        $instances = parent::get_instances();
-        $ret = [];
-        foreach ($instances as $instance) {
-            if ($instance instanceof self) {
-                $ret[] = $instance;
-            }
+        $called_class = get_called_class();
+        if (!array_key_exists($called_class, self::$instances) || !self::$instances[$called_class] instanceof $called_class) {
+            self::$instances[$called_class] = new $called_class();
         }
-        return $ret;
+        return self::$instances[$called_class];
+    }
+
+    public static function get_instances() : array
+    {
+        return self::$instances;
+    }
+
+    public function destroy() : void
+    {
+        $called_class = get_class($this);
+        self::$instances[$called_class] = NULL;
+        unset(self::$instances[$called_class]);
     }
 }

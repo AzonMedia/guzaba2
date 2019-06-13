@@ -13,7 +13,7 @@ use Guzaba2\Http\Request;
 use Guzaba2\Http\Response;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Http\StatusCode;
-use Guzaba2\Execution\Execution;
+use Guzaba2\Execution\RequestExecution;
 use Throwable;
 
 class RequestHandler extends Base
@@ -66,7 +66,7 @@ class RequestHandler extends Base
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
-        \Guzaba2\Coroutine\Coroutine::init();
+
 
 //        \Guzaba2\Coroutine\Coroutine::create(function(){
 //            \Guzaba2\Coroutine\Coroutine::create(function(){
@@ -93,13 +93,12 @@ class RequestHandler extends Base
         //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
         //print_r(\co::getBacktrace(0, DEBUG_BACKTRACE_IGNORE_ARGS));
 
+
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
-
-
-        //print \Co::getpcid().'GGGGGGGGGGGG';
         try {
 
-            $Execution =& Execution::get_instance();
+            \Guzaba2\Coroutine\Coroutine::init();
+            $Execution =& RequestExecution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
 
 
@@ -118,13 +117,14 @@ class RequestHandler extends Base
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
             //$memory_usage = $Exception->get_memory_usage();
-            print 'Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
 
-            $Execution->destroy();
+
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception);
         } finally {
             \Guzaba2\Coroutine\Coroutine::end();
+            $Execution->destroy();
         }
         //print 'MASTER END'.PHP_EOL;
 
