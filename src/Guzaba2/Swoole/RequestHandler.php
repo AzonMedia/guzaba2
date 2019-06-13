@@ -149,6 +149,7 @@ class RequestHandler extends Base
                 //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
                 Coroutine::create(function(){
                     //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+                    \co::sleep(4);
                 });
             });
 

@@ -43,6 +43,13 @@ abstract class Coroutine extends \Swoole\Coroutine
     public static function end() : void
     {
 
+        //block until all coroutines started by the root (request) coroutine are over
+        $total_coroutines = self::getTotalSubCoroutinesCount(self::getRootCoroutine());
+        $chan = self::getRootCoroutineChannel();
+        for ($aa=0 ; $aa<$total_coroutines ; $aa++) {
+            $chan->pop();//this is blocking and until all pop() it should wait
+        }
+
         $current_cid = parent::getcid();
         //before unsetting the master coroutine unset the IDs of all subcoroutines
         $Function = function(int $cid) use (&$Function) : void
@@ -127,6 +134,9 @@ abstract class Coroutine extends \Swoole\Coroutine
             $CoroutineExecution = CoroutineExecution::get_instance();
 
             $callable();
+
+            $chan = self::getRootCoroutineChannel($new_cid);
+            $chan->push($new_cid);
 
             $CoroutineExecution->destroy();
         };
@@ -222,6 +232,7 @@ abstract class Coroutine extends \Swoole\Coroutine
         return $ret;
     }
 
+
     /**
      * Returns the count of all subroutines of the given $cid.
      * The provided $cid usually is a root coroutine.
@@ -272,6 +283,19 @@ abstract class Coroutine extends \Swoole\Coroutine
                 //the nonint keys are not subroutines but contain other data
             }
         }
+        return $ret;
+    }
+
+
+    /**
+     * @param int|null $cid
+     * @return \Swoole\Coroutine\Channel
+     */
+    private static function getRootCoroutineChannel(?int $cid = NULL) : \Swoole\Coroutine\Channel
+    {
+        $cid = $cid ?? parent::getcid();
+        $root_coroutine_id = self::getRootCoroutine($cid);
+        $ret = self::$coroutines_ids[$root_coroutine_id]['chan'];
         return $ret;
     }
 }
