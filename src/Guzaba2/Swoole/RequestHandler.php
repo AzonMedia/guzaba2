@@ -16,6 +16,14 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\RequestExecution;
 use Throwable;
 
+class c1
+{
+    public $v1 = 44;
+
+    public static $ss = 33;
+}
+
+
 class RequestHandler extends Base
 {
 
@@ -68,12 +76,7 @@ class RequestHandler extends Base
     {
 
 
-//        \Guzaba2\Coroutine\Coroutine::create(function(){
-//            \Guzaba2\Coroutine\Coroutine::create(function(){
-//                //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-//                print Coroutine::getRootCoroutine();
-//            });
-//        });
+
 
 //        \Guzaba2\Coroutine\Coroutine::create(function(){
 //            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
@@ -93,7 +96,6 @@ class RequestHandler extends Base
         //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
         //print_r(\co::getBacktrace(0, DEBUG_BACKTRACE_IGNORE_ARGS));
 
-
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
 
@@ -101,6 +103,54 @@ class RequestHandler extends Base
             $Execution =& RequestExecution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
 
+
+//            //$c1 = new c1();
+//            \Guzaba2\Coroutine\Coroutine::create(function() use (&$c1) {
+//                $c1 = new c1();
+//                \co::sleep(1);
+//                $c1->v1 = 55;
+//            });
+//            \Guzaba2\Coroutine\Coroutine::create(function() use (&$c1) {
+//                print $c1->v1.PHP_EOL;
+//                \co::sleep(2);
+//                print $c1->v1.PHP_EOL;
+//            });
+
+
+//            \Guzaba2\Coroutine\Coroutine::create(function() {
+//                \co::sleep(1);
+//                c1::$ss = 55;
+//            });
+//            \Guzaba2\Coroutine\Coroutine::create(function() {
+//                print c1::$ss.PHP_EOL;
+//                \co::sleep(2);
+//                print c1::$ss.PHP_EOL;
+//            });
+
+//            \Guzaba2\Coroutine\Coroutine::create(function(){
+//
+//                $F = function () {
+//                    \Guzaba2\Coroutine\Coroutine::create(function () {
+//                        //print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+//                        //print_r(Coroutine::getFullBacktrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+//                        //print_r(\co::getBacktrace(\co::getcid(), DEBUG_BACKTRACE_IGNORE_ARGS));
+//                        //print_r(Coroutine::getParentCoroutines());
+//                        //\co::sleep(rand(0,2));
+//                        //print_r(Coroutine::$coroutines_ids);
+//                        //print_r(Coroutine::getParentCoroutines());
+//                        print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).PHP_EOL;
+//                    });
+//                };
+//
+//                $F();
+//            });
+
+            Coroutine::create(function(){
+                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+                Coroutine::create(function(){
+                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+                });
+            });
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
             $PsrRequest->set_server($this->HttpServer);
