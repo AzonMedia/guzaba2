@@ -30,13 +30,13 @@ class Container extends \Azonmedia\Di\Container
             'class'                         => Pool::class,
             'args'                          => [],
         ],
-//        'SomeExample'                   => [
-//            'class'                         => SomeClass::class,
-//            'args'                          => [
-//                'arg1'                      => 20,
-//                'arg2'                      => 'something'
-//            ],
-//        ]
+        'SomeExample'                   => [
+            'class'                         => SomeClass::class,
+            'args'                          => [
+                'arg1'                      => 20,
+                'arg2'                      => 'something'
+            ],
+        ]
     ];
 
     protected static $CONFIG_RUNTIME = [];
