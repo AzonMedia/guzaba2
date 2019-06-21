@@ -21,7 +21,7 @@ namespace Guzaba2\Patterns;
  * Class WorkerMultiton
  * @package Guzaba2\Patterns
  */
-class WorkerMultiton extends Multiton
+abstract class WorkerMultiton extends Multiton
 {
 
 }

@@ -7,18 +7,23 @@ namespace Guzaba2\Database;
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
-use Guzaba2\Patterns\WorkerSingleton;
+//use Guzaba2\Patterns\WorkerSingleton;
 
-class ConnectionFactory extends WorkerSingleton
+class ConnectionFactory extends Base
 {
     /**
      * @var ConnectionProviderInterface
      */
     protected $ConnectionProvider;
 
-    public function set_connection_provider(ConnectionProviderInterface $ConnectionProvier) : void
+//    public function set_connection_provider(ConnectionProviderInterface $ConnectionProvier) : void
+//    {
+//        $this->ConnectionProvider = $ConnectionProvier;
+//    }
+    public function __construct(ConnectionProviderInterface $ConnectionProvider)
     {
-        $this->ConnectionProvider = $ConnectionProvier;
+        parent::__construct();
+        $this->ConnectionProvider = $ConnectionProvider;
     }
 
     public function get_connection(string $class_name) : ConnectionInterface

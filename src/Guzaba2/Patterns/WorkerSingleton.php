@@ -23,7 +23,7 @@ use Guzaba2\Patterns\Interfaces\SingletonInterface;
  * Class WorkerSingleton
  * @package Guzaba2\Patterns
  */
-class WorkerSingleton extends Singleton
+abstract class WorkerSingleton extends Singleton
 {
 
     /**

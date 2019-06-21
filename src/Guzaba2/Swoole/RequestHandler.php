@@ -16,13 +16,6 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\RequestExecution;
 use Throwable;
 
-class c1
-{
-    public $v1 = 44;
-
-    public static $ss = 33;
-}
-
 
 class RequestHandler extends Base
 {
@@ -140,18 +133,28 @@ class RequestHandler extends Base
 //                        //print_r(Coroutine::getParentCoroutines());
 //                        print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).PHP_EOL;
 //                    });
-//                };
+//                };+
 //
 //                $F();
 //            });
 
-            Coroutine::create(function(){
-                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-                Coroutine::create(function(){
-                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-                    \co::sleep(4);
-                });
-            });
+//            Coroutine::create(function(){
+//                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+//                Coroutine::create(function(){
+//                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+//                    \co::sleep(4);
+//                    print 'ggg';
+//                });
+//            });
+
+//            Coroutine::create(function(){
+//                \co::sleep(3);
+//                print 'ggg';
+//            });
+
+//            Coroutine::create(function($a1) {
+//                print $a1;
+//            }, 555);
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
             $PsrRequest->set_server($this->HttpServer);

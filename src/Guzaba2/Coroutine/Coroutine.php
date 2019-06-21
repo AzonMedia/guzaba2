@@ -3,6 +3,9 @@
 namespace Guzaba2\Coroutine;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
+use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 
@@ -12,8 +15,13 @@ use Guzaba2\Execution\CoroutineExecution;
  * Also currently
  * @package Guzaba2\Coroutine
  */
-abstract class Coroutine extends \Swoole\Coroutine
+class Coroutine extends \Swoole\Coroutine
+    implements ConfigInterface
 {
+
+    use SupportsObjectInternalId;
+
+    use SupportsConfig;
 
     public static $coroutines_ids = [];
 
@@ -21,7 +29,20 @@ abstract class Coroutine extends \Swoole\Coroutine
      * This is the maximum number of allowed coroutines within a root (request) coroutine.
      * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
      */
-    public const MAX_ALLOWED_COROUTINES = 20;
+    //public const MAX_ALLOWED_COROUTINES = 20;
+
+    public const CONFIG_DEFAULTS = [
+        'max_allowed_subcoroutines'         => 20,
+        'max_subcoroutine_exec_time'        => 5, //in seconds
+    ];
+
+    protected static $CONFIG_RUNTIME = [];
+
+    /**
+     * @var callable
+     */
+    protected $callable;
+    protected $settings = [];
 
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
@@ -31,8 +52,8 @@ abstract class Coroutine extends \Swoole\Coroutine
 
         $current_cid = parent::getcid();
         if (!isset(self::$coroutines_ids[$current_cid])) {
-            //we need only one channel and it will be associated with the root coroutine and then shared with all the subcoroutines
-            self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL, 'chan' => new \Swoole\Coroutine\Channel(self::MAX_ALLOWED_COROUTINES)];
+            //every coroutine will have its own channel to ensure that it awaits for all its child coroutines to be over
+            self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL, 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
         }
 
     }
@@ -44,11 +65,12 @@ abstract class Coroutine extends \Swoole\Coroutine
     {
 
         //block until all coroutines started by the root (request) coroutine are over
-        $total_coroutines = self::getTotalSubCoroutinesCount(self::getRootCoroutine());
-        $chan = self::getRootCoroutineChannel();
-        for ($aa=0 ; $aa<$total_coroutines ; $aa++) {
-            $chan->pop();//this is blocking and until all pop() it should wait
-        }
+//        $total_coroutines = self::getTotalSubCoroutinesCount(self::getRootCoroutine());
+//        $chan = self::getRootCoroutineChannel();
+//        for ($aa=0 ; $aa<$total_coroutines ; $aa++) {
+//            $chan->pop();//this is blocking and until all pop() it should wait
+//        }
+        //self::awaitSubCoroutines();//no need as this will be invoked as part of the creation of every subcoroutine
 
         $current_cid = parent::getcid();
         //before unsetting the master coroutine unset the IDs of all subcoroutines
@@ -64,6 +86,73 @@ abstract class Coroutine extends \Swoole\Coroutine
         };
         $Function($current_cid);
     }
+
+//    public static function setCoroutineSettings(array $settings, ?int $cid = NULL) : void
+//    {
+//        if (!array_key_exists($cid, self::$coroutines_ids)) {
+//            throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create'));
+//        }
+//    }
+
+//    /**
+//     * Coroutine constructor.
+//     * Cant be invoked from the outside. Use self::createCoroutine()
+//     */
+//    protected function __construct(callable $callable, array $settings = [])
+//    {
+//        $this->set_object_internal_id();
+//
+//        $this->callable = $callable;
+//        $this->settings = $settings;
+//    }
+//
+//    /**
+//     * Creates a coroutine object (it is invokable)
+//     * @param callable $callable
+//     * @param array $settings
+//     * @return Coroutine
+//     */
+//    public static function createCoroutine(callable $callable, array $settings = []) : self
+//    {
+//        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::$CONFIG_RUNTIME['max_allowed_subcoroutines']) {
+//            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::$CONFIG_RUNTIME['max_allowed_subcoroutines']));
+//        }
+//
+//        $Coroutine = new self($callable, $settings);
+//
+//        $current_cid = parent::getcid();
+////        $new_cid = parent::create($callable, $params);
+////        self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
+////        self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
+//
+//        //cant use $new_cid = parent::create() because $new_id is obtained at a too later stage
+//        //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
+//        $new_cid = 0;
+//        $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
+//        {
+//            $new_cid = parent::getcid();
+//            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid], 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
+//            self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
+//
+//            $CoroutineExecution = CoroutineExecution::get_instance();
+//
+//            $callable(...$params);
+//
+//            //$chan = self::getRootCoroutineChannel($new_cid);
+//            //$chan->push($new_cid);
+//            $chan = self::getParentCoroutineChannel($new_cid);
+//            $CoroutineExecution->destroy();
+//            $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
+//
+//
+//
+//        };
+//        //parent::create($WrapperFunction, ...$params);
+//
+//        //self::awaitSubCoroutines();
+//
+//        return $Coroutine;
+//    }
 
     /**
      * Returns the tree structure of the coroutines for the provided root coroutine id,
@@ -83,7 +172,7 @@ abstract class Coroutine extends \Swoole\Coroutine
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \co::create() as this wrapper keeps track of the coroutines hierarchy.
      * @param $callable
-     * @param mixed ...$params
+     * @param mixed ...$params Any additional arguments will be passed to the coroutine.
      * @return int
      */
     public static function create( $callable, ...$params) {
@@ -97,51 +186,49 @@ abstract class Coroutine extends \Swoole\Coroutine
         self::$coroutines_ids[$new_cid] = ['.' => $new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
         self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
-        print 'IN CREATE'.PHP_EOL;
-        print_r(self::$coroutines_ids);
         */
 
         //this will not be needed if init() is called
+
+        //if (!isset(self::$coroutines_ids[$current_cid])) {
+        //    self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL];
+        //}
+
+        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::$CONFIG_RUNTIME['max_allowed_subcoroutines']) {
+            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::$CONFIG_RUNTIME['max_allowed_subcoroutines']));
+        }
+
+
         $current_cid = parent::getcid();
-        if (!isset(self::$coroutines_ids[$current_cid])) {
-            self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL];
-        }
-
-        //print self::getTotalSubCoroutinesCount(self::getRootCoroutine()).PHP_EOL;
-        //print_r(self::$coroutines_ids);
-        //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::MAX_ALLOWED_COROUTINES) {
-            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::MAX_ALLOWED_COROUTINES));
-        }
-
-
 //        $new_cid = parent::create($callable, $params);
 //        self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
 //        self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
-//
-//        print 'IN CREATE '.$new_cid.PHP_EOL;
-        //print_r(self::$coroutines_ids);
 
         //cant use $new_cid = parent::create() because $new_id is obtained at a too later stage
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
-        $WrapperFunction = function() use ($callable, &$new_cid, $current_cid) : void
+        $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
         {
             $new_cid = parent::getcid();
-            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
+            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid], 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
             self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
             $CoroutineExecution = CoroutineExecution::get_instance();
 
-            $callable();
+            $callable(...$params);
 
-            $chan = self::getRootCoroutineChannel($new_cid);
-            $chan->push($new_cid);
-
+            //$chan = self::getRootCoroutineChannel($new_cid);
+            //$chan->push($new_cid);
+            $chan = self::getParentCoroutineChannel($new_cid);
             $CoroutineExecution->destroy();
-        };
-        parent::create($WrapperFunction, $params);
+            $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
 
+
+
+        };
+        parent::create($WrapperFunction, ...$params);
+
+        self::awaitSubCoroutines();
 
         return $new_cid;
     }
@@ -160,7 +247,6 @@ abstract class Coroutine extends \Swoole\Coroutine
         $cid = $cid ?? parent::getcid();
         $parent_cids = self::getParentCoroutines();
         array_unshift($parent_cids, $cid);
-        //print_r($parent_cids);
         $ret = [];
         foreach ($parent_cids as $cid) {
             $ret = array_merge($ret, parent::getBacktrace($cid, $options, $limit));
@@ -180,7 +266,6 @@ abstract class Coroutine extends \Swoole\Coroutine
         $cid = parent::getcid();
         $parent_cids = self::getParentCoroutines();
         array_unshift($parent_cids, $cid);
-        //print_r($parent_cids);
         $ret = [];
         foreach ($parent_cids as $cid) {
             $ret = array_merge($ret, parent::getBacktrace($cid, DEBUG_BACKTRACE_IGNORE_ARGS));
@@ -253,6 +338,11 @@ abstract class Coroutine extends \Swoole\Coroutine
         return $Function($cid);
     }
 
+    /**
+     * @param int|null $cid
+     * @return int
+     * @throws RunTimeException
+     */
     public static function getSubCoroutinesCount(?int $cid = NULL) : int
     {
         $cid = $cid ?? parent::getcid();
@@ -286,6 +376,73 @@ abstract class Coroutine extends \Swoole\Coroutine
         return $ret;
     }
 
+    /**
+     * Awaits for all subcoroutines of the current coroutine to end.
+     * Blocks the current coroutines until all child coroutines finish.
+     * @throws RunTimeException If the subcoroutines do not finish before the given timeout
+     * @param int $timeout
+     *
+     */
+    public static function awaitSubCoroutines(?int $timeout = NULL) : void
+    {
+        if ($timeout === NULL) {
+            $timeout = self::$CONFIG_RUNTIME['max_subcoroutine_exec_time'];
+        }
+        $cid = parent::getcid();
+        if (!array_key_exists($cid, self::$coroutines_ids)) {
+            throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create'));
+        }
+        if (isset(self::$coroutines_ids[$cid]['sub_awaited'])) {
+            //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
+            return;
+        }
+        $chan = self::getCoroutineChannel($cid);
+
+        $subcoroutines_count = self::getSubCoroutinesCount($cid);
+        $subcoorutines_arr = self::getSubCoroutines($cid);
+        $subcoroutines_completed_arr = [];
+        for ($aa = 0 ; $aa < $subcoroutines_count ; $aa++) {
+            $ret = $chan->pop($timeout);
+
+            if ($ret === FALSE) {
+                $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
+                $unfinished_message_arr = [];
+                foreach ($subcoroutines_unfinished as $unfinished_cid) {
+                    $backtrace_str = print_r(parent::getBacktrace($unfinished_cid, DEBUG_BACKTRACE_IGNORE_ARGS), TRUE);
+                    $unfinished_message_arr[] = sprintf(t::_('subcoroutine ID %s : %s'), $unfinished_cid, $backtrace_str);
+                }
+                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL.implode(PHP_EOL,$unfinished_message_arr) );
+                throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
+            } else {
+                //the coroutine finished successfully
+            }
+            $subcoroutines_completed_arr[] = $ret;//the pop returns the subcoroutine ID
+        }
+        self::$coroutines_ids[$cid]['sub_awaited'] = TRUE;
+    }
+
+    private static function getParentCoroutineChannel(?int $cid = NULL) : \Swoole\Coroutine\Channel
+    {
+        $cid = $cid ?? parent::getcid();
+        $parent_coroutine_id = self::getParentCoroutines($cid)[0];
+        $chan = self::getCoroutineChannel($parent_coroutine_id);
+        return $chan;
+    }
+
+    /**
+     * @param int|null $cid
+     * @return \Swoole\Coroutine\Channel
+     * @throws RunTimeException
+     */
+    private static function getCoroutineChannel(?int $cid = NULL) : \Swoole\Coroutine\Channel
+    {
+        $cid = $cid ?? parent::getcid();
+        if (!array_key_exists($cid, self::$coroutines_ids)) {
+            throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create'));
+        }
+        $ret = self::$coroutines_ids[$cid]['chan'];
+        return $ret;
+    }
 
     /**
      * @param int|null $cid

@@ -4,10 +4,10 @@
 namespace Guzaba2\Database\ConnectionProviders;
 
 
+use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
-use Guzaba2\Patterns\WorkerSingleton;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -15,7 +15,7 @@ use Guzaba2\Translator\Translator as t;
  * Provides a pool of connections (coroutine based connections) to be used with coroutines
  * @package Guzaba2\Database
  */
-class Pool extends WorkerSingleton
+class Pool extends Base
 implements ConnectionProviderInterface
 {
 
@@ -32,9 +32,8 @@ implements ConnectionProviderInterface
 
     protected $is_initialized_flag = FALSE;
 
-    public function initialize(array $options) : void
+    public function __construct(array $options = [])
     {
-        //create the initial set of connections
         parent::update_runtime_configuration($options);
 
         //cant create the connections here - these need to be created inside the coroutine
@@ -43,9 +42,23 @@ implements ConnectionProviderInterface
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
-        //print $this->object_internal_id.PHP_EOL;
         $this->is_initialized_flag = TRUE;
     }
+
+//    public function initialize(array $options) : void
+//    {
+//        //create the initial set of connections
+//        parent::update_runtime_configuration($options);
+//
+//        //cant create the connections here - these need to be created inside the coroutine
+////        foreach (self::$CONFIG_RUNTIME['connections'] as $connection_class) {
+////            for ($aa = 0; $aa < self::$CONFIG_RUNTIME['max_connections']; $aa++) {
+////                $this->available_connections[$connection_class][] = new $connection_class();
+////            }
+////        }
+//        //print $this->object_internal_id.PHP_EOL;
+//        $this->is_initialized_flag = TRUE;
+//    }
 
     public function is_initialized() : bool
     {

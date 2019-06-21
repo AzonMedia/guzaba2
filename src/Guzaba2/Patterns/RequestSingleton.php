@@ -28,7 +28,7 @@ use Guzaba2\Patterns\Interfaces\SingletonInterface;
  * If singleton within the current coroutine is needed then use the CoroutineSingleton class.
  * @package Guzaba2\Patterns
  */
-class RequestSingleton extends Singleton
+abstract class RequestSingleton extends Singleton
 {
 
     private static $instances = [];
