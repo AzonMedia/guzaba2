@@ -5,7 +5,7 @@ namespace Guzaba2\Http;
 
 
 use Guzaba2\Base\Base;
-use InvalidArgumentException;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Http\Interfaces\CookiesInterface;
 
 /**
