@@ -25,6 +25,10 @@ class Coroutine extends \Swoole\Coroutine
 
     public static $coroutines_ids = [];
 
+    public static $last_coroutine_id = 0;
+
+    public static $co_id = [];
+
     /**
      * This is the maximum number of allowed coroutines within a root (request) coroutine.
      * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
@@ -51,9 +55,22 @@ class Coroutine extends \Swoole\Coroutine
     {
 
         $current_cid = parent::getcid();
+        self::$last_coroutine_id = $current_cid;
         if (!isset(self::$coroutines_ids[$current_cid])) {
             //every coroutine will have its own channel to ensure that it awaits for all its child coroutines to be over
-            self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL, 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
+            $Context = parent::getContext($current_cid);
+            $Context->start_microtime = microtime(TRUE);
+            $Context->settings = [];
+            parent::defer(function() use ($Context) {
+                $Context->end_microtime = microtime(TRUE);
+            });
+            self::$coroutines_ids[$current_cid] = [
+                '.' => $current_cid,
+                '..' => NULL,
+                'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'context' => $Context,
+            ];
+            self::$co_id[] = $current_cid;
         }
 
     }
@@ -168,6 +185,12 @@ class Coroutine extends \Swoole\Coroutine
         return self::$coroutines_ids[$root_coroutine_id];
     }
 
+//    public static function getContext(?int $cid = NULL) : \Swoole\Coroutine\Context
+//    {
+//        $Context = parent::getContext();
+//        return $Context;
+//    }
+
     /**
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \co::create() as this wrapper keeps track of the coroutines hierarchy.
@@ -200,6 +223,7 @@ class Coroutine extends \Swoole\Coroutine
 
 
         $current_cid = parent::getcid();
+
 //        $new_cid = parent::create($callable, $params);
 //        self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid] ];
 //        self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
@@ -210,17 +234,33 @@ class Coroutine extends \Swoole\Coroutine
         $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
         {
             $new_cid = parent::getcid();
-            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid], 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
+            $Context = parent::getContext();
+            $Context->start_microtime = microtime(TRUE);
+            $Context->settings = [];
+            self::$coroutines_ids[$new_cid] = [
+                '.' => &$new_cid ,
+                '..' => &self::$coroutines_ids[$current_cid],
+                'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                //'settings' => []
+                'context'   => $Context,
+            ];
             self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
-            $CoroutineExecution = CoroutineExecution::get_instance();
+            //$CoroutineExecution = CoroutineExecution::get_instance();
 
             $callable(...$params);
+
+            $Context->end_microtime = microtime(TRUE);//here is the actual end time of the nested function execution, not the time when this coroutine will be over
+            //actually the coroutine will wait for all its subcoroutines to be over
+            
+            parent::defer(function() use ($Context) {
+                $Context->end_microtime_with_subcoroutines = microtime(TRUE);
+            });
 
             //$chan = self::getRootCoroutineChannel($new_cid);
             //$chan->push($new_cid);
             $chan = self::getParentCoroutineChannel($new_cid);
-            $CoroutineExecution->destroy();
+            //$CoroutineExecution->destroy();
             $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
 
 
@@ -230,6 +270,7 @@ class Coroutine extends \Swoole\Coroutine
 
         self::awaitSubCoroutines();
 
+        self::$last_coroutine_id = $new_cid;
         return $new_cid;
     }
 
@@ -303,9 +344,11 @@ class Coroutine extends \Swoole\Coroutine
     }
 
     /**
-     * Returns the ID of the root coroutine for the provided coroutine.
+     * Returns the ID of the root coroutine for the current coroutine or the provided coroutine $cid.
      * If no $cid is provided returns the root coroutine of the current coroutine.
+     * If this is in Swoole Server context the root coroutine would be the coroutine started by the worker to serve the request.
      * @uses self::getParentCoroutines()
+     * @param int|null $cid
      * @return int
      */
     public static function getRootCoroutine(?int $cid = NULL) : int
@@ -315,6 +358,19 @@ class Coroutine extends \Swoole\Coroutine
         $ret = count($parent_cids) ? $parent_cids[count($parent_cids) - 1] : parent::getcid();
 
         return $ret;
+    }
+
+    /**
+     * Returns the context of the root coroutine of the current coroutine or of the coroutine provided in $cid.
+     * If this is in Swoole Server context the root coroutine would be the coroutine started by the worker to serve the request.
+     * @uses self::getRootCoroutine()
+     * @param int|null $cid
+     * @return \Swoole\Coroutine\Context
+     */
+    public static function getRootCoroutineContext(?int $cid = NULL) : \Swoole\Coroutine\Context
+    {
+        $root_cid = self::getRootCoroutine($cid);
+        return parent::getContext($root_cid);
     }
 
 

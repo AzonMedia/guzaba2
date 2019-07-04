@@ -16,29 +16,24 @@ class ConnectionFactory extends Base
      */
     protected $ConnectionProvider;
 
-//    public function set_connection_provider(ConnectionProviderInterface $ConnectionProvier) : void
-//    {
-//        $this->ConnectionProvider = $ConnectionProvier;
-//    }
     public function __construct(ConnectionProviderInterface $ConnectionProvider)
     {
         parent::__construct();
         $this->ConnectionProvider = $ConnectionProvider;
     }
 
+    //TODO - add as a second argument a scope reference which when destroyed will free the connection
+    /**
+     * @param string $class_name
+     * @return ConnectionInterface
+     */
     public function get_connection(string $class_name) : ConnectionInterface
     {
-        if (!$this->ConnectionProvider) {
-
-        }
         return $this->ConnectionProvider->get_connection($class_name);
     }
 
     public function free_connection(ConnectionInterface $Connection) : void
     {
-        if(!$this->ConnectionProvider) {
-
-        }
         $this->ConnectionProvider->free_connection($Connection);
     }
 
