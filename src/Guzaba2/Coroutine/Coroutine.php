@@ -246,7 +246,7 @@ class Coroutine extends \Swoole\Coroutine
             ];
             self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
-            //$CoroutineExecution = CoroutineExecution::get_instance();
+            $CoroutineExecution = CoroutineExecution::get_instance();
 
             $callable(...$params);
 
@@ -260,7 +260,9 @@ class Coroutine extends \Swoole\Coroutine
             //$chan = self::getRootCoroutineChannel($new_cid);
             //$chan->push($new_cid);
             $chan = self::getParentCoroutineChannel($new_cid);
-            //$CoroutineExecution->destroy();
+
+            $CoroutineExecution->destroy();
+            
             $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
 
 

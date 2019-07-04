@@ -5,7 +5,6 @@ namespace Guzaba2\Execution;
 
 use Guzaba2\Patterns\CoroutineSingleton;
 
-//NOT USED
 class CoroutineExecution extends CoroutineSingleton
 {
 
