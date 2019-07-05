@@ -58,14 +58,17 @@ implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
+        $Request = $this->Router->match_request($Request);
+        $Response = $Handler->handle($Request);
 
-        $controller_callable = $this->Router->match_request($Request);
+        return $Response;
+        /*$controller_callable = $this->Router->match_request($Request);
         if ($controller_callable) {
             $Request = $Request->withAttribute('controller_callable', $controller_callable);
         }
 
         $Response = $Handler->handle($Request);
 
-        return $Response;
+        return $Response;*/
     }
 }

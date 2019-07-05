@@ -16,7 +16,7 @@ abstract class Method
     const HTTP_PUT      = 128;
     const HTTP_TRACE    = 256;
 
-    const HTTL_ALL_METHODS = self::HTTP_CONNECT | self::HTTP_DELETE | self::HTTP_GET | self::HTTP_HEAD | self::HTTP_OPTIONS | self::HTTP_PATCH | self::HTTP_POST | self::HTTP_PUT | self::HTTP_TRACE ;
+    const HTTP_ALL_METHODS = self::HTTP_CONNECT | self::HTTP_DELETE | self::HTTP_GET | self::HTTP_HEAD | self::HTTP_OPTIONS | self::HTTP_PATCH | self::HTTP_POST | self::HTTP_PUT | self::HTTP_TRACE ;
 
     public const METHODS_MAP = [
         self::HTTP_CONNECT  => 'CONNECT',

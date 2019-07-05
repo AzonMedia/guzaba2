@@ -55,8 +55,67 @@ implements MiddlewareInterface
 
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
+            $controller_arguments = $Request->getAttribute('controller_arguments');
+
+            if ($body_params = $Request->getParsedBody()) {
+                $controller_arguments = $body_params;//overwrite any previous uri arguments if exsist
+            }
             //TODO - execute the _init() method too
-            $Response = $controller_callable();//pass the request arguments here
+
+            //check if controller has init method
+            $init_method_exist = \method_exists($controller_callable[0], '_init');
+
+            if ($init_method_exist) {
+                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
+                $parameters = $RMethod->getParameters();
+
+                $parameters_order = [];
+
+                foreach ($parameters as $key => $parameter) {
+                    $argType = $parameter->getType();
+
+                    if (isset($controller_arguments[$parameter->getName()])) {
+                        $value = $controller_arguments[$parameter->getName()];
+                    } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                        $value = $parameter->getDefaultValue();
+                    }
+
+                    if (isset($value)) {
+                        $value = $controller_arguments[$parameter->getName()];
+                        //will throw exception if type missing
+                        settype($value, (string) $argType);
+                        $parameters_order[] = $value;
+                        unset($value);
+                    }
+                }
+
+                \call_user_func_array([$controller_callable[0], '_init'] , $parameters_order);
+            }
+
+            $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
+            $parameters = $RMethod->getParameters();
+            $parameters_order = [];
+
+            foreach ($parameters as $key => $parameter) {
+                $argType = $parameter->getType();
+
+                if (isset($controller_arguments[$parameter->getName()])) {
+                    $value = $controller_arguments[$parameter->getName()];
+                } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                    $value = $parameter->getDefaultValue();
+                }
+
+                if (isset($value)) {
+                    $value = $controller_arguments[$parameter->getName()];
+                    //will throw exception if type missing
+                    settype($value, (string) $argType);
+                    $parameters_order[] = $value;
+                    unset($value);
+                }
+            }
+
+
+            $Response = $controller_callable(...$parameters_order);
             $Body = $Response->getBody();
             if ($Body instanceof Structured) {
                 $requested_content_type = $Request->getContentType();

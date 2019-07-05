@@ -67,6 +67,11 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      */
     protected $Server;
 
+    /**
+    * @var null|array|object
+     */
+    protected $parsedBody;
+
     public function __construct(
         $method = Method::METHODS_MAP[Method::HTTP_GET],
         ?UriInterface $uri = NULL,
@@ -465,8 +470,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      */
     public function getParsedBody() /* mixed */
     {
-        // TODO implement
-        return null;
+        return $this->parsedBody ?? NULL;
     }
 
     /**
@@ -499,7 +503,8 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      */
     public function withParsedBody( /* mixed */ $data) : self
     {
-        // TODO implement
+        $this->parsedBody = $data;
+
         $clone = clone $this;
         return $clone;
     }
