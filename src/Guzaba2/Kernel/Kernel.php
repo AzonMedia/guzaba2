@@ -24,6 +24,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -82,6 +83,11 @@ class Kernel
     protected static $Registry;
 
     /**
+     * @var ContainerInterface
+     */
+    protected static $Container;
+
+    /**
      * Is the kernel initialized
      * @var bool
      */
@@ -116,18 +122,23 @@ class Kernel
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
 
-
-
-//        if (interface_exists(ConfigInterface::class)) {
-//            die('aaa');
-//        } else {
-//            die('nnn');
-//        }
-
-
-
         self::$is_initialized_flag = TRUE;
 
+    }
+
+    public static function set_di_container(ContainerInterface $Container) : void
+    {
+        self::$Container = $Container;
+    }
+
+    public static function get_service(string $id) : object
+    {
+        return self::$Container->get($id);
+    }
+
+    public static function has_service(string $id) : bool
+    {
+        return self::$Container->has($id);
     }
 
     public static function is_initialized() : bool
@@ -150,28 +161,6 @@ class Kernel
         return $ret;
     }
 
-    //public static function run_swoole(?LoggerInterface $logger = NULL, string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
-    //NOT USED
-    public static function run_swoole(string $host, int $port, array $options = [], ?callable $request_handler = NULL) : int
-    {
-
-        //self::run(function(){});
-        //$o = new \Guzaba2\Http\Response();
-
-
-        $callable = function() use ($host, $port, $options, $request_handler) : int
-        {
-            $request_handler = $request_handler ?? new \Guzaba2\Swoole\RequestHandler();
-            $http_server = new \Guzaba2\Swoole\Server($host, $port, $options);
-            $http_server->on('request', $request_handler);
-            $http_server->start();
-
-            return self::EXIT_SUCCESS;
-        };
-
-        return self::run($callable);
-
-    }
 
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
@@ -341,7 +330,8 @@ class Kernel
                 //get the configuration from the parent class
                 $RParentClass = $RClass->getParentClass();
                 $parent_class_name = $RParentClass->name;
-                $parent_config = $parent_class_name::get_runtime_configuration();
+                //$parent_config = $parent_class_name::get_runtime_configuration();
+                $parent_config = $class_name::get_runtime_configuration();
 
                 $runtime_config += $parent_config;
 
@@ -382,6 +372,16 @@ class Kernel
 
 
 
+        //initialize the services
+        if (!empty($RProperty)) {
+            //the there has been a $CONFIG_RUNTIME set and it is already made accessible
+            $runtime_config = $RProperty->getValue();
+            if (!empty($runtime_config['services']) ) {
+                foreach ($runtime_config['services'] as $class_name => $args) {
+
+                }
+            }
+        }
 
     }
 

@@ -25,4 +25,5 @@ interface ConfigInterface
     public static function get_runtime_configuration() : array ;
 
     //no need of is_configured_method() as if a class is autoloaded by Kernel then it will always be configured at the time this method is invoked
+
 }

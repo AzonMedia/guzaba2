@@ -21,7 +21,7 @@ namespace Guzaba2\Patterns;
  * Class ExecutionMultiton
  * @package Guzaba2\Patterns
  */
-class RequestMultiton extends Multiton
+abstract class RequestMultiton extends Multiton
 {
 
 }

@@ -13,7 +13,7 @@ use Guzaba2\Patterns\Interfaces\SingletonInterface;
  * If a singleton within the Request is needed please use RequestSingleton class
  * @package Guzaba2\Patterns
  */
-class CoroutineSingleton extends Singleton
+abstract class CoroutineSingleton extends Singleton
 {
     private static $instances = [];
 

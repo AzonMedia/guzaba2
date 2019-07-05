@@ -1,6 +1,6 @@
 <?php
 
-namespace Guzaba2\Interfaces\Http;
+namespace Guzaba2\Http\Interfaces;
 
 use InvalidArgumentException;
 

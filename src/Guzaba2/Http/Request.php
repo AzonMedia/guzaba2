@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Translator\Translator as t;
@@ -19,7 +20,7 @@ use Psr\Http\Message\UriInterface;
  * @see https://github.com/slimphp/Slim/blob/3.x/Slim/Http/Request.php
  */
 class Request extends Message
-implements ServerRequestInterface
+implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
 {
     /**
      * @var string
@@ -609,6 +610,84 @@ implements ServerRequestInterface
             }
         }
         return $ret;
+    }
+
+    /**
+     * @param mixed $offset
+     * @return bool
+     */
+    public function offsetExists( /* scalar */ $offset) : bool
+    {
+        // TODO: Implement offsetExists() method.
+        return array_key_exists($offset, $this->query_params);
+    }
+
+    /**
+     * @param mixed $offset
+     * @return mixed
+     */
+    public function offsetGet( /* scalar */ $offset)  /* mixed */
+    {
+        // TODO: Implement offsetGet() method.
+        return $this->query_params[$offset];
+    }
+
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     * @throws RunTimeException
+     */
+    public function offsetSet( /* scalar */ $offset, /* mixed */ $value) : void
+    {
+        throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
+    }
+
+    /**
+     * @param mixed $offset
+     * @throws RunTimeException
+     */
+    public function offsetUnset( /* scalar */ $offset) : void
+    {
+        throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
+    }
+
+    public function count() : int
+    {
+        return count ($this->query_params);
+    }
+
+    //@implements \Iterator
+    public function rewind() : void
+    {
+        reset($this->query_params);
+    }
+
+    //@implements \Iterator
+    public function current() /* mixed */
+    {
+        $var = current($this->query_params);
+        return $var;
+    }
+
+    //@implements \Iterator
+    public function key() /* scalar */
+    {
+        $var = key($this->query_params);
+        return $var;
+    }
+
+    //@implements \Iterator
+    public function next() /* mixed */
+    {
+        $var = next($this->query_params);
+        return $var;
+    }
+
+    //@implements \Iterator
+    public function valid() : bool
+    {
+        $var = $this->current() !== false;
+        return $var;
     }
 
 }

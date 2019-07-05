@@ -18,8 +18,12 @@ declare(strict_types=1);
 namespace Guzaba2\Base;
 
 use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
+use Guzaba2\Base\Interfaces\UsesServicesInterface;
+
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\UsesServices;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
 
@@ -32,12 +36,14 @@ use Guzaba2\Translator\Translator as t;
  * Kernel inherits nothing and the exceptions inherit BaseException
  */
 abstract class Base
-implements ConfigInterface
+implements ConfigInterface, ObjectInternalIdInterface, UsesServicesInterface
 {
 
     use SupportsObjectInternalId;
 
     use SupportsConfig;
+
+    use UsesServices;
 
     /**
      * Base constructor.

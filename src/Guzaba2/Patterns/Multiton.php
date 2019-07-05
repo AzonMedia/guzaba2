@@ -25,5 +25,5 @@ use Guzaba2\Base\Base;
  */
 abstract class Multiton extends Base
 {
-    public abstract function get_instance( /* mixed */ $index) : self ;
+    public abstract function &get_instance( /* mixed */ $index) : MultitonInterface ;
 }

@@ -16,13 +16,6 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\RequestExecution;
 use Throwable;
 
-class c1
-{
-    public $v1 = 44;
-
-    public static $ss = 33;
-}
-
 
 class RequestHandler extends Base
 {
@@ -100,6 +93,7 @@ class RequestHandler extends Base
         try {
 
             \Guzaba2\Coroutine\Coroutine::init();
+
             $Execution =& RequestExecution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
 
@@ -140,21 +134,115 @@ class RequestHandler extends Base
 //                        //print_r(Coroutine::getParentCoroutines());
 //                        print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).PHP_EOL;
 //                    });
-//                };
+//                };+
 //
 //                $F();
 //            });
 
-            Coroutine::create(function(){
-                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-                Coroutine::create(function(){
-                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-                    \co::sleep(4);
-                });
-            });
+//            Coroutine::create(function(){
+//                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+//                Coroutine::create(function(){
+//                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
+//                    \co::sleep(4);
+//                    print 'ggg';
+//                });
+//            });
+
+//            Coroutine::create(function(){
+//                \co::sleep(3);
+//                print 'ggg';
+//            });
+
+//            Coroutine::create(function($a1) {
+//                print $a1;
+//            }, 555);
+
+//            static $debug_is_set = FALSE;
+//            if (!$debug_is_set) {
+//                print 'gggggg';
+//
+//                $worker_id = $this->HttpServer->get_worker_id();
+//                $function = function () use ($worker_id) {
+//
+//                    print 'start debug'.PHP_EOL;
+//
+////                    $socket = new \Co\Socket(AF_INET, SOCK_STREAM, 0);//SOL_TCP
+////                    $socket->bind('127.0.0.1', 1000 + (int) $worker_id);
+////                    $socket->listen(128);
+////
+////                    $client = $socket->accept();
+//
+//                    while(true) {
+////                        //echo "Client Recv: \n";
+////                        $data = $client->recv();
+////                        //if (empty($data)) {
+////                        //    $client->close();
+////                        //    break;
+////                        //}
+////                        //var_dump($client->getsockname());
+////                        //var_dump($client->getpeername());
+////                        //echo "Client Send: \n";
+////                        $data = print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
+////                        $client->send($data);
+//                        \Co::sleep(2);
+//                        //print print_r(\Guzaba2\Coroutine\Coroutine::$last_coroutine_id.PHP_EOL, TRUE);
+//                        print 'AAAA'.Coroutine::$last_coroutine_id.PHP_EOL;
+//                        //print_r(Coroutine::$coroutines_ids);
+//                    }
+//                };
+//                \Co::create($function);
+//
+//
+//                $debug_is_set = TRUE;
+//            }
+
+//            static $flag = FALSE;
+//            if (!$flag) {
+//                print 'DEBUG'.PHP_EOL;
+//                $function = function() {
+//                    while(true) {
+//                        //print_r(Coroutine::$coroutines_ids);
+//                        //print Coroutine::$last_coroutine_id.PHP_EOL;
+//                        //print 'count '.count(Coroutine::$co_id).PHP_EOL;
+//                        print 'parallel coroutines '.count(Coroutine::$coroutines_ids).PHP_EOL;
+//                        \Co::sleep(1);
+//                    }
+//
+//                };
+//                \Co::create($function);
+//                $flag = TRUE;
+//            }
+//
+            //\Co::sleep(1);
+            //for ($aa = 0; $aa < rand(100000, 1000000000); $aa++) {
+//            $function = function () {
+//                for ($aa = 0; $aa < 1000000000; $aa++) {
+//                    if (! ($aa % 100000000) ) {
+//                        print 'worker id '.$this->HttpServer->get_worker_id().' coid '.\Co::getcid().PHP_EOL;
+//                        //\Co::sleep(1);
+//                    }
+//                }
+//            };
+//            \Co::create($function);
+//            \Co::create($function);
+
+            //print_r(Coroutine::$coroutines_ids);
+
+            //print 'aaaaaaaaa';
+            //print print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
             $PsrRequest->set_server($this->HttpServer);
+
+            //print_r($PsrRequest);
+            //print $PsrRequest['d'];
+            if ($PsrRequest['d']==1) {
+                $this->HttpServer->table->set('1',['data' => 'aaa']);
+            } elseif ($PsrRequest['d']==2) {
+                print_r($this->HttpServer->table->get('1'));
+            }
+
+
 
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
@@ -169,6 +257,7 @@ class RequestHandler extends Base
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
             //$memory_usage = $Exception->get_memory_usage();
             print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
 
 
         } catch (Throwable $Exception) {

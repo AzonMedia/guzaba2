@@ -38,6 +38,8 @@ class Server extends \Guzaba2\Http\Server
 
     protected $options = [];
 
+    public $table;
+
     /**
      * @var int
      */
