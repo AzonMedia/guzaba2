@@ -7,6 +7,7 @@ namespace Guzaba2\Base\Traits;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Di\Container;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Translator\Translator as t;
 
 trait UsesServices
 {
