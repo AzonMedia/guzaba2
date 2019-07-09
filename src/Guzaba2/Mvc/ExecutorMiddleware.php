@@ -66,7 +66,7 @@ implements MiddlewareInterface
             $init_method_exist = \method_exists($controller_callable[0], '_init');
 
             if ($init_method_exist) {
-                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
+                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
                 $parameters = $RMethod->getParameters();
 
                 $parameters_order = [];
@@ -91,7 +91,6 @@ implements MiddlewareInterface
 
                 \call_user_func_array([$controller_callable[0], '_init'] , $parameters_order);
             }
-
             $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
             $parameters = $RMethod->getParameters();
             $parameters_order = [];
@@ -113,7 +112,6 @@ implements MiddlewareInterface
                     unset($value);
                 }
             }
-
 
             $Response = $controller_callable(...$parameters_order);
             $Body = $Response->getBody();
