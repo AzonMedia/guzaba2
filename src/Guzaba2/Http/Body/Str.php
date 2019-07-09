@@ -10,14 +10,21 @@ use Guzaba2\Coroutine\Coroutine;
 use Psr\Http\Message\StreamInterface;
 use Guzaba2\Translator\Translator as t;
 
-class Stream extends Base
-implements StreamInterface
+//TODO - finish this class - finish Seek/rewing etc
+/**
+ * Class Str
+ * Implemented using a string, not a stream.
+ * NOT FINISHED
+ * @package Guzaba2\Http\Body
+ */
+class Str extends Base
+    implements StreamInterface
 {
 
     /**
-     * @var resource
+     * @var string
      */
-    protected $stream;
+    protected $string = '';
 
     /**
      * Will be lowered when the processing is over
@@ -33,16 +40,13 @@ implements StreamInterface
 
     /**
      * Stream constructor.
-     * @param null $stream
      * @param string $content If content is provided it will be written to the body
      */
-    public function __construct( /* resource */ $stream = NULL, string $content = '')
+    public function __construct( string $string = '')
     {
-        $this->stream = $stream ?? fopen('php://memory', 'r+');
-        //$this->stream = $stream ?? tmpfile();//use this if co::fwrite() is needed but memory and \fwrite() is twice faster
 
-        if ($content) {
-            $this->write($content);
+        if ($string) {
+            $this->write($string);
         }
     }
 
@@ -81,7 +85,7 @@ implements StreamInterface
      */
     public function close() : void
     {
-        fclose($this->stream);
+        //does nothing
     }
 
     /**
@@ -94,13 +98,12 @@ implements StreamInterface
     public function detach() /* ?resource */
     {
 
-        $stream = $this->stream;
 
         $this->is_writable_flag = FALSE;
         $this->is_readable_flag = FALSE;
         $this->stream = NULL;
 
-        return $stream;
+        return NULL;
     }
 
     /**
@@ -110,8 +113,7 @@ implements StreamInterface
      */
     public function getSize() : ?int
     {
-        $stats = fstat($this->stream);
-        $size = isset($stats['size']) ? $stats['size'] : null;
+        $size = strlen($this->string);
         return $size;
     }
 
@@ -163,7 +165,7 @@ implements StreamInterface
      *
      */
     public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
-    //public function seek(int $offset, int $whence = SEEK_SET) : void
+        //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
@@ -183,7 +185,7 @@ implements StreamInterface
      */
     public function rewind() : void
     {
-        if (!$this->isSeekable() || rewind($this->stream) === false) {
+        if (!$this->isSeekable()) {
             throw new RuntimeException(t::_('Can not rewind this stream.'));
         }
     }
@@ -206,13 +208,15 @@ implements StreamInterface
      * @throws RuntimeException on failure.
      */
     public function write( /* string */ $string) /* int */
-    //public function write(string $string) : int
+        //public function write(string $string) : int
     {
         //there is no need to use co::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
-        if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
-        //if (!$this->isWritable() || ($size = Coroutine::fwrite($this->stream, $string)) === false) { // Swoole\Coroutine::fwrite(): cannot represent a stream of type MEMORY as a select()able descriptor
+        //if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
+        if (!$this->isWritable()) { // Swoole\Coroutine::fwrite(): cannot represent a stream of type MEMORY as a select()able descriptor
             throw new RuntimeException('Can not write to this stream.');
         }
+        $this->string .= $string;
+        $size = strlen($string);
         return $size;
     }
 
@@ -237,7 +241,7 @@ implements StreamInterface
      * @throws RuntimeException if an error occurs.
      */
     public function read( /* int */ $length) : string
-    //public function read(int $length) : string
+        //public function read(int $length) : string
     {
         if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
@@ -254,9 +258,10 @@ implements StreamInterface
      */
     public function getContents() : string
     {
-        if (!$this->isReadable() || ($contents = stream_get_contents($this->stream)) === false) {
+        if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
         }
+        $contents = $this->string;
         return $contents;
     }
 
@@ -273,7 +278,7 @@ implements StreamInterface
      *     value is found, or null if the key is not found.
      */
     public function getMetadata( /* ?string */ $key = NULL) /* mixed */
-    //public function getMetadata(?string $key = NULL) /* mixed */
+        //public function getMetadata(?string $key = NULL) /* mixed */
     {
         $meta = stream_get_meta_data($this->stream);
         if (is_null($key) === true) {

@@ -234,14 +234,6 @@ class RequestHandler extends Base
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
             $PsrRequest->set_server($this->HttpServer);
 
-            //print_r($PsrRequest);
-            //print $PsrRequest['d'];
-            if ($PsrRequest['d']==1) {
-                $this->HttpServer->table->set('1',['data' => 'aaa']);
-            } elseif ($PsrRequest['d']==2) {
-                print_r($this->HttpServer->table->get('1'));
-            }
-
 
 
 
@@ -251,12 +243,17 @@ class RequestHandler extends Base
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
+
+
+
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
+
+
 
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
             //$memory_usage = $Exception->get_memory_usage();
-            print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
 
 

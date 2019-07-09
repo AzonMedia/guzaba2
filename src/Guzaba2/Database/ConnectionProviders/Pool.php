@@ -6,6 +6,7 @@ namespace Guzaba2\Database\ConnectionProviders;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Translator\Translator as t;
@@ -20,7 +21,7 @@ implements ConnectionProviderInterface
 {
 
     protected const CONFIG_DEFAULTS = [
-        'max_connections'   => 1,
+        'max_connections'   => 10,
         //'connections'       => [],
     ];
 
@@ -29,8 +30,6 @@ implements ConnectionProviderInterface
     protected $busy_connections = [];
     protected $available_connections = [];
     protected $suspended_coroutines = [];
-
-    protected $is_initialized_flag = FALSE;
 
     public function __construct(array $options = [])
     {
@@ -42,36 +41,12 @@ implements ConnectionProviderInterface
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
-        $this->is_initialized_flag = TRUE;
+
     }
 
-//    public function initialize(array $options) : void
-//    {
-//        //create the initial set of connections
-//        parent::update_runtime_configuration($options);
-//
-//        //cant create the connections here - these need to be created inside the coroutine
-////        foreach (self::$CONFIG_RUNTIME['connections'] as $connection_class) {
-////            for ($aa = 0; $aa < self::$CONFIG_RUNTIME['max_connections']; $aa++) {
-////                $this->available_connections[$connection_class][] = new $connection_class();
-////            }
-////        }
-//        //print $this->object_internal_id.PHP_EOL;
-//        $this->is_initialized_flag = TRUE;
-//    }
-
-    public function is_initialized() : bool
-    {
-        return $this->is_initialized_flag;
-    }
 
     public function get_connection(string $connection_class) : ConnectionInterface
     {
-
-        //print 'GET '.count($this->available_connections[$connection_class]).PHP_EOL;
-        if (!$this->is_initialized()) {
-
-        }
 
         //this is a blocking function so that it always return a connection
         //it either blocks or throws an exception at the end if it cant return a connection
@@ -94,6 +69,13 @@ implements ConnectionProviderInterface
             if ($Connection->is_connected()) {
                 //print 'PUSH BUSY EXISTING '.$Connection->get_object_internal_id().PHP_EOL;
                 array_push($this->busy_connections[$connection_class], $Connection);
+                //add the connection reference to the coroutine context
+                //this is needed because if the connection is not freed it will just hang
+                //so we automate the connection freeing at the end of the coroutine execution
+                $Context = Coroutine::getContext();
+                //a coroutine may obtain multiple connections
+                $Context->connections[] = $Connection;
+                $Connection->set_coroutine(Coroutine::getcid());
                 return $Connection;
             } else {
                 //print 'CLOSED'.PHP_EOL;
@@ -118,10 +100,10 @@ implements ConnectionProviderInterface
             } else {
                 //all connections are busy and no new ones can be created
                 //suspend the current coroutine until some connections are freed
-                $current_cid = \Co::getcid();
+                $current_cid = Coroutine::getcid();
                 $this->suspended_coroutines[] = $current_cid;
                 //print 'SUSPEND'.PHP_EOL;
-                \Co::suspend();
+                Coroutine::suspend();
 
                 //the connection will be resumed here
                 //if it is resumed it is assumed that there are connections active
@@ -133,10 +115,6 @@ implements ConnectionProviderInterface
 
     public function free_connection(ConnectionInterface $Connection) : void
     {
-
-        if (!$this->is_initialized()) {
-
-        }
 
         $connection_class = get_class($Connection);
         if (!isset($this->busy_connections[$connection_class])) {
@@ -154,7 +132,7 @@ implements ConnectionProviderInterface
                 if (count($this->suspended_coroutines)) {
                     $suspended_cid = array_pop($this->suspended_coroutines);
                     //print 'RESUME'.PHP_EOL;
-                    \Co::resume($suspended_cid);
+                    Coroutine::resume($suspended_cid);
                 }
             }
         }
