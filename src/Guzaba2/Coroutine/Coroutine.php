@@ -6,6 +6,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 
@@ -26,8 +27,6 @@ class Coroutine extends \Swoole\Coroutine
     public static $coroutines_ids = [];
 
     public static $last_coroutine_id = 0;
-
-    public static $co_id = [];
 
     /**
      * This is the maximum number of allowed coroutines within a root (request) coroutine.
@@ -62,6 +61,13 @@ class Coroutine extends \Swoole\Coroutine
             $Context->start_microtime = microtime(TRUE);
             $Context->settings = [];
             parent::defer(function() use ($Context) {
+                if (!empty($Context->connections) && is_array($Context->connections)) {
+                    foreach ($Context->connections as $Connection) {
+                        if ($Connection instanceof ConnectionInterface) {
+                            $Connection->free();
+                        }
+                    }
+                }
                 $Context->end_microtime = microtime(TRUE);
             });
             self::$coroutines_ids[$current_cid] = [
@@ -70,7 +76,6 @@ class Coroutine extends \Swoole\Coroutine
                 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']),
                 'context' => $Context,
             ];
-            self::$co_id[] = $current_cid;
         }
 
     }
@@ -194,6 +199,7 @@ class Coroutine extends \Swoole\Coroutine
     /**
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \co::create() as this wrapper keeps track of the coroutines hierarchy.
+     * @override
      * @param $callable
      * @param mixed ...$params Any additional arguments will be passed to the coroutine.
      * @return int
@@ -254,6 +260,13 @@ class Coroutine extends \Swoole\Coroutine
             //actually the coroutine will wait for all its subcoroutines to be over
             
             parent::defer(function() use ($Context) {
+                if (!empty($Context->connections) && is_array($Context->connections)) {
+                    foreach ($Context->connections as $Connection) {
+                        if ($Connection instanceof ConnectionInterface) {
+                            $Connection->free();
+                        }
+                    }
+                }
                 $Context->end_microtime_with_subcoroutines = microtime(TRUE);
             });
 
@@ -262,7 +275,7 @@ class Coroutine extends \Swoole\Coroutine
             $chan = self::getParentCoroutineChannel($new_cid);
 
             $CoroutineExecution->destroy();
-            
+
             $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
 
 
@@ -274,6 +287,29 @@ class Coroutine extends \Swoole\Coroutine
 
         self::$last_coroutine_id = $new_cid;
         return $new_cid;
+    }
+
+    /**
+     * Suspends the current coroutine.
+     * For debug reasons (printing message) is overriden.
+     * @return void
+     */
+    public static function suspend() : void
+    {
+        print 'Coroutine '.parent::getcid().' is SUSPENDED.'.PHP_EOL;
+        parent::suspend();
+    }
+
+    /**
+     * Resumes the provided $cid coroutine.
+     * For debug reasons (printing message) is overriden.
+     * @param int $cid
+     */
+    //public static function resume(int $cid) : void
+    public static function resume($cid) : void
+    {
+        print 'Coroutine '.parent::getcid().' is RESUMED.'.PHP_EOL;
+        parent::resume($cid);
     }
 
     /**

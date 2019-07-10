@@ -27,7 +27,7 @@ class Server extends \Guzaba2\Http\Server
     protected const SWOOLE_DEFAULTS = [
         'host'              => '0.0.0.0',
         'port'              => 8081,
-        'dispatch_mode'     => 2,
+        'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_BASE
     ];
 
     protected $host = self::SWOOLE_DEFAULTS['host'];
@@ -59,11 +59,12 @@ class Server extends \Guzaba2\Http\Server
 
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode);
 
-        foreach ($options as $option_name => $option_value) {
-            //if (isset(self::SWOOLE_DEFAULTS[$option_name])) {
-            //}
-            $this->SwooleHttpServer->set($options);
-        }
+//        foreach ($options as $option_name => $option_value) {
+//            //if (isset(self::SWOOLE_DEFAULTS[$option_name])) {
+//            //}
+//            $this->SwooleHttpServer->set($options);
+//        }
+        $this->SwooleHttpServer->set($options);
     }
 
     public function start() : void

@@ -6,6 +6,10 @@ namespace Guzaba2\Execution;
 use Guzaba2\Patterns\RequestSingleton;
 use Guzaba2\Workers\MemoryMonitor;
 
+/**
+ * Class RequestExecution
+ * @package Guzaba2\Execution
+ */
 class RequestExecution extends RequestSingleton
 {
 

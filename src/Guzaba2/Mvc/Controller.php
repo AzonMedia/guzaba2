@@ -7,6 +7,7 @@ namespace Guzaba2\Mvc;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Body\Structured;
+use Guzaba2\Http\Body\Str;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Psr\Http\Message\RequestInterface;
@@ -50,6 +51,12 @@ abstract class Controller extends Base
     public static function get_stream_ok_response(string $content) : ResponseInterface
     {
         $Response = new Response(StatusCode::HTTP_OK, [], new Stream( NULL, $content ) );
+        return $Response;
+    }
+
+    public static function get_string_ok_response(string $content) : ResponseInterface
+    {
+        $Response = new Response(StatusCode::HTTP_OK, [], new Str( $content ) );
         return $Response;
     }
 }
