@@ -364,8 +364,6 @@ class Kernel
                 }
 
 
-                //print $class_name.' '.print_r($parent_config);
-
                 $runtime_config += $parent_config;//the parent config does not overwrite the current config
 
                 //get configuration from the registry
