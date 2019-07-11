@@ -21,25 +21,25 @@ abstract class Application extends Base
         'deployment'   => self::DEPLOYMENT_DEVELOPMENT,
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     public static function get_deployment() : string
     {
-        return strtolower(self::$CONFIG_RUNTIME['deployment']);
+        return strtolower(self::CONFIG_RUNTIME['deployment']);
     }
 
     public static function is_production() : bool
     {
-        return strtolower(self::$CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_PRODUCTION);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_PRODUCTION);
     }
 
     public static function is_development() : bool
     {
-        return strtolower(self::$CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_DEVELOPMENT);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_DEVELOPMENT);
     }
 
     public static function is_staging() : bool
     {
-        return strtolower(self::$CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_STAGING);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_STAGING);
     }
 }

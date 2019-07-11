@@ -22,6 +22,8 @@ use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Container\ContainerInterface;
@@ -48,7 +50,7 @@ class Kernel
     /**
      * @var string
      */
-    protected static $guzaba2_root_dir;
+    protected static $framework_root_dir;
 
     /**
      *
@@ -112,15 +114,16 @@ class Kernel
 
         self::$kernel_dir = dirname(__FILE__);
 
-        self::$guzaba2_root_dir = realpath(self::$kernel_dir.'/../../');
+        self::$framework_root_dir = realpath(self::$kernel_dir.'/../../');
 
-        self::register_autoloader_path(self::FRAMEWORK_NAME, self::$guzaba2_root_dir);
-        //print self::$guzaba2_root_dir.PHP_EOL;
+        self::register_autoloader_path(self::FRAMEWORK_NAME, self::$framework_root_dir);
 
 
         spl_autoload_register([__CLASS__, 'autoloader'], TRUE, TRUE);//prepend before Composer's autoloader
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
+
+        stream_wrapper_register('guzaba.source', SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
 
@@ -161,6 +164,11 @@ class Kernel
         return $ret;
     }
 
+    public static function stop(string $message) : void
+    {
+        die($message.PHP_EOL);
+    }
+
 
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
@@ -194,7 +202,7 @@ class Kernel
 
     public static function logtofile(string $content, array $context = []) : void
     {
-        //$path = self::$guzaba2_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
+        //$path = self::$framework_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //die(self::$cwd);
         //$path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
@@ -234,31 +242,17 @@ class Kernel
     {
         //print $class_name.PHP_EOL;
         $ret = FALSE;
-        /*
-        if (strpos($class_name,self::FRAMEWORK_NAME) === 0) { //starts with Guzaba2
-            $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, self::$guzaba2_root_dir.\DIRECTORY_SEPARATOR.$class_name).'.php';
-            if (is_readable($class_path)) {
-                require_once($class_path);
-                self::$loaded_classes[] = $class_name;
-                self::$loaded_paths[] = $class_path;
-                $ret = TRUE;
-            } else {
-                $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-            }
 
-        } else {
-            //not found - proceed with the next autoloader - probably this would be composer's autoloader
-        }
-        */
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
             if (strpos($class_name, $namespace_base) === 0) {
                 $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path.\DIRECTORY_SEPARATOR.$class_name).'.php';
                 //$class_path = realpath($class_path);
                 if (is_readable($class_path)) {
-                    require_once($class_path);
+                    //require_once($class_path);
+                    self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
                     if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name) ) {
+
                         $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
@@ -280,48 +274,73 @@ class Kernel
         return $ret;
     }
 
-    /**
-     * @param string $class_name
-     */
-    protected static function initialize_class(string $class_name) : void
+    protected static function rrmdir($dir) {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (is_dir($dir."/".$object))
+                        self::rrmdir($dir."/".$object);
+                    else
+                        unlink($dir."/".$object);
+                }
+            }
+            rmdir($dir);
+        }
+    }
+
+    protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
+        $ret = NULL;
 
-        
-        $RClass = new ReflectionClass($class_name);
-        
+        try {
+            //return require_once($class_path);
+            $class_source = file_get_contents($class_path);
+            //print $class_source;
+            if ($class_name != SourceStream::class && strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
 
-        if ($RClass->hasOwnMethod('_initialize_class')) {
-            call_user_func([$class_name, '_initialize_class']);
+                //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
+                $ret = require_once('guzaba.source://'.$class_path);
+
+            } else {
+                $ret = require_once($class_path);
+            }
+        } catch (\Throwable $exception) {
+            print '==================='.PHP_EOL;
+            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
+            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
+            print '==================='.PHP_EOL;
         }
 
-        
-        //if (is_a($class_name, ConfigInterface::class)) { //not working?
+
+
+        return $ret;
+    }
+
+    /**
+     * @param string $path
+     * @param string|null $error
+     * @return bool
+     */
+    public static function check_syntax(string $path, ?string &$error = NULL) : bool
+    {
+        exec("php -l {$path} 2>&1", $output, $return);
+        $error = $output[0];
+        return $return ? TRUE : FALSE;
+    }
+
+    public static function get_runtime_configuration(string $class_name) : array
+    {
+        $runtime_config = [];
+        $RClass = new ReflectionClass($class_name);
+
         if ($RClass->implementsInterface(ConfigInterface::class)) {
 
-            //instead of requiring the classes to extend Base (so that they provide the needed methods)
-            //Kernel can work with reflection and directly with the static property
-            //the classes supporting config must implement a ConfigInterface
-            //$config_array = $RClass->getConstant('CONFIG_DEFAULTS');//false if not found
-            //if (defined($class_name.'::CONFIG_DEFAULTS') && !isset($class_name::$CONFIG_RUNTIME)) {
-            //if ($RClass->hasConstant('CONFIG_DEFAULTS') && !$RClass->hasStaticProperty('CONFIG_RUNTIME')) {
-            //    throw new ConfigurationException(sprintf(t::_('The class %s has CONFIG_DEFAULTS constant defined but has no $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
-            //    //throw new ConfigurationException(sprintf('The class %s has CONFIG_DEFAULTS constant defined but has no $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.', $class_name));
-            //}
-            //the above case is not possible because the Base class uses the SupportsConfig trait which always defines $CONFIG_RUNTIME
 
-//            //if (!defined($class_name.'::CONFIG_DEFAULTS') && isset($class_name::$CONFIG_RUNTIME)) {
-            //if (!$RClass->hasConstant('CONFIG_DEFAULTS') && $RClass->hasStaticProperty('CONFIG_RUNTIME')) {
-            //    throw new ConfigurationException(sprintf(t::_('The class %s has no CONFIG_DEFAULTS constant defined but has $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
-            //    //throw new ConfigurationException(sprintf('The class %s has no CONFIG_DEFAULTS constant defined but has $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.', $class_name));
-            //}
-            //the above case is allowed - if the class does not specify CONFIG_DEFAULTS this means it is not using configuration (no lookup in the registry will be done)
+            //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
+            if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
 
-            //$class_name::$CONFIG_RUNTIME += $class_name::CONFIG_DEFAULTS;//the $CONFIG_RUNTIME may already contain values too
-            if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
-
-                $RProperty = $RClass->getProperty('CONFIG_RUNTIME');
-                $RProperty->setAccessible(TRUE);
 
                 $default_config = ( new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS') )->getValue();
 
@@ -331,13 +350,23 @@ class Kernel
                 $RParentClass = $RClass->getParentClass();
                 $parent_class_name = $RParentClass->name;
                 //$parent_config = $parent_class_name::get_runtime_configuration();
-                $parent_config = $class_name::get_runtime_configuration();
+                $parent_config = [];
 
-                $runtime_config += $parent_config;
+
+                //if (is_a($parent_class_name, ConfigInterface::class)) {
+                if ($RParentClass->implementsInterface(ConfigInterface::class)) {
+                    $parent_config = $parent_class_name::get_runtime_configuration();
+                }
+
+
+                //print $class_name.' '.print_r($parent_config);
+
+                $runtime_config += $parent_config;//the parent config does not overwrite the current config
 
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
+
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
@@ -361,26 +390,27 @@ class Kernel
                     }
                 }
 
-                $RProperty->setValue($runtime_config);
             } else {
-                //this class is not defining config values - will have access to the parent::$CONFIG_RUNTIME
+                //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
 
         } else {
             //do nothing - does not require configuration
         }
+        return $runtime_config;
+    }
 
+    /**
+     * @param string $class_name
+     */
+    protected static function initialize_class(string $class_name) : void
+    {
+        
+        $RClass = new ReflectionClass($class_name);
+        
 
-
-        //initialize the services
-        if (!empty($RProperty)) {
-            //the there has been a $CONFIG_RUNTIME set and it is already made accessible
-            $runtime_config = $RProperty->getValue();
-            if (!empty($runtime_config['services']) ) {
-                foreach ($runtime_config['services'] as $class_name => $args) {
-
-                }
-            }
+        if ($RClass->hasOwnMethod('_initialize_class')) {
+            call_user_func([$class_name, '_initialize_class']);
         }
 
     }

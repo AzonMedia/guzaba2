@@ -24,19 +24,21 @@ abstract class ConnectionCoroutine extends Connection
         'database'  => '',
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     protected $MysqlCo;
 
-    public function __construct(array $options)
+    //public function __construct(array $options)
+    public function __construct()
     {
         parent::__construct();
-        self::update_runtime_configuration($options);
-        //print_r(self::$CONFIG_RUNTIME);
+        //self::update_runtime_configuration($options);
+
         $this->MysqlCo = new \Swoole\Coroutine\Mysql();
-        $ret = $this->MysqlCo->connect(static::$CONFIG_RUNTIME);
+
+        $ret = $this->MysqlCo->connect(static::CONFIG_RUNTIME);
         if (!$ret) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::$CONFIG_RUNTIME['host'], self::$CONFIG_RUNTIME['port'], $this->MysqlCo->connect_errno, $this->MysqlCo->connect_error ));
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->MysqlCo->connect_errno, $this->MysqlCo->connect_error ));
         }
     }
 

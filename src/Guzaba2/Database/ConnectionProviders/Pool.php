@@ -25,19 +25,19 @@ implements ConnectionProviderInterface
         //'connections'       => [],
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     protected $busy_connections = [];
     protected $available_connections = [];
     protected $suspended_coroutines = [];
 
-    public function __construct(array $options = [])
+    public function __construct()
     {
-        parent::update_runtime_configuration($options);
+        parent::__construct();
 
         //cant create the connections here - these need to be created inside the coroutine
-//        foreach (self::$CONFIG_RUNTIME['connections'] as $connection_class) {
-//            for ($aa = 0; $aa < self::$CONFIG_RUNTIME['max_connections']; $aa++) {
+//        foreach (self::CONFIG_RUNTIME['connections'] as $connection_class) {
+//            for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections']; $aa++) {
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
@@ -72,10 +72,11 @@ implements ConnectionProviderInterface
                 //add the connection reference to the coroutine context
                 //this is needed because if the connection is not freed it will just hang
                 //so we automate the connection freeing at the end of the coroutine execution
-                $Context = Coroutine::getContext();
+                //$Context = Coroutine::getContext();
                 //a coroutine may obtain multiple connections
-                $Context->connections[] = $Connection;
-                $Connection->set_coroutine(Coroutine::getcid());
+                //$Context->connections[] = $Connection;
+
+                $Connection->assign_to_coroutine(Coroutine::getcid());
                 return $Connection;
             } else {
                 //print 'CLOSED'.PHP_EOL;
@@ -86,7 +87,7 @@ implements ConnectionProviderInterface
         } else {
             //there are no available connections
 
-            if (count($this->busy_connections[$connection_class]) < self::$CONFIG_RUNTIME['max_connections'] ) {
+            if (count($this->busy_connections[$connection_class]) < self::CONFIG_RUNTIME['max_connections'] ) {
                 //the total number of busy connections is below the max number of connections
                 //so a new one can be created
                 //print 'NEW CONNECTION '.$this->get_object_internal_id().PHP_EOL;
@@ -94,8 +95,10 @@ implements ConnectionProviderInterface
                 //print 'NEW CONNECTION '.$Connection->get_object_internal_id().PHP_EOL;
                 //print 'PUSH BUSY NEW '.$Connection->get_object_internal_id().PHP_EOL;
                 array_push($this->busy_connections[$connection_class], $Connection);
-                //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::$CONFIG_RUNTIME['max_connections'].PHP_EOL;
+                //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::CONFIG_RUNTIME['max_connections'].PHP_EOL;
                 //print 'CONN STATS B '.$r.' '.count($this->busy_connections[$connection_class]).' '.count($this->available_connections[$connection_class]).PHP_EOL;
+
+                $Connection->assign_to_coroutine(Coroutine::getcid());
                 return $Connection;
             } else {
                 //all connections are busy and no new ones can be created
@@ -124,6 +127,7 @@ implements ConnectionProviderInterface
         foreach ($this->busy_connections[$connection_class] as $key => $BusyConnection) {
             if ($Connection === $BusyConnection) {
                 $connection_found = TRUE;
+                $Connection->unassign_from_coroutine();
                 //$Connection = array_pop($this->busy_connections[$connection_class]);
                 unset($this->busy_connections[$connection_class][$key]);
                 $this->busy_connections[$connection_class] = array_values($this->busy_connections[$connection_class]);
