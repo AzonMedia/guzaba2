@@ -30,6 +30,10 @@ class Server extends \Guzaba2\Http\Server
         'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_BASE
     ];
 
+    public const SERVER_MODE = [
+
+    ];
+
     protected $host = self::SWOOLE_DEFAULTS['host'];
 
     protected $port = self::SWOOLE_DEFAULTS['port'];

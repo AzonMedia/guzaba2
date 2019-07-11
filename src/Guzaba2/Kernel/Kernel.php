@@ -123,7 +123,8 @@ class Kernel
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
 
-        stream_wrapper_register('guzaba.source', SourceStream::class);
+        //stream_wrapper_register('guzaba.source', SourceStream::class);
+        stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
 
@@ -164,6 +165,10 @@ class Kernel
         return $ret;
     }
 
+    /**
+     * Terminates the execution and prints the provided message
+     * @param string $message
+     */
     public static function stop(string $message) : void
     {
         die($message.PHP_EOL);
@@ -295,13 +300,13 @@ class Kernel
         $ret = NULL;
 
         try {
-            //return require_once($class_path);
+
             $class_source = file_get_contents($class_path);
-            //print $class_source;
+
             if ($class_name != SourceStream::class && strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
 
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
-                $ret = require_once('guzaba.source://'.$class_path);
+                $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
 
             } else {
                 $ret = require_once($class_path);

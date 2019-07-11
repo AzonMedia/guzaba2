@@ -56,7 +56,10 @@ implements ConnectionInterface
             throw new RunTimeException(sprintf(t::_('The connection is already assigned to another coroutine.')));
         }
         $this->coroutine_id = $cid;
-        Coroutine::getContext()->assignConnection($this);
+        if (Coroutine::getcid()) { //if we are in coroutine context
+            Coroutine::getContext()->assignConnection($this);
+        }
+
     }
 
     public function unassign_from_coroutine() : void
@@ -66,7 +69,9 @@ implements ConnectionInterface
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
         }
         $this->coroutine_id = 0;
-        Coroutine::getContext()->unassignConnection($this);
+        if (Coroutine::getcid()) { //if we are in coroutine context
+            Coroutine::getContext()->unassignConnection($this);
+        }
     }
 
     /**
