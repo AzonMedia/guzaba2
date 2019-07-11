@@ -50,7 +50,7 @@ class Kernel
     /**
      * @var string
      */
-    protected static $guzaba2_root_dir;
+    protected static $framework_root_dir;
 
     /**
      *
@@ -114,15 +114,16 @@ class Kernel
 
         self::$kernel_dir = dirname(__FILE__);
 
-        self::$guzaba2_root_dir = realpath(self::$kernel_dir.'/../../');
+        self::$framework_root_dir = realpath(self::$kernel_dir.'/../../');
 
-        self::register_autoloader_path(self::FRAMEWORK_NAME, self::$guzaba2_root_dir);
-        //print self::$guzaba2_root_dir.PHP_EOL;
+        self::register_autoloader_path(self::FRAMEWORK_NAME, self::$framework_root_dir);
 
 
         spl_autoload_register([__CLASS__, 'autoloader'], TRUE, TRUE);//prepend before Composer's autoloader
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
+
+        stream_wrapper_register('guzaba.source', SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
 
@@ -163,6 +164,11 @@ class Kernel
         return $ret;
     }
 
+    public static function stop(string $message) : void
+    {
+        die($message.PHP_EOL);
+    }
+
 
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
@@ -196,7 +202,7 @@ class Kernel
 
     public static function logtofile(string $content, array $context = []) : void
     {
-        //$path = self::$guzaba2_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
+        //$path = self::$framework_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //die(self::$cwd);
         //$path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
@@ -236,23 +242,7 @@ class Kernel
     {
         //print $class_name.PHP_EOL;
         $ret = FALSE;
-        /*
-        if (strpos($class_name,self::FRAMEWORK_NAME) === 0) { //starts with Guzaba2
-            $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, self::$guzaba2_root_dir.\DIRECTORY_SEPARATOR.$class_name).'.php';
-            if (is_readable($class_path)) {
-                require_once($class_path);
-                self::$loaded_classes[] = $class_name;
-                self::$loaded_paths[] = $class_path;
-                $ret = TRUE;
-            } else {
-                $message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-            }
 
-        } else {
-            //not found - proceed with the next autoloader - probably this would be composer's autoloader
-        }
-        */
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
             if (strpos($class_name, $namespace_base) === 0) {
                 $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path.\DIRECTORY_SEPARATOR.$class_name).'.php';
@@ -308,107 +298,10 @@ class Kernel
             //return require_once($class_path);
             $class_source = file_get_contents($class_path);
             //print $class_source;
-            if (strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
+            if ($class_name != SourceStream::class && strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
 
-                /*
-                $temp_files_base_path = sys_get_temp_dir().'/'.self::FRAMEWORK_NAME.'/'.\Swoole\Coroutine::getCid().'/';
-
-                //needs to include first the class name without the configuration set
-                //but this class name must be changed to something else as including it will create the class with the real name while we actually want to include it under different name, obtain the config and then include it with the real name
-                $class_source = file_get_contents($class_path);
-                $ns_arr = explode('\\', $class_name);
-                $class_name_without_ns = array_pop($ns_arr);
-                unset($ns_arr);
-                //TODO - replace the below with tokenizer
-                $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
-
-                //$fp = tmpfile();
-                //$fp = fopen(sys_get_temp_dir().'/'.str_replace('\\','_',$class_name).'.php', 'w+');
-
-                //$original_class_path = sys_get_temp_dir().'/'.str_replace('/','_',$class_path).'_without_config';
-                //preserving the same path to the file in the TMP folder allowes for easier debugging
-                //the only difference is that the error is reported in a file with a name/path prepended by /tmp instead of the original one
-
-                $original_class_path = $temp_files_base_path.str_replace('.php','_original.php',$class_path);
-                $original_class_dir_path = dirname($original_class_path);
-                if (!file_exists($original_class_dir_path)) {
-                    @mkdir($original_class_dir_path, 0777, TRUE);
-                }
-
-                $fp = fopen($original_class_path, 'w+');
-
-                fwrite($fp, $class_without_config_source);
-                $fpath = stream_get_meta_data($fp)['uri'];
-                //here the original class but renamed is included
-
-                require_once($fpath);
-                fclose($fp);
-                if (file_exists($original_class_path)) {
-                    @unlink($original_class_path);
-                }
-
-                //the original class is used to obtain the runtime configuration
-                $runtime_config = self::get_runtime_configuration($class_name.'_without_config');
-
-                //debug info
-                //print $class_name.' has the following RUNTIME_CONFIG generated: '.print_r($runtime_config, TRUE);
-
-
-                $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
-                $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ',var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
-                $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
-
-                //$fp = fopen('php://memory', 'w+');//cant include from this as require_once opens a separate fp and the content is lost
-                //$fp = tmpfile();
-                //$fp = fopen(sys_get_temp_dir().'/'.str_replace('\\','_',$class_name).'.php', 'w+');
-                //preserving the same path to the file in the TMP folder allowes for easier debugging
-                //the only difference is that the error is reported in a file with a name/path prepended by /tmp instead of the original one
-                $updated_class_path = $temp_files_base_path.$class_path;
-
-                $updated_class_dir_path = dirname($original_class_path);
-                if (!file_exists($updated_class_dir_path)) {
-                    @mkdir($updated_class_dir_path, 0777, TRUE);
-                }
-                $fp = fopen($updated_class_path, 'w+');
-                fwrite($fp, $class_source);
-
-                $fpath = stream_get_meta_data($fp)['uri'];
-
-                $ret = require_once($fpath);
-                //print_r(get_declared_classes());
-                fclose($fp);
-
-                self::rrmdir($temp_files_base_path);
-                */
-
-                //the above fails in high concurrency
-                //use eval instead - it has overhead but in swoole context this happens onle once per worker
-                //the below code has no blocking components - it relies entirely on the php interpreter
-
-                //needs to include first the class name without the configuration set
-                //but this class name must be changed to something else as including it will create the class with the real name while we actually want to include it under different name, obtain the config and then include it with the real name
-                $class_source = file_get_contents($class_path);
-                $ns_arr = explode('\\', $class_name);
-                $class_name_without_ns = array_pop($ns_arr);
-                unset($ns_arr);
-                //TODO - replace the below with tokenizer
-                $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
-                if (strpos($class_without_config_source,'<?php')===0) {
-                    $class_without_config_source = substr($class_without_config_source,5);
-                }
-                //print $class_without_config_source;
-
-                eval($class_without_config_source);
-
-                $runtime_config = self::get_runtime_configuration($class_name.'_without_config');
-
-                $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
-                $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ',var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
-                $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
-                if (strpos($class_source,'<?php')===0) {
-                    $class_source = substr($class_source,5);
-                }
-                eval($class_source);
+                //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
+                $ret = require_once('guzaba.source://'.$class_path);
 
             } else {
                 $ret = require_once($class_path);
@@ -425,11 +318,23 @@ class Kernel
         return $ret;
     }
 
-    protected static function get_runtime_configuration(string $class_name) : array
+    /**
+     * @param string $path
+     * @param string|null $error
+     * @return bool
+     */
+    public static function check_syntax(string $path, ?string &$error = NULL) : bool
     {
+        exec("php -l {$path} 2>&1", $output, $return);
+        $error = $output[0];
+        return $return ? TRUE : FALSE;
+    }
 
+    public static function get_runtime_configuration(string $class_name) : array
+    {
         $runtime_config = [];
         $RClass = new ReflectionClass($class_name);
+
         if ($RClass->implementsInterface(ConfigInterface::class)) {
 
 
