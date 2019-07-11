@@ -25,6 +25,14 @@ implements ConnectionInterface
      */
     protected $coroutine_id = 0;
 
+    protected $is_created_from_factory_flag = FALSE;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+    }
+
     public function __destruct()
     {
 
@@ -33,6 +41,26 @@ implements ConnectionInterface
         //self::ConnectionFactory()->free_connection($this);
         $this->free();
         parent::__destruct();
+    }
+
+//    public function set_created_from_pool(bool $is_created_from_pool_flag) : void
+//    {
+//        $this->is_created_from_pool_flag = $is_created_from_pool_flag;
+//    }
+//
+//    public function is_created_from_pool() : bool
+//    {
+//        return $this->is_created_from_pool_flag;
+//    }
+
+    public function set_created_from_factory(bool $is_created_from_factory) : void
+    {
+        $this->is_created_from_factory_flag = $is_created_from_factory;
+    }
+
+    public function is_created_from_factory() : bool
+    {
+        return $this->is_created_from_factory_flag;
     }
 
     /**
@@ -81,7 +109,9 @@ implements ConnectionInterface
      */
     public function free() : void
     {
-        self::ConnectionFactory()->free_connection($this);
+        if ($this->is_created_from_factory()) {
+            self::ConnectionFactory()->free_connection($this);
+        }
     }
 
     /**
