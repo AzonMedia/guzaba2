@@ -304,10 +304,14 @@ class Coroutine extends \Swoole\Coroutine
         parent::resume($cid);
     }
 
+    /**
+     * Returns TRUE if the current execution is in coroutine
+     * @return bool
+     */
     public static function inCoroutine() : bool
     {
         $cid = parent::getcid();
-        return $cid > 0 ? FALSE : TRUE;
+        return $cid > 0 ? TRUE : FALSE;
     }
 
     /**
