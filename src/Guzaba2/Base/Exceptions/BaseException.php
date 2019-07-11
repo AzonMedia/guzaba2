@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Guzaba Framework
+ * Guzaba Framework 2
  * http://framework2.guzaba.org
  *
  * This source file is subject to the BSD license that is bundled with this
@@ -42,5 +42,8 @@ abstract class BaseException extends \Exception
         parent::__construct($message, $code, $previous);
     }
 
-
+    public static function prependAsFirstExceptionStatic(\Throwable $exception, \Throwable $first_exception) : void
+    {
+        // TODO implement
+    }
 }

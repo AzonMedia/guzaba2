@@ -10,18 +10,16 @@ declare(strict_types=1);
  * http://www.opensource.org/licenses/bsd-license.php
  *
  * @category    Guzaba2 Framework
- * @package        Patterns
+ * @package        Base
  * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
  * @author        Veselin Kenashkov <kenashkov@azonmedia.com>
  */
-
-namespace Guzaba2\Patterns;
+namespace Guzaba2\Base\Exceptions;
 
 /**
- * Class WorkerMultiton
- * @package Guzaba2\Patterns
+ * Exceptions that represent transient (temporary errors) are to implement this interface as certain conditions can be retried.
  */
-abstract class WorkerMultiton extends Multiton
+interface TransientErrorException extends \Throwable
 {
 
 }

@@ -131,6 +131,10 @@ implements ConnectionProviderInterface
 
     }
 
+    /**
+     * @param ConnectionInterface $Connection
+     * @throws RunTimeException
+     */
     public function free_connection(ConnectionInterface $Connection) : void
     {
 

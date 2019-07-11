@@ -3,42 +3,60 @@
 namespace Guzaba2\Orm;
 
 use Azonmedia\Reflection\ReflectionClass;
-use Guzaba2\Base\Base;
+use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Memory as Memory;
 
-class ActiveRecord extends Base
+class ActiveRecord extends GenericObject
 {
+    const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
+
     /**
      * @var StoreInterface
      */
     protected static $Store;
 
+    /**
+     * @var bool
+     */
     public $is_new_flag = FALSE;
 
+    /**
+     * @var bool
+     */
     protected $was_new_flag = FALSE;
 
+    /**
+     * @var array
+     */
     public $data = [];
 
+    /**
+     * @var mixed
+     */
     protected $index;
 
-    const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
+    /**
+     * @var bool
+     */
+    protected $disable_property_hooks_flag = FALSE;
 
-
-
-    public static function _initialize_class()
+    public static function _initialize_class(): void
     {
-        self::$Store = new \Guzaba2\Orm\Store\Memory();//move to DI
+        self::$Store = new Memory();//move to DI
     }
 
-    //public function __construct(StoreInterface $Store)
+    /**
+     * ActiveRecord constructor.
+     * @param $index
+     * @throws \ReflectionException
+     */
     public function __construct( /* mixed*/ $index)
     {
         parent::__construct();
 
-        //$this->Store = $Store;
-
-
         $this->index = $index;
+        // TODO Get data pinter doesn't exist in store interface
         $pointer =& self::$Store->get_data_pointer(get_class($this), $this->index);
 
         //all properties defined in this class must be references to the store in MemoryCache
@@ -56,6 +74,31 @@ class ActiveRecord extends Base
             }
         }
 
+    }
+
+    /**
+     * Resets the properties of the object as provided in the array.
+     * To be used only by the object\transaction
+     * @param array $properties
+     * @return void
+     */
+    public function _set_all_properties(array $properties): void
+    {
+        //we do not want to trigger the _before_set_propertyname hooks if there are such
+        //the rollback must be transparent
+        $this->disable_property_hooks();
+        parent::_set_all_properties($properties);
+        $this->enable_property_hooks();
+    }
+
+    public function disable_property_hooks(): void
+    {
+        $this->disable_property_hooks_flag = TRUE;
+    }
+
+    public function enable_property_hooks(): void
+    {
+        $this->disable_property_hooks_flag = FALSE;
     }
 
 }

@@ -10,18 +10,13 @@ declare(strict_types=1);
  * http://www.opensource.org/licenses/bsd-license.php
  *
  * @category    Guzaba2 Framework
- * @package        Patterns
+ * @package        Base
  * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
  * @author        Veselin Kenashkov <kenashkov@azonmedia.com>
  */
+namespace Guzaba2\Base\Exceptions;
 
-namespace Guzaba2\Patterns;
-
-/**
- * Class WorkerMultiton
- * @package Guzaba2\Patterns
- */
-abstract class WorkerMultiton extends Multiton
+class LogicException extends BaseException
 {
 
 }

@@ -24,6 +24,7 @@ trait SupportsConfig
      * To be invoked by the kernel on class initialization
      * Can be invoked only once
      * @param array $config_runtime
+     * @throws RunTimeException
      */
     public static function initialize_runtime_configuration(array $config_runtime) : void
     {
@@ -31,7 +32,7 @@ trait SupportsConfig
             $called_class = get_called_class();
             throw new RuntimeException(sprintf(t::_('The class %s is already configured. Can not invoke twice the %s::%s method.'), $called_class, $called_class, __FUNCTION__ ));
         }
-        static::$CONFIG_RUNTIME = $runtime_config;
+        static::$CONFIG_RUNTIME = $config_runtime;
         static::$is_configured_flag = TRUE;
     }
 
@@ -42,6 +43,7 @@ trait SupportsConfig
     public static function get_runtime_configuration() : array
     {
         //TODO add a check to allow to be called only by the Kernel
+        // There is a configuration check in transaction - $parent_transaction::get_runtime_configuration() != $this::get_runtime_configuration()
         return static::$CONFIG_RUNTIME;
     }
 
