@@ -22,6 +22,8 @@ use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Container\ContainerInterface;
@@ -256,9 +258,11 @@ class Kernel
                 $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path.\DIRECTORY_SEPARATOR.$class_name).'.php';
                 //$class_path = realpath($class_path);
                 if (is_readable($class_path)) {
-                    require_once($class_path);
+                    //require_once($class_path);
+                    self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
                     if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name) ) {
+
                         $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
@@ -280,48 +284,158 @@ class Kernel
         return $ret;
     }
 
-    /**
-     * @param string $class_name
-     */
-    protected static function initialize_class(string $class_name) : void
+    protected static function rrmdir($dir) {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (is_dir($dir."/".$object))
+                        self::rrmdir($dir."/".$object);
+                    else
+                        unlink($dir."/".$object);
+                }
+            }
+            rmdir($dir);
+        }
+    }
+
+    protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
+        $ret = NULL;
 
-        
-        $RClass = new ReflectionClass($class_name);
-        
+        try {
+            //return require_once($class_path);
+            $class_source = file_get_contents($class_path);
+            //print $class_source;
+            if (strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
 
-        if ($RClass->hasOwnMethod('_initialize_class')) {
-            call_user_func([$class_name, '_initialize_class']);
+                /*
+                $temp_files_base_path = sys_get_temp_dir().'/'.self::FRAMEWORK_NAME.'/'.\Swoole\Coroutine::getCid().'/';
+
+                //needs to include first the class name without the configuration set
+                //but this class name must be changed to something else as including it will create the class with the real name while we actually want to include it under different name, obtain the config and then include it with the real name
+                $class_source = file_get_contents($class_path);
+                $ns_arr = explode('\\', $class_name);
+                $class_name_without_ns = array_pop($ns_arr);
+                unset($ns_arr);
+                //TODO - replace the below with tokenizer
+                $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+
+                //$fp = tmpfile();
+                //$fp = fopen(sys_get_temp_dir().'/'.str_replace('\\','_',$class_name).'.php', 'w+');
+
+                //$original_class_path = sys_get_temp_dir().'/'.str_replace('/','_',$class_path).'_without_config';
+                //preserving the same path to the file in the TMP folder allowes for easier debugging
+                //the only difference is that the error is reported in a file with a name/path prepended by /tmp instead of the original one
+
+                $original_class_path = $temp_files_base_path.str_replace('.php','_original.php',$class_path);
+                $original_class_dir_path = dirname($original_class_path);
+                if (!file_exists($original_class_dir_path)) {
+                    @mkdir($original_class_dir_path, 0777, TRUE);
+                }
+
+                $fp = fopen($original_class_path, 'w+');
+
+                fwrite($fp, $class_without_config_source);
+                $fpath = stream_get_meta_data($fp)['uri'];
+                //here the original class but renamed is included
+
+                require_once($fpath);
+                fclose($fp);
+                if (file_exists($original_class_path)) {
+                    @unlink($original_class_path);
+                }
+
+                //the original class is used to obtain the runtime configuration
+                $runtime_config = self::get_runtime_configuration($class_name.'_without_config');
+
+                //debug info
+                //print $class_name.' has the following RUNTIME_CONFIG generated: '.print_r($runtime_config, TRUE);
+
+
+                $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
+                $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ',var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
+                $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
+
+                //$fp = fopen('php://memory', 'w+');//cant include from this as require_once opens a separate fp and the content is lost
+                //$fp = tmpfile();
+                //$fp = fopen(sys_get_temp_dir().'/'.str_replace('\\','_',$class_name).'.php', 'w+');
+                //preserving the same path to the file in the TMP folder allowes for easier debugging
+                //the only difference is that the error is reported in a file with a name/path prepended by /tmp instead of the original one
+                $updated_class_path = $temp_files_base_path.$class_path;
+
+                $updated_class_dir_path = dirname($original_class_path);
+                if (!file_exists($updated_class_dir_path)) {
+                    @mkdir($updated_class_dir_path, 0777, TRUE);
+                }
+                $fp = fopen($updated_class_path, 'w+');
+                fwrite($fp, $class_source);
+
+                $fpath = stream_get_meta_data($fp)['uri'];
+
+                $ret = require_once($fpath);
+                //print_r(get_declared_classes());
+                fclose($fp);
+
+                self::rrmdir($temp_files_base_path);
+                */
+
+                //the above fails in high concurrency
+                //use eval instead - it has overhead but in swoole context this happens onle once per worker
+                //the below code has no blocking components - it relies entirely on the php interpreter
+
+                //needs to include first the class name without the configuration set
+                //but this class name must be changed to something else as including it will create the class with the real name while we actually want to include it under different name, obtain the config and then include it with the real name
+                $class_source = file_get_contents($class_path);
+                $ns_arr = explode('\\', $class_name);
+                $class_name_without_ns = array_pop($ns_arr);
+                unset($ns_arr);
+                //TODO - replace the below with tokenizer
+                $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+                if (strpos($class_without_config_source,'<?php')===0) {
+                    $class_without_config_source = substr($class_without_config_source,5);
+                }
+                //print $class_without_config_source;
+
+                eval($class_without_config_source);
+
+                $runtime_config = self::get_runtime_configuration($class_name.'_without_config');
+
+                $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
+                $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ',var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
+                $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
+                if (strpos($class_source,'<?php')===0) {
+                    $class_source = substr($class_source,5);
+                }
+                eval($class_source);
+
+            } else {
+                $ret = require_once($class_path);
+            }
+        } catch (\Throwable $exception) {
+            print '==================='.PHP_EOL;
+            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
+            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
+            print '==================='.PHP_EOL;
         }
 
-        
-        //if (is_a($class_name, ConfigInterface::class)) { //not working?
+
+
+        return $ret;
+    }
+
+    protected static function get_runtime_configuration(string $class_name) : array
+    {
+
+        $runtime_config = [];
+        $RClass = new ReflectionClass($class_name);
         if ($RClass->implementsInterface(ConfigInterface::class)) {
 
-            //instead of requiring the classes to extend Base (so that they provide the needed methods)
-            //Kernel can work with reflection and directly with the static property
-            //the classes supporting config must implement a ConfigInterface
-            //$config_array = $RClass->getConstant('CONFIG_DEFAULTS');//false if not found
-            //if (defined($class_name.'::CONFIG_DEFAULTS') && !isset($class_name::$CONFIG_RUNTIME)) {
-            //if ($RClass->hasConstant('CONFIG_DEFAULTS') && !$RClass->hasStaticProperty('CONFIG_RUNTIME')) {
-            //    throw new ConfigurationException(sprintf(t::_('The class %s has CONFIG_DEFAULTS constant defined but has no $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
-            //    //throw new ConfigurationException(sprintf('The class %s has CONFIG_DEFAULTS constant defined but has no $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.', $class_name));
-            //}
-            //the above case is not possible because the Base class uses the SupportsConfig trait which always defines $CONFIG_RUNTIME
 
-//            //if (!defined($class_name.'::CONFIG_DEFAULTS') && isset($class_name::$CONFIG_RUNTIME)) {
-            //if (!$RClass->hasConstant('CONFIG_DEFAULTS') && $RClass->hasStaticProperty('CONFIG_RUNTIME')) {
-            //    throw new ConfigurationException(sprintf(t::_('The class %s has no CONFIG_DEFAULTS constant defined but has $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.'), $class_name));
-            //    //throw new ConfigurationException(sprintf('The class %s has no CONFIG_DEFAULTS constant defined but has $CONFIG_RUNTIME static property defined. For the configuration settings to work both need to be defined.', $class_name));
-            //}
-            //the above case is allowed - if the class does not specify CONFIG_DEFAULTS this means it is not using configuration (no lookup in the registry will be done)
+            //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
+            if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
 
-            //$class_name::$CONFIG_RUNTIME += $class_name::CONFIG_DEFAULTS;//the $CONFIG_RUNTIME may already contain values too
-            if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
-
-                $RProperty = $RClass->getProperty('CONFIG_RUNTIME');
-                $RProperty->setAccessible(TRUE);
 
                 $default_config = ( new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS') )->getValue();
 
@@ -331,13 +445,23 @@ class Kernel
                 $RParentClass = $RClass->getParentClass();
                 $parent_class_name = $RParentClass->name;
                 //$parent_config = $parent_class_name::get_runtime_configuration();
-                $parent_config = $class_name::get_runtime_configuration();
+                $parent_config = [];
 
-                $runtime_config += $parent_config;
+
+                //if (is_a($parent_class_name, ConfigInterface::class)) {
+                if ($RParentClass->implementsInterface(ConfigInterface::class)) {
+                    $parent_config = $parent_class_name::get_runtime_configuration();
+                }
+
+
+                //print $class_name.' '.print_r($parent_config);
+
+                $runtime_config += $parent_config;//the parent config does not overwrite the current config
 
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
+
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
@@ -361,26 +485,27 @@ class Kernel
                     }
                 }
 
-                $RProperty->setValue($runtime_config);
             } else {
-                //this class is not defining config values - will have access to the parent::$CONFIG_RUNTIME
+                //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
 
         } else {
             //do nothing - does not require configuration
         }
+        return $runtime_config;
+    }
 
+    /**
+     * @param string $class_name
+     */
+    protected static function initialize_class(string $class_name) : void
+    {
+        
+        $RClass = new ReflectionClass($class_name);
+        
 
-
-        //initialize the services
-        if (!empty($RProperty)) {
-            //the there has been a $CONFIG_RUNTIME set and it is already made accessible
-            $runtime_config = $RProperty->getValue();
-            if (!empty($runtime_config['services']) ) {
-                foreach ($runtime_config['services'] as $class_name => $args) {
-
-                }
-            }
+        if ($RClass->hasOwnMethod('_initialize_class')) {
+            call_user_func([$class_name, '_initialize_class']);
         }
 
     }

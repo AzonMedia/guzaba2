@@ -39,7 +39,7 @@ class Coroutine extends \Swoole\Coroutine
         'max_subcoroutine_exec_time'        => 5, //in seconds
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     /**
      * @var callable
@@ -53,61 +53,45 @@ class Coroutine extends \Swoole\Coroutine
     public static function init() : void
     {
 
-        $current_cid = parent::getcid();
+        $current_cid = self::getcid();
         self::$last_coroutine_id = $current_cid;
         if (!isset(self::$coroutines_ids[$current_cid])) {
             //every coroutine will have its own channel to ensure that it awaits for all its child coroutines to be over
-            $Context = parent::getContext($current_cid);
-            $Context->start_microtime = microtime(TRUE);
-            $Context->settings = [];
-            parent::defer(function() use ($Context) {
-                if (!empty($Context->connections) && is_array($Context->connections)) {
-                    foreach ($Context->connections as $Connection) {
-                        if ($Connection instanceof ConnectionInterface) {
-                            $Connection->free();
-                        }
+
+            //defers are called in revers order
+
+            //before unsetting the master coroutine unset the IDs of all subcoroutines
+            $Function = function(int $cid) use (&$Function) : void
+            {
+                foreach (self::$coroutines_ids[$cid] as $key=>$data) {
+                    if (is_int($key)) {
+                        $Function($data['.']);
                     }
                 }
+                self::$coroutines_ids[$cid] = NULL;
+                unset(self::$coroutines_ids[$cid]);
+            };
+            //$Function($current_cid);//this will execute before the defer() put in the init()
+            defer(function() use ($Function, $current_cid) {
+                $Function($current_cid);
+            });
+
+
+            $Context = self::createContextWrapper();
+            parent::defer(function() use ($Context) {
+                $Context->freeAllConnections();
                 $Context->end_microtime = microtime(TRUE);
             });
             self::$coroutines_ids[$current_cid] = [
                 '.' => $current_cid,
                 '..' => NULL,
-                'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'chan' => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
                 'context' => $Context,
             ];
         }
 
     }
 
-    /**
-     * A cleanup method that should be always called at the end of the execution of the root coroutine (usually this is the end of the request handler).
-     */
-    public static function end() : void
-    {
-
-        //block until all coroutines started by the root (request) coroutine are over
-//        $total_coroutines = self::getTotalSubCoroutinesCount(self::getRootCoroutine());
-//        $chan = self::getRootCoroutineChannel();
-//        for ($aa=0 ; $aa<$total_coroutines ; $aa++) {
-//            $chan->pop();//this is blocking and until all pop() it should wait
-//        }
-        //self::awaitSubCoroutines();//no need as this will be invoked as part of the creation of every subcoroutine
-
-        $current_cid = parent::getcid();
-        //before unsetting the master coroutine unset the IDs of all subcoroutines
-        $Function = function(int $cid) use (&$Function) : void
-        {
-            foreach (self::$coroutines_ids[$cid] as $key=>$data) {
-                if (is_int($key)) {
-                    $Function($data['.']);
-                }
-            }
-            self::$coroutines_ids[$cid] = NULL;
-            unset(self::$coroutines_ids[$cid]);
-        };
-        $Function($current_cid);
-    }
 
 //    public static function setCoroutineSettings(array $settings, ?int $cid = NULL) : void
 //    {
@@ -136,8 +120,8 @@ class Coroutine extends \Swoole\Coroutine
 //     */
 //    public static function createCoroutine(callable $callable, array $settings = []) : self
 //    {
-//        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::$CONFIG_RUNTIME['max_allowed_subcoroutines']) {
-//            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::$CONFIG_RUNTIME['max_allowed_subcoroutines']));
+//        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::CONFIG_RUNTIME['max_allowed_subcoroutines']) {
+//            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
 //        }
 //
 //        $Coroutine = new self($callable, $settings);
@@ -153,7 +137,7 @@ class Coroutine extends \Swoole\Coroutine
 //        $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
 //        {
 //            $new_cid = parent::getcid();
-//            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid], 'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
+//            self::$coroutines_ids[$new_cid] = ['.' => &$new_cid , '..' => &self::$coroutines_ids[$current_cid], 'chan' => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']), 'settings' => [] ];
 //            self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 //
 //            $CoroutineExecution = CoroutineExecution::get_instance();
@@ -190,11 +174,27 @@ class Coroutine extends \Swoole\Coroutine
         return self::$coroutines_ids[$root_coroutine_id];
     }
 
-//    public static function getContext(?int $cid = NULL) : \Swoole\Coroutine\Context
-//    {
-//        $Context = parent::getContext();
-//        return $Context;
-//    }
+    //public static function getContext(?int $cid = NULL) : \Swoole\Coroutine\Context
+    //public static function getContextWrapper($cid = NULL) : \Guzaba2\Coroutine\Context
+    public static function getContext($cid = NULL) : \Guzaba2\Coroutine\Context
+    {
+        $cid = $cid ?? parent::getcid();
+        $Context = self::$coroutines_ids[$cid]['context'];
+        return $Context;
+    }
+
+    /**
+     * Creates a \Guzaba2\Coroutine\Context which wraps aroung Swoole\Coroutine\Context
+     * @return Context
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    private static function createContextWrapper(?int $cid = NULL) : \Guzaba2\Coroutine\Context
+    {
+        $cid = $cid ?? parent::getcid();
+        $SwooleContext = parent::getContext($cid);
+        $Context = new Context($SwooleContext, $cid);
+        return $Context;
+    }
 
     /**
      * A wrapper for creating coroutines.
@@ -223,8 +223,8 @@ class Coroutine extends \Swoole\Coroutine
         //    self::$coroutines_ids[$current_cid] = ['.' => $current_cid, '..' => NULL];
         //}
 
-        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::$CONFIG_RUNTIME['max_allowed_subcoroutines']) {
-            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::$CONFIG_RUNTIME['max_allowed_subcoroutines']));
+        if (self::getTotalSubCoroutinesCount(self::getRootCoroutine()) === self::CONFIG_RUNTIME['max_allowed_subcoroutines']) {
+            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
         }
 
 
@@ -246,7 +246,7 @@ class Coroutine extends \Swoole\Coroutine
             self::$coroutines_ids[$new_cid] = [
                 '.' => &$new_cid ,
                 '..' => &self::$coroutines_ids[$current_cid],
-                'chan' => new \Swoole\Coroutine\Channel(self::$CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'chan' => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
                 //'settings' => []
                 'context'   => $Context,
             ];
@@ -260,13 +260,7 @@ class Coroutine extends \Swoole\Coroutine
             //actually the coroutine will wait for all its subcoroutines to be over
             
             parent::defer(function() use ($Context) {
-                if (!empty($Context->connections) && is_array($Context->connections)) {
-                    foreach ($Context->connections as $Connection) {
-                        if ($Connection instanceof ConnectionInterface) {
-                            $Connection->free();
-                        }
-                    }
-                }
+                $Context->freeAllConnections();
                 $Context->end_microtime_with_subcoroutines = microtime(TRUE);
             });
 
@@ -277,8 +271,6 @@ class Coroutine extends \Swoole\Coroutine
             $CoroutineExecution->destroy();
 
             $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
-
-
 
         };
         parent::create($WrapperFunction, ...$params);
@@ -480,7 +472,7 @@ class Coroutine extends \Swoole\Coroutine
     public static function awaitSubCoroutines(?int $timeout = NULL) : void
     {
         if ($timeout === NULL) {
-            $timeout = self::$CONFIG_RUNTIME['max_subcoroutine_exec_time'];
+            $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }
         $cid = parent::getcid();
         if (!array_key_exists($cid, self::$coroutines_ids)) {

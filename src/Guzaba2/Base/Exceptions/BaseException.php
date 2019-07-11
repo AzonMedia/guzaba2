@@ -41,6 +41,7 @@ abstract class BaseException extends \Exception
 
     use SupportsObjectInternalId;
 
+    //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
     /**
      * @var \Throwable
      */

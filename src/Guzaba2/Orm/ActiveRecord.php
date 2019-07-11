@@ -8,6 +8,16 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 
 class ActiveRecord extends Base
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'ConnectionFactory'
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+
     /**
      * @var StoreInterface
      */
@@ -28,6 +38,7 @@ class ActiveRecord extends Base
     public static function _initialize_class()
     {
         self::$Store = new \Guzaba2\Orm\Store\Memory();//move to DI
+
     }
 
     //public function __construct(StoreInterface $Store)
