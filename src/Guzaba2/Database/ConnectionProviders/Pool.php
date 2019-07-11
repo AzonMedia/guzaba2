@@ -6,6 +6,7 @@ namespace Guzaba2\Database\ConnectionProviders;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Translator\Translator as t;
@@ -20,58 +21,36 @@ implements ConnectionProviderInterface
 {
 
     protected const CONFIG_DEFAULTS = [
-        'max_connections'   => 1,
+        'max_connections'   => 20,
         //'connections'       => [],
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     protected $busy_connections = [];
     protected $available_connections = [];
     protected $suspended_coroutines = [];
 
-    protected $is_initialized_flag = FALSE;
-
-    public function __construct(array $options = [])
+    public function __construct()
     {
-        parent::update_runtime_configuration($options);
+        parent::__construct();
 
         //cant create the connections here - these need to be created inside the coroutine
-//        foreach (self::$CONFIG_RUNTIME['connections'] as $connection_class) {
-//            for ($aa = 0; $aa < self::$CONFIG_RUNTIME['max_connections']; $aa++) {
+//        foreach (self::CONFIG_RUNTIME['connections'] as $connection_class) {
+//            for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections']; $aa++) {
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
-        $this->is_initialized_flag = TRUE;
+
     }
 
-//    public function initialize(array $options) : void
-//    {
-//        //create the initial set of connections
-//        parent::update_runtime_configuration($options);
-//
-//        //cant create the connections here - these need to be created inside the coroutine
-////        foreach (self::$CONFIG_RUNTIME['connections'] as $connection_class) {
-////            for ($aa = 0; $aa < self::$CONFIG_RUNTIME['max_connections']; $aa++) {
-////                $this->available_connections[$connection_class][] = new $connection_class();
-////            }
-////        }
-//        //print $this->object_internal_id.PHP_EOL;
-//        $this->is_initialized_flag = TRUE;
-//    }
-
-    public function is_initialized() : bool
-    {
-        return $this->is_initialized_flag;
-    }
-
+    /**
+     * Obtains a connection (and marks it as busy)
+     * @param string $connection_class
+     * @return ConnectionInterface
+     */
     public function get_connection(string $connection_class) : ConnectionInterface
     {
-
-        //print 'GET '.count($this->available_connections[$connection_class]).PHP_EOL;
-        if (!$this->is_initialized()) {
-
-        }
 
         //this is a blocking function so that it always return a connection
         //it either blocks or throws an exception at the end if it cant return a connection
@@ -94,6 +73,16 @@ implements ConnectionProviderInterface
             if ($Connection->is_connected()) {
                 //print 'PUSH BUSY EXISTING '.$Connection->get_object_internal_id().PHP_EOL;
                 array_push($this->busy_connections[$connection_class], $Connection);
+                //add the connection reference to the coroutine context
+                //this is needed because if the connection is not freed it will just hang
+                //so we automate the connection freeing at the end of the coroutine execution
+                //$Context = Coroutine::getContext();
+                //a coroutine may obtain multiple connections
+                //$Context->connections[] = $Connection;
+                if (Coroutine::inCoroutine()) {
+                    $Connection->assign_to_coroutine(Coroutine::getcid());
+                }
+
                 return $Connection;
             } else {
                 //print 'CLOSED'.PHP_EOL;
@@ -104,24 +93,30 @@ implements ConnectionProviderInterface
         } else {
             //there are no available connections
 
-            if (count($this->busy_connections[$connection_class]) < self::$CONFIG_RUNTIME['max_connections'] ) {
+            if (count($this->busy_connections[$connection_class]) < self::CONFIG_RUNTIME['max_connections'] ) {
                 //the total number of busy connections is below the max number of connections
                 //so a new one can be created
                 //print 'NEW CONNECTION '.$this->get_object_internal_id().PHP_EOL;
                 $Connection = new $connection_class();
+                $Connection->set_created_from_factory(TRUE);
                 //print 'NEW CONNECTION '.$Connection->get_object_internal_id().PHP_EOL;
                 //print 'PUSH BUSY NEW '.$Connection->get_object_internal_id().PHP_EOL;
                 array_push($this->busy_connections[$connection_class], $Connection);
-                //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::$CONFIG_RUNTIME['max_connections'].PHP_EOL;
+                //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::CONFIG_RUNTIME['max_connections'].PHP_EOL;
                 //print 'CONN STATS B '.$r.' '.count($this->busy_connections[$connection_class]).' '.count($this->available_connections[$connection_class]).PHP_EOL;
+
+                if (Coroutine::inCoroutine()) {
+                    $Connection->assign_to_coroutine(Coroutine::getcid());
+                }
+
                 return $Connection;
             } else {
                 //all connections are busy and no new ones can be created
                 //suspend the current coroutine until some connections are freed
-                $current_cid = \Co::getcid();
+                $current_cid = Coroutine::getcid();
                 $this->suspended_coroutines[] = $current_cid;
                 //print 'SUSPEND'.PHP_EOL;
-                \Co::suspend();
+                Coroutine::suspend();
 
                 //the connection will be resumed here
                 //if it is resumed it is assumed that there are connections active
@@ -132,15 +127,12 @@ implements ConnectionProviderInterface
     }
 
     /**
+     * Frees the provided connection
      * @param ConnectionInterface $Connection
      * @throws RunTimeException
      */
     public function free_connection(ConnectionInterface $Connection) : void
     {
-
-        if (!$this->is_initialized()) {
-
-        }
 
         $connection_class = get_class($Connection);
         if (!isset($this->busy_connections[$connection_class])) {
@@ -150,6 +142,9 @@ implements ConnectionProviderInterface
         foreach ($this->busy_connections[$connection_class] as $key => $BusyConnection) {
             if ($Connection === $BusyConnection) {
                 $connection_found = TRUE;
+                if (Coroutine::inCoroutine()) {
+                    $Connection->unassign_from_coroutine();
+                }
                 //$Connection = array_pop($this->busy_connections[$connection_class]);
                 unset($this->busy_connections[$connection_class][$key]);
                 $this->busy_connections[$connection_class] = array_values($this->busy_connections[$connection_class]);
@@ -158,7 +153,7 @@ implements ConnectionProviderInterface
                 if (count($this->suspended_coroutines)) {
                     $suspended_cid = array_pop($this->suspended_coroutines);
                     //print 'RESUME'.PHP_EOL;
-                    \Co::resume($suspended_cid);
+                    Coroutine::resume($suspended_cid);
                 }
             }
         }
@@ -166,8 +161,6 @@ implements ConnectionProviderInterface
             //lets see will it be found in the available connections
             foreach ($this->available_connections[$connection_class] as $AvailableConnection) {
                 if ($Connection === $AvailableConnection) {
-                    //print_r($this->available_connections);
-                    //print_r($this->busy_connections);
                     throw new RunTimeException(sprintf(t::_('The provided connection of class %s with ID %s to be freed was found in the available connection pool which is wrong.'), get_class($Connection), $Connection->get_object_internal_id() ));
                 }
             }

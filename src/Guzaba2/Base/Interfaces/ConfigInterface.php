@@ -12,7 +12,7 @@ interface ConfigInterface
 
     //public const CONFIG_DEFALUTS = [];//must be defined but should not be public but protected instead
 
-    public static function initialize_runtime_configuration(array $runtime_config) : void ;
+    //public static function initialize_runtime_configuration(array $runtime_config) : void ;
 
     //once the configuration is set there should no be methods for accessing it outside the class as this breaks the principle of separation of configuration
     //the configuration of a class should be accessible only to this class and its children

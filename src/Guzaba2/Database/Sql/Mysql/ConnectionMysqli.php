@@ -20,7 +20,7 @@ abstract class ConnectionMysqli extends \Guzaba2\Database\Connection
         'database'  => '',
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     protected $Mysqli;
 
@@ -29,12 +29,12 @@ abstract class ConnectionMysqli extends \Guzaba2\Database\Connection
         parent::__construct();
         self::update_runtime_configuration($options);
         $this->Mysqli = new \mysqli(
-            self::$CONFIG_RUNTIME['host'],
-            self::$CONFIG_RUNTIME['username'],
-            self::$CONFIG_RUNTIME['password'],
-            self::$CONFIG_RUNTIME['database'],
-            self::$CONFIG_RUNTIME['port'],
-            self::$CONFIG_RUNTIME['socket']
+            self::CONFIG_RUNTIME['host'],
+            self::CONFIG_RUNTIME['username'],
+            self::CONFIG_RUNTIME['password'],
+            self::CONFIG_RUNTIME['database'],
+            self::CONFIG_RUNTIME['port'],
+            self::CONFIG_RUNTIME['socket']
         );
     }
 

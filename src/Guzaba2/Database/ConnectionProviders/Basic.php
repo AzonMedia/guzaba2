@@ -19,8 +19,9 @@ implements ConnectionProviderInterface
 
     public function get_connection(string $class_name) : ConnectionInterface
     {
-        $ret = new $class_name();
-        return $ret;
+        $Connection = new $class_name();
+        $Connection->set_created_from_factory(TRUE);
+        return $Connection;
     }
 
     public function free_connection(ConnectionInterface $Connection) : void

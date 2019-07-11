@@ -5,11 +5,21 @@ namespace Guzaba2\Orm;
 use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
-use Guzaba2\Orm\Store\Memory as Memory;
+use Guzaba2\Orm\Store\Memory;
 
 class ActiveRecord extends GenericObject
 {
     const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
+
+
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'ConnectionFactory'
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
 
     /**
      * @var StoreInterface
@@ -41,7 +51,7 @@ class ActiveRecord extends GenericObject
      */
     protected $disable_property_hooks_flag = FALSE;
 
-    public static function _initialize_class(): void
+    public static function _initialize_class()
     {
         self::$Store = new Memory();//move to DI
     }

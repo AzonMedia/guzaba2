@@ -61,11 +61,13 @@ class Container extends \Azonmedia\Di\Container
         ],
     ];
 
-    protected static $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
-    public function __construct(array $options = [])
+    public function __construct(array $config = [])
     {
-        self::update_runtime_configuration($options);
-        parent::__construct(self::$CONFIG_RUNTIME);
+        if (!$config) {
+            $config = self::CONFIG_RUNTIME;
+        }
+        parent::__construct($config);
     }
 }

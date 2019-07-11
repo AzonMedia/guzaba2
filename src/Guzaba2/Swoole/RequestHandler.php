@@ -234,14 +234,6 @@ class RequestHandler extends Base
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
             $PsrRequest->set_server($this->HttpServer);
 
-            //print_r($PsrRequest);
-            //print $PsrRequest['d'];
-            if ($PsrRequest['d']==1) {
-                $this->HttpServer->table->set('1',['data' => 'aaa']);
-            } elseif ($PsrRequest['d']==2) {
-                print_r($this->HttpServer->table->get('1'));
-            }
-
 
 
 
@@ -251,7 +243,12 @@ class RequestHandler extends Base
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
+
+
+
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
+
+
 
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
@@ -263,7 +260,7 @@ class RequestHandler extends Base
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception);
         } finally {
-            \Guzaba2\Coroutine\Coroutine::end();
+            //\Guzaba2\Coroutine\Coroutine::end();//no need
             $Execution->destroy();
         }
         //print 'MASTER END'.PHP_EOL;
