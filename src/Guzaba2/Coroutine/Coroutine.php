@@ -304,6 +304,12 @@ class Coroutine extends \Swoole\Coroutine
         parent::resume($cid);
     }
 
+    public static function inCoroutine() : bool
+    {
+        $cid = parent::getcid();
+        return $cid > 0 ? FALSE : TRUE;
+    }
+
     /**
      * Works like \Swoole\Coroutine::getBacktrace() but returns the backtrace for all the parent coroutines not just the current one.
      * Does not return backtrace for the code outside the root coroutine (which would usually be the coroutine handling the request).
