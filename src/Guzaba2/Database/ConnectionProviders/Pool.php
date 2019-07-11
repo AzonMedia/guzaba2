@@ -79,7 +79,7 @@ implements ConnectionProviderInterface
                 //$Context = Coroutine::getContext();
                 //a coroutine may obtain multiple connections
                 //$Context->connections[] = $Connection;
-                if (Coroutine::getcid()) {
+                if (Coroutine::inCoroutine()) {
                     $Connection->assign_to_coroutine(Coroutine::getcid());
                 }
 
@@ -105,7 +105,7 @@ implements ConnectionProviderInterface
                 //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::CONFIG_RUNTIME['max_connections'].PHP_EOL;
                 //print 'CONN STATS B '.$r.' '.count($this->busy_connections[$connection_class]).' '.count($this->available_connections[$connection_class]).PHP_EOL;
 
-                if (Coroutine::getcid()) {
+                if (Coroutine::inCoroutine()) {
                     $Connection->assign_to_coroutine(Coroutine::getcid());
                 }
 
@@ -142,7 +142,7 @@ implements ConnectionProviderInterface
         foreach ($this->busy_connections[$connection_class] as $key => $BusyConnection) {
             if ($Connection === $BusyConnection) {
                 $connection_found = TRUE;
-                if (Coroutine::getcid()) {
+                if (Coroutine::inCoroutine()) {
                     $Connection->unassign_from_coroutine();
                 }
                 //$Connection = array_pop($this->busy_connections[$connection_class]);
