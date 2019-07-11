@@ -8,8 +8,13 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Exceptions\AutoloadException;
 use Guzaba2\Translator\Translator as t;
 
+
 /**
+ * Class SourceStream
  * @see http://php.net/manual/en/class.streamwrapper.php
+ * Registers guzaba.source stream which is used to load the classes.
+ * It rewrites the CONFIG_RUNTIME constant
+ * @package Guzaba2\Kernel
  */
 class SourceStream extends Base
 {
@@ -26,9 +31,9 @@ class SourceStream extends Base
     protected $read_enabled = false;
     protected $write_enabled = false;
 
-    protected static $protocol = 'guzaba.source';
+    public const PROTOCOL = 'guzaba.source';
 
-    public function stream_open($path,$mode,$options,&$opened_path) {
+    public function stream_open($path, $mode, $options, &$opened_path) {
 
         $this->mode = $mode;
         $this->options = $options;
@@ -101,15 +106,17 @@ class SourceStream extends Base
                 throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported mode "%s" is provided.'),$this->mode));
         }
 
-
-        //print $this->path.PHP_EOL;
-
-        //$this->data = self::rewrite_data($this->path, $this->data);
-        //self::rewrite_data($this->path, $this->data);
-
         return true;
     }
 
+    /**
+     * Returns the rewritten class source.
+     * The rewriting is done by first loading the class (by using eval()) with a different name so that the runtime configuration can be obtained (@see Kernel::get_runtime_configuration()).
+     * Then on the second pass the actual class source is rewritten with the new runtime config and the source is returned.
+     * @uses Kernel::get_runtime_configuration()
+     * @param string $path Class path that is to be loaded
+     * @return string
+     */
     private static function load_data(string $path) : string
     {
 
@@ -180,7 +187,7 @@ class SourceStream extends Base
     }
 
     public function stream_lock() {
-        throw new notImplementedException(sprintf(t::_('Locking of a guzaba.data stream is not implemented yet.')));
+        throw new notImplementedException(sprintf(t::_('Locking of a %s stream is not implemented yet.'), self::PROTOCOL ));
         //return false;
     }
 

@@ -21,7 +21,7 @@ implements ConnectionProviderInterface
 {
 
     protected const CONFIG_DEFAULTS = [
-        'max_connections'   => 10,
+        'max_connections'   => 20,
         //'connections'       => [],
     ];
 
@@ -44,7 +44,11 @@ implements ConnectionProviderInterface
 
     }
 
-
+    /**
+     * Obtains a connection (and marks it as busy)
+     * @param string $connection_class
+     * @return ConnectionInterface
+     */
     public function get_connection(string $connection_class) : ConnectionInterface
     {
 
@@ -116,6 +120,11 @@ implements ConnectionProviderInterface
 
     }
 
+    /**
+     * Frees the provided connection
+     * @param ConnectionInterface $Connection
+     * @throws RunTimeException
+     */
     public function free_connection(ConnectionInterface $Connection) : void
     {
 
