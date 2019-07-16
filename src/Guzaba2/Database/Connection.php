@@ -27,6 +27,8 @@ implements ConnectionInterface
 
     protected $is_created_from_factory_flag = FALSE;
 
+    protected $scope_counter = 0;
+
     public function __construct()
     {
         parent::__construct();
@@ -41,6 +43,25 @@ implements ConnectionInterface
         //self::ConnectionFactory()->free_connection($this);
         $this->free();
         parent::__destruct();
+    }
+
+    /**
+     * To be called by the Pool when the connection is obtained
+     */
+    public function increment_scope_counter() : void
+    {
+        $this->scope_counter++;
+    }
+
+    public function decrement_scope_counter() : void
+    {
+        $this->scope_counter--;
+        if ($this->scope_counter === 0 ){
+            if ($this->is_created_from_factory()) {
+                print 'AAAAAAAAAAAAAAAAA!';
+                self::ConnectionFactory()->free_connection($this);
+            }
+        }
     }
 
 //    public function set_created_from_pool(bool $is_created_from_pool_flag) : void
@@ -93,6 +114,10 @@ implements ConnectionInterface
     public function unassign_from_coroutine() : void
     {
 
+        //if ($this->scope_counter) {
+        //    throw new RunTimeException(sprintf(t::_('It seems the connection is still referenced ')));
+        //}
+
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
         }
@@ -106,12 +131,11 @@ implements ConnectionInterface
      * Frees this connection.
      * To be used if the connection is no longer used.
      * It is also used by the Guzaba\Coroutine\Coroutine at the end of coroutine execution to automatically free all connection that may have not be freed up by then (forgotten/hanging connections).
+     * By having scope reference there is no longer need to explicitly release the connection with $Connection->free()
      */
     public function free() : void
     {
-        if ($this->is_created_from_factory()) {
-            self::ConnectionFactory()->free_connection($this);
-        }
+        $this->decrement_scope_counter();
     }
 
     /**
@@ -123,4 +147,15 @@ implements ConnectionInterface
     {
 
     }
+
+    public static function get_tprefix() : string
+    {
+        return static::CONFIG_RUNTIME['tprefix'] ?? '';
+    }
+
+    public static function get_database() : string
+    {
+        return static::CONFIG_RUNTIME['database'];
+    }
+
 }

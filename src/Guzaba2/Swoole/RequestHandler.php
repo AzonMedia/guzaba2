@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
 
+use Azonmedia\Glog\Application\MysqlConnection;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -19,6 +20,14 @@ use Throwable;
 
 class RequestHandler extends Base
 {
+
+//    protected const CONFIG_DEFAULTS = [
+//        'services'      => [
+//            'ConnectionFactory'
+//        ]
+//    ];
+//
+//    protected const CONFIG_RUNTIME = [];
 
     /**
      * Array of MiddlewareInterface
@@ -92,7 +101,7 @@ class RequestHandler extends Base
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
 
-            \Guzaba2\Coroutine\Coroutine::init();
+            \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
 
             $Execution =& RequestExecution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
@@ -228,6 +237,8 @@ class RequestHandler extends Base
 
             //print_r(Coroutine::$coroutines_ids);
 
+
+
             //print 'aaaaaaaaa';
             //print print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
 
@@ -235,6 +246,33 @@ class RequestHandler extends Base
             $PsrRequest->set_server($this->HttpServer);
 
 
+//            $o = new class () {
+//                public function __sleep() {
+//                    print 'SLEEP';
+//                }
+//            };
+
+//            if ($PsrRequest['action'] == 'set') {
+//                $this->HttpServer->table->set('0', ['id' => $this->HttpServer->get_worker_id(), 'data'=> 'asd'] );
+//            } elseif ($PsrRequest['action'] == 'get') {
+                //print_r($this->HttpServer->table->get('0'));
+//                $s = microtime(true);
+//                $Connection1 = self::ConnectionFactory()->get_connection(MysqlConnection::class);
+//                for ($aa=0; $aa<10000; $aa++) {
+//                    //$this->HttpServer->table->get('0');
+//
+//                    //print_r(Coroutine::getContext()->getConnections());
+//
+//                    $query = "SELECT * FROM some_table";
+//                    //\Co::sleep(3);
+//                    //$query = "SELECT SLEEP(1)";
+//                    $Statement = $Connection1->prepare($query);
+//                    $Statement->execute();
+//                    $data = $Statement->fetchAll();
+//                }
+//                $e = microtime(true);
+//                print 'total: '.($e-$s).PHP_EOL;
+//            }
 
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404

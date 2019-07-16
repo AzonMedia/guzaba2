@@ -132,27 +132,55 @@ class Kernel
 
     }
 
-    public static function set_di_container(ContainerInterface $Container): void
+
+    /**
+     * @param ContainerInterface $Container
+     */
+    public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
     }
 
-    public static function get_service(string $id): object
+    /**
+     * @param string $id
+     * @return object
+     */
+    public static function get_service(string $id) : object
     {
         return self::$Container->get($id);
     }
 
-    public static function has_service(string $id): bool
+    /**
+     * @param string $id
+     * @return bool
+     */
+    public static function has_service(string $id) : bool
     {
         return self::$Container->has($id);
     }
 
-    public static function is_initialized(): bool
+    /**
+     * @return bool
+     */
+    public static function is_initialized() : bool
     {
         return self::$is_initialized_flag;
     }
 
-    public static function run(callable $callable): int
+    /**
+     * @return LoggerInterface
+     */
+    public static function get_logger() : LoggerInterface
+    {
+        return self::$Logger;
+    }
+
+    /**
+     * @param callable $callable
+     * @return int
+     * @throws \Exception
+     */
+    public static function run(callable $callable) : int
     {
 
         if (!self::is_initialized()) {
@@ -173,8 +201,15 @@ class Kernel
      */
     public static function stop(string $message) : void
     {
-        die($message.PHP_EOL);
+        print $message.PHP_EOL;
+        die(1);
     }
+
+    public static function dump( /* mixed */ $var) : void
+    {
+
+    }
+
 
 
     /**
@@ -280,21 +315,6 @@ class Kernel
         return $ret;
     }
 
-    protected static function rrmdir($dir) {
-        if (is_dir($dir)) {
-            $objects = scandir($dir);
-            foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (is_dir($dir."/".$object))
-                        self::rrmdir($dir."/".$object);
-                    else
-                        unlink($dir."/".$object);
-                }
-            }
-            rmdir($dir);
-        }
-    }
-
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
@@ -366,6 +386,17 @@ class Kernel
 
 
                 $runtime_config += $parent_config;//the parent config does not overwrite the current config
+                //there is exception though for the 'services' key - this needs to be merged
+                if (isset($parent_config['services'])) {
+                    if (!isset($runtime_config['services'])) {
+                        $runtime_config['services'] = [];
+                    }
+                    foreach ($parent_config['services'] as $service_name) {
+                        if (!in_array($service_name, $runtime_config['services'])) {
+                            $runtime_config['services'][] = $service_name;
+                        }
+                    }
+                }
 
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry

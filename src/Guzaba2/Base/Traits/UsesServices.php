@@ -16,7 +16,12 @@ trait UsesServices
      */
     public static function uses_services(): bool
     {
-        return !empty(static::CONFIG_RUNTIME['services']);
+        $ret = FALSE;
+        $called_class = get_called_class();
+        if (defined($called_class.'::CONFIG_RUNTIME')) {
+            $ret = !empty(static::CONFIG_RUNTIME['services']);
+        }
+        return $ret;
     }
 
     /**
@@ -26,7 +31,7 @@ trait UsesServices
     public static function uses_service(string $service_name): bool
     {
 
-        return static::uses_services() ? in_array($service_name, static::CONFIG_RUNTIME['services']) : FALSE;
+        return static::uses_services() ? in_array($service_name, static::get_services() ) : FALSE;
     }
 
     /**
@@ -34,7 +39,12 @@ trait UsesServices
      */
     public static function get_services(): array
     {
-        return static::CONFIG_RUNTIME['services'];
+        $ret = [];
+        $called_class = get_called_class();
+        if (defined($called_class.'::CONFIG_RUNTIME')) {
+            $ret = static::CONFIG_RUNTIME['services'];
+        }
+        return $ret;
     }
 
     /**

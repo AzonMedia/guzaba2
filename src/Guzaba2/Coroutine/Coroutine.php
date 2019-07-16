@@ -28,6 +28,8 @@ class Coroutine extends \Swoole\Coroutine
 
     public static $last_coroutine_id = 0;
 
+    protected static $worker_id = 0;
+
     /**
      * This is the maximum number of allowed coroutines within a root (request) coroutine.
      * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
@@ -50,8 +52,10 @@ class Coroutine extends \Swoole\Coroutine
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
      */
-    public static function init() : void
+    public static function init(int $worker_id) : void
     {
+
+        self::$worker_id = $worker_id;
 
         $current_cid = self::getcid();
         self::$last_coroutine_id = $current_cid;
@@ -515,6 +519,11 @@ class Coroutine extends \Swoole\Coroutine
             $subcoroutines_completed_arr[] = $ret;//the pop returns the subcoroutine ID
         }
         self::$coroutines_ids[$cid]['sub_awaited'] = TRUE;
+    }
+
+    public static function getWorkerId() : int
+    {
+        return self::$worker_id;
     }
 
     private static function getParentCoroutineChannel(?int $cid = NULL) : \Swoole\Coroutine\Channel
