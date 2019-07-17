@@ -79,7 +79,7 @@ abstract class ConnectionCoroutine extends Connection
 
             if ($this->MysqlCo->errno === 2006 || $this->MysqlCo->errno === 2013) {
                 // If connection is lost, try to reconnect and prepare the query again
-                sprintf(t::_("MySQL Connection is Lost with Error No %s. Trying to reconnect ..."), $this->MysqlCo->errno);
+                print(sprintf(t::_("MySQL Connection is Lost with Error No %s. Trying to reconnect ...\n"), $this->MysqlCo->errno));
                 $this->initialize();
                 return $this->prepare($query);
             } else {
