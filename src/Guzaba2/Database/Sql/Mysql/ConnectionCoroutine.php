@@ -23,11 +23,11 @@ use Guzaba2\Translator\Translator as t;
 abstract class ConnectionCoroutine extends Connection
 {
     protected const CONFIG_DEFAULTS = [
-        'host'      => '192.168.0.51',
+        'host'      => 'localhost',
         'port'      => 3306,
-        'user'      => 'vesko',
-        'password'  => 'impas560',
-        'database'  => 'guzaba2',
+        'user'      => 'root',
+        'password'  => '',
+        'database'  => '',
     ];
 
     protected const CONFIG_RUNTIME = [];
