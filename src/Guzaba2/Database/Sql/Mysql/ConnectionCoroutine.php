@@ -79,7 +79,7 @@ abstract class ConnectionCoroutine extends Connection
             $NativeStatement = $this->MysqlCo->prepare($query);
         } catch (ErrorException $exception) {
 
-            if ($this->MysqlCo->errno == 2006 || $this->MysqlCo->errno == 2013) {
+            if ($this->MysqlCo->errno === 2006 || $this->MysqlCo->errno === 2013) {
                 $this->initialize();
                 goto prepare;
             } else {
