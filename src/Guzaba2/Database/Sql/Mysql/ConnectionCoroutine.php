@@ -45,6 +45,10 @@ abstract class ConnectionCoroutine extends Connection
     //public function __construct(array $options)
     public function __construct()
     {
+        $this->initialize();
+    }
+
+    private function initialize(){
         parent::__construct();
         //self::update_runtime_configuration($options);
 
@@ -63,6 +67,9 @@ abstract class ConnectionCoroutine extends Connection
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
 
+        // If connection is lost, try to recconect and prepare the query again
+        prepare:
+
         $this->original_query = $query;
 
         $expected_parameters = [];
@@ -71,7 +78,13 @@ abstract class ConnectionCoroutine extends Connection
         try {
             $NativeStatement = $this->MysqlCo->prepare($query);
         } catch (ErrorException $exception) {
-            throw new QueryException(sprintf(t::_('%s. Connection ID %s. Connection Pool status: %s. '), $exception->getMessage(), $this->get_object_internal_id(), print_r(ConnectionFactory::get_instance()->stats(get_class($this)), TRUE ) ));
+
+            if ($this->MysqlCo->errno == 2006 || $this->MysqlCo->errno == 2013) {
+                $this->initialize();
+                goto prepare;
+            } else {
+                throw new QueryException(sprintf(t::_('%s. Connection ID %s.@ '), $exception->getMessage(), $this->get_object_internal_id() ));
+            }
         }
         if (!$NativeStatement) {
             throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error ));
