@@ -58,7 +58,6 @@ implements ConnectionInterface
         $this->scope_counter--;
         if ($this->scope_counter === 0 ){
             if ($this->is_created_from_factory()) {
-                print 'AAAAAAAAAAAAAAAAA!';
                 self::ConnectionFactory()->free_connection($this);
             }
         }

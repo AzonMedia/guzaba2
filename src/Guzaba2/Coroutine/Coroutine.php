@@ -2,6 +2,7 @@
 
 namespace Guzaba2\Coroutine;
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
@@ -52,7 +53,7 @@ class Coroutine extends \Swoole\Coroutine
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
      */
-    public static function init(int $worker_id) : void
+    public static function init(int $worker_id, string $context_class = \Guzaba2\Coroutine\Context::class) : void
     {
 
         self::$worker_id = $worker_id;
@@ -81,19 +82,39 @@ class Coroutine extends \Swoole\Coroutine
             });
 
 
-            $Context = self::createContextWrapper();
+            $Context = self::createContextWrapper($current_cid, $context_class);
             parent::defer(function() use ($Context) {
                 $Context->freeAllConnections();
                 $Context->end_microtime = microtime(TRUE);
             });
             self::$coroutines_ids[$current_cid] = [
-                '.' => $current_cid,
-                '..' => NULL,
-                'chan' => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
-                'context' => $Context,
+                '.'                 => $current_cid,
+                '..'                => NULL,
+                'chan'              => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'context'           => $Context,
             ];
         }
 
+    }
+
+    public static function set_data(string $key, /* mixed */ $value) : void
+    {
+        self::getContext()->static_store[$key] = $value;
+    }
+
+    public static function get_data(string $key) /* mixed */
+    {
+        return self::getContext()->static_store[$key];
+    }
+
+    public static function isset_data(string $key) : bool
+    {
+        return isset(self::getContext()->static_store[$key]);
+    }
+
+    public static function unset_data(string $key) : void
+    {
+        unset(self::getContext()->static_store[$key]);
     }
 
 
@@ -183,6 +204,9 @@ class Coroutine extends \Swoole\Coroutine
     public static function getContext($cid = NULL) : \Guzaba2\Coroutine\Context
     {
         $cid = $cid ?? parent::getcid();
+        if ($cid <= 0) {
+            throw new RunTimeException(sprintf(t::_('The code is not running in a coroutine thus the context is not available.')));
+        }
         $Context = self::$coroutines_ids[$cid]['context'];
         return $Context;
     }
@@ -192,9 +216,12 @@ class Coroutine extends \Swoole\Coroutine
      * @return Context
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    private static function createContextWrapper(?int $cid = NULL) : \Guzaba2\Coroutine\Context
+    private static function createContextWrapper(?int $cid = NULL, string $context_class = \Guzaba2\Coroutine\Context::class) : \Guzaba2\Coroutine\Context
     {
         $cid = $cid ?? parent::getcid();
+        if ($context_class !== \Guzaba2\Coroutine\Context::class && !is_a($context_class, \Guzaba2\Coroutine\Context::class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class name %s for Context class does not inherit %s.'), $context_class, \Guzaba2\Coroutine\Context::class ));
+        }
         $SwooleContext = parent::getContext($cid);
         $Context = new Context($SwooleContext, $cid);
         return $Context;
@@ -244,15 +271,16 @@ class Coroutine extends \Swoole\Coroutine
         $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
         {
             $new_cid = parent::getcid();
-            $Context = parent::getContext();
-            $Context->start_microtime = microtime(TRUE);
-            $Context->settings = [];
+            //$Context = parent::getContext();
+            //$Context->start_microtime = microtime(TRUE);
+            //$Context->settings = [];
+            $context_class = get_class(self::getRootCoroutineContext());
+            $Context = self::createContextWrapper($current_cid, $context_class);
             self::$coroutines_ids[$new_cid] = [
-                '.' => &$new_cid ,
-                '..' => &self::$coroutines_ids[$current_cid],
-                'chan' => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
-                //'settings' => []
-                'context'   => $Context,
+                '.'                     => &$new_cid ,
+                '..'                    => &self::$coroutines_ids[$current_cid],
+                'chan'                  => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'context'               => $Context,
             ];
             self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 

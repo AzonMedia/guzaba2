@@ -4,6 +4,7 @@ namespace Guzaba2\Orm;
 
 use Azonmedia\Reflection\ReflectionClass;
 
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Memory;
@@ -83,7 +84,8 @@ class ActiveRecord extends GenericObject
 
 
         $struct = $this->Store->get_record_structure(get_class($this));
-        print_r($struct);
+        //Kernel::dump($struct);
+
 
         $this->index = $index;
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);

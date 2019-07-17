@@ -35,6 +35,8 @@ implements StoreInterface
     protected $SwooleTable;
 
     protected $record_structures = [];
+    protected $unified_columns_data = [];
+    protected $storage_columns_data = [];
 
     //protected $data = [];
     //instead of storing the data
@@ -76,19 +78,29 @@ implements StoreInterface
         if (isset($this->record_structures[$class])) {
             $ret = $this->record_structures[$class];
         } else {
-            if ($this->FallbackStore) {
-                $ret = $this->FallbackStore->get_record_structure($class);
-                $this->record_structures[$class] = $ret;
-            } else {
-                $this->throw_unknown_record_type_exception($class);
-            }
+            $ret = $this->FallbackStore->get_record_structure($class);
         }
         return $ret;
     }
 
-    public function get_record_storage_structure(string $class) : array
+    public function get_unified_columns_data(string $class) : array
     {
+        if (isset($this->unified_columns_data[$class])) {
+            $ret = $this->unified_columns_data[$class];
+        } else {
+            $ret = $this->FallbackStore->get_unified_columns_data($class);
+        }
+        return $ret;
+    }
 
+    public function get_storage_columns_data(string $class) : array
+    {
+        if (isset($this->storage_columns_data[$class])) {
+            $ret = $this->storage_columns_data[$class];
+        } else {
+            $ret = $this->FallbackStore->get_storage_columns_data($class);
+        }
+        return $ret;
     }
 
     /**

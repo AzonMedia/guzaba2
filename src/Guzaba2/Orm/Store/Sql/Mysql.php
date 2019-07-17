@@ -2,12 +2,15 @@
 
 namespace Guzaba2\Orm\Store\Sql;
 
+use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\NullStore;
+
+use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 
 class Mysql extends Database
 {
@@ -28,11 +31,52 @@ class Mysql extends Database
 
     public function get_record_structure(string $class) : array
     {
-        $ret = $this->get_record_storage_structure($class);
+        $ret = [];
+        $unified_columns_data_arr = $this->get_unified_columns_data($class);
+        foreach ($unified_columns_data_arr as $column_data_arr) {
+            $ret[$column_data_arr['name']] = $column_data_arr['default_value'];
+        }
         return $ret;
     }
 
-    public function get_record_storage_structure(string $class) : array
+    /**
+     * Returns a unified structure
+     * @param string $class
+     * @return array
+     */
+    public function get_unified_columns_data(string $class) : array
+    {
+        $storage_structure_arr = $this->get_storage_columns_data($class);
+
+        $ret = [];
+
+        for ($aa=0;$aa<count($storage_structure_arr);$aa++) {
+            $column_structure_arr = $storage_structure_arr[$aa];
+            $ret[$aa] = array(
+                'name'                  => strtolower($column_structure_arr['COLUMN_NAME']),
+                'native_type'           => $column_structure_arr['DATA_TYPE'],
+                'php_type'              => MysqlDB::TYPES_MAP[$column_structure_arr['DATA_TYPE']],
+                'size'                  => MysqlDB::get_column_size($column_structure_arr),
+                'nullable'              => $column_structure_arr['IS_NULLABLE'] === 'YES',
+                'column_id'             => (int) $column_structure_arr['ORDINAL_POSITION'],
+                'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
+                'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
+                'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
+            );
+            settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
+
+            ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_RECORD_STRUCTURE);
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Returns the backend storage structure
+     * @param string $class
+     * @return array
+     */
+    public function get_storage_columns_data(string $class) : array
     {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 

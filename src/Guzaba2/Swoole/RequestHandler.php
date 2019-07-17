@@ -296,7 +296,7 @@ class RequestHandler extends Base
 
 
         } catch (Throwable $Exception) {
-            Kernel::exception_handler($Exception);
+            Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
             $Execution->destroy();

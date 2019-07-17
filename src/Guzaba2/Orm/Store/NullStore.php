@@ -31,13 +31,23 @@ implements StoreInterface
         parent::__construct();
         //$this->FallbackStore = $FallbackStore;
         if ($FallbackStore) {
-            throw new InvalidArgumentException(sprintf(t::_('ORM Store %s does not support fallback store.'), __CLASS__ ));
+            throw new InvalidArgumentException(sprintf(t::_('ORM Store %s does not support fallback store.'), __CLASS__));
         }
     }
 
-    public function get_record_structure(string $class) : array
+    public function get_record_structure(string $class): array
     {
-        $this->throw_unknown_record_type_exception($class);
+        return $this->get_unified_columns_data();
+    }
+
+    public function get_unified_columns_data(string $class): array
+    {
+        return $this->get_unified_columns_data();
+    }
+
+    public function get_storage_columns_data(string $class): array
+    {
+        $this->throw_unknown_record_type_exception();
         return [];
     }
 

@@ -51,7 +51,6 @@ abstract class ConnectionCoroutine extends Connection
     }
 
     private function initialize(){
-        //self::update_runtime_configuration($options);
 
         $this->MysqlCo = new \Swoole\Coroutine\Mysql();
 

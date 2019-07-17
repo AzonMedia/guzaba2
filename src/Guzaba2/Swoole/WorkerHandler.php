@@ -59,6 +59,14 @@ class WorkerHandler extends Base
                 };
                 \Co::create($function);
                 */
+
+//        \Swoole\Coroutine::create(function() use ($worker_id) {
+//            for ($aa = 0 ; $aa< 100; $aa++) {
+//                \Swoole\Coroutine::sleep(1);
+//                print $worker_id.' '.$aa.PHP_EOL;
+//            }
+//
+//        });
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

@@ -26,7 +26,20 @@ class Redis extends Database
     {
         //NI
         $ret = $this->FallbackStore->get_record_structure($class);
+        return $ret;
+    }
 
+    public function get_unified_columns_data(string $class) : array
+    {
+        //NI
+        $ret = $this->FallbackStore->get_unified_columns_data($class);
+        return $ret;
+    }
+
+    public function get_storage_columns_data(string $class) : array
+    {
+        //NI
+        $ret = $this->FallbackStore->get_storage_columns_data($class);
         return $ret;
     }
 

@@ -19,6 +19,7 @@ namespace Guzaba2\Kernel;
 
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
+use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
@@ -36,7 +37,7 @@ use Psr\Log\LoggerInterface;
  */
 class Kernel
 {
-    public const EXIT_SUCCESS = 0;
+
 
     /**
      * @var string
@@ -95,6 +96,13 @@ class Kernel
      * @var bool
      */
     protected static $is_initialized_flag = FALSE;
+
+
+    public const EXIT_SUCCESS = 0;
+
+    public const EXIT_GENERAL_ERROR = 1;
+
+
 
 
     private function __construct()
@@ -195,28 +203,34 @@ class Kernel
         return $ret;
     }
 
+    public static function dump( /* mixed */ $var) : void
+    {
+        $frame = StackTraceUtil::get_stack_frame(2);
+        $str = '';
+        $str = print_r($var, TRUE);
+        if ($frame) {
+            $str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
+        }
+        $str .= PHP_EOL;
+        print $str;
+    }
+
+
     /**
      * Terminates the execution and prints the provided message
      * @param string $message
      */
-    public static function stop(string $message) : void
+    public static function stop(string $message, int $exit_code = self::EXIT_GENERAL_ERROR) : void
     {
         print $message.PHP_EOL;
-        die(1);
+        die($exit_code);//in swoole context in worker / coroutine this will throw Swoole\ExitException
     }
-
-    public static function dump( /* mixed */ $var) : void
-    {
-
-    }
-
-
 
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
      */
-    public static function exception_handler(\Throwable $exception): void
+    public static function exception_handler(\Throwable $exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
     {
         $output = '';
         $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
@@ -224,8 +238,17 @@ class Kernel
         $output .= $exception->getTraceAsString();
         self::logtofile($output);
         //die($output);
-        print $output;
-        die(1);//kill that worker
+        //print $output;
+        //die(1);//kill that worker
+        //why kill the whole worker... why not just terminate the coroutine/request
+        //in fact this code will be used only before the server is started
+        print $output.PHP_EOL;
+        if ($exit_code !== NULL) {
+            die($exit_code);
+        } else {
+            //when NULL is provided just print the message but do not exit
+            //this is to be used in Server context - no point to kill the worker along with the rest of the coroutines
+        }
     }
 
     /**

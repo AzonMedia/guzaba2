@@ -37,6 +37,7 @@ implements ObjectInternalIdInterface
         $this->Context->cid = $cid;
         $this->Context->connections = [];
         $this->Context->settings = [];
+        $this->Context->static_store = [];//to be used by StaticStore trait
         $this->set_object_internal_id();
     }
 

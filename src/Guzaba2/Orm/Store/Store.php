@@ -12,6 +12,19 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 class Store extends Base
     implements StoreInterface
 {
+
+    public const UNIFIED_RECORD_STRUCTURE = [
+        'name'                  => 'string',
+        'native_type'           => 'string',
+        'php_type'              => 'string',
+        'size'                  => 'int',
+        'nullable'              => 'bool',
+        'column_id'             => 'int',
+        'primary'               => 'bool',
+        'default_value'         => '', // mixed
+        'autoincrement'         => 'bool',
+    ];
+
     public function __construct()
     {
         parent::__construct();
