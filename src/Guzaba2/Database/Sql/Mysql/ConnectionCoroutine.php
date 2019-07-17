@@ -23,11 +23,11 @@ use Guzaba2\Translator\Translator as t;
 abstract class ConnectionCoroutine extends Connection
 {
     protected const CONFIG_DEFAULTS = [
-        'host'      => 'localhost',
+        'host'      => '192.168.0.51',
         'port'      => 3306,
-        'user'      => 'root',
-        'password'  => '',
-        'database'  => '',
+        'user'      => 'vesko',
+        'password'  => 'impas560',
+        'database'  => 'guzaba2',
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -45,11 +45,12 @@ abstract class ConnectionCoroutine extends Connection
     //public function __construct(array $options)
     public function __construct()
     {
+        parent::__construct();
+
         $this->initialize();
     }
 
     private function initialize(){
-        parent::__construct();
         //self::update_runtime_configuration($options);
 
         $this->MysqlCo = new \Swoole\Coroutine\Mysql();
@@ -67,9 +68,6 @@ abstract class ConnectionCoroutine extends Connection
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
 
-        // If connection is lost, try to recconect and prepare the query again
-        prepare:
-
         $this->original_query = $query;
 
         $expected_parameters = [];
@@ -80,10 +78,12 @@ abstract class ConnectionCoroutine extends Connection
         } catch (ErrorException $exception) {
 
             if ($this->MysqlCo->errno === 2006 || $this->MysqlCo->errno === 2013) {
+                // If connection is lost, try to reconnect and prepare the query again
+                sprintf(t::_("MySQL Connection is Lost with Error No %s. Trying to reconnect ..."), $this->MysqlCo->errno);
                 $this->initialize();
-                goto prepare;
+                return $this->prepare($query);
             } else {
-                throw new QueryException(sprintf(t::_('%s. Connection ID %s.@ '), $exception->getMessage(), $this->get_object_internal_id() ));
+                throw new QueryException(sprintf(t::_('%s. Connection ID %s. '), $exception->getMessage(), $this->get_object_internal_id() ));
             }
         }
         if (!$NativeStatement) {
