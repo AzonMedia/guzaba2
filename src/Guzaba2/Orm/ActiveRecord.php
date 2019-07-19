@@ -13,6 +13,16 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
 
 
+
+use Guzaba2\Orm\Traits\ActiveRecordOverloading;
+use Guzaba2\Orm\Traits\ActiveRecordSave;
+use Guzaba2\Orm\Traits\ActiveRecordLoad;
+use Guzaba2\Orm\Traits\ActiveRecordStructure;
+//use Guzaba2\Orm\Traits\ActiveRecordValidation;
+//use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
+//use Guzaba2\Orm\Traits\ActiveRecordDelete;
+
+
 class ActiveRecord extends GenericObject
 {
     const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
@@ -27,6 +37,11 @@ class ActiveRecord extends GenericObject
 
     protected const CONFIG_RUNTIME = [];
 
+    //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
+    use ActiveRecordOverloading;
+    use ActiveRecordSave;
+    //use ActiveRecordLoad;
+    use ActiveRecordStructure;
 
     /**
      * @var StoreInterface
@@ -36,7 +51,7 @@ class ActiveRecord extends GenericObject
     /**
      * @var bool
      */
-    public $is_new_flag = FALSE;
+    protected $is_new_flag = FALSE;
 
     /**
      * @var bool
@@ -44,20 +59,46 @@ class ActiveRecord extends GenericObject
     protected $was_new_flag = FALSE;
 
     /**
+     * @var bool
+     */
+    protected $is_modified_flag = FALSE;
+
+    /**
      * @var array
      */
-    public $data = [];
+    protected $record_data = [];
+
+    /**
+     * @var array
+     */
+    protected $record_modified_data = [];
+
+    /**
+     * @var array
+     */
+    protected $meta_data = [];
 
     /**
      * @var mixed
      */
-    protected $index;
+    //protected $index;
 
     /**
      * @var bool
      */
     protected $disable_property_hooks_flag = FALSE;
 
+    protected $disable_method_hooks_flag = FALSE;
+
+    protected $validation_is_disabled_flag = FALSE;
+
+    /**
+     * Contains the unified record structure for this class.
+     * @see StoreInterface::UNIFIED_COLUMNS_STRUCTURE
+     * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
+     * @var array
+     */
+    protected static $field_types = [];
 
 
     //public function __construct(StoreInterface $Store)
@@ -72,7 +113,6 @@ class ActiveRecord extends GenericObject
         parent::__construct();
 
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
-            print_r(static::CONFIG_RUNTIME);
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class() ));
         }
 
@@ -82,13 +122,27 @@ class ActiveRecord extends GenericObject
             $this->Store = static::OrmStore();//use the default service
         }
 
+        if (empty(self::$field_types)) {
+            $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
+            foreach ($unified_columns_data as $column_datum) {
+                self::$field_types[$column_datum['name']] = $column_datum;
+            }
+        }
 
-        $struct = $this->Store->get_record_structure(get_class($this));
-        //Kernel::dump($struct);
+        //$this->record_data =  $this->Store->get_record_structure(get_class($this));
+        //initialize the record data with the default values and types
+        //$this->record_data = $this->Store::get_record_structure(self::$field_types);
 
+        //$this->index = $index;
 
-        $this->index = $index;
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
+        if ($index) {
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            //$this->record_data =& $this->Store->get_data_pointer(get_class($this), $index);
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+        }
+
 
 
         //all properties defined in this class must be references to the store in MemoryCache
@@ -110,31 +164,6 @@ class ActiveRecord extends GenericObject
 
     }
 
-
-    /**
-     * Resets the properties of the object as provided in the array.
-     * To be used only by the object\transaction
-     * @param array $properties
-     * @return void
-     */
-    public function _set_all_properties(array $properties): void
-    {
-        //we do not want to trigger the _before_set_propertyname hooks if there are such
-        //the rollback must be transparent
-        $this->disable_property_hooks();
-        parent::_set_all_properties($properties);
-        $this->enable_property_hooks();
-    }
-
-    public function disable_property_hooks(): void
-    {
-        $this->disable_property_hooks_flag = TRUE;
-    }
-
-    public function enable_property_hooks(): void
-    {
-        $this->disable_property_hooks_flag = FALSE;
-    }
 
     public static function get_main_table() : string
     {

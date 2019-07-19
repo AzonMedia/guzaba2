@@ -22,12 +22,14 @@ class Redis extends Database
         $this->FallbackStore = $FallbackStore ?? new NullStore();
     }
 
+    /*
     public function get_record_structure(string $class) : array
     {
         //NI
         $ret = $this->FallbackStore->get_record_structure($class);
         return $ret;
     }
+    */
 
     public function get_unified_columns_data(string $class) : array
     {

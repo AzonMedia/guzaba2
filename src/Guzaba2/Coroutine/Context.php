@@ -86,9 +86,7 @@ implements ObjectInternalIdInterface
      */
     public function freeAllConnections() : void
     {
-        //print 'FREEEEE';
         $connections = $this->getConnections();
-        //print_r($connections);
         foreach ($connections as $Connection) {
             $Connection->free();
         }
@@ -99,7 +97,7 @@ implements ObjectInternalIdInterface
         $this->Context->{$property} = $value;
     }
 
-    public function __get(string $property) /* mixed */
+    public function &__get(string $property) /* mixed */
     {
         return $this->Context->{$property};
     }

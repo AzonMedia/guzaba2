@@ -35,10 +35,12 @@ implements StoreInterface
         }
     }
 
+    /*
     public function get_record_structure(string $class): array
     {
         return $this->get_unified_columns_data();
     }
+    */
 
     public function get_unified_columns_data(string $class): array
     {

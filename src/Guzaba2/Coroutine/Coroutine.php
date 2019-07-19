@@ -97,24 +97,40 @@ class Coroutine extends \Swoole\Coroutine
 
     }
 
-    public static function set_data(string $key, /* mixed */ $value) : void
+    public static function set_data(string $class, string $key, /* mixed */ $value) : void
     {
-        self::getContext()->static_store[$key] = $value;
+        $Context = self::getContext();
+        if (!array_key_exists($class, $Context->static_store)) {
+            $Context->static_store[$class] = [];
+        }
+        $Context->static_store[$class][$key] = $value;
     }
 
-    public static function get_data(string $key) /* mixed */
+    public static function get_data(string $class, string $key) /* mixed */
     {
-        return self::getContext()->static_store[$key];
+
+        if (!self::isset_data($class, $key)) {
+            throw new RunTimeException(sprintf(t::_('The coroutine static store does not have key %s for class %s.'), $key, $class));
+        }
+
+        return self::getContext()->static_store[$class][$key];
     }
 
-    public static function isset_data(string $key) : bool
+    public static function isset_data(string $class, string $key) : bool
     {
-        return isset(self::getContext()->static_store[$key]);
+        $Context = self::getContext();
+        if (!array_key_exists($class, $Context->static_store)) {
+            return FALSE;
+        }
+        if (!array_key_exists($key, $Context->static_store[$class])) {
+            return FALSE;
+        }
+        return TRUE;
     }
 
-    public static function unset_data(string $key) : void
+    public static function unset_data(string $class, string $key) : void
     {
-        unset(self::getContext()->static_store[$key]);
+        unset(self::getContext()->static_store[$class][$key]);
     }
 
 

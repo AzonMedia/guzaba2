@@ -13,18 +13,6 @@ class Store extends Base
     implements StoreInterface
 {
 
-    public const UNIFIED_RECORD_STRUCTURE = [
-        'name'                  => 'string',
-        'native_type'           => 'string',
-        'php_type'              => 'string',
-        'size'                  => 'int',
-        'nullable'              => 'bool',
-        'column_id'             => 'int',
-        'primary'               => 'bool',
-        'default_value'         => '', // mixed
-        'autoincrement'         => 'bool',
-    ];
-
     public function __construct()
     {
         parent::__construct();
@@ -38,5 +26,14 @@ class Store extends Base
     protected function throw_unknown_record_type_exception(string $class) : void
     {
         throw new UnknownRecordTypeException(sprintf(t::_('The ORM Store %s has no knowledge for record of class %s.'), get_class($this), $class));
+    }
+
+    public static function get_record_structure(array $unified_column_structure) : array
+    {
+        $ret = [];
+        foreach ($unified_column_structure as $column_data) {
+            $ret[$column_data['name']] = $column_data['default_value'];
+        }
+        return $ret;
     }
 }

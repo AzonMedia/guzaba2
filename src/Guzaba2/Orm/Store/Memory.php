@@ -73,6 +73,7 @@ implements StoreInterface
         $this->SwooleTable = new SwooleTable();
     }
 
+    /*
     public function get_record_structure(string $class) : array
     {
         if (isset($this->record_structures[$class])) {
@@ -82,6 +83,7 @@ implements StoreInterface
         }
         return $ret;
     }
+    */
 
     public function get_unified_columns_data(string $class) : array
     {
@@ -124,8 +126,9 @@ implements StoreInterface
      */
     public function &get_data_pointer( string $class, string $lookup_index) : array
     {
+
+
         //check local storage at $data
-        $found = FALSE;
         if (isset($this->data[$class][$lookup_index])) {
             //if found check is it current in SwooleTable
             $key = $class.'_'.$lookup_index;
@@ -133,43 +136,34 @@ implements StoreInterface
             if ($last_update_time) {
                 //check is there data for this time
                 if (isset($this->data[$class][$lookup_index][$last_update_time])) {
-                    $found = TRUE;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                 } else {
                     //this store has no current data (has for a previous version)
-                    if (!$this->FallbackStore) {
-                        $this->throw_not_found_exception($class, $lookup_index);
-                    }
                     $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
-
                 }
             } else {
-                //fallback to the next store
-                if (!$this->FallbackStore) {
-                    $this->throw_not_found_exception($class, $lookup_index);
-                }
                 $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
             }
 
         } else {
-            if (!$this->FallbackStore) {
-                $this->throw_not_found_exception($class, $lookup_index);
-            }
             $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
         }
 
-        if (!$found) {
-            //this means the data was pulled from the fallback store
-            //we need to update the local store and the update time data
-            $update_data = [
-                'updated_microtime'         => $pointer->updated_microtime,
-                'updated_from_worker_id'    => $pointer->updated_from_worker_id,
-                'updated_from_coroutine_id' => $pointer->updated_from_coroutine_id,
-            ];
-            $this->SwooleTable->set_update_data($key, $update_data);
-            $this->data[$class][$lookup_index][$pointer->updated_microtime] = $pointer;
-            //there can be other versions for the same class & lookup_index
-        }
+
+        //this means the data was pulled from the fallback store
+        //we need to update the local store and the update time data
+        $update_data = [
+            'updated_microtime'         => $pointer['meta']['updated_microtime'],
+            //'updated_from_worker_id'    => $pointer['meta']['updated_from_worker_id'],
+            //'updated_from_coroutine_id' => $pointer['meta']['updated_from_coroutine_id'],
+            //add transaction_id
+            //and execution_id
+        ];
+        $this->SwooleTable->set_update_data($key, $update_data);
+        //$this->data[$class][$lookup_index][$pointer->updated_microtime] = $pointer;//with versioning
+        $this->data[$class][$lookup_index] = $pointer;//temporary
+        //there can be other versions for the same class & lookup_index
+
 
         return $pointer;
     }

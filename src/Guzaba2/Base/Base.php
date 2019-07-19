@@ -20,11 +20,13 @@ namespace Guzaba2\Base;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Interfaces\UsesServicesInterface;
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Translator\Translator as t;
+
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Base\Traits\UsesServices;
-use Guzaba2\Base\Exceptions\RunTimeException;
-use Guzaba2\Translator\Translator as t;
+use Guzaba2\Base\Traits\StaticStore;
 
 /**
  * Class Base
@@ -37,6 +39,7 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
     use SupportsObjectInternalId;
     use SupportsConfig;
     use UsesServices;
+    use StaticStore;
 
     /**
      * Base constructor.

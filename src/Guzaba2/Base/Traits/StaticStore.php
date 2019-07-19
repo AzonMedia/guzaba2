@@ -17,17 +17,20 @@ trait StaticStore
 {
     public static function set_static(string $key, /* mixed */ $value) : void
     {
-        Coroutine::set_data($key, $value);
+        $class = get_called_class();
+        Coroutine::set_data($class, $key, $value);
     }
 
     public static function get_static(string $key) /* mixed */
     {
-        return Coroutine::get_data($key);
+        $class = get_called_class();
+        return Coroutine::get_data($class, $key);
     }
 
     public static function isset_static(string $key) : bool
     {
-        return Coroutine::isset_data($key);
+        $class = get_called_class();
+        return Coroutine::isset_data($class, $key);
     }
 
     /**
@@ -36,6 +39,7 @@ trait StaticStore
      */
     public static function unset_static(string $key) : void
     {
-        Coroutine::unset_data($key);
+        $class = get_called_class();
+        Coroutine::unset_data($class, $key);
     }
 }

@@ -29,6 +29,7 @@ class Mysql extends Database
         $this->connection_class = $connection_class;
     }
 
+    /*
     public function get_record_structure(string $class) : array
     {
         $ret = [];
@@ -38,6 +39,7 @@ class Mysql extends Database
         }
         return $ret;
     }
+    */
 
     /**
      * Returns a unified structure
@@ -50,7 +52,7 @@ class Mysql extends Database
 
         $ret = [];
 
-        for ($aa=0;$aa<count($storage_structure_arr);$aa++) {
+        for ($aa=0; $aa<count($storage_structure_arr); $aa++) {
             $column_structure_arr = $storage_structure_arr[$aa];
             $ret[$aa] = array(
                 'name'                  => strtolower($column_structure_arr['COLUMN_NAME']),
@@ -65,7 +67,7 @@ class Mysql extends Database
             );
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
 
-            ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_RECORD_STRUCTURE);
+            ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_COLUMNS_STRUCTURE);
         }
 
         return $ret;
@@ -116,15 +118,17 @@ ORDER BY
     public function &get_data_pointer( string $class, string $lookup_index) : array
     {
 
-        //$Connection = self::ConnectionFactory()->get_connection($this->connection_class);
+        //initialization
+        $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
+
+        //lookup in DB
+        if ($lookup_index) {
+            //$Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+            //$pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
+        }
 
 
-
-        //$Connection->free();
-
-        $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
-
-        return $pointer;
+        return $record_data;
     }
 
     //private function
