@@ -62,7 +62,6 @@ abstract class ConnectionCoroutine extends Connection
 
     public function prepare(string $query) : StatementInterface
     {
-
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
@@ -72,7 +71,9 @@ abstract class ConnectionCoroutine extends Connection
         $expected_parameters = [];
         $query = self::convert_query_for_binding($query, $expected_parameters);
 
+        /*
         try {
+            // With Swoole 4.3.6 and older if the connection is lost, this will throw an exception
             $NativeStatement = $this->MysqlCo->prepare($query);
         } catch (ErrorException $exception) {
 
@@ -85,8 +86,19 @@ abstract class ConnectionCoroutine extends Connection
                 throw new QueryException(sprintf(t::_('%s. Connection ID %s. '), $exception->getMessage(), $this->get_object_internal_id() ));
             }
         }
+        */
+
+        $NativeStatement = $this->MysqlCo->prepare($query);
         if (!$NativeStatement) {
-            throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error ));
+            // With Swoole 4.4.0 and next if the connection is lost, prepare will NOT throw an exception, but errno will be set
+            if ($this->MysqlCo->errno === 2006 || $this->MysqlCo->errno === 2013) {
+                // If connection is lost, try to reconnect and prepare the query again
+                print(sprintf(t::_("MySQL Connection is Lost with Error No %s. Trying to reconnect ...\n"), $this->MysqlCo->errno));
+                $this->initialize();
+                return $this->prepare($query);
+            } else {
+                throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error ));
+            }
         }
         $Statement = new StatementCoroutine($NativeStatement, $query, $expected_parameters);
         return $Statement;
