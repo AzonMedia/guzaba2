@@ -42,11 +42,6 @@ abstract class ConnectionCoroutine extends Connection
 
     public function close() : void
     {
-
-    }
-
-    public function free() : void
-    {
-
+        $this->RedisCo->close();
     }
 }
