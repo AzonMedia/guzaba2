@@ -1,6 +1,0 @@
-build: false
-version: dev-{build}
-
-test_script:
-    - set PHP_CS_FIXER_FUTURE_MODE=1
-    - php php-cs-fixer --diff --dry-run -v fix
