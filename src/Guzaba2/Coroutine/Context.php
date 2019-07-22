@@ -37,6 +37,7 @@ implements ObjectInternalIdInterface
         $this->Context->cid = $cid;
         $this->Context->connections = [];
         $this->Context->settings = [];
+        $this->Context->static_store = [];//to be used by StaticStore trait
         $this->set_object_internal_id();
     }
 
@@ -85,9 +86,7 @@ implements ObjectInternalIdInterface
      */
     public function freeAllConnections() : void
     {
-        //print 'FREEEEE';
         $connections = $this->getConnections();
-        //print_r($connections);
         foreach ($connections as $Connection) {
             $Connection->free();
         }
@@ -98,7 +97,7 @@ implements ObjectInternalIdInterface
         $this->Context->{$property} = $value;
     }
 
-    public function __get(string $property) /* mixed */
+    public function &__get(string $property) /* mixed */
     {
         return $this->Context->{$property};
     }

@@ -14,6 +14,7 @@ use Guzaba2\Database\ConnectionProviders\Pool;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Orm\Store\Nosql\Redis;
 use Guzaba2\Orm\Store\Sql\Mysql;
+use Guzaba2\Orm\Store\NullStore;
 
 class Container extends \Azonmedia\Di\Container
     implements ConfigInterface, ObjectInternalIdInterface
@@ -46,6 +47,7 @@ class Container extends \Azonmedia\Di\Container
             'args'                          => [
                 'FallbackStore'                 => 'RedisOrmStore',
             ],
+            'initialize_immediately'        => TRUE,
         ],
         'RedisOrmStore'                 => [
             'class'                         => Redis::class,
@@ -56,8 +58,15 @@ class Container extends \Azonmedia\Di\Container
         'MysqlOrmStore'                 => [
             'class'                         => Mysql::class,
             'args'                          => [
-                'FallbackStore'                 => NULL,
+                'FallbackStore'                 => 'NullOrmStore',
+                'connection_class'              => \Azonmedia\Glog\Application\MysqlConnection::class,
             ]
+        ],
+        'NullOrmStore'                  => [
+            'class'                         => NullStore::class,
+            'args'                          => [
+                'FallbackStore'                 => NULL,
+            ],
         ],
     ];
 

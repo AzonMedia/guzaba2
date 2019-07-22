@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Guzaba Framework
+ * Guzaba Framework 2
  * http://framework2.guzaba.org
  *
  * This source file is subject to the BSD license that is bundled with this
@@ -17,7 +17,9 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Exceptions;
 
-use \Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\StaticStore;
+use Guzaba2\Coroutine\Coroutine;
 use Throwable;
 
 /**
@@ -40,12 +42,13 @@ abstract class BaseException extends \Exception
 {
 
     use SupportsObjectInternalId;
+    use StaticStore;
 
     //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
     /**
      * @var \Throwable
      */
-    private static $CurrentException = NULL;
+    //private static $CurrentException = NULL;
 
     /**
      * @var \Guzaba2\Transactions\Transaction
@@ -149,8 +152,8 @@ abstract class BaseException extends \Exception
         //if ( ! self::$is_in_clone_flag ) {
         //    self::$is_in_clone_flag = TRUE;
         //there is no risk of recursion when cloning the exception as the cloned exception is created without invoking its constructor
-            self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
-
+            //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
+        self::set_static('CurrentException', $this->cloneException());
 
         //    self::$is_in_clone_flag = FALSE;
         //}
@@ -213,7 +216,8 @@ abstract class BaseException extends \Exception
     }
 
     public function __destruct() {
-        self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
+        //self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
+        self::set_static('CurrentException', NULL);
     }
 
 
@@ -369,7 +373,8 @@ abstract class BaseException extends \Exception
      */
     public static function getCurrentException() : ?\Throwable
     {
-        return self::$CurrentException;
+        //return self::$CurrentException;
+        return self::get_static('CurrentException');
     }
 
     /**

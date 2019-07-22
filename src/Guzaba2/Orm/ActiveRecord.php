@@ -3,54 +3,147 @@
 namespace Guzaba2\Orm;
 
 use Azonmedia\Reflection\ReflectionClass;
-use Guzaba2\Base\Base;
-use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 
-class ActiveRecord extends Base
+use Guzaba2\Kernel\Kernel;
+use Guzaba2\Object\GenericObject;
+use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Memory;
+use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Translator\Translator as t;
+
+
+
+use Guzaba2\Orm\Traits\ActiveRecordOverloading;
+use Guzaba2\Orm\Traits\ActiveRecordSave;
+use Guzaba2\Orm\Traits\ActiveRecordLoad;
+use Guzaba2\Orm\Traits\ActiveRecordStructure;
+//use Guzaba2\Orm\Traits\ActiveRecordValidation;
+//use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
+//use Guzaba2\Orm\Traits\ActiveRecordDelete;
+
+
+class ActiveRecord extends GenericObject
 {
+    const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
+
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
-            'ConnectionFactory'
+            'ConnectionFactory',
+            'OrmStore',
         ]
     ];
 
     protected const CONFIG_RUNTIME = [];
 
+    //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
+    use ActiveRecordOverloading;
+    use ActiveRecordSave;
+    //use ActiveRecordLoad;
+    use ActiveRecordStructure;
 
     /**
      * @var StoreInterface
      */
-    protected static $Store;
+    protected $Store;
 
-    public $is_new_flag = FALSE;
+    /**
+     * @var bool
+     */
+    protected $is_new_flag = FALSE;
 
+    /**
+     * @var bool
+     */
     protected $was_new_flag = FALSE;
 
-    public $data = [];
+    /**
+     * @var bool
+     */
+    protected $is_modified_flag = FALSE;
 
-    protected $index;
+    /**
+     * @var array
+     */
+    protected $record_data = [];
 
-    const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
+    /**
+     * @var array
+     */
+    protected $record_modified_data = [];
 
+    /**
+     * @var array
+     */
+    protected $meta_data = [];
 
+    /**
+     * @var mixed
+     */
+    //protected $index;
 
-    public static function _initialize_class()
-    {
-        self::$Store = new \Guzaba2\Orm\Store\Memory();//move to DI
+    /**
+     * @var bool
+     */
+    protected $disable_property_hooks_flag = FALSE;
 
-    }
+    protected $disable_method_hooks_flag = FALSE;
+
+    protected $validation_is_disabled_flag = FALSE;
+
+    /**
+     * Contains the unified record structure for this class.
+     * @see StoreInterface::UNIFIED_COLUMNS_STRUCTURE
+     * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
+     * @var array
+     */
+    protected static $field_types = [];
+
 
     //public function __construct(StoreInterface $Store)
-    public function __construct( /* mixed*/ $index)
+    /**
+     * ActiveRecord constructor.
+     * @param $index
+     * @param StoreInterface|null $Store
+     * @throws \ReflectionException
+     */
+    public function __construct( /* mixed*/ $index, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
-        //$this->Store = $Store;
+        if (!isset(static::CONFIG_RUNTIME['main_table'])) {
+            throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class() ));
+        }
+
+        if ($Store) {
+            $this->Store = $Store;
+        } else {
+            $this->Store = static::OrmStore();//use the default service
+        }
+
+        if (empty(self::$field_types)) {
+            $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
+            foreach ($unified_columns_data as $column_datum) {
+                self::$field_types[$column_datum['name']] = $column_datum;
+            }
+        }
+
+        //$this->record_data =  $this->Store->get_record_structure(get_class($this));
+        //initialize the record data with the default values and types
+        //$this->record_data = $this->Store::get_record_structure(self::$field_types);
+
+        //$this->index = $index;
+
+        if ($index) {
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            //$this->record_data =& $this->Store->get_data_pointer(get_class($this), $index);
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+        }
 
 
-        $this->index = $index;
-        $pointer =& self::$Store->get_data_pointer(get_class($this), $this->index);
 
         //all properties defined in this class must be references to the store in MemoryCache
         $RClass = new ReflectionClass($this);
@@ -61,12 +154,20 @@ class ActiveRecord extends Base
             }
         }
 
-        foreach (self::PROPERTIES_TO_LINK as $property_name) {
-            if (array_key_exists($property_name, $pointer)) {
-                $this->{$property_name} =& $pointer[$property_name];
-            }
-        }
+        //do not link these - these will stay separate for each instance
+//        foreach (self::PROPERTIES_TO_LINK as $property_name) {
+//            if (array_key_exists($property_name, $pointer)) {
+//                $this->{$property_name} =& $pointer[$property_name];
+//            }
+//        }
 
+
+    }
+
+
+    public static function get_main_table() : string
+    {
+        return static::CONFIG_RUNTIME['main_table'];
     }
 
 }

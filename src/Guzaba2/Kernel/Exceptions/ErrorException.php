@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 
 /**
- * Guzaba Framework
+ * Guzaba Framework 2
  * http://framework2.guzaba.org
  *
  * This source file is subject to the BSD license that is bundled with this
@@ -32,20 +32,8 @@ class ErrorException extends \Guzaba2\Base\Exceptions\BaseException
     protected $errline;
     protected $errcontext;
 
-    public function __construct($errno='',$errstr='',$errfile='',$errline='',$errcontext='') {
-
-        /*
-        $trace_arr = debug_backtrace();
-        $last_call = $trace_arr[1];//0 is this constructor
-        if ($last_call['function']!='_error_handler'&&$last_call['class']!=framework\kernel\classes\kernel::_class) {
-            throw new framework\base\classes\parseTimeException(sprintf(t::_('CODE ERROR!!! "%s" should be thrown only by "%s". It was thrown in file %s on line %s. Please correct the code!'),get_class($this),org\guzaba\framework\kernel\classes\kernel::_class.'::_error_handler()',$this->getFile(),$this->getLine()));
-        }
-        */
-
-        //it can also be called by baseException::clone_exception()
-        //if ($this->_get_caller_class()!=framework\kernel\classes\kernel::_class||$this->_get_caller_method()!='error_handler') {
-        //    throw new framework\base\exceptions\parseTimeException(sprintf(t::_('CODE ERROR!!! "%s" should be thrown only by "%s". It was thrown in file %s on line %s. Please correct the code!'),get_class($this),framework\kernel\classes\kernel::_class.'::_error_handler()',$this->getFile(),$this->getLine()));
-        //}
+    public function __construct($errno = '', $errstr = '', $errfile = '', $errline = '', $errcontext = '')
+    {
 
         parent::__construct($errstr);
 
@@ -60,19 +48,23 @@ class ErrorException extends \Guzaba2\Base\Exceptions\BaseException
         $this->line = $errline;
     }
 
-    public function getErrorNo() {
+    public function getErrorNo()
+    {
         return $this->errno;
     }
 
-    public function getErrorFile() {
+    public function getErrorFile()
+    {
         return $this->errfile;
     }
 
-    public function getErrorLine() {
+    public function getErrorLine()
+    {
         return $this->errline;
     }
 
-    public function getErrorContext() {
+    public function getErrorContext()
+    {
         return $this->errcontext;
     }
 

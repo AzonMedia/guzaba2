@@ -5,10 +5,12 @@ namespace Guzaba2\Database\ConnectionProviders;
 
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
+use Guzaba2\Database\ScopeReference;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -44,13 +46,11 @@ implements ConnectionProviderInterface
 
     }
 
-    /**
-     * Obtains a connection (and marks it as busy)
-     * @param string $connection_class
-     * @return ConnectionInterface
-     */
-    public function get_connection(string $connection_class) : ConnectionInterface
+    public function get_new_connection(string $connection_class) : ConnectionInterface
     {
+        if (!Coroutine::inCoroutine()) {
+            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
+        }
 
         //this is a blocking function so that it always return a connection
         //it either blocks or throws an exception at the end if it cant return a connection
@@ -79,9 +79,9 @@ implements ConnectionProviderInterface
                 //$Context = Coroutine::getContext();
                 //a coroutine may obtain multiple connections
                 //$Context->connections[] = $Connection;
-                if (Coroutine::inCoroutine()) {
-                    $Connection->assign_to_coroutine(Coroutine::getcid());
-                }
+
+                $Connection->assign_to_coroutine(Coroutine::getcid());
+
 
                 return $Connection;
             } else {
@@ -105,9 +105,7 @@ implements ConnectionProviderInterface
                 //print 'BUSY CON '.count($this->busy_connections[$connection_class]).' '.self::CONFIG_RUNTIME['max_connections'].PHP_EOL;
                 //print 'CONN STATS B '.$r.' '.count($this->busy_connections[$connection_class]).' '.count($this->available_connections[$connection_class]).PHP_EOL;
 
-                if (Coroutine::inCoroutine()) {
-                    $Connection->assign_to_coroutine(Coroutine::getcid());
-                }
+                $Connection->assign_to_coroutine(Coroutine::getcid());
 
                 return $Connection;
             } else {
@@ -123,16 +121,65 @@ implements ConnectionProviderInterface
                 return $this->get_connection($connection_class);
             }
         }
+    }
+
+    /**
+     * Obtains a connection (and marks it as busy).
+     * It will reuse a connection from this coroutine if such is found.
+     * If a new connection (second, third) for this coroutine is needed self::get_new_connection() is to be used
+     * @param string $connection_class
+     * @return ConnectionInterface
+     */
+    //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
+    public function get_connection(string $connection_class, &$ScopeReference = '') : ConnectionInterface
+    {
+
+        if (is_string($ScopeReference)) {
+            throw new InvalidArgumentException(sprintf(t::_('There is no provided ScopeReference variable to %s.'), __METHOD__));
+        }
+
+        if (!isset($this->available_connections[$connection_class])) {
+            $this->available_connections[$connection_class] = [];
+        }
+        if (!isset($this->busy_connections[$connection_class])) {
+            $this->busy_connections[$connection_class] = [];
+        }
+
+        $current_cid = Coroutine::getCid();
+        if (count($this->busy_connections[$connection_class])) {
+            foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
+                if ($BusyConnection->get_coroutine_id() === $current_cid) {
+                    $Connection = $BusyConnection;
+                    break;
+                    //return $Connection;
+                }
+            }
+        }
+
+        //no connection assigned to the current coroutine was found - assign a new one
+        if (empty($Connection)) {
+            $Connection = $this->get_new_connection($connection_class);
+        }
+
+        $Connection->increment_scope_counter();
+        if (!$ScopeReference) {
+            $ScopeReference = new ScopeReference($Connection);
+        }
+        return $Connection;
 
     }
 
     /**
-     * Frees the provided connection
+     * Frees the provided connection.
+     * This is to be used only by Connection->free() / Connection->decrement_scope_counter()
      * @param ConnectionInterface $Connection
      * @throws RunTimeException
      */
     public function free_connection(ConnectionInterface $Connection) : void
     {
+        if (!Coroutine::inCoroutine()) {
+            throw new RunTimeException(sprintf(t::_('Connections can be freed in the Pool only in Coroutine context.')));
+        }
 
         $connection_class = get_class($Connection);
         if (!isset($this->busy_connections[$connection_class])) {
@@ -142,9 +189,9 @@ implements ConnectionProviderInterface
         foreach ($this->busy_connections[$connection_class] as $key => $BusyConnection) {
             if ($Connection === $BusyConnection) {
                 $connection_found = TRUE;
-                if (Coroutine::inCoroutine()) {
-                    $Connection->unassign_from_coroutine();
-                }
+
+                $Connection->unassign_from_coroutine();
+
                 //$Connection = array_pop($this->busy_connections[$connection_class]);
                 unset($this->busy_connections[$connection_class][$key]);
                 $this->busy_connections[$connection_class] = array_values($this->busy_connections[$connection_class]);

@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Base\Traits;
 
-
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Di\Container;
 use Guzaba2\Kernel\Kernel;
@@ -12,23 +11,49 @@ use Guzaba2\Translator\Translator as t;
 trait UsesServices
 {
 
+    /**
+     * @return bool
+     */
     public static function uses_services(): bool
     {
-        return !empty(static::CONFIG_RUNTIME['services']);
+        $ret = FALSE;
+        $called_class = get_called_class();
+        if (defined($called_class.'::CONFIG_RUNTIME')) {
+            $ret = !empty(static::CONFIG_RUNTIME['services']);
+        }
+        return $ret;
     }
 
-    public static function uses_service(string $service_name) : bool
+    /**
+     * @param string $service_name
+     * @return bool
+     */
+    public static function uses_service(string $service_name): bool
     {
 
-        return static::uses_services() ? in_array($service_name, static::CONFIG_RUNTIME['services']) : FALSE;
+        return static::uses_services() ? in_array($service_name, static::get_services() ) : FALSE;
     }
 
+    /**
+     * @return array
+     */
     public static function get_services(): array
     {
-        return static::CONFIG_RUNTIME['services'];
+        $ret = [];
+        $called_class = get_called_class();
+        if (defined($called_class.'::CONFIG_RUNTIME')) {
+            $ret = static::CONFIG_RUNTIME['services'];
+        }
+        return $ret;
     }
 
-    public static function __callStatic(string $service_name, array $args) : object
+    /**
+     * @param string $service_name
+     * @param array $args
+     * @return object
+     * @throws RunTimeException
+     */
+    public static function __callStatic(string $service_name, array $args): object
     {
         $called_class = get_called_class();
         if (strpos($service_name,'_')!==FALSE) {

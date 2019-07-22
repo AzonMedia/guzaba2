@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Guzaba Framework
+ * Guzaba Framework 2
  * http://framework2.guzaba.org
  *
  * This source file is subject to the BSD license that is bundled with this
@@ -19,9 +19,11 @@ namespace Guzaba2\Kernel;
 
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
+use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
@@ -35,7 +37,7 @@ use Psr\Log\LoggerInterface;
  */
 class Kernel
 {
-    public const EXIT_SUCCESS = 0;
+
 
     /**
      * @var string
@@ -96,7 +98,15 @@ class Kernel
     protected static $is_initialized_flag = FALSE;
 
 
-    private function __construct() {
+    public const EXIT_SUCCESS = 0;
+
+    public const EXIT_GENERAL_ERROR = 1;
+
+
+
+
+    private function __construct()
+    {
 
     }
 
@@ -105,7 +115,7 @@ class Kernel
     //////////////////////
 
     //public static function initialize(\Guzaba2\Registry\Interfaces\Registry $Registry, LoggerInterface $Logger) : void
-    public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger) : void
+    public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger): void
     {
         self::$Registry = $Registry;
         self::$Logger = $Logger;
@@ -114,7 +124,7 @@ class Kernel
 
         self::$kernel_dir = dirname(__FILE__);
 
-        self::$framework_root_dir = realpath(self::$kernel_dir.'/../../');
+        self::$framework_root_dir = realpath(self::$kernel_dir . '/../../');
 
         self::register_autoloader_path(self::FRAMEWORK_NAME, self::$framework_root_dir);
 
@@ -130,26 +140,54 @@ class Kernel
 
     }
 
+
+    /**
+     * @param ContainerInterface $Container
+     */
     public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
     }
 
+    /**
+     * @param string $id
+     * @return object
+     */
     public static function get_service(string $id) : object
     {
         return self::$Container->get($id);
     }
 
+    /**
+     * @param string $id
+     * @return bool
+     */
     public static function has_service(string $id) : bool
     {
         return self::$Container->has($id);
     }
 
+    /**
+     * @return bool
+     */
     public static function is_initialized() : bool
     {
         return self::$is_initialized_flag;
     }
 
+    /**
+     * @return LoggerInterface
+     */
+    public static function get_logger() : LoggerInterface
+    {
+        return self::$Logger;
+    }
+
+    /**
+     * @param callable $callable
+     * @return int
+     * @throws \Exception
+     */
     public static function run(callable $callable) : int
     {
 
@@ -165,30 +203,52 @@ class Kernel
         return $ret;
     }
 
+    public static function dump( /* mixed */ $var) : void
+    {
+        $frame = StackTraceUtil::get_stack_frame(2);
+        $str = '';
+        $str = print_r($var, TRUE);
+        if ($frame) {
+            $str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
+        }
+        $str .= PHP_EOL;
+        print $str;
+    }
+
+
     /**
      * Terminates the execution and prints the provided message
      * @param string $message
      */
-    public static function stop(string $message) : void
+    public static function stop(string $message, int $exit_code = self::EXIT_GENERAL_ERROR) : void
     {
-        die($message.PHP_EOL);
+        print $message.PHP_EOL;
+        die($exit_code);//in swoole context in worker / coroutine this will throw Swoole\ExitException
     }
-
 
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
      */
-    public static function exception_handler(\Throwable $exception) : void
+    public static function exception_handler(\Throwable $exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
     {
         $output = '';
-        $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine() );
+        $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
         self::logtofile($output);
         //die($output);
-        print $output;
-        die(1);//kill that worker
+        //print $output;
+        //die(1);//kill that worker
+        //why kill the whole worker... why not just terminate the coroutine/request
+        //in fact this code will be used only before the server is started
+        print $output.PHP_EOL;
+        if ($exit_code !== NULL) {
+            die($exit_code);
+        } else {
+            //when NULL is provided just print the message but do not exit
+            //this is to be used in Server context - no point to kill the worker along with the rest of the coroutines
+        }
     }
 
     /**
@@ -200,12 +260,12 @@ class Kernel
      * @param array $errcontext
      * @throws Exceptions\ErrorException
      */
-    public static function error_handler( int $errno , string $errstr, string $errfile, int $errline , array $errcontext = []) : void
+    public static function error_handler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): void
     {
-        throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline , $errcontext);
+        throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
 
-    public static function logtofile(string $content, array $context = []) : void
+    public static function logtofile(string $content, array $context = []): void
     {
         //$path = self::$framework_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
         //die(self::$cwd);
@@ -221,7 +281,7 @@ class Kernel
      * @param string $namespace_prefix
      * @param string $base_path
      */
-    public static function register_autoloader_path(string $namespace_base, string $base_path) : void
+    public static function register_autoloader_path(string $namespace_base, string $base_path): void
     {
         self::$autoloader_lookup_paths[$namespace_base] = $base_path;
     }
@@ -229,12 +289,12 @@ class Kernel
     /**
      * @return array
      */
-    public static function get_registered_autoloader_paths() : array
+    public static function get_registered_autoloader_paths(): array
     {
         return self::$autoloader_lookup_paths;
     }
 
-    public static function namespace_base_is_registered(string $namespace_base) : bool
+    public static function namespace_base_is_registered(string $namespace_base): bool
     {
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
     }
@@ -243,21 +303,20 @@ class Kernel
     /// PROTECTED METHODS ///
     /////////////////////////
 
-    protected static function autoloader(string $class_name) : bool
+    protected static function autoloader(string $class_name): bool
     {
         //print $class_name.PHP_EOL;
         $ret = FALSE;
 
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
             if (strpos($class_name, $namespace_base) === 0) {
-                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path.\DIRECTORY_SEPARATOR.$class_name).'.php';
+                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
                 //$class_path = realpath($class_path);
                 if (is_readable($class_path)) {
                     //require_once($class_path);
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
-                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name) ) {
-
+                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
                         $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
@@ -277,21 +336,6 @@ class Kernel
         }
 
         return $ret;
-    }
-
-    protected static function rrmdir($dir) {
-        if (is_dir($dir)) {
-            $objects = scandir($dir);
-            foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (is_dir($dir."/".$object))
-                        self::rrmdir($dir."/".$object);
-                    else
-                        unlink($dir."/".$object);
-                }
-            }
-            rmdir($dir);
-        }
     }
 
     protected static function require_class(string $class_path, string $class_name) /* mixed */
@@ -347,7 +391,7 @@ class Kernel
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
 
 
-                $default_config = ( new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS') )->getValue();
+                $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
 
                 $runtime_config = $default_config;
 
@@ -365,6 +409,17 @@ class Kernel
 
 
                 $runtime_config += $parent_config;//the parent config does not overwrite the current config
+                //there is exception though for the 'services' key - this needs to be merged
+                if (isset($parent_config['services'])) {
+                    if (!isset($runtime_config['services'])) {
+                        $runtime_config['services'] = [];
+                    }
+                    foreach ($parent_config['services'] as $service_name) {
+                        if (!in_array($service_name, $runtime_config['services'])) {
+                            $runtime_config['services'][] = $service_name;
+                        }
+                    }
+                }
 
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
@@ -380,9 +435,9 @@ class Kernel
                         //look for $key_name as part of a var name
                         //assuming _ as separator between the array
 
-                        foreach ($registry_config as $reg_key_name=>$reg_key_value) {
+                        foreach ($registry_config as $reg_key_name => $reg_key_value) {
                             if (strpos($reg_key_name, $key_name) === 0) { //begins with
-                                $runtime_config[$key_name][str_replace($key_name.'_', '', $reg_key_name)] = $reg_key_value;
+                                $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
                             }
                         }
                         //todo - rework with a closure to handle multidomentional arrays
@@ -408,9 +463,9 @@ class Kernel
      */
     protected static function initialize_class(string $class_name) : void
     {
-        
+
         $RClass = new ReflectionClass($class_name);
-        
+
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);
@@ -418,5 +473,69 @@ class Kernel
 
     }
 
+    /**
+     * @param string $file_name
+     */
+    public static function get_namespace_declarations(string $file_name)
+    {
+        // TODO implement
+    }
+
+    public static function execute_in_worker($callable)
+    {
+
+    }
+
+    public static function execute_delayed($callable, ?TraceInfoObject $trace_info = NULL)
+    {
+
+    }
+
+    public static function execute_in_shutdown($callable, ?TraceInfoObject $trace_info = NULL)
+    {
+
+    }
+
+
+    /**
+     *
+     * @param string $filename
+     * @param string $string
+     * @param int $indent +1/0/-1
+     */
+    public static function logtofile_indent($filename, $string, $indent = 0)
+    {
+        static $current_indentation;
+        if ($current_indentation === null) {
+            $current_indentation = 0;
+        }
+
+        if ($indent >= 0) {
+            if ($current_indentation < 0) { //for safety
+                $current_indentation = 0;
+            }
+            $tabs = str_repeat("\t", $current_indentation);
+        }
+
+        $current_indentation += $indent;
+
+        if ($indent < 0) {
+            if ($current_indentation < 0) { //for safety
+                $current_indentation = 0;
+            }
+            $tabs = str_repeat("\t", $current_indentation);
+        }
+
+
+        if ($current_indentation < 0) {
+            //k::bt();
+            self::logtofile('logtofile_indent_errors', sprintf(t::_('Wrong indentation of %s provided and the current one got negative %s.'), $indent, $current_indentation));
+        }
+
+        $string = $tabs . $string . PHP_EOL;
+        //return self::logtofile($filename, $string);
+        // TODO log path bellow
+//        file_put_contents(p::$PATHS['logs'][p::CURDIR].$filename, $string,FILE_APPEND);
+    }
 
 }
