@@ -21,9 +21,9 @@ init:
 install:
     #php
     - IF NOT EXIST C:\tools\php (SET PHP=0)
-    - IF %PHP%==0 (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
-    - IF %PHP%==0 echo extension=php_openssl.dll >> php.ini
+    - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
     - cd C:\tools\php
+    - IF %PHP%==0 echo extension=php_openssl.dll >> php.ini    
     - copy php.ini-production php.ini
     #composer
     - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
