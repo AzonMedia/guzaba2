@@ -3,7 +3,7 @@ clone_folder: C:\projects\guzaba2
 
 environment:
     matrix:
-        - php_version: 7.2
+        - php_ver: 7.2
         
 cache:
     - '%APPDATA%\Composer'
