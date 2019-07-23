@@ -1,0 +1,29 @@
+version: dev-{build}
+clone_folder: C:\projects\guzaba2
+
+environment:
+    matrix:
+        - php_version: 7.2
+        
+cache:
+    - '%APPDATA%\Composer'
+    - '%LOCALAPPDATA%\Composer'
+    - C:\tools\php -> .appveyor.yml
+    - C:\tools\composer.phar -> .appveyor.yml
+    
+init:
+    - SET PATH=C:\tools\php;%PATH%
+    
+install:
+    - IF NOT EXIST C:\tools\php (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
+    - cd C:\tools\php
+    - copy php.ini-production php.ini
+    - IF NOT EXIST C:\tools\composer.phar (cd C:\tools && appveyor DownloadFile https://getcomposer.org/composer.phar)
+    - cd c:\projects\guzaba2
+    - appveyor-retry composer install --no-progress --profile
+    - appveyor-retry composer require friendsofphp/php-cs-fixer:~2.2 --no-progress --profile
+    
+test_script:
+    - cd C:\projects\guzaba2
+    - set PHP_CS_FIXER_FUTURE_MODE=1
+    - php php-cs-fixer --diff --dry-run -v fix
