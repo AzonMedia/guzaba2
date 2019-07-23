@@ -101,6 +101,8 @@ class RequestHandler extends Base
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
 
+            $start_time = microtime(TRUE);
+
             \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
 
             $Execution =& RequestExecution::get_instance();
@@ -283,20 +285,29 @@ class RequestHandler extends Base
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
 
 
+            //very important to stay here!!!
+            Coroutine::awaitSubCoroutines();//await before the response is converted as the response uses end() which pushes the output
+            //also if any of the subcoroutines has an uncaught exception this will catch all these and throw an exception so that the master coroutine is also terminated
 
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
-
-
 
             //debug
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
             //$memory_usage = $Exception->get_memory_usage();
-            print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+
+
+
+            $end_time = microtime(TRUE);
+            print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
 
 
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
+            $DefaultResponseBody = new Stream();
+            $DefaultResponseBody->write('Internal server/application error occurred.');
+            $PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
+            PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
             $Execution->destroy();

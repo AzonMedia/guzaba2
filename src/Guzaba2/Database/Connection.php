@@ -120,6 +120,9 @@ implements ConnectionInterface
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
         }
+
+        //TODO add a check - if there is running transaction throw an exception
+
         $this->coroutine_id = 0;
         if (Coroutine::getcid()) { //if we are in coroutine context
             Coroutine::getContext()->unassignConnection($this);
@@ -137,16 +140,6 @@ implements ConnectionInterface
         $this->decrement_scope_counter();
     }
 
-    /**
-     *
-     * @param array $queries Twodimensional indexed array containing 'query' and 'params' keys in the second dimension
-     * @return array
-     */
-    public function execute_multiple_queries(array $queries) : array
-    {
-
-    }
-
     public static function get_tprefix() : string
     {
         return static::CONFIG_RUNTIME['tprefix'] ?? '';
@@ -156,5 +149,7 @@ implements ConnectionInterface
     {
         return static::CONFIG_RUNTIME['database'];
     }
+
+
 
 }

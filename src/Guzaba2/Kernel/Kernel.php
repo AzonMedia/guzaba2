@@ -26,6 +26,7 @@ use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Database\Connection;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Container\ContainerInterface;
@@ -236,6 +237,7 @@ class Kernel
         $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
+
         self::logtofile($output);
         //die($output);
         //print $output;

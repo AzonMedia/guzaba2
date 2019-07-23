@@ -118,6 +118,7 @@ abstract class BaseException extends \Exception
 
 
 
+
     /**
      * The constructor calls first the constructor of tha parent class and then its own code.
      * @param string $message
@@ -155,7 +156,7 @@ abstract class BaseException extends \Exception
         //there is no risk of recursion when cloning the exception as the cloned exception is created without invoking its constructor
             //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
         //print_r(StackTraceUtil::get_backtrace());
-        self::set_static('CurrentException', $this->cloneException());
+        //self::set_static('CurrentException', $this->cloneException());
 
         //    self::$is_in_clone_flag = FALSE;
         //}
