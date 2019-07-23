@@ -17,11 +17,15 @@ init:
     - SET PHP=1 # This var is connected to PHP install cache
     
 install:
+    #php
     - IF NOT EXIST C:\tools\php (SET PHP=0)
     - IF %PHP%==0 (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
     - cd C:\tools\php
     - copy php.ini-production php.ini
-    - IF %PHP%==0 (appveyor DownloadFile https://getcomposer.org/composer.phar)
+    #composer
+    - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
+    - IF %PHP%==0 appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
+    #install
     - cd c:\projects\guzaba2
     - appveyor-retry composer install --no-progress --profile
     - appveyor-retry composer require friendsofphp/php-cs-fixer:~2.2 --no-progress --profile
