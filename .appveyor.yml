@@ -24,6 +24,7 @@ install:
     - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
     - cd C:\tools\php   
     - copy php.ini-production php.ini
+    - IF %PHP%==1 echo extension_dir=ext >> php.ini
     - IF %PHP%==0 echo extension=php_openssl.dll >> php.ini 
     #composer
     - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
