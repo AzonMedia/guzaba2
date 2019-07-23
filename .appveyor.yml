@@ -18,10 +18,10 @@ init:
     
 install:
     - IF NOT EXIST C:\tools\php (SET PHP=0)
-    - IF %PHP%==1 (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
+    - IF %PHP%==0 (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
     - cd C:\tools\php
     - copy php.ini-production php.ini
-    - IF %PHP%==1 (cd C:\tools && appveyor DownloadFile https://getcomposer.org/composer.phar)
+    - IF %PHP%==0 (cd C:\tools && appveyor DownloadFile https://getcomposer.org/composer.phar)
     - cd c:\projects\guzaba2
     - appveyor-retry composer install --no-progress --profile
     - appveyor-retry composer require friendsofphp/php-cs-fixer:~2.2 --no-progress --profile
