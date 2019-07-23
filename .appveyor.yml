@@ -6,13 +6,15 @@ environment:
         - php_ver: 7.2
         
 cache:
-    - '%APPDATA%\Composer'
-    - '%LOCALAPPDATA%\Composer'
+    - '%LOCALAPPDATA%\Composer\files -> composer.lock'
+    # Cache chocolatey packages
+    - C:\ProgramData\chocolatey\bin -> .appveyor.yml
+    - C:\ProgramData\chocolatey\lib -> .appveyor.yml
+    # Cache php install
     - C:\tools\php -> .appveyor.yml
-    - C:\tools\composer.phar -> .appveyor.yml
     
 init:
-    - SET PATH=C:\tools\php;%PATH%
+    - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
     - SET COMPOSER_NO_INTERACTION=1
     - SET PHP=1 # This var is connected to PHP install cache
     
@@ -20,6 +22,7 @@ install:
     #php
     - IF NOT EXIST C:\tools\php (SET PHP=0)
     - IF %PHP%==0 (choco install --yes --allow-empty-checksums php --version %php_ver% --params '/InstallDir:C:\tools\php')
+    - IF %PHP%==0 echo extension=php_openssl.dll >> php.ini
     - cd C:\tools\php
     - copy php.ini-production php.ini
     #composer
