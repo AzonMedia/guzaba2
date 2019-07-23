@@ -16,6 +16,9 @@ use Guzaba2\Orm\Store\Nosql\Redis;
 use Guzaba2\Orm\Store\Sql\Mysql;
 use Guzaba2\Orm\Store\NullStore;
 
+use Guzaba2\Orm\MetaStore\SwooleTable;
+use Guzaba2\Orm\MetaStore\NullMetaStore;
+
 class Container extends \Azonmedia\Di\Container
     implements ConfigInterface, ObjectInternalIdInterface
 {
@@ -47,7 +50,6 @@ class Container extends \Azonmedia\Di\Container
             'args'                          => [
                 'FallbackStore'                 => 'RedisOrmStore',
             ],
-            'initialize_immediately'        => TRUE,
         ],
         'RedisOrmStore'                 => [
             'class'                         => Redis::class,
@@ -68,6 +70,20 @@ class Container extends \Azonmedia\Di\Container
                 'FallbackStore'                 => NULL,
             ],
         ],
+
+        'OrmMetaStore'                  => [
+            'class'                         => SwooleTable::class,
+            'args'                          => [
+                'FallbackMetaStore'             => 'NullOrmMetaStore',
+            ],
+            'initialize_immediately'        => TRUE,
+        ],
+        'NullOrmMetaStore'              => [
+            'class'                         => NullMetaStore::class,
+            'args'                          => [
+                'FallbackStore'                 => NULL,
+            ],
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];

@@ -61,6 +61,8 @@ class Server extends \Guzaba2\Http\Server
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
 
 
+
+
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode);
 
 //        foreach ($options as $option_name => $option_value) {
@@ -73,6 +75,10 @@ class Server extends \Guzaba2\Http\Server
 
     public function start() : void
     {
+        //before entering in coroutine mode it is a good idea to disable the blocking functions:
+        //https://wiki.swoole.com/wiki/page/1006.html
+        \Swoole\Runtime::enableStrictMode();
+
         printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL,$this->host, $this->port);
         $this->SwooleHttpServer->start();
     }

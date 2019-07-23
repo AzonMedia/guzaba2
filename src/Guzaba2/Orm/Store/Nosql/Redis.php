@@ -16,7 +16,7 @@ class Redis extends Database
      */
     protected $FallbackStore;
 
-    public function __construct(?StoreInterface $FallbackStore = NULL)
+    public function __construct(StoreInterface $FallbackStore)
     {
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();

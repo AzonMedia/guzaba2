@@ -25,10 +25,17 @@ class Coroutine extends \Swoole\Coroutine
 
     use SupportsConfig;
 
-    public static $coroutines_ids = [];
+    protected static $coroutines_ids = [];
 
-    public static $last_coroutine_id = 0;
+    /**
+     * The ID of the last corotuine that was created
+     * @var int
+     */
+    protected static $last_coroutine_id = 0;
 
+    /**
+     * @var int
+     */
     protected static $worker_id = 0;
 
     /**
@@ -44,14 +51,18 @@ class Coroutine extends \Swoole\Coroutine
 
     protected const CONFIG_RUNTIME = [];
 
+
     /**
-     * @var callable
+     * To be used for storing static data while not in coroutine context
+     * @var array
      */
-    protected $callable;
-    protected $settings = [];
+    protected static $static_data = [];
 
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
+     * @param int $worker_id
+     * @param string $context_class
+     * @throws InvalidArgumentException
      */
     public static function init(int $worker_id, string $context_class = \Guzaba2\Coroutine\Context::class) : void
     {
@@ -97,40 +108,111 @@ class Coroutine extends \Swoole\Coroutine
 
     }
 
+    /**
+     * Provides a way to safely store static data in coroutine context.
+     * Works even outside coroutine context.
+     * @uses Guzaba2\Coroutine\Context
+     * @see Guzaba2\Base\Traits\StaticStore
+     *
+     * @param string $class
+     * @param string $key
+     * @param $value
+     * @throws RunTimeException
+     */
     public static function set_data(string $class, string $key, /* mixed */ $value) : void
     {
-        $Context = self::getContext();
-        if (!array_key_exists($class, $Context->static_store)) {
-            $Context->static_store[$class] = [];
+        if (self::inCoroutine()) {
+            $Context = self::getContext();
+            if (!array_key_exists($class, $Context->static_store)) {
+                $Context->static_store[$class] = [];
+            }
+            $Context->static_store[$class][$key] = $value;
+        } else {
+            if (!array_key_exists($class, self::$static_data)) {
+                self::$static_data[$class] = [];
+            }
+            self::$static_data[$class][$key] = $value;
         }
-        $Context->static_store[$class][$key] = $value;
+
     }
 
+    /**
+     * Provides a way to safely store static data in coroutine context.
+     * Works even outside coroutine context.
+     * @uses Guzaba2\Coroutine\Context
+     * @see Guzaba2\Base\Traits\StaticStore
+     *
+     * @param string $class
+     * @param string $key
+     * @return mixed
+     * @throws RunTimeException
+     */
     public static function get_data(string $class, string $key) /* mixed */
     {
 
         if (!self::isset_data($class, $key)) {
             throw new RunTimeException(sprintf(t::_('The coroutine static store does not have key %s for class %s.'), $key, $class));
         }
+        if (self::inCoroutine()) {
+            return self::getContext()->static_store[$class][$key];
+        } else {
+            return self::$static_data[$class][$key];
+        }
 
-        return self::getContext()->static_store[$class][$key];
     }
 
+    /**
+     * Provides a way to safely store static data in coroutine context.
+     * Works even outside coroutine context.
+     * @uses Guzaba2\Coroutine\Context
+     * @see Guzaba2\Base\Traits\StaticStore
+     *
+     * @param string $class
+     * @param string $key
+     * @return bool
+     * @throws RunTimeException
+     */
     public static function isset_data(string $class, string $key) : bool
     {
-        $Context = self::getContext();
-        if (!array_key_exists($class, $Context->static_store)) {
-            return FALSE;
+        if (self::inCoroutine()) {
+            $Context = self::getContext();
+            if (!array_key_exists($class, $Context->static_store)) {
+                return FALSE;
+            }
+            if (!array_key_exists($key, $Context->static_store[$class])) {
+                return FALSE;
+            }
+            return TRUE;
+        } else {
+            if (!array_key_exists($class, self::$static_data)) {
+                return FALSE;
+            }
+            if (!array_key_exists($key, self::$static_data[$class])) {
+                return FALSE;
+            }
+            return TRUE;
         }
-        if (!array_key_exists($key, $Context->static_store[$class])) {
-            return FALSE;
-        }
-        return TRUE;
+
     }
 
+    /**
+     * Provides a way to safely store static data in coroutine context.
+     * Works even outside coroutine context.
+     * @uses Guzaba2\Coroutine\Context
+     * @see Guzaba2\Base\Traits\StaticStore
+     *
+     * @param string $class
+     * @param string $key
+     * @throws RunTimeException
+     */
     public static function unset_data(string $class, string $key) : void
     {
-        unset(self::getContext()->static_store[$class][$key]);
+        if (self::inCoroutine()) {
+            unset(self::getContext()->static_store[$class][$key]);
+        } else {
+            unset(self::$static_data[$class][$key]);
+        }
+
     }
 
 
@@ -240,6 +322,7 @@ class Coroutine extends \Swoole\Coroutine
         }
         $SwooleContext = parent::getContext($cid);
         $Context = new Context($SwooleContext, $cid);
+        $Context->static_data = self::$static_data;//if there is any static data set before entering in coroutine context this needs to be ported to the coroutine context
         return $Context;
     }
 

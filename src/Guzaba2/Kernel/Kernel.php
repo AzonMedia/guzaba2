@@ -345,7 +345,13 @@ class Kernel
 
         try {
 
-            $class_source = file_get_contents($class_path);
+
+            if (\Swoole\Coroutine::getCid() > 0) {
+                $class_source = \Swoole\Coroutine::readFile($class_path);
+            } else {
+                $class_source = file_get_contents($class_path);
+            }
+
 
             if ($class_name != SourceStream::class && strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
 

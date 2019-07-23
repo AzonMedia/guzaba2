@@ -151,7 +151,6 @@ implements ConnectionProviderInterface
                 if ($BusyConnection->get_coroutine_id() === $current_cid) {
                     $Connection = $BusyConnection;
                     break;
-                    //return $Connection;
                 }
             }
         }

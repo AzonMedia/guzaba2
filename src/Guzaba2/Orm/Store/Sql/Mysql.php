@@ -22,7 +22,7 @@ class Mysql extends Database
 
     protected $connection_class;
 
-    public function __construct(?StoreInterface $FallbackStore = NULL, ?string $connection_class = NULL)
+    public function __construct(StoreInterface $FallbackStore, ?string $connection_class = NULL)
     {
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
@@ -112,7 +112,8 @@ ORDER BY
 
     public function add_instance(ActiveRecordInterface $ActiveRecord) : string
     {
-
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        //save data to DB
     }
 
     public function &get_data_pointer( string $class, string $lookup_index) : array
@@ -123,8 +124,10 @@ ORDER BY
 
         //lookup in DB
         if ($lookup_index) {
-            //$Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-            //$pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
+            $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+            //pull data from DB
+            //set the data to $record_data['data']
+            //set the meta data to $record_data['meta'];
         }
 
 

@@ -9,6 +9,7 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\MetaStore\Interfaces\metaStoreInterface;
 
 class Memory extends Store
 implements StoreInterface
@@ -18,6 +19,9 @@ implements StoreInterface
         'max_rows'                      => 100000,
         'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
         'cleanup_percentage_records'    => 20,//the percentage of records to be removed
+        'services'      => [
+            'OrmMetaStore',
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -26,6 +30,11 @@ implements StoreInterface
      * @var StoreInterface|null
      */
     protected $FallbackStore;
+
+    /**
+     * @var MetaStoreInterface
+     */
+    protected $MetaStore;
 
     /**
      * Holds data for last updated time.
@@ -57,20 +66,19 @@ implements StoreInterface
         */
     ];
 
-    public function __construct(?StoreInterface $FallbackStore = NULL)
+    public function __construct(StoreInterface $FallbackStore, ?MetaStoreInterface $MetaStore = NULL)
     {
 
         parent::__construct();
 
-        if (Coroutine::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('Instances from %s need to be created before the swoole server is started. This instance is created in a coroutine whcih suggests it is being created inside the request (or other) handler of the server.'), __CLASS__));
-        }
-
         $this->FallbackStore = $FallbackStore ?? new NullStore();
 
+        if ($MetaStore) {
+            $this->MetaStore = $MetaStore;
+        } else {
+            $this->MetaStore = self::OrmMetaStore();
+        }
 
-        //$this->SwooleTable = new \Swoole\Table(self::CONFIG_RUNTIME['max_rows']);
-        $this->SwooleTable = new SwooleTable();
     }
 
     /*

@@ -6,6 +6,7 @@ use Azonmedia\Reflection\ReflectionClass;
 
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Object\GenericObject;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
@@ -24,6 +25,7 @@ use Guzaba2\Orm\Traits\ActiveRecordStructure;
 
 
 class ActiveRecord extends GenericObject
+implements ActiveRecordInterface
 {
     const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
 
@@ -98,7 +100,13 @@ class ActiveRecord extends GenericObject
      * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
      * @var array
      */
-    protected static $field_types = [];
+    protected static $columns_data = [];
+
+    /**
+     * Indexed array containing the
+     * @var array
+     */
+    protected static $primary_index_columns = [];
 
 
     //public function __construct(StoreInterface $Store)
@@ -122,37 +130,41 @@ class ActiveRecord extends GenericObject
             $this->Store = static::OrmStore();//use the default service
         }
 
-        if (empty(self::$field_types)) {
+        if (empty(self::$columns_data)) {
             $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
+            //Kernel::dump($unified_columns_data);
             foreach ($unified_columns_data as $column_datum) {
-                self::$field_types[$column_datum['name']] = $column_datum;
+                self::$columns_data[$column_datum['name']] = $column_datum;
+            }
+        }
+        if (empty(self::$primary_index_columns)) {
+            foreach (self::$columns_data as $column_name=>$column_data) {
+                if (!empty($column_data['primary'])) {
+                    self::$primary_index_columns[] = $column_name;
+                }
             }
         }
 
-        //$this->record_data =  $this->Store->get_record_structure(get_class($this));
-        //initialize the record data with the default values and types
-        //$this->record_data = $this->Store::get_record_structure(self::$field_types);
-
-        //$this->index = $index;
-
         if ($index) {
-            //$pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
-            //$pointer =& $this->Store->get_data_pointer(get_class($this), $index);
-            //$this->record_data =& $this->Store->get_data_pointer(get_class($this), $index);
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
+        } else {
+            $this->record_data = $this->Store::get_record_structure(self::$columns_data);
         }
 
 
 
         //all properties defined in this class must be references to the store in MemoryCache
-        $RClass = new ReflectionClass($this);
-        $properties = $RClass->getOwnDynamicProperties();
-        foreach ($properties as $RProperty) {
-            if (array_key_exists($RProperty->name, $pointer)) {
-                $this->{$RProperty->name} =& $pointer[$RProperty->name];
-            }
-        }
+        //if new properties are defined these will be contained in this instance, instead of being referenced in the Store
+        //the Store contains only the ORM properties
+//        $RClass = new ReflectionClass($this);
+//        $properties = $RClass->getOwnDynamicProperties();
+//        foreach ($properties as $RProperty) {
+//            if (array_key_exists($RProperty->name, $pointer)) {
+//                $this->{$RProperty->name} =& $pointer[$RProperty->name];
+//            }
+//        }
 
         //do not link these - these will stay separate for each instance
 //        foreach (self::PROPERTIES_TO_LINK as $property_name) {
@@ -164,10 +176,36 @@ class ActiveRecord extends GenericObject
 
     }
 
+    /**
+     * Returns the primary index for the object.
+     * Returns an array if the primary index is from multiple columns.
+     */
+    public function get_index() /* mixed */
+    {
+        $primary_index_columns = self::$primary_index_columns;
+        if (count($primary_index_columns) === 1) {
+            $ret = $this->record_data[$primary_index_columns[0]];
+        } else {
+            foreach($primary_index_columns as $primary_index_column) {
+                $ret[] = $this->record_data[$primary_index_column];
+            }
+        }
+        return $ret;
+    }
+
+    public static function get_primary_index_columns() : array
+    {
+        return self::$primary_index_columns;
+    }
 
     public static function get_main_table() : string
     {
         return static::CONFIG_RUNTIME['main_table'];
+    }
+
+    public function save() : ActiveRecord
+    {
+
     }
 
 }

@@ -21,15 +21,9 @@ class NullStore extends Store
 implements StoreInterface
 {
 
-    /**
-     * @var StoreInterface|null
-     */
-    protected $FallbackStore;
-
     public function __construct(?StoreInterface $FallbackStore = NULL)
     {
         parent::__construct();
-        //$this->FallbackStore = $FallbackStore;
         if ($FallbackStore) {
             throw new InvalidArgumentException(sprintf(t::_('ORM Store %s does not support fallback store.'), __CLASS__));
         }

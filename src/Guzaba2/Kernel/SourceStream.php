@@ -127,7 +127,12 @@ class SourceStream extends Base
             Kernel::stop($message);
         }
 
-        $class_source = file_get_contents($path);
+        //$class_source = file_get_contents($path);
+        if (\Swoole\Coroutine::getCid() > 0) {
+            $class_source = \Swoole\Coroutine::readFile($path);
+        } else {
+            $class_source = file_get_contents($path);
+        }
 
         $class_name = $path;
         $registered_autoload_paths = Kernel::get_registered_autoloader_paths();

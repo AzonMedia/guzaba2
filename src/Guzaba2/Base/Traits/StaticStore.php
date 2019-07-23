@@ -15,6 +15,10 @@ use Guzaba2\Coroutine\Coroutine;
  */
 trait StaticStore
 {
+
+
+    private static $data = [];
+
     public static function set_static(string $key, /* mixed */ $value) : void
     {
         $class = get_called_class();

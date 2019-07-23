@@ -1,6 +1,6 @@
 <?php
 
-namespace Guzaba2\Orm\Store;
+namespace Guzaba2\Orm\MetaStore;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -8,15 +8,9 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 
-/**
- * Class SwooleTable
- * Keeps update time for records
- * Because of the nature of Swoole\Table the instance needs to be created BEFORE the server is started. This way the same Swoole\Table will be shared between the workers.
- *
- * @package Guzaba2\Lock\Backends
- */
-class SwooleTable extends Base
+class SwooleTable extends MetaStore
 {
 
     protected const CONFIG_DEFAULTS = [
@@ -32,14 +26,13 @@ class SwooleTable extends Base
      */
     protected $SwooleTable;
 
-    public const DATA_STRUCT = [
-        'updated_microtime'         => 'float',
-        'updated_from_worker_id'    => 'int',
-        'updated_from_coroutine_id' => 'int',
-    ];
+    /**
+     * @var MetaStoreInterface|null
+     */
+    protected $FallbackMetaStore;
 
 
-    public function __construct()
+    public function __construct(MetaStoreInterface $FallbackMetaStore)
     {
         parent::__construct();
         if (Coroutine::inCoroutine()) {
@@ -56,6 +49,8 @@ class SwooleTable extends Base
             $this->SwooleTable->column($key, \Guzaba2\Swoole\Table::TYPES_MAP[$php_type]);
         }
         $this->SwooleTable->create();
+
+        $this->FallbackMetaStore = $FallbackMetaStore;
     }
 
     /**
@@ -72,19 +67,24 @@ class SwooleTable extends Base
      * @param string $key
      * @return array|null
      */
-    public function get_update_data(string $key) : ?array
+    public function get_meta_data(string $key) : ?array
     {
-        return $this->SwooleTable->get($key);
+        $data = $this->SwooleTable->get($key);
+        if (!$data) {
+            $data = $this->FallbackMetaStore->get_update_data($key);
+        }
+        return $data;
     }
 
     /**
      * @param ActiveRecord $ActiveRecord
      * @return array|null
      */
-    public function get_update_data_by_object(ActiveRecord $ActiveRecord) : ?array
+    public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
         $key = self::get_key($ActiveRecord);
-        return $this->get_update_data($key);
+        $data = $this->get_update_data($key);
+        return $data;
     }
 
     /**
@@ -94,7 +94,7 @@ class SwooleTable extends Base
     public function get_last_update_time(string $key) : ?float
     {
         $ret = NULL;
-        $data = $this->get_update_data($key);
+        $data = $this->get_meta_data($key);
         if (isset($data['updated_microtime'])) {
             $ret = $data['updated_microtime'];
         }
@@ -127,6 +127,7 @@ class SwooleTable extends Base
             //the cleanup cleans more records than just 1 or few... If just a few are cleaned then the cleanup will be invoked much more often
             $this->cleanup();
         }
+        $this->FallbackMetaStore->set_update_data($key, $data);
     }
 
     /**
@@ -140,15 +141,7 @@ class SwooleTable extends Base
         $this->set_update_data($key, $data);
     }
 
-    /**
-     * Removes certain keys from the SwooleTable storage.
-     * It is triggered when the number of records reach cleanup_at_percentage_usage
-     * The number of records removed is cleanup_percentage_records
-     */
-    protected function cleanup() : void
-    {
-        //TODO implement
-    }
+
 
 
     protected static function get_key(ActiveRecord $ActiveRecord) : string
@@ -159,24 +152,5 @@ class SwooleTable extends Base
         return $key;
     }
 
-    /**
-     * Validates the provided lock data.
-     * Throws InvalidArgumentException on data error.
-     * @param array $data
-     * @throws InvalidArgumentException
-     */
-    protected static function validate_data(array $data) : void
-    {
-        foreach ($data as $key=>$value) {
-            if (!isset(self::DATA_STRUCT[$key])) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided lock data contains an unsupported key %s.'), $key));
-            } elseif (gettype($value) !== self::DATA_STRUCT[$key]) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided lock data contains key %s which has a value of type % while it must be of type %s'), $key, gettype($value), self::DATA_STRUCT[$key]));
-            }
-        }
-        if (count($data) !== count(self::DATA_STRUCT)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided data contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT) ));
-        }
-    }
 
 }
