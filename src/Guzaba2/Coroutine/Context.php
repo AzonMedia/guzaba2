@@ -39,6 +39,22 @@ implements ObjectInternalIdInterface
         $this->Context->settings = [];
         $this->Context->static_store = [];//to be used by StaticStore trait
         $this->set_object_internal_id();
+
+        if (Coroutine::completeBacktraceEnabled()) {
+            $this->Context->created_backtrace = [];
+            $pcid = Coroutine::getPcid();
+            if ($pcid > 0) {
+                //there is parent coroutine - lets save the backtrace where this coroutine was created
+                //by getting the backtrace of the parent coroutine
+                $this->Context->created_backtrace = \Swoole\Coroutine::getBackTrace($pcid, \DEBUG_BACKTRACE_IGNORE_ARGS);
+            }
+        }
+
+    }
+
+    public function getBacktrace() : array
+    {
+        return $this->Context->created_backtrace;
     }
 
     public function getCid() : int

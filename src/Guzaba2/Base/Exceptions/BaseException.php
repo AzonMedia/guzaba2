@@ -20,6 +20,8 @@ namespace Guzaba2\Base\Exceptions;
 use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Base\Traits\StaticStore;
+use Guzaba2\Base\Traits\ContextAware;
+use Guzaba2\Base\Exceptions\Traits\ExceptionPropertyModification;
 use Guzaba2\Coroutine\Coroutine;
 use Throwable;
 
@@ -44,6 +46,8 @@ abstract class BaseException extends \Exception
 
     use SupportsObjectInternalId;
     use StaticStore;
+    use ContextAware;
+    use ExceptionPropertyModification;
 
     //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
     /**
@@ -116,8 +120,11 @@ abstract class BaseException extends \Exception
 
     protected $is_framework_exception_flag = FALSE;
 
+    protected $is_rethrown_flag = FALSE;
 
+    protected $context_changed_flag = FALSE;
 
+    protected $created_in_coroutine_id = 0;
 
     /**
      * The constructor calls first the constructor of tha parent class and then its own code.
@@ -130,6 +137,7 @@ abstract class BaseException extends \Exception
 
         parent::__construct($message, $code, $previous);
         $this->set_object_internal_id();
+        $this->set_created_coroutine_id();
 
         //self::$executionProfile->increment_value('cnt_guzaba_exceptions_created', 1);
 
@@ -138,11 +146,13 @@ abstract class BaseException extends \Exception
         }
         $code = (int) $code;//there was an error that provides code as float and this triggers a fatal error "Wrong parameters for Exception([string $exception [, long $code [, Exception $previous = NULL]]])"
         //$message = (string) $message;
-        parent::__construct($message,$code,$previous);
+
 
         list($usec, $sec) = explode(" ", microtime());
         $this->time_created = (int) $sec;
         $this->microtime_created = ( (float)$usec + (float)$sec ) ;
+
+
 
 
         //TODO - reenable the below code
@@ -157,6 +167,12 @@ abstract class BaseException extends \Exception
             //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
         //print_r(StackTraceUtil::get_backtrace());
         //self::set_static('CurrentException', $this->cloneException());
+        if (Coroutine::inCoroutine()) {
+            $this->created_in_coroutine_id = Coroutine::getCid();
+            //it is too late here to get the trace where was this coroutine created/started
+            //this is done at the time the coroutine is started - the backtrace is saved in the Context
+            //$this->setTrace(Coroutine::getFullBacktrace());
+        }
 
         //    self::$is_in_clone_flag = FALSE;
         //}
@@ -201,6 +217,12 @@ abstract class BaseException extends \Exception
 
     }
 
+    public function _before_change_context() : void
+    {
+        $this->context_changed_flag = TRUE;
+        self::unset_all_static();
+    }
+
     public function getDebugData() {
         $ret =
             time().' '.date('Y-m-d H:i:s').PHP_EOL.
@@ -219,10 +241,23 @@ abstract class BaseException extends \Exception
     }
 
     public function __destruct() {
+        //print 'EXC DESTR'.PHP_EOL;
         //self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
+        if (!$this->context_changed_flag) {
+            self::set_static('CurrentException', NULL);
+        }
+    }
+
+    public function rethrow() : void
+    {
+        $this->is_rethrown_flag = TRUE;
         self::set_static('CurrentException', NULL);
     }
 
+    public function is_rethrown() : bool
+    {
+        return $this->is_rethrown_flag;
+    }
 
     /**
      * Creates a clone of the provided exception.
@@ -292,40 +327,7 @@ abstract class BaseException extends \Exception
         return $this->execution_details;
     }
 
-    /**
-     * Allows the trace of the exception to be overriden.
-     *
-     * It uses Reflection to make the private property $trace accessible
-     *
-     * This is needed because on certain cases we cant have a traceException created and then thrown if/when needed.
-     * If this is done in @see framework\orm\classes\destroyedInstance::__construct() it triggers bug: @see https://bugs.php.net/bug.php?id=76047
-     *
-     * Because of this instead of creating an exception there we just store the backtrace as given by debug_backtrace() in an array and then if/when needed to throw an excetpnio (because a destroyedInstance has been accessed) a new traceException will be created, its properties updated and then set as a previous exception
-     */
-    public function setTrace(array $backtrace) : void
-    {
-        $this->setProperty('trace', $backtrace);
-    }
 
-    public function setFile(string $file) : void
-    {
-        $this->setProperty('file', $file);
-    }
-
-    public function setLine(int $line) : void
-    {
-        $this->setProperty('line', $line);
-    }
-
-    public function setCode(int $code) : void
-    {
-        $this->setProperty('code', $code);
-    }
-
-    public function setMessage(string $message) : void
-    {
-        $this->setProperty('message', $message);
-    }
 
     public function setAllData(framework\base\exceptions\traceInfoObject $traceInfoObject) {
 
@@ -407,20 +409,6 @@ abstract class BaseException extends \Exception
     {
         $message = implode(' ',$this->getAllMessagesAsArray());
         return $message;
-    }
-
-    /**
-     * We need only the error string, not the trace.
-     * The parent will also show the backtrace.
-     * @override
-     */
-    public function __toString() {
-        return $this->getMessage();
-    }
-
-    public function toStandardString() : string
-    {
-        return parent::__toString();
     }
 
     /**
@@ -542,33 +530,5 @@ abstract class BaseException extends \Exception
     }
 
 
-    /**
-     *
-     * It uses Reflection to make the private property $previous accessible
-     *
-     */
-    private function setProperty(string $property_name, /* mixed */ $property_value) : void
-    {
-        // $reflection = new \ReflectionClass($this);
-        // while( ! $reflection->hasProperty($property_name) ) {
-        //     $reflection = $reflection->getParentClass();
-        // }
-        // $prop = $reflection->getProperty($property_name);
-        // $prop->setAccessible(true);
-        // $prop->setValue($this, $property_value);
-        // $prop->setAccessible(false);
-        self::setPropertyStatic($this, $property_name, $property_value);
-    }
 
-    private static function setPropertyStatic(\Throwable $exception, string $property_name, /* mixed */ $property_value) : void
-    {
-        $reflection = new \ReflectionClass($exception);
-        while( ! $reflection->hasProperty($property_name) ) {
-            $reflection = $reflection->getParentClass();
-        }
-        $prop = $reflection->getProperty($property_name);
-        $prop->setAccessible(true);
-        $prop->setValue($exception, $property_value);
-        $prop->setAccessible(false);
-    }
 }

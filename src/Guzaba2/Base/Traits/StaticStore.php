@@ -16,25 +16,22 @@ use Guzaba2\Coroutine\Coroutine;
 trait StaticStore
 {
 
-
-    private static $data = [];
-
     public static function set_static(string $key, /* mixed */ $value) : void
     {
         $class = get_called_class();
-        Coroutine::set_data($class, $key, $value);
+        Coroutine::setData($class, $key, $value);
     }
 
     public static function get_static(string $key) /* mixed */
     {
         $class = get_called_class();
-        return Coroutine::get_data($class, $key);
+        return Coroutine::getData($class, $key);
     }
 
     public static function isset_static(string $key) : bool
     {
         $class = get_called_class();
-        return Coroutine::isset_data($class, $key);
+        return Coroutine::issetData($class, $key);
     }
 
     /**
@@ -44,6 +41,18 @@ trait StaticStore
     public static function unset_static(string $key) : void
     {
         $class = get_called_class();
-        Coroutine::unset_data($class, $key);
+        Coroutine::unsetData($class, $key);
+    }
+
+    public static function has_static() : bool
+    {
+        $class = get_called_class();
+        return Coroutine::hasData($class);
+    }
+
+    public static function unset_all_static() : void
+    {
+        $class = get_called_class();
+        Coroutine::unsetAllData($class);
     }
 }

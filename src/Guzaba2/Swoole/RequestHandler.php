@@ -303,7 +303,11 @@ class RequestHandler extends Base
 
 
         } catch (Throwable $Exception) {
+
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
+
+
+
             $DefaultResponseBody = new Stream();
             $DefaultResponseBody->write('Internal server/application error occurred.');
             $PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);

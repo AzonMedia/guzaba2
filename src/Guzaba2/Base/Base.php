@@ -27,6 +27,7 @@ use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Base\Traits\StaticStore;
+use Guzaba2\Base\Traits\ContextAware;
 
 /**
  * Class Base
@@ -40,6 +41,7 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
     use SupportsConfig;
     use UsesServices;
     use StaticStore;
+    use ContextAware;
 
     /**
      * Base constructor.
@@ -48,6 +50,7 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
     protected function __construct()
     {
         $this->set_object_internal_id();
+        $this->set_created_coroutine_id();
     }
 
     public function __destruct()

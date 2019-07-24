@@ -2,6 +2,7 @@
 
 namespace Guzaba2\Coroutine;
 
+use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
@@ -26,6 +27,23 @@ class Coroutine extends \Swoole\Coroutine
 
     use SupportsConfig;
 
+
+    public const CONFIG_DEFAULTS = [
+        /**
+         * This is the maximum number of allowed coroutines within a root (request) coroutine.
+         * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
+         */
+        'max_allowed_subcoroutines'         => 20,
+        'max_subcoroutine_exec_time'        => 5, //in seconds
+        /**
+         * Should a complete backtrace (taking into account parent coroutines) be provided when exception occurrs inside a coroutine
+         */
+        'enable_complete_backtrace'         => TRUE,
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+
     protected static $coroutines_ids = [];
 
     /**
@@ -38,19 +56,6 @@ class Coroutine extends \Swoole\Coroutine
      * @var int
      */
     protected static $worker_id = 0;
-
-    /**
-     * This is the maximum number of allowed coroutines within a root (request) coroutine.
-     * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
-     */
-    //public const MAX_ALLOWED_COROUTINES = 20;
-
-    public const CONFIG_DEFAULTS = [
-        'max_allowed_subcoroutines'         => 20,
-        'max_subcoroutine_exec_time'        => 5, //in seconds
-    ];
-
-    protected const CONFIG_RUNTIME = [];
 
 
     /**
@@ -65,6 +70,11 @@ class Coroutine extends \Swoole\Coroutine
      * @var
      */
     protected static $context_class = \Guzaba2\Coroutine\Context::class;
+
+    public static function completeBacktraceEnabled() : bool
+    {
+        return self::CONFIG_RUNTIME['enable_complete_backtrace'];
+    }
 
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
@@ -112,7 +122,8 @@ class Coroutine extends \Swoole\Coroutine
             self::$coroutines_ids[$current_cid] = [
                 '.'                 => $current_cid,
                 '..'                => NULL,
-                'chan'              => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                //'chan'              => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
+                'chan'              => new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),
                 'context'           => $Context,
             ];
         }
@@ -130,7 +141,7 @@ class Coroutine extends \Swoole\Coroutine
      * @param $value
      * @throws RunTimeException
      */
-    public static function set_data(string $class, string $key, /* mixed */ $value) : void
+    public static function setData(string $class, string $key, /* mixed */ $value) : void
     {
         if (self::inCoroutine()) {
             $Context = self::getContext();
@@ -158,18 +169,18 @@ class Coroutine extends \Swoole\Coroutine
      * @return mixed
      * @throws RunTimeException
      */
-    public static function get_data(string $class, string $key) /* mixed */
+    public static function getData(string $class, string $key) /* mixed */
     {
 
-        if (!self::isset_data($class, $key)) {
+        if (!self::issetData($class, $key)) {
             throw new RunTimeException(sprintf(t::_('The coroutine static store does not have key %s for class %s.'), $key, $class));
         }
         if (self::inCoroutine()) {
-            return self::getContext()->static_store[$class][$key];
+            $ret = self::getContext()->static_store[$class][$key];
         } else {
-            return self::$static_data[$class][$key];
+            $ret = self::$static_data[$class][$key];
         }
-
+        return $ret;
     }
 
     /**
@@ -183,7 +194,7 @@ class Coroutine extends \Swoole\Coroutine
      * @return bool
      * @throws RunTimeException
      */
-    public static function isset_data(string $class, string $key) : bool
+    public static function issetData(string $class, string $key) : bool
     {
         if (self::inCoroutine()) {
             $Context = self::getContext();
@@ -216,7 +227,7 @@ class Coroutine extends \Swoole\Coroutine
      * @param string $key
      * @throws RunTimeException
      */
-    public static function unset_data(string $class, string $key) : void
+    public static function unsetData(string $class, string $key) : void
     {
         if (self::inCoroutine()) {
             unset(self::getContext()->static_store[$class][$key]);
@@ -224,6 +235,33 @@ class Coroutine extends \Swoole\Coroutine
             unset(self::$static_data[$class][$key]);
         }
 
+    }
+
+    public static function hasData(string $class) : bool
+    {
+        $ret = FALSE;
+        if (self::inCoroutine()) {
+            $Context = self::getContext();
+            if (array_key_exists($class, $Context->static_store) && count($Context->static_store[$class])) {
+
+                $ret = TRUE;
+            }
+        } else {
+            if (array_key_exists($class, self::$static_data) && count(self::$static_data[$class])) {
+                $ret = TRUE;
+            }
+        }
+
+        return $ret;
+    }
+
+    public static function unsetAllData(string $class) : void
+    {
+        if (self::inCoroutine()) {
+            unset(self::getContext()->static_store[$class]);
+        } else {
+            unset(self::$static_data[$class]);
+        }
     }
 
     /**
@@ -249,11 +287,19 @@ class Coroutine extends \Swoole\Coroutine
             throw new RunTimeException(sprintf(t::_('The code is not running in a coroutine thus the context is not available.')));
         }
         if (!array_key_exists($cid, self::$coroutines_ids)) {
-            debug_print_backtrace();
             throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create'));
         }
         $Context = self::$coroutines_ids[$cid]['context'];
         return $Context;
+    }
+
+    public static function hasContext() : bool
+    {
+        $cid = $cid ?? parent::getcid();
+        if ($cid <= 0) {
+            return FALSE;
+        }
+        return array_key_exists($cid, self::$coroutines_ids);
     }
 
     /**
@@ -329,12 +375,13 @@ class Coroutine extends \Swoole\Coroutine
                 self::$coroutines_ids[$new_cid] = [
                     '.'                     => &$new_cid ,
                     '..'                    => &self::$coroutines_ids[$current_cid],
-                    'chan'                  => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),//not used
+                    //'chan'                  => new \Swoole\Coroutine\Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),//not used
+                    'chan'                  => new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']),//not used
                     'context'               => $Context,
                 ];
                 self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
-                //$CoroutineExecution = CoroutineExecution::get_instance();
+                $CoroutineExecution = CoroutineExecution::get_instance();
 
                 //each coroutine must have its own global try/catch block as the exception handler is not supported
 
@@ -356,7 +403,7 @@ class Coroutine extends \Swoole\Coroutine
                 //$chan->push($new_cid);
 
 
-                //$CoroutineExecution->destroy();
+                $CoroutineExecution->destroy();
 
                 $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
 
@@ -368,8 +415,18 @@ class Coroutine extends \Swoole\Coroutine
                 //Kernel::exception_handler($Exception, NULL);
                 //unset($Exception);//destroy the exception
                 //instead of destroying the exception lets push it to the channel
-                if ($chan) {
+
+                //if (!($Exception instanceof BaseException)) {
+                //TODO - add a an anonymous class excending the original exception and adding the needed traits
+                //}
+
+                if (self::completeBacktraceEnabled()) {
+                    //$Exception->prependTrace($Context->getBacktrace());
+                    BaseException::prependTraceStatic($Exception, $Context->getBacktrace());
+                }
+                if (!empty($chan)) {
                     //$chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
+                    //before the exception is pushed between coroutines (basically this is pulling the exception outside its context) it needs to be either cloned or the current exception from the current static context cleaned
                     $chan->push($Exception);
                 }
             }
@@ -437,6 +494,8 @@ class Coroutine extends \Swoole\Coroutine
         foreach ($parent_cids as $cid) {
             $ret = array_merge($ret, parent::getBacktrace($cid, $options, $limit));
         }
+        //array_shift($ret);
+        //array_shift($ret);
         return $ret;
     }
 
@@ -586,6 +645,7 @@ class Coroutine extends \Swoole\Coroutine
      */
     public static function awaitSubCoroutines(?int $timeout = NULL) : void
     {
+        print 'Await'.self::getCid().PHP_EOL;
         if ($timeout === NULL) {
             $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }
@@ -604,7 +664,6 @@ class Coroutine extends \Swoole\Coroutine
         $subcoroutines_completed_arr = [];
         for ($aa = 0 ; $aa < $subcoroutines_count ; $aa++) {
             $ret = $chan->pop($timeout);
-
             if ($ret === FALSE) {
                 $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
                 $unfinished_message_arr = [];
@@ -617,7 +676,12 @@ class Coroutine extends \Swoole\Coroutine
             } elseif ($ret instanceof \Throwable) {
                 //rethrow the exception
                 print 'rethrow'.PHP_EOL;
-                throw $ret;//the master coroutine needs to abort too
+                throw $ret;
+                //$ret->rethrow();
+                //throw $ret;//the master coroutine needs to abort too
+                //$new_ex = $ret->cloneException();
+                //$ret = NULL;
+                //throw $new_ex;
                 //DO NOT REMOVE THE ABOVE LINE - otherwise the exception may go unnoticed!
             } else {
                 //the coroutine finished successfully
