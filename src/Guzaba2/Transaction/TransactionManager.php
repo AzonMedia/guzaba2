@@ -37,7 +37,7 @@ class TransactionManager extends Base
      * There are different type of transactions - these will be per class - this includes the distributedTransaction and globalDistributedTransaction
      * @var array
      */
-    protected static $currentTransactions = array();
+    protected static $currentTransactions = [];
 
 
     /**
@@ -60,7 +60,6 @@ class TransactionManager extends Base
         }
 
         self::$currentTransactions[$transaction_type] = $transaction;
-
     }
 
     /**
@@ -71,7 +70,6 @@ class TransactionManager extends Base
      */
     public static function getCurrentTransaction(string $transaction_type): ?Transaction
     {
-
         $ret = NULL;
         if (!empty(self::$currentTransactions[$transaction_type])) {
             $ret = self::$currentTransactions[$transaction_type];
@@ -103,7 +101,7 @@ class TransactionManager extends Base
      * @example
      * TXM::beginTransaction(ORMDBTransaction::class)
      */
-    public static function beginTransaction(string $transaction_type, ?ScopeReferenceTracker &$scope_reference, ?CallbackContainer &$callbackContainer = NULL, array $options = array(), ?transactionContext $transactionContext = null): Transaction
+    public static function beginTransaction(string $transaction_type, ?ScopeReferenceTracker &$scope_reference, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?transactionContext $transactionContext = null): Transaction
     {
         if (!$transaction_type) {
             throw new InvalidArgumentException(sprintf(t::_('No transaction type/class provided.')));
@@ -130,7 +128,7 @@ class TransactionManager extends Base
      * @return mixed The returned value from the execution of the $callable
      * @throws InvalidArgumentException
      */
-    public static function executeInTransaction(callable $callable, string $transaction_type, ?CallbackContainer &$callbackContainer = NULL, array $options = array(), ?TransactionContext $transactionContext = null) /* mixed */
+    public static function executeInTransaction(callable $callable, string $transaction_type, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?TransactionContext $transactionContext = null) /* mixed */
     {
         if (!$transaction_type) {
             throw new InvalidArgumentException(sprintf(t::_('No transaction type/class provided.')));
@@ -283,5 +281,4 @@ class TransactionManager extends Base
             throw new TransactionException($scope_reference->getTransaction(), sprintf(t::_('The attached transaction to the scope reference seems to have been destroyed.')));
         }
     }
-
 }
