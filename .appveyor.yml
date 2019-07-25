@@ -1,3 +1,4 @@
+build: false
 version: dev-{build}
 clone_folder: C:\projects\guzaba2
 
