@@ -1,4 +1,4 @@
-build: false
+build: script
 version: dev-{build}
 clone_folder: C:\projects\guzaba2
 
