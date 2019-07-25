@@ -38,4 +38,4 @@ install:
 test_script:
     - cd C:\projects\guzaba2
     - set PHP_CS_FIXER_FUTURE_MODE=1
-    - php php-cs-fixer.phar --diff --dry-run -v fix
+    - vendor/bin/php-cs-fixer --diff --dry-run -v fix
