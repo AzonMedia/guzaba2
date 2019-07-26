@@ -1,4 +1,4 @@
-build: script
+build: false
 version: dev-{build}
 clone_folder: C:\projects\guzaba2
 
@@ -31,7 +31,7 @@ install:
     - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
     - IF %PHP%==0 appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
     #install
-    - cd c:\projects\guzaba2
+    - cd C:\projects\guzaba2
     - appveyor-retry composer install --no-progress --profile
     - appveyor-retry composer require friendsofphp/php-cs-fixer --no-progress --profile
 
