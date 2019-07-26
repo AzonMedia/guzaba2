@@ -27,7 +27,6 @@ namespace Guzaba2\Transaction;
  */
 class TransactionContext
 {
-
     protected $context_properties = [];
 
 
