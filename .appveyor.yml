@@ -24,11 +24,11 @@ cache:
 init:
     - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
     - SET COMPOSER_NO_INTERACTION=1
-    - SET PHP=1 # This var is connected to PHP install cache
+    - SET PHP=0 # This var is connected to PHP install cache
 
 install:
     #php
-    - IF NOT EXIST C:\tools\php (SET PHP=1)
+    - IF NOT EXIST C:\tools\php (SET PHP=0)
     - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
     - cd C:\tools\php   
     - copy php.ini-production php.ini
