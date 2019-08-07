@@ -1,10 +1,17 @@
 build: false
 version: dev-{build}
+
+branches:
+    only:
+        - master
+
 clone_folder: C:\projects\guzaba2
 
 environment:
     matrix:
         - php_ver: 7.2
+    access_token:
+        secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
 
 cache:
     - '%LOCALAPPDATA%\Composer\files -> composer.lock'
@@ -21,7 +28,7 @@ init:
 
 install:
     #php
-    - IF NOT EXIST C:\tools\php (SET PHP=0)
+    - IF NOT EXIST C:\tools\php (SET PHP=1)
     - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
     - cd C:\tools\php   
     - copy php.ini-production php.ini
@@ -39,3 +46,11 @@ test_script:
     - cd C:\projects\guzaba2
     - set PHP_CS_FIXER_FUTURE_MODE=1
     - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
+
+on_success:
+  - git config --global credential.helper store
+  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global user.email "antonia@azonmedia.com"
+  - git config --global user.name "Antonia"
+  - git commit -m "push from appveyor"
+  - git push
