@@ -29,8 +29,7 @@ use Guzaba2\Base\Exceptions\BaseException;
  */
 class ValidationFailedException extends BaseException
 {
-
-    protected $error_arr = array();
+    protected $error_arr = [];
 
     /**
      * The expected array (@param array $error_arr
@@ -45,7 +44,7 @@ class ValidationFailedException extends BaseException
      *     1 => [...] //second error
      * ];
      */
-    public function __construct(array $error_arr = array(), $code = 0)
+    public function __construct(array $error_arr = [], $code = 0)
     {
         $this->error_arr = $error_arr;
         $message = '';

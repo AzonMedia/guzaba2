@@ -21,7 +21,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class SwooleTable extends Base
 {
-
     protected const CONFIG_DEFAULTS = [
         'max_rows'              => 10000,//max simultaneous locks - throws an exception if reached
         'wait_time'             => 60,
@@ -138,12 +137,9 @@ class SwooleTable extends Base
             if (!$existing_lock) {
                 $stop = TRUE;
             }
-        } while(!$stop);
+        } while (!$stop);
 
         //once the lock has been obtained - do another check in the table is this execution (worker_id + coroutine_id) holding the current lock
         //as the operation of obtaining the lock is not atomic and it is possible another thread to obtain a lock immediately after it become available
-
     }
-
-
 }

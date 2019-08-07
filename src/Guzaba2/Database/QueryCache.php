@@ -48,7 +48,6 @@ final class QueryCache extends Singleton
         $table_key = 'table_' . $table;
         $microtime = $add_time + microtime(true);
         self::cache()->cache_value($table_key, $microtime);//no TTL for the table update time - the tables are a limited amount and small data is cached
-
     }
 
     public function get_table_modification_microtime(string $table): float

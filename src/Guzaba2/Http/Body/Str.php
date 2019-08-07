@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
@@ -17,8 +16,7 @@ use Guzaba2\Translator\Translator as t;
  * NOT FINISHED
  * @package Guzaba2\Http\Body
  */
-class Str extends Base
-    implements StreamInterface
+class Str extends Base implements StreamInterface
 {
 
     /**
@@ -42,9 +40,8 @@ class Str extends Base
      * Stream constructor.
      * @param string $content If content is provided it will be written to the body
      */
-    public function __construct( string $string = '')
+    public function __construct(string $string = '')
     {
-
         if ($string) {
             $this->write($string);
         }
@@ -97,8 +94,6 @@ class Str extends Base
      */
     public function detach() /* ?resource */
     {
-
-
         $this->is_writable_flag = FALSE;
         $this->is_readable_flag = FALSE;
         $this->stream = NULL;
@@ -164,13 +159,12 @@ class Str extends Base
      * @throws RuntimeException on failure.
      *
      */
-    public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
         //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
         }
-
     }
 
     /**
@@ -207,7 +201,7 @@ class Str extends Base
      * @return int Returns the number of bytes written to the stream.
      * @throws RuntimeException on failure.
      */
-    public function write( /* string */ $string) /* int */
+    public function write(/* string */ $string) /* int */
         //public function write(string $string) : int
     {
         //there is no need to use co::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
@@ -240,7 +234,7 @@ class Str extends Base
      *     if no bytes are available.
      * @throws RuntimeException if an error occurs.
      */
-    public function read( /* int */ $length) : string
+    public function read(/* int */ $length) : string
         //public function read(int $length) : string
     {
         if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
@@ -277,7 +271,7 @@ class Str extends Base
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata( /* ?string */ $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
         //public function getMetadata(?string $key = NULL) /* mixed */
     {
         $meta = stream_get_meta_data($this->stream);

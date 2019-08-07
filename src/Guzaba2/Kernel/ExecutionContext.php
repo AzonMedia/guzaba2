@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Kernel;
 
-
 use Guzaba2\Patterns\Callback;
 
 /**
@@ -19,7 +18,6 @@ class ExecutionContext
      */
     public function __construct(Callback $callback)
     {
-
     }
 
     public function getCallable()

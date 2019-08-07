@@ -13,8 +13,7 @@ use Psr\Http\Message\StreamInterface;
  * Array is a reserved word
  * @package Guzaba2\Http
  */
-class Structured extends Base
-implements StreamInterface
+class Structured extends Base implements StreamInterface
 {
 
     /**
@@ -87,8 +86,6 @@ implements StreamInterface
      */
     public function detach() /* ?resource */
     {
-
-
         $this->is_writable_flag = FALSE;
         $this->is_readable_flag = FALSE;
         $this->stream = NULL;
@@ -152,13 +149,12 @@ implements StreamInterface
      * @throws RuntimeException on failure.
      *
      */
-    public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
         //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
         if (!$this->isSeekable()) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
         }
-
     }
 
     /**
@@ -195,7 +191,7 @@ implements StreamInterface
      * @return int Returns the number of bytes written to the stream.
      * @throws RuntimeException on failure.
      */
-    public function write( /* string */ $string) /* int */
+    public function write(/* string */ $string) /* int */
         //public function write(string $string) : int
     {
         if (!$this->isWritable()) {
@@ -225,7 +221,7 @@ implements StreamInterface
      *     if no bytes are available.
      * @throws RuntimeException if an error occurs.
      */
-    public function read( /* int */ $length) : string
+    public function read(/* int */ $length) : string
         //public function read(int $length) : string
     {
         if (!$this->isReadable()) {
@@ -244,7 +240,7 @@ implements StreamInterface
      */
     public function getContents() : string
     {
-        if (!$this->isReadable() ) {
+        if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
         }
         $contents = print_r($this->structure, TRUE);
@@ -263,7 +259,7 @@ implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata( /* ?string */ $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
         //public function getMetadata(?string $key = NULL) /* mixed */
     {
         return NULL;

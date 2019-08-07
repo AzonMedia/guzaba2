@@ -12,7 +12,6 @@ use Guzaba2\Base\Base;
  */
 abstract class Application extends Base
 {
-
     public const DEPLOYMENT_PRODUCTION = 'production';
     public const DEPLOYMENT_DEVELOPMENT = 'development';
     public const DEPLOYMENT_STAGING = 'staging';

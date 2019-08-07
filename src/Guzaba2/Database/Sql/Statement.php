@@ -6,7 +6,6 @@ use Guzaba2\Base\Base;
 
 class Statement extends Base
 {
-
     protected $params = [];
 
     public function __set(string $param, /* mixed */ $value) : void
@@ -33,5 +32,4 @@ class Statement extends Base
     {
         return $this->params;
     }
-
 }

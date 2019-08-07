@@ -9,10 +9,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-class FilteringMiddleware extends Base
-implements MiddlewareInterface
+class FilteringMiddleware extends Base implements MiddlewareInterface
 {
-
     public function __construct()
     {
         parent::__construct();

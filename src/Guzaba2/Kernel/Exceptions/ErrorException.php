@@ -26,7 +26,6 @@ namespace Guzaba2\Kernel\Exceptions;
  */
 class ErrorException extends \Guzaba2\Base\Exceptions\BaseException
 {
-
     protected $errno;
     protected $errfile;
     protected $errline;
@@ -34,7 +33,6 @@ class ErrorException extends \Guzaba2\Base\Exceptions\BaseException
 
     public function __construct($errno = '', $errstr = '', $errfile = '', $errline = '', $errcontext = '')
     {
-
         parent::__construct($errstr);
 
         $this->errfile = $errfile;
@@ -67,5 +65,4 @@ class ErrorException extends \Guzaba2\Base\Exceptions\BaseException
     {
         return $this->errcontext;
     }
-
 }

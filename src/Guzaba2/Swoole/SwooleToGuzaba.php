@@ -29,5 +29,4 @@ class SwooleToGuzaba extends SwooleToPsr
 
         return $PsrRequest;
     }
-
 }

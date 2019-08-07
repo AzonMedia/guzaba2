@@ -4,7 +4,6 @@ namespace Guzaba2\Base\Exceptions\Traits;
 
 trait ExceptionPropertyModification
 {
-
     public function prependTrace(array $backtrace) : void
     {
         $this_backtrace = $this->getTrace();
@@ -106,7 +105,7 @@ trait ExceptionPropertyModification
     private static function setPropertyStatic(\Throwable $exception, string $property_name, /* mixed */ $property_value) : void
     {
         $reflection = new \ReflectionClass($exception);
-        while( ! $reflection->hasProperty($property_name) ) {
+        while (! $reflection->hasProperty($property_name)) {
             $reflection = $reflection->getParentClass();
         }
         $prop = $reflection->getProperty($property_name);

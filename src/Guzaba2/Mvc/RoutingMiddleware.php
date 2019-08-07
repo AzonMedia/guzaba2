@@ -22,8 +22,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * @package Guzaba2\Mvc
  */
-class RoutingMiddleware extends Base
-implements MiddlewareInterface
+class RoutingMiddleware extends Base implements MiddlewareInterface
 {
 
     /**

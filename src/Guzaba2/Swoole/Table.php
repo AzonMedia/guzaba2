@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Swoole;
 
-
 use Guzaba2\Base\Base;
 
 abstract class Table extends Base

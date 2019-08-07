@@ -3,12 +3,10 @@
 
 namespace Guzaba2\Database\Sql\Mysql;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\StatementInterface;
 
-class StatementMysqli extends Base
-implements StatementInterface
+class StatementMysqli extends Base implements StatementInterface
 {
 
     /**

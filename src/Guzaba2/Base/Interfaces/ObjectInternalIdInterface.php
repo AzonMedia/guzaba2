@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Base\Interfaces;
 
-
 interface ObjectInternalIdInterface
 {
 
@@ -12,5 +11,4 @@ interface ObjectInternalIdInterface
      * @return string
      */
     public function get_object_internal_id() : string;
-
 }

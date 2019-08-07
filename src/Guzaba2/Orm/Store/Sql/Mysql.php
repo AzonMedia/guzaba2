@@ -54,7 +54,7 @@ class Mysql extends Database
 
         for ($aa=0; $aa<count($storage_structure_arr); $aa++) {
             $column_structure_arr = $storage_structure_arr[$aa];
-            $ret[$aa] = array(
+            $ret[$aa] = [
                 'name'                  => strtolower($column_structure_arr['COLUMN_NAME']),
                 'native_type'           => $column_structure_arr['DATA_TYPE'],
                 'php_type'              => MysqlDB::TYPES_MAP[$column_structure_arr['DATA_TYPE']],
@@ -64,7 +64,7 @@ class Mysql extends Database
                 'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
                 'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
                 'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
-            );
+            ];
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
 
             ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_COLUMNS_STRUCTURE);
@@ -116,7 +116,7 @@ ORDER BY
         //save data to DB
     }
 
-    public function &get_data_pointer( string $class, string $lookup_index) : array
+    public function &get_data_pointer(string $class, string $lookup_index) : array
     {
 
         //initialization

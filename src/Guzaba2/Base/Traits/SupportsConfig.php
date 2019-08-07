@@ -3,14 +3,11 @@
 
 namespace Guzaba2\Base\Traits;
 
-
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
 
 trait SupportsConfig
 {
-
-
     private static $is_configured_flag = FALSE;
 
     /**
@@ -43,5 +40,4 @@ trait SupportsConfig
     {
         return array_key_exists($key, static::CONFIG_RUNTIME);
     }
-
 }

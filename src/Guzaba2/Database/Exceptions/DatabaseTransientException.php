@@ -25,5 +25,4 @@ namespace Guzaba2\Database\Exceptions;
  */
 class DatabaseTransientException extends QueryException
 {
-
 }

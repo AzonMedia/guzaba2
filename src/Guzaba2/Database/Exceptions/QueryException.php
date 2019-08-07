@@ -73,7 +73,6 @@ class QueryException extends DatabaseException
         $this->query = $query;
         $this->params = $params;
         $this->debugdata = $debugdata;
-
     }
 
     public function getPdoStatement(): ?PdoStatement

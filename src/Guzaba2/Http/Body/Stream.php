@@ -3,15 +3,13 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Psr\Http\Message\StreamInterface;
 use Guzaba2\Translator\Translator as t;
 
-class Stream extends Base
-implements StreamInterface
+class Stream extends Base implements StreamInterface
 {
 
     /**
@@ -36,7 +34,7 @@ implements StreamInterface
      * @param null $stream
      * @param string $content If content is provided it will be written to the body
      */
-    public function __construct( /* resource */ $stream = NULL, string $content = '')
+    public function __construct(/* resource */ $stream = NULL, string $content = '')
     {
         $this->stream = $stream ?? fopen('php://memory', 'r+');
         //$this->stream = $stream ?? tmpfile();//use this if co::fwrite() is needed but memory and \fwrite() is twice faster
@@ -93,7 +91,6 @@ implements StreamInterface
      */
     public function detach() /* ?resource */
     {
-
         $stream = $this->stream;
 
         $this->is_writable_flag = FALSE;
@@ -162,13 +159,12 @@ implements StreamInterface
      * @throws RuntimeException on failure.
      *
      */
-    public function seek( /* int */ $offset, /* int */ $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
     //public function seek(int $offset, int $whence = SEEK_SET) : void
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
         }
-
     }
 
     /**
@@ -205,12 +201,12 @@ implements StreamInterface
      * @return int Returns the number of bytes written to the stream.
      * @throws RuntimeException on failure.
      */
-    public function write( /* string */ $string) /* int */
+    public function write(/* string */ $string) /* int */
     //public function write(string $string) : int
     {
         //there is no need to use co::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
         if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
-        //if (!$this->isWritable() || ($size = Coroutine::fwrite($this->stream, $string)) === false) { // Swoole\Coroutine::fwrite(): cannot represent a stream of type MEMORY as a select()able descriptor
+            //if (!$this->isWritable() || ($size = Coroutine::fwrite($this->stream, $string)) === false) { // Swoole\Coroutine::fwrite(): cannot represent a stream of type MEMORY as a select()able descriptor
             throw new RuntimeException('Can not write to this stream.');
         }
         return $size;
@@ -236,7 +232,7 @@ implements StreamInterface
      *     if no bytes are available.
      * @throws RuntimeException if an error occurs.
      */
-    public function read( /* int */ $length) : string
+    public function read(/* int */ $length) : string
     //public function read(int $length) : string
     {
         if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
@@ -272,7 +268,7 @@ implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata( /* ?string */ $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
     //public function getMetadata(?string $key = NULL) /* mixed */
     {
         $meta = stream_get_meta_data($this->stream);

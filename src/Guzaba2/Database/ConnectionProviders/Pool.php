@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database\ConnectionProviders;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -18,10 +17,8 @@ use Guzaba2\Translator\Translator as t;
  * Provides a pool of connections (coroutine based connections) to be used with coroutines
  * @package Guzaba2\Database
  */
-class Pool extends Base
-implements ConnectionProviderInterface
+class Pool extends Base implements ConnectionProviderInterface
 {
-
     protected const CONFIG_DEFAULTS = [
         'max_connections'   => 20,
         //'connections'       => [],
@@ -43,7 +40,6 @@ implements ConnectionProviderInterface
 //                $this->available_connections[$connection_class][] = new $connection_class();
 //            }
 //        }
-
     }
 
     public function get_new_connection(string $connection_class) : ConnectionInterface
@@ -93,7 +89,7 @@ implements ConnectionProviderInterface
         } else {
             //there are no available connections
 
-            if (count($this->busy_connections[$connection_class]) < self::CONFIG_RUNTIME['max_connections'] ) {
+            if (count($this->busy_connections[$connection_class]) < self::CONFIG_RUNTIME['max_connections']) {
                 //the total number of busy connections is below the max number of connections
                 //so a new one can be created
                 //print 'NEW CONNECTION '.$this->get_object_internal_id().PHP_EOL;
@@ -133,7 +129,6 @@ implements ConnectionProviderInterface
     //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
     public function get_connection(string $connection_class, &$ScopeReference = '') : ConnectionInterface
     {
-
         if (is_string($ScopeReference)) {
             throw new InvalidArgumentException(sprintf(t::_('There is no provided ScopeReference variable to %s.'), __METHOD__));
         }
@@ -165,7 +160,6 @@ implements ConnectionProviderInterface
             $ScopeReference = new ScopeReference($Connection);
         }
         return $Connection;
-
     }
 
     /**
@@ -182,7 +176,7 @@ implements ConnectionProviderInterface
 
         $connection_class = get_class($Connection);
         if (!isset($this->busy_connections[$connection_class])) {
-            throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), get_class($Connection) ));
+            throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), get_class($Connection)));
         }
         $connection_found = FALSE;
         foreach ($this->busy_connections[$connection_class] as $key => $BusyConnection) {
@@ -207,11 +201,11 @@ implements ConnectionProviderInterface
             //lets see will it be found in the available connections
             foreach ($this->available_connections[$connection_class] as $AvailableConnection) {
                 if ($Connection === $AvailableConnection) {
-                    throw new RunTimeException(sprintf(t::_('The provided connection of class %s with ID %s to be freed was found in the available connection pool which is wrong.'), get_class($Connection), $Connection->get_object_internal_id() ));
+                    throw new RunTimeException(sprintf(t::_('The provided connection of class %s with ID %s to be freed was found in the available connection pool which is wrong.'), get_class($Connection), $Connection->get_object_internal_id()));
                 }
             }
 
-            throw new RunTimeException(sprintf(t::_('The provided connection of class %s with ID %s does not seem to have been created from this Pool.'), get_class($Connection), $Connection->get_object_internal_id() ));
+            throw new RunTimeException(sprintf(t::_('The provided connection of class %s with ID %s does not seem to have been created from this Pool.'), get_class($Connection), $Connection->get_object_internal_id()));
         }
     }
 

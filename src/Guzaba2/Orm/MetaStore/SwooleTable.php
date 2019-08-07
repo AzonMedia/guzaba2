@@ -12,7 +12,6 @@ use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 
 class SwooleTable extends MetaStore
 {
-
     protected const CONFIG_DEFAULTS = [
         'max_rows'                      => 100000,
         'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
@@ -122,7 +121,7 @@ class SwooleTable extends MetaStore
     {
         self::validate_data($data);
         $this->set($key, $data);
-        if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100 ) ) {
+        if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100)) {
             //95% usage is reached - cleanup is needed
             //the cleanup cleans more records than just 1 or few... If just a few are cleaned then the cleanup will be invoked much more often
             $this->cleanup();
@@ -151,6 +150,4 @@ class SwooleTable extends MetaStore
         $key = $class.'_'.$lookup_index;
         return $key;
     }
-
-
 }

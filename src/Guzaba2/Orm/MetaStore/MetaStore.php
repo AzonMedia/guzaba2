@@ -3,12 +3,10 @@
 
 namespace Guzaba2\Orm\MetaStore;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 
-abstract class MetaStore extends Base
-implements MetaStoreInterface
+abstract class MetaStore extends Base implements MetaStoreInterface
 {
     /**
      * Validates the provided lock data.
@@ -26,7 +24,7 @@ implements MetaStoreInterface
             }
         }
         if (count($data) !== count(self::DATA_STRUCT)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided data contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT) ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided data contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT)));
         }
     }
 }

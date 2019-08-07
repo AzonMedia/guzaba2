@@ -17,7 +17,6 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Execution\RequestExecution;
 use Throwable;
 
-
 class RequestHandler extends Base
 {
 
@@ -66,7 +65,6 @@ class RequestHandler extends Base
             $DefaultResponse = new Response(StatusCode::HTTP_NOT_FOUND, [], $Body);
         }
         $this->DefaultResponse = $DefaultResponse;
-
     }
 
     /**
@@ -100,7 +98,6 @@ class RequestHandler extends Base
 
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
-
             $start_time = microtime(TRUE);
 
             \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
@@ -177,24 +174,24 @@ class RequestHandler extends Base
 //
 //                    print 'start debug'.PHP_EOL;
 //
-////                    $socket = new \Co\Socket(AF_INET, SOCK_STREAM, 0);//SOL_TCP
-////                    $socket->bind('127.0.0.1', 1000 + (int) $worker_id);
-////                    $socket->listen(128);
-////
-////                    $client = $socket->accept();
+            ////                    $socket = new \Co\Socket(AF_INET, SOCK_STREAM, 0);//SOL_TCP
+            ////                    $socket->bind('127.0.0.1', 1000 + (int) $worker_id);
+            ////                    $socket->listen(128);
+            ////
+            ////                    $client = $socket->accept();
 //
 //                    while(true) {
-////                        //echo "Client Recv: \n";
-////                        $data = $client->recv();
-////                        //if (empty($data)) {
-////                        //    $client->close();
-////                        //    break;
-////                        //}
-////                        //var_dump($client->getsockname());
-////                        //var_dump($client->getpeername());
-////                        //echo "Client Send: \n";
-////                        $data = print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
-////                        $client->send($data);
+            ////                        //echo "Client Recv: \n";
+            ////                        $data = $client->recv();
+            ////                        //if (empty($data)) {
+            ////                        //    $client->close();
+            ////                        //    break;
+            ////                        //}
+            ////                        //var_dump($client->getsockname());
+            ////                        //var_dump($client->getpeername());
+            ////                        //echo "Client Send: \n";
+            ////                        $data = print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
+            ////                        $client->send($data);
 //                        \Co::sleep(2);
 //                        //print print_r(\Guzaba2\Coroutine\Coroutine::$last_coroutine_id.PHP_EOL, TRUE);
 //                        print 'AAAA'.Coroutine::$last_coroutine_id.PHP_EOL;
@@ -257,7 +254,7 @@ class RequestHandler extends Base
 //            if ($PsrRequest['action'] == 'set') {
 //                $this->HttpServer->table->set('0', ['id' => $this->HttpServer->get_worker_id(), 'data'=> 'asd'] );
 //            } elseif ($PsrRequest['action'] == 'get') {
-                //print_r($this->HttpServer->table->get('0'));
+            //print_r($this->HttpServer->table->get('0'));
 //                $s = microtime(true);
 //                $Connection1 = self::ConnectionFactory()->get_connection(MysqlConnection::class);
 //                for ($aa=0; $aa<10000; $aa++) {
@@ -300,10 +297,7 @@ class RequestHandler extends Base
             $end_time = microtime(TRUE);
             print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
-
-
         } catch (Throwable $Exception) {
-
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
 
 
@@ -317,12 +311,10 @@ class RequestHandler extends Base
             $Execution->destroy();
         }
         //print 'MASTER END'.PHP_EOL;
-
     }
 
     public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void
     {
         $this->handle($Request, $Response);
     }
-
 }

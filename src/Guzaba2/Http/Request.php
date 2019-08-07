@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -19,8 +18,7 @@ use Psr\Http\Message\UriInterface;
  * This class uses code from Slim framework
  * @see https://github.com/slimphp/Slim/blob/3.x/Slim/Http/Request.php
  */
-class Request extends Message
-implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
+class Request extends Message implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
 {
     /**
      * @var string
@@ -81,7 +79,6 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
         ?StreamInterface $Body = NULL,
         array $uploaded_files = []
     ) {
-
         $method = strtoupper($method);
         if (!$method) {
             throw new InvalidArgumentException(sprintf(t::_('No HTTP method provided.')));
@@ -196,18 +193,16 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      */
     public function getMethodConstant() : int
     {
-        $method_const = array_search( strtoupper($this->getMethod()), Method::METHODS_MAP );
+        $method_const = array_search(strtoupper($this->getMethod()), Method::METHODS_MAP);
         return $method_const;
     }
 
     public function isGet() : bool
     {
-
     }
 
     public function isPost() : bool
     {
-
     }
 
     /**
@@ -226,7 +221,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
     //public function withMethod(string $method) : self
-    public function withMethod( /* string */ $method) : self
+    public function withMethod(/* string */ $method) : self
     {
         $request = clone $this;
         $request->method = $method;
@@ -501,7 +496,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @throws \InvalidArgumentException if an unsupported argument type is
      *     provided.
      */
-    public function withParsedBody( /* mixed */ $data) : self
+    public function withParsedBody(/* mixed */ $data) : self
     {
         $this->parsedBody = $data;
 
@@ -541,7 +536,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @return mixed
      */
     //public function getAttribute(string $name, /* mixed */ $default = NULL) /* mixed */
-    public function getAttribute( /* string */ $name, /* mixed */ $default = NULL) /* mixed */
+    public function getAttribute(/* string */ $name, /* mixed */ $default = NULL) /* mixed */
     {
         $ret = $default;
         if (array_key_exists($name, $this->attributes)) {
@@ -566,7 +561,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @return static
      */
     //public function withAttribute(string $name, /* mixed */ $value) : self
-    public function withAttribute( /* string */ $name, /* mixed */ $value) : self
+    public function withAttribute(/* string */ $name, /* mixed */ $value) : self
     {
         $Request = clone $this;
         $Request->attributes[$name] = $value;
@@ -588,7 +583,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @return static
      */
     //public function withoutAttribute(string $name) : self
-    public function withoutAttribute( /* string */ $name) : self
+    public function withoutAttribute(/* string */ $name) : self
     {
         $Request = clone $this;
         unset($this->attributes[$name]);
@@ -621,7 +616,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @param mixed $offset
      * @return bool
      */
-    public function offsetExists( /* scalar */ $offset) : bool
+    public function offsetExists(/* scalar */ $offset) : bool
     {
         // TODO: Implement offsetExists() method.
         return array_key_exists($offset, $this->query_params);
@@ -631,7 +626,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @param mixed $offset
      * @return mixed
      */
-    public function offsetGet( /* scalar */ $offset)  /* mixed */
+    public function offsetGet(/* scalar */ $offset)  /* mixed */
     {
         // TODO: Implement offsetGet() method.
         return $this->query_params[$offset];
@@ -642,7 +637,7 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @param mixed $value
      * @throws RunTimeException
      */
-    public function offsetSet( /* scalar */ $offset, /* mixed */ $value) : void
+    public function offsetSet(/* scalar */ $offset, /* mixed */ $value) : void
     {
         throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
     }
@@ -651,14 +646,14 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
      * @param mixed $offset
      * @throws RunTimeException
      */
-    public function offsetUnset( /* scalar */ $offset) : void
+    public function offsetUnset(/* scalar */ $offset) : void
     {
         throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
     }
 
     public function count() : int
     {
-        return count ($this->query_params);
+        return count($this->query_params);
     }
 
     //@implements \Iterator
@@ -694,5 +689,4 @@ implements ServerRequestInterface, \ArrayAccess, \Countable, \Iterator
         $var = $this->current() !== false;
         return $var;
     }
-
 }

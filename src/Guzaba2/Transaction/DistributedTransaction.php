@@ -24,7 +24,6 @@ namespace Guzaba2\Transaction;
 use Guzaba2\Database\Exceptions\TransactionException;
 use Guzaba2\Translator\Translator as t;
 
-
 /**
  * The distributedTransaction is like any other transaction except it has special commit rules.
  * The current implementation allows only for combinations of one transaction with less than 100 priority - the rest must all be 100 priority (this means they can commit 100% reliably). For example the DB transaction is not 100 as it can reach a deadlock and it may fail (even after multiple attempts - the rerunnable transactions (AKA with $code argument) are configured to retry 3 times)
@@ -47,7 +46,7 @@ class DistributedTransaction extends Transaction
      * Contains the transactions that are part of this distributed transaction
      * @var array
      */
-    protected $transactions = array();
+    protected $transactions = [];
 
     /**
      * The priority of a distributed transaction is the highest priority of the transactions it contains.
@@ -80,8 +79,6 @@ class DistributedTransaction extends Transaction
      */
     public function attach_transaction(transaction $transaction): self
     {
-
-
         if ($this->is_master() && !$transaction->is_master()) {
             //$p = $transaction->get_parent();
             //die(get_class($p));//NOVERIFY
@@ -148,7 +145,6 @@ class DistributedTransaction extends Transaction
      */
     protected function execute_commit(): bool
     {
-
         foreach ($this->get_transactions_grouped_by_priority() as $priority => $transactions) {
             foreach ($transactions as $transaction) {
                 $transaction->commit();
@@ -213,7 +209,7 @@ class DistributedTransaction extends Transaction
                 $transaction->execute_commit();//executes the commit on the distributed transaction
             }
         }
-        unset ($transaction);
+        unset($transaction);
 
         return TRUE;
     }
@@ -237,7 +233,7 @@ class DistributedTransaction extends Transaction
         /*
         foreach ($this->get_nested() as $transaction) {
             //k::logtofile('DV_301', $savepoint.' '.$transaction_id_from_which_to_rollback);
-            
+
             if ($transaction->get_object_internal_id)_ == $transaction_id_from_which_to_rollback) {
                 $must_rollback = TRUE;
             }
@@ -260,7 +256,7 @@ class DistributedTransaction extends Transaction
                 $transactions_to_be_rolled_back[] = $transaction;
             }
         }
-        unset ($transaction);
+        unset($transaction);
 
         $transactions_to_be_rolled_back = array_reverse($transactions_to_be_rolled_back);
         foreach ($transactions_to_be_rolled_back as $transaction) {
@@ -296,5 +292,4 @@ class DistributedTransaction extends Transaction
         $this->transactions = [];
         parent::_before_destroy();
     }
-
 }

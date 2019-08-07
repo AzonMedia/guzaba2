@@ -28,14 +28,12 @@ use Guzaba2\Kernel\Kernel;
 use Guzaba2\Patterns\Callback;
 use Guzaba2\Translator\Translator as t;
 
-
 /**
  * A container class for callbacks.
  * When executed will execute all callbacks in the order they were pushed
  */
 class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
 {
-
     const MODE_BEFORE_COMMIT = 10;//this means really COMMIT not just save
     const MODE_AFTER_COMMIT = 20;//this means really COMMIT not just save (and it means after master as it cant be committed before that)
     const MODE_BEFORE_MASTER_COMMIT = 30;//pointless - check is it working
@@ -124,59 +122,59 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
     const MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN_CHAIN = 930;
 
     //the status shows the status of the transaction to which this event/mode is related
-    public const MODES_MAP = array(
-        self::MODE_BEFORE_COMMIT => array('name' => 'before commit', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_AFTER_COMMIT => array('name' => 'after commit', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_BEFORE_MASTER_COMMIT => array('name' => 'before master commit', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_AFTER_MASTER_COMMIT => array('name' => 'after master commit', 'status' => Transaction::STATUS_COMMITTED),
+    public const MODES_MAP = [
+        self::MODE_BEFORE_COMMIT => ['name' => 'before commit', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_AFTER_COMMIT => ['name' => 'after commit', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_BEFORE_MASTER_COMMIT => ['name' => 'before master commit', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_AFTER_MASTER_COMMIT => ['name' => 'after master commit', 'status' => Transaction::STATUS_COMMITTED],
 
-        self::MODE_BEFORE_ROLLBACK => array('name' => 'before rollback', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_AFTER_ROLLBACK => array('name' => 'after rollback', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_BEFORE_MASTER_ROLLBACK => array('name' => 'before master rollback', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_AFTER_MASTER_ROLLBACK => array('name' => 'after master rollback', 'status' => Transaction::STATUS_ROLLED_BACK),
+        self::MODE_BEFORE_ROLLBACK => ['name' => 'before rollback', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_AFTER_ROLLBACK => ['name' => 'after rollback', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_BEFORE_MASTER_ROLLBACK => ['name' => 'before master rollback', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_AFTER_MASTER_ROLLBACK => ['name' => 'after master rollback', 'status' => Transaction::STATUS_ROLLED_BACK],
 
-        self::MODE_AFTER => array('name' => 'after', 'status' => Transaction::STATUS_ANY),
-        self::MODE_BEFORE => array('name' => 'before', 'status' => Transaction::STATUS_ANY),
-        self::MODE_BEFORE_SAVE => array('name' => 'before save', 'status' => Transaction::STATUS_SAVED),
-        self::MODE_AFTER_SAVE => array('name' => 'after save', 'status' => Transaction::STATUS_SAVED),
+        self::MODE_AFTER => ['name' => 'after', 'status' => Transaction::STATUS_ANY],
+        self::MODE_BEFORE => ['name' => 'before', 'status' => Transaction::STATUS_ANY],
+        self::MODE_BEFORE_SAVE => ['name' => 'before save', 'status' => Transaction::STATUS_SAVED],
+        self::MODE_AFTER_SAVE => ['name' => 'after save', 'status' => Transaction::STATUS_SAVED],
 
-        self::MODE_BEFORE_MASTER => array('name' => 'before master', 'status' => Transaction::STATUS_ANY),
-        self::MODE_AFTER_MASTER => array('name' => 'after master', 'status' => Transaction::STATUS_ANY),
-        self::MODE_ON_ROLLBACK_BEFORE_MASTER => array('name' => 'on rollback before master', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_ON_ROLLBACK_AFTER_MASTER => array('name' => 'on rollback after master', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_ON_COMMIT_BEFORE_MASTER => array('name' => 'on commit before master', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_ON_COMMIT_AFTER_MASTER => array('name' => 'on commit after master', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_ON_SAVE_BEFORE_MASTER => array('name' => 'on save before master', 'status' => Transaction::STATUS_SAVED),
-        self::MODE_ON_SAVE_AFTER_MASTER => array('name' => 'on save after master', 'status' => Transaction::STATUS_SAVED),
+        self::MODE_BEFORE_MASTER => ['name' => 'before master', 'status' => Transaction::STATUS_ANY],
+        self::MODE_AFTER_MASTER => ['name' => 'after master', 'status' => Transaction::STATUS_ANY],
+        self::MODE_ON_ROLLBACK_BEFORE_MASTER => ['name' => 'on rollback before master', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_ON_ROLLBACK_AFTER_MASTER => ['name' => 'on rollback after master', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_ON_COMMIT_BEFORE_MASTER => ['name' => 'on commit before master', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_ON_COMMIT_AFTER_MASTER => ['name' => 'on commit after master', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_ON_SAVE_BEFORE_MASTER => ['name' => 'on save before master', 'status' => Transaction::STATUS_SAVED],
+        self::MODE_ON_SAVE_AFTER_MASTER => ['name' => 'on save after master', 'status' => Transaction::STATUS_SAVED],
 
-        self::MODE_BEFORE_MASTER_IN_WORKER => array('name' => 'before master in worker', 'status' => Transaction::STATUS_ANY),
-        self::MODE_AFTER_MASTER_IN_WORKER => array('name' => 'after master in worker', 'status' => Transaction::STATUS_ANY),
-        self::MODE_ON_ROLLBACK_BEFORE_MASTER_IN_WORKER => array('name' => 'on rollback before master in worker', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER => array('name' => 'on rollback after master in worker', 'status' => Transaction::STATUS_ROLLED_BACK),
-        self::MODE_ON_COMMIT_BEFORE_MASTER_IN_WORKER => array('name' => 'on commit before master in worker', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER => array('name' => 'on commit after master in worker', 'status' => Transaction::STATUS_COMMITTED),
-        self::MODE_ON_SAVE_BEFORE_MASTER_IN_WORKER => array('name' => 'on save before master in worker', 'status' => Transaction::STATUS_SAVED),
-        self::MODE_ON_SAVE_AFTER_MASTER_IN_WORKER => array('name' => 'on save after master in worker', 'status' => Transaction::STATUS_SAVED),
+        self::MODE_BEFORE_MASTER_IN_WORKER => ['name' => 'before master in worker', 'status' => Transaction::STATUS_ANY],
+        self::MODE_AFTER_MASTER_IN_WORKER => ['name' => 'after master in worker', 'status' => Transaction::STATUS_ANY],
+        self::MODE_ON_ROLLBACK_BEFORE_MASTER_IN_WORKER => ['name' => 'on rollback before master in worker', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER => ['name' => 'on rollback after master in worker', 'status' => Transaction::STATUS_ROLLED_BACK],
+        self::MODE_ON_COMMIT_BEFORE_MASTER_IN_WORKER => ['name' => 'on commit before master in worker', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER => ['name' => 'on commit after master in worker', 'status' => Transaction::STATUS_COMMITTED],
+        self::MODE_ON_SAVE_BEFORE_MASTER_IN_WORKER => ['name' => 'on save before master in worker', 'status' => Transaction::STATUS_SAVED],
+        self::MODE_ON_SAVE_AFTER_MASTER_IN_WORKER => ['name' => 'on save after master in worker', 'status' => Transaction::STATUS_SAVED],
 
         //self::MODE_BEFORE_MASTER_AFTER_CONTROLLER => array('name' => 'before master after controller'),
-        self::MODE_AFTER_MASTER_AFTER_CONTROLLER => array('name' => 'after master after controller', 'status' => Transaction::STATUS_ANY),
+        self::MODE_AFTER_MASTER_AFTER_CONTROLLER => ['name' => 'after master after controller', 'status' => Transaction::STATUS_ANY],
         //self::MODE_ON_ROLLBACK_BEFORE_MASTER_AFTER_CONTROLLER => array('name' => 'on rollback before master after controller'),
-        self::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER => array('name' => 'on rollback after master after controller', 'status' => Transaction::STATUS_ROLLED_BACK),
+        self::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER => ['name' => 'on rollback after master after controller', 'status' => Transaction::STATUS_ROLLED_BACK],
         //self::MODE_ON_COMMIT_BEFORE_MASTER_AFTER_CONTROLLER => array('name' => 'on commit before master after controller'),
-        self::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER => array('name' => 'on commit after master after controller', 'status' => Transaction::STATUS_COMMITTED),
+        self::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER => ['name' => 'on commit after master after controller', 'status' => Transaction::STATUS_COMMITTED],
         //self::MODE_ON_SAVE_BEFORE_MASTER_AFTER_CONTROLLER => array('name' => 'on save before master after controller'),
-        self::MODE_ON_SAVE_AFTER_MASTER_AFTER_CONTROLLER => array('name' => 'on save after master after controller', 'status' => Transaction::STATUS_SAVED),
+        self::MODE_ON_SAVE_AFTER_MASTER_AFTER_CONTROLLER => ['name' => 'on save after master after controller', 'status' => Transaction::STATUS_SAVED],
 
         //self::MODE_BEFORE_MASTER_IN_SHUTDOWN => array('name' => 'before master in shutdown'),
-        self::MODE_AFTER_MASTER_IN_SHUTDOWN => array('name' => 'after master in shutdown', 'status' => Transaction::STATUS_ANY),
+        self::MODE_AFTER_MASTER_IN_SHUTDOWN => ['name' => 'after master in shutdown', 'status' => Transaction::STATUS_ANY],
         //self::MODE_ON_ROLLBACK_BEFORE_MASTER_IN_SHUTDOWN => array('on rollback before master in shutdown'),
-        self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN => array('name' => 'on rollback after master in shutdown', 'status' => Transaction::STATUS_ROLLED_BACK),
+        self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN => ['name' => 'on rollback after master in shutdown', 'status' => Transaction::STATUS_ROLLED_BACK],
         //self::MODE_ON_COMMIT_BEFORE_MASTER_IN_SHUTDOWN => array('name' => 'on commit before master in shutdown'),
-        self::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN => array('name' => 'on commit after master in shutdown', 'status' => Transaction::STATUS_COMMITTED),
+        self::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN => ['name' => 'on commit after master in shutdown', 'status' => Transaction::STATUS_COMMITTED],
         //self::MODE_ON_SAVE_BEFORE_MASTER_IN_SHUTDOWN => array('name' => 'on save before master in shutdown'),
-        self::MODE_ON_SAVE_AFTER_MASTER_IN_SHUTDOWN => array('name' => 'on save after master in shutdown', 'status' => Transaction::STATUS_SAVED),
+        self::MODE_ON_SAVE_AFTER_MASTER_IN_SHUTDOWN => ['name' => 'on save after master in shutdown', 'status' => Transaction::STATUS_SAVED],
 
-    );
+    ];
 
     const DEFAULT_ROLLBACK_MODE = self::MODE_ON_ROLLBACK_AFTER_MASTER;
 
@@ -205,16 +203,15 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
      * @throws InvalidArgumentException
      * @throws RunTimeException
      */
-    public function __construct(array $callables = array(), int $mode = 0, ?transaction &$transaction = NULL)
+    public function __construct(array $callables = [], int $mode = 0, ?transaction &$transaction = NULL)
     {
-
         if ($callables) {
             $this->validate_mode($mode);
         }
 
         $this->transaction =& $transaction;
 
-        parent::__construct(array());//call the parent constructor with an empty array - we will load the callables after that
+        parent::__construct([]);//call the parent constructor with an empty array - we will load the callables after that
 
         foreach ($callables as $callable) {
             $this->add_callable($callable, $mode);
@@ -300,7 +297,7 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
 
         $trace_exception = new TraceInfoObject(sprintf(t::_('WHERE THE CALLBACK WAS CREATED AND QUEUED.')));//this is not a real exception but is creted only for the purpose if a real one is thrown - this to be thrown a s a previous one
 
-        $this->callables[$mode][] = array(&$callable, $this->transaction, FALSE, $trace_exception);//the third argument is is the callback executed or not - when executed this is set to TRUE - this is done so we avoid double execution in case of error
+        $this->callables[$mode][] = [&$callable, $this->transaction, FALSE, $trace_exception];//the third argument is is the callback executed or not - when executed this is set to TRUE - this is done so we avoid double execution in case of error
 
         $this->callable_hashes[$mode][] = $callable_hash;
 
@@ -335,7 +332,6 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
      */
     public function get_callables(int $mode = 0): array
     {
-
         if ($mode) {
             $this->validate_mode($mode);
             $ret = $this->callables[$mode] ?? [];
@@ -363,7 +359,6 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
      */
     public function __invoke(?transaction $transaction = NULL, ?int $mode = NULL): bool
     {
-
         if (!($transaction instanceof transaction)) {
             throw new InvalidArgumentException(sprintf(t::_('%s::%s expects the first argument to be a %s.'), __CLASS__, __METHOD__, Transaction::class));
         }
@@ -374,7 +369,6 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
         $this->validate_mode($mode);//this will throw an exception if the provided mode is not valid
 
         if (isset($this->callables[$mode])) {
-
             foreach ($this->callables[$mode] as &$callable_data) {
                 if ($callable_data) { //it may be null if the object got destroyed in the mean time (this is a way to remove a callable from the array)
                     //list ($callback, $callback_transaction, $callback_executed) = $callable_data;
@@ -391,12 +385,12 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
                     if ($callback_executed) {
                         continue;
                     }
-                    if (in_array($mode, array(self::MODE_AFTER_MASTER_IN_WORKER, self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER, self::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER))) {
+                    if (in_array($mode, [self::MODE_AFTER_MASTER_IN_WORKER, self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER, self::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER])) {
                         //Kernel::execute_in_worker($callback, $transaction, $mode);
                         Kernel::execute_in_worker($callback);//currently passing arguments is not supported
-                    } elseif (in_array($mode, array(self::MODE_AFTER_MASTER_AFTER_CONTROLLER, self::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER, self::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER))) {
+                    } elseif (in_array($mode, [self::MODE_AFTER_MASTER_AFTER_CONTROLLER, self::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER, self::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER])) {
                         Kernel::execute_delayed($callback, $trace_info, $transaction, $mode);
-                    } elseif (in_array($mode, array(self::MODE_AFTER_MASTER_IN_SHUTDOWN, self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN, self::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN))) {
+                    } elseif (in_array($mode, [self::MODE_AFTER_MASTER_IN_SHUTDOWN, self::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN, self::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN])) {
                         Kernel::execute_in_shutdown($callback, $trace_info, $transaction, $mode);
                     } else {
                         try {
@@ -405,7 +399,6 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
                             BaseException::prependAsFirstExceptionStatic($exception, $trace_info->getAsException());
                             throw $exception;
                         }
-
                     }
                     $callback_executed = TRUE;
                 }
@@ -430,8 +423,6 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
         if (!isset(self::MODES_MAP[$mode])) {
             throw new InvalidArgumentException(sprintf(t::_('An unsupported callback mode "%s" was provided to the callbackContainer.'), $mode));
         }
-
-
     }
 
     /**
@@ -508,5 +499,4 @@ class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
             //do nothing - there is no current transaction
         }
     }
-
 }

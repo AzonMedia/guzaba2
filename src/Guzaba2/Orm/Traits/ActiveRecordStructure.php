@@ -7,7 +7,6 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 
-
 trait ActiveRecordStructure
 {
 
@@ -27,7 +26,7 @@ trait ActiveRecordStructure
     public function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
     {
         if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name ));
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
         //$is_nullable = self::$columns_data[$field_name]['nullable'];
         $is_nullable = $this->is_field_nullable($field_name);
@@ -52,7 +51,7 @@ trait ActiveRecordStructure
     public function get_field_native_type(string $field_name) : string
     {
         if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name ));
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
         if ($this->is_field_array($field_name)) {
             //return 'string';//the value column on the arr_table and assoc_arr_table is string
@@ -84,7 +83,7 @@ trait ActiveRecordStructure
     public function get_field_information(string $field_name) : array
     {
         if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name ));
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
         //this will also work for array_field_names and assoc_array_field_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
         return self::$columns_data[$field_name];
@@ -129,7 +128,7 @@ trait ActiveRecordStructure
     public function is_field_nullable(string $field_name) : bool
     {
         if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name ));
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
 //        if ($this->is_field_array($field_name)) {
 //            return FALSE;//the array fields cant contain NULLs
@@ -149,7 +148,7 @@ trait ActiveRecordStructure
     public function get_field_default_value(string $field_name) /*: mixed */
     {
         if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name ));
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
 //        if ($this->is_field_array($field_name)) {
 //            return '';//the default value is empty string (the value column are of type string)
@@ -157,6 +156,4 @@ trait ActiveRecordStructure
 
         return self::$columns_data[$field_name]['default_value'];
     }
-
-
 }

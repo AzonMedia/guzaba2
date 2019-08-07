@@ -12,7 +12,6 @@ use Guzaba2\Patterns\CoroutineSingleton;
  */
 class CoroutineExecution extends CoroutineSingleton
 {
-
     protected function __construct()
     {
         parent::__construct();
@@ -22,5 +21,4 @@ class CoroutineExecution extends CoroutineSingleton
     {
         CoroutineSingleton::cleanup();
     }
-
 }

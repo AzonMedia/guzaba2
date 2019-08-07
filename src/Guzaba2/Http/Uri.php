@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Psr\Http\Message\UriInterface;
 
@@ -14,8 +13,7 @@ use Psr\Http\Message\UriInterface;
  * Contains code from Slim Framework
  * @see https://github.com/slimphp/Slim/blob/3.x/Slim/Http/Uri.php
  */
-class Uri extends Base
-implements UriInterface
+class Uri extends Base implements UriInterface
 {
     /**
      * Uri scheme (without "://" suffix)

@@ -54,11 +54,11 @@ final class PdoStatement extends Statement
      * Version information
      * @var array
      */
-    protected static $_version_data = array(
+    protected static $_version_data = [
         'revision' => '$Rev:: 198                                              $:',
         'author' => '$Author:: vesko                                         $:',
         'date' => '$Date:: 2009-11-24 19:38:52 +0200 (Tue, 24 Nov 2009)    $:',
-    );
+    ];
 
     /**
      * The wrapped PDOStatement object
@@ -275,7 +275,7 @@ final class PdoStatement extends Statement
         //if (is_int($value)||is_float($value)) { //there is no \PDO::PARAM_FLOAT ?!
         if (is_int($value)) {
             $type = \PDO::PARAM_INT;
-            //} elseif (is_string($value)) {
+        //} elseif (is_string($value)) {
         } elseif (is_string($value) || is_float($value)) {
             $type = \PDO::PARAM_STR;
         } elseif (is_bool($value)) {
@@ -321,7 +321,6 @@ final class PdoStatement extends Statement
             $params = $this->params;
             throw new ParameterException($param, $message, $query, $params, $exception);
         }
-
     }
 
     public function getParams()
@@ -332,7 +331,7 @@ final class PdoStatement extends Statement
     public function clearParams()
     {
         //print '=========Clear params========'.'<br />';
-        $this->params = array();
+        $this->params = [];
     }
 
     public function __isset(string $param): bool
@@ -353,9 +352,8 @@ final class PdoStatement extends Statement
 
     public function __call(string $method, array $args)
     {
-
         if (method_exists($this->statement, $method)) {
-            return call_user_func_array(array($this->statement, $method), $args);
+            return call_user_func_array([$this->statement, $method], $args);
         } elseif (count($args) === 1) { //permits creating the members (by overloading)
             $this->$method = $args[0];
             return $this;
@@ -372,7 +370,7 @@ final class PdoStatement extends Statement
      */
     public static function __callStatic(string $method, array $args)
     {
-        call_user_func_array(array(get_class($this->statement)), $args);
+        call_user_func_array([get_class($this->statement)], $args);
     }
 
     /**
@@ -471,7 +469,7 @@ final class PdoStatement extends Statement
         }
 
         //$this->statement->closeCursor();//REMOVE
-        $ret = array();
+        $ret = [];
         if (count($data)) {
             foreach ($data as $record) {
                 $record = array_change_key_case($record, CASE_LOWER);
@@ -513,7 +511,6 @@ final class PdoStatement extends Statement
             if (self::ENABLE_SELECT_CACHING && !$this->is_sql_cache_disabled()) {
                 self::$query_cache->add_cached_data($sql, $this->params, $data, NULL);
             }
-
         }
 
         if (count($data)) {
@@ -527,12 +524,11 @@ final class PdoStatement extends Statement
             } else {
                 $ret = $row;
             }
-
         } else {
             if ($column_name) {
                 $ret = null;
             } else {
-                $ret = array();
+                $ret = [];
             }
         }
 
@@ -560,7 +556,6 @@ final class PdoStatement extends Statement
         $sql = $this->statement->get_sql();
 
         if ($this->cached_query_data && self::ENABLE_SELECT_CACHING && !$this->is_sql_cache_disabled()) {
-
             $return = $this->cached_query_data['data'];
             $found_rows = $this->cached_query_data['found_rows'] ?? NULL;
             $from_cache = TRUE;
@@ -575,11 +570,10 @@ final class PdoStatement extends Statement
              */
             if (stripos($sql, 'SQL_CALC_FOUND_ROWS') !== FALSE && (is_null($found_rows) || 0 == $found_rows)) {
                 $found_rows = $this->connection->get_found_rows();
-
             }
 
             $count = count($data);
-            $return = array();
+            $return = [];
             for ($aa = 0; $aa < $count; $aa++) {
                 $return[$aa] = is_array($data[$aa]) ? array_change_key_case($data[$aa], CASE_LOWER) : $data[$aa];
             }
@@ -599,7 +593,7 @@ final class PdoStatement extends Statement
      * @return $this
      * @throws \Guzaba2\Base\Exceptions\NotImplementedException
      */
-    public function execute_unbuffered($params = array())
+    public function execute_unbuffered($params = [])
     {
         throw new \Guzaba2\Base\Exceptions\NotImplementedException();
         return $this;
@@ -832,7 +826,6 @@ final class PdoStatement extends Statement
      */
     public function execute_in_thread()
     {
-
     }
 
     /**
@@ -846,7 +839,7 @@ final class PdoStatement extends Statement
      * @throws RunTimeException
      * @throws TransactionException
      */
-    public function executeAny($params = array(), bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE): self
+    public function executeAny($params = [], bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE): self
     {
         $ret = $this->execute($params, $buffered_query, $disable_sql_cache, FALSE);
         return $ret;
@@ -869,9 +862,8 @@ final class PdoStatement extends Statement
      * @throws SingleValidationFailedException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function execute($params = array(), bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE, bool $enforce_DQL_statements_only = TRUE): self
+    public function execute($params = [], bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE, bool $enforce_DQL_statements_only = TRUE): self
     {
-
         $statement_group_type = $this->getStatementGroup();
         $sql = $this->statement->get_sql();
 
@@ -943,15 +935,12 @@ final class PdoStatement extends Statement
         }
 
         if (self::ENABLE_SELECT_CACHING && !$disable_sql_cache) {
-
             $statement_group_type = $this->getStatementGroup();
 
             if ($statement_group_type == statementTypes::STATEMENT_GROUP_DQL) {
-
                 $cached_query_data = self::$query_cache->get_cached_data($sql, $this->params);
 
                 if ($cached_query_data) {
-
                     $this->cached_query_data = $cached_query_data;
                     $this->executed = true;
 
@@ -966,7 +955,6 @@ final class PdoStatement extends Statement
                 } else {
                     //not found in the cache => proceed
                 }
-
             } elseif ($statement_group_type == statementTypes::STATEMENT_GROUP_DML) {
 
                 //self::$query_cache->update_tables_modification_microtime($sql);
@@ -1010,14 +998,11 @@ final class PdoStatement extends Statement
                 $params = $this->params;
                 $debugdata = $this->debugDumpParams();
                 throw new QueryException($this, $sqlstate, $errorcode, $errormessage, $query, $params, $debugdata, $exception);
-                //throw new QueryException($errorInfo[0], $errorInfo[1], $str, $this->getQueryString(), $debug_params);
+            //throw new QueryException($errorInfo[0], $errorInfo[1], $str, $this->getQueryString(), $debug_params);
             } else {
                 //it is OK
             }
-
         } catch (\PDOException $exception) {
-
-
             $sqlstate = isset($exception->errorInfo[0]) ? $exception->errorInfo[0] : '';
             $errorcode = isset($exception->errorInfo[1]) ? $exception->errorInfo[1] : 0;//driver specific
             $errormessage = isset($exception->errorInfo[2]) ? $exception->errorInfo[2] : $exception->getMessage();
@@ -1037,7 +1022,6 @@ final class PdoStatement extends Statement
                     $current_transaction = TransactionManager::getCurrentTransaction(Transaction::class);
                     if ($current_transaction) {
                         //LOG if needed $current_transaction->get_transaction_start_bt_info()
-
                     }
 
                     k::logtofile('SQL_QUERY_TAKING_TOO_LONG', $this->getQueryString());
@@ -1045,10 +1029,9 @@ final class PdoStatement extends Statement
 
                     throw new SingleValidationFailedException('transaction', 1, sprintf(t::_('The transaction is taking too much time. Please try to rerun it (just click Save/Submit again).')));
                 } elseif ($errorcode == 1615) {
-                    //SQLSTATE[HY000]: General error: 1615 Prepared statement needs to be re-prepared 
+                    //SQLSTATE[HY000]: General error: 1615 Prepared statement needs to be re-prepared
                     //we can try to execute it again
                     if (!$this->connection->is_repeated_execution) {
-
                         logger::get_instance()->notice(sprintf(t::_('Mysql needs a statement to be reprepared. The query is "%s".'), $query));
 
                         $this->connection->is_repeated_execution = true;
@@ -1060,7 +1043,6 @@ final class PdoStatement extends Statement
                         $this->clearParams();
                         //then again execute the statement with the params provided
                         $ret = $this->execute($params);//execute again
-
                     } else {
                         //throw new framework\database\exceptions\mysql\queryException(sprintf(t::_('The statement needed to be reprepared but failed')));
                         $errormessage .= sprintf(t::_('This is the second execution of the statement.'));
@@ -1081,7 +1063,7 @@ final class PdoStatement extends Statement
                     //throw new framework\orm\exceptions\duplicateKeyException($errormessage, $errorcode);
                     //throw new framework\database\exceptions\duplicateKeyException($errormessage, $errorcode);
                     throw new DuplicateKeyException($this, $sqlstate, $errorcode, $errormessage, $query, $params, $debugdata, $exception);
-                } else if ($errorcode == '1452') {
+                } elseif ($errorcode == '1452') {
                     // foreign key constraint
                     //throw new framework\orm\exceptions\foreignKeyConstraintException($errormessage, $errorcode);
                     //throw new framework\database\exceptions\foreignKeyConstraintException($errormessage, $errorcode);
@@ -1094,7 +1076,6 @@ final class PdoStatement extends Statement
         } finally {
             if (self::ENABLE_SELECT_CACHING) {
                 if ($statement_group_type == statementTypes::STATEMENT_GROUP_DML) {
-
                     $current_transaction = TransactionManager::getCurrentTransaction(Transaction::class);
 
                     if ($current_transaction && self::INVALIDATE_SELECT_CACHE_ON_COMMIT) {
@@ -1133,9 +1114,7 @@ final class PdoStatement extends Statement
                         $invalidate_tables_for_cache = array_unique($invalidate_tables_for_cache);
                         $master_transaction_context->invalidate_tables_for_cache = $invalidate_tables_for_cache;
                     } else {
-
                         self::$query_cache->update_tables_modification_microtime($sql);
-
                     }
                 }
             }
@@ -1172,7 +1151,6 @@ final class PdoStatement extends Statement
                         $trace_str .= ' ' . $frame['class'] . '::' . $frame['function'] . '()' . PHP_EOL;
                     }
                     //$trace_str .= PHP_EOL;
-
                 }
                 k::logtofile('sql_profile', [$trace_str]);
             }
@@ -1195,7 +1173,6 @@ final class PdoStatement extends Statement
 
 
         if ($end_time - $start_time > $this->slow_query_log_time && $this->slow_query_log) {
-
             $env = ActiveEnvironment::get_instance()->get();
             $should_be_logged = TRUE;
             if ($env) {
@@ -1212,7 +1189,6 @@ final class PdoStatement extends Statement
                 $message = sprintf(t::_('Slow query %s secs (threshold is %s secs): %s'), $end_time - $start_time, $this->slow_query_log_time, $query);
                 framework\logger2\classes\logger::get_instance()->debug($message, 'SLOW_QUERY_LOG');
             }
-
         }
 
 
@@ -1281,7 +1257,6 @@ final class PdoStatement extends Statement
             $str .= '<p>time: ' . $time_delta . '</p>';
             $str .= '<table border="1" cellpadding="3" cellspacing="0"><tr><td>id</td><td>select_type</td><td>table</td><td>type</td><td>possible_keys</td><td>key</td><td>key_len</td><td>ref</td><td>rows</td><td>Extra</td></tr>';
             while ($row = mysqli_fetch_assoc($res)) {
-
                 $str .= '<tr>';
                 foreach ($row as $key => $value) {
                     $str .= '<td>' . $value . '</td>';
@@ -1301,7 +1276,6 @@ final class PdoStatement extends Statement
             } else {
                 k::get_execution()->add_to_logger($str);
             }
-
         } else {
             //k::logtofile('optimizer','no explain');
             //die(mysql_error());

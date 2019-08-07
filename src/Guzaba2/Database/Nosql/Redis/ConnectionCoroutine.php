@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database\Nosql\Redis;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Connection;
 use Guzaba2\Database\ConnectionFactory;
@@ -36,7 +35,7 @@ abstract class ConnectionCoroutine extends Connection
         $this->RedisCo->connect(static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port']);
 
         if (! $this->RedisCo->connected) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->RedisCo->errCode, $this->RedisCo->errMsg ));
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->RedisCo->errCode, $this->RedisCo->errMsg));
         }
     }
 

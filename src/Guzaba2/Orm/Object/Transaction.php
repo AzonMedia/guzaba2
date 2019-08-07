@@ -38,7 +38,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class Transaction extends \Guzaba2\Transaction\Transaction
 {
-
     protected $priority = 0;
     protected static $default_transaction_type = 'objects';
 
@@ -59,9 +58,8 @@ class Transaction extends \Guzaba2\Transaction\Transaction
     protected $dbg_data = [];
 
     //public function __construct(&$scope_reference = '&', $code = NULL, &$commit_callback = '', &$rollback_callback = '', array $options = [], ?transactionContext $context = NULL) {
-    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = array(), TransactionContext $transactionContext = null)
+    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = [], TransactionContext $transactionContext = null)
     {
-
         if (!isset($options['transaction_type'])) {
             $options['transaction_type'] = self::class;
         }
@@ -165,7 +163,6 @@ class Transaction extends \Guzaba2\Transaction\Transaction
             }
 
             if (!isset($this->transaction_data[$object->get_object_internal_id()])) {
-
                 k::logtoemail('', 'MEMORY TRANSACTION OBJECT ERROR', null, true);
 
                 //die(print_r($this->transaction_data));//NOVERIFY
@@ -181,11 +178,10 @@ class Transaction extends \Guzaba2\Transaction\Transaction
 
                 $this->dump_debug_data();
 
-                //this means that the instance that was tracked no longer exists??
+            //this means that the instance that was tracked no longer exists??
             } else {
                 $object->_set_all_properties($this->transaction_data[$object->get_object_internal_id()]);
             }
-
         }
     }
 
@@ -269,7 +265,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
                 $transactions_to_be_rolled_back[] = $transaction;
             }
         }
-        unset ($transaction);
+        unset($transaction);
 
         $transactions_to_be_rolled_back = array_reverse($transactions_to_be_rolled_back);
         foreach ($transactions_to_be_rolled_back as $transaction) {

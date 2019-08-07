@@ -12,7 +12,6 @@ namespace Guzaba2\Swoole;
  */
 class Server extends \Guzaba2\Http\Server
 {
-
     protected $SwooleHttpServer;
 
     public const SUPPPORTED_EVENTS = [];
@@ -79,7 +78,7 @@ class Server extends \Guzaba2\Http\Server
         //https://wiki.swoole.com/wiki/page/1006.html
         \Swoole\Runtime::enableStrictMode();
 
-        printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL,$this->host, $this->port);
+        printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port);
         $this->SwooleHttpServer->start();
     }
 
@@ -113,6 +112,4 @@ class Server extends \Guzaba2\Http\Server
     {
         return $this->worker_id;
     }
-
-
 }

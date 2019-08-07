@@ -19,10 +19,8 @@ use Guzaba2\Execution\CoroutineExecution;
  * Also currently
  * @package Guzaba2\Coroutine
  */
-class Coroutine extends \Swoole\Coroutine
-    implements ConfigInterface
+class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 {
-
     use SupportsObjectInternalId;
 
     use SupportsConfig;
@@ -84,7 +82,6 @@ class Coroutine extends \Swoole\Coroutine
      */
     public static function init(int $worker_id, string $context_class = \Guzaba2\Coroutine\Context::class) : void
     {
-
         self::$context_class = $context_class;
 
         self::$worker_id = $worker_id;
@@ -97,8 +94,7 @@ class Coroutine extends \Swoole\Coroutine
             //defers are called in revers order
 
             //before unsetting the master coroutine unset the IDs of all subcoroutines
-            $Function = function(int $cid) use (&$Function) : void
-            {
+            $Function = function (int $cid) use (&$Function) : void {
                 foreach (self::$coroutines_ids[$cid] as $key=>$data) {
                     if (is_int($key)) {
                         $Function($data['.']);
@@ -108,14 +104,14 @@ class Coroutine extends \Swoole\Coroutine
                 unset(self::$coroutines_ids[$cid]);
             };
             //$Function($current_cid);//this will execute before the defer() put in the init()
-            defer(function() use ($Function, $current_cid) {
+            defer(function () use ($Function, $current_cid) {
                 print 'Cleanup'.PHP_EOL;
                 $Function($current_cid);
             });
 
 
             $Context = self::createContextWrapper($current_cid, $context_class);
-            parent::defer(function() use ($Context) {
+            parent::defer(function () use ($Context) {
                 $Context->freeAllConnections();
                 $Context->end_microtime = microtime(TRUE);
             });
@@ -127,7 +123,6 @@ class Coroutine extends \Swoole\Coroutine
                 'context'           => $Context,
             ];
         }
-
     }
 
     /**
@@ -155,7 +150,6 @@ class Coroutine extends \Swoole\Coroutine
             }
             self::$static_data[$class][$key] = $value;
         }
-
     }
 
     /**
@@ -171,7 +165,6 @@ class Coroutine extends \Swoole\Coroutine
      */
     public static function getData(string $class, string $key) /* mixed */
     {
-
         if (!self::issetData($class, $key)) {
             throw new RunTimeException(sprintf(t::_('The coroutine static store does not have key %s for class %s.'), $key, $class));
         }
@@ -214,7 +207,6 @@ class Coroutine extends \Swoole\Coroutine
             }
             return TRUE;
         }
-
     }
 
     /**
@@ -234,7 +226,6 @@ class Coroutine extends \Swoole\Coroutine
         } else {
             unset(self::$static_data[$class][$key]);
         }
-
     }
 
     public static function hasData(string $class) : bool
@@ -243,7 +234,6 @@ class Coroutine extends \Swoole\Coroutine
         if (self::inCoroutine()) {
             $Context = self::getContext();
             if (array_key_exists($class, $Context->static_store) && count($Context->static_store[$class])) {
-
                 $ret = TRUE;
             }
         } else {
@@ -311,7 +301,7 @@ class Coroutine extends \Swoole\Coroutine
     {
         $cid = $cid ?? parent::getcid();
         if ($context_class !== \Guzaba2\Coroutine\Context::class && !is_a($context_class, \Guzaba2\Coroutine\Context::class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided class name %s for Context class does not inherit %s.'), $context_class, \Guzaba2\Coroutine\Context::class ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided class name %s for Context class does not inherit %s.'), $context_class, \Guzaba2\Coroutine\Context::class));
         }
         $SwooleContext = parent::getContext($cid);
         $Context = new Context($SwooleContext, $cid);
@@ -327,7 +317,8 @@ class Coroutine extends \Swoole\Coroutine
      * @param mixed ...$params Any additional arguments will be passed to the coroutine.
      * @return int
      */
-    public static function create( $callable, ...$params) {
+    public static function create($callable, ...$params)
+    {
 
         /*
         $current_cid = parent::getcid();
@@ -361,10 +352,8 @@ class Coroutine extends \Swoole\Coroutine
         //cant use $new_cid = parent::create() because $new_id is obtained at a too later stage
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
-        $WrapperFunction = function(...$params) use ($callable, &$new_cid, $current_cid) : void
-        {
+        $WrapperFunction = function (...$params) use ($callable, &$new_cid, $current_cid) : void {
             try {
-
                 $new_cid = parent::getcid();
                 //$Context = parent::getContext();
                 //$Context->start_microtime = microtime(TRUE);
@@ -394,7 +383,7 @@ class Coroutine extends \Swoole\Coroutine
                 $Context->end_microtime = microtime(TRUE);//here is the actual end time of the nested function execution, not the time when this coroutine will be over
                 //actually the coroutine will wait for all its subcoroutines to be over
 
-                parent::defer(function() use ($Context) {
+                parent::defer(function () use ($Context) {
                     $Context->freeAllConnections();
                     $Context->end_microtime_with_subcoroutines = microtime(TRUE);
                 });
@@ -406,7 +395,6 @@ class Coroutine extends \Swoole\Coroutine
                 $CoroutineExecution->destroy();
 
                 $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
-
             } catch (\Throwable $Exception) {
                 //Kernel::exception_handler($Exception, NULL);//do not handle it here - it will be pushed to the channel and be retrhown from the Await method
                 //pushing the exception will actially delay the invokation of kernel::exception_handler() as this will be called after the await is over (meaning all subcoroutines are over and the master coroutine is over)
@@ -430,7 +418,6 @@ class Coroutine extends \Swoole\Coroutine
                     $chan->push($Exception);
                 }
             }
-
         };
 
         parent::create($WrapperFunction, ...$params);
@@ -485,7 +472,7 @@ class Coroutine extends \Swoole\Coroutine
      * @return array
      * @throws RunTimeException
      */
-    public static function getFullBacktrace( ?int $cid = NULL, int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0) : array
+    public static function getFullBacktrace(?int $cid = NULL, int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0) : array
     {
         $cid = $cid ?? parent::getcid();
         $parent_cids = self::getParentCoroutines();
@@ -543,7 +530,7 @@ class Coroutine extends \Swoole\Coroutine
                 $message = sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $current_cid, $current_cid, __CLASS__, 'create');
                 throw new RunTimeException($message);
             }
-        } while($current_cid);
+        } while ($current_cid);
 
         return $ret;
     }
@@ -587,11 +574,9 @@ class Coroutine extends \Swoole\Coroutine
     public static function getTotalSubCoroutinesCount(?int $cid = NULL) : int
     {
         $cid = $cid ?? parent::getcid();
-        $Function = function(int $cid) use (&$Function) : int
-        {
+        $Function = function (int $cid) use (&$Function) : int {
             $ret = self::getSubCoroutinesCount($cid);
             foreach (self::getSubCoroutines($cid) as $sub_coroutine_id) {
-
                 $ret += $Function($sub_coroutine_id);
             }
             return $ret;
@@ -671,13 +656,13 @@ class Coroutine extends \Swoole\Coroutine
                     $backtrace_str = print_r(parent::getBacktrace($unfinished_cid, DEBUG_BACKTRACE_IGNORE_ARGS), TRUE);
                     $unfinished_message_arr[] = sprintf(t::_('subcoroutine ID %s : %s'), $unfinished_cid, $backtrace_str);
                 }
-                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL.implode(PHP_EOL,$unfinished_message_arr) );
+                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL.implode(PHP_EOL, $unfinished_message_arr));
                 throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
             } elseif ($ret instanceof \Throwable) {
                 //rethrow the exception
                 print 'rethrow'.PHP_EOL;
                 throw $ret;
-                //$ret->rethrow();
+            //$ret->rethrow();
                 //throw $ret;//the master coroutine needs to abort too
                 //$new_ex = $ret->cloneException();
                 //$ret = NULL;

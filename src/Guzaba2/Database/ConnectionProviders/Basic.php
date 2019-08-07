@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database\ConnectionProviders;
 
-
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Patterns\WorkerSingleton;
@@ -13,10 +12,8 @@ use Guzaba2\Patterns\WorkerSingleton;
  * This class establishes a new a connection on get_connection() and closes the connection on free_connection()
  * @package Guzaba2\Database\ConnectionProviders
  */
-class Basic extends WorkerSingleton
-implements ConnectionProviderInterface
+class Basic extends WorkerSingleton implements ConnectionProviderInterface
 {
-
     public function get_connection(string $class_name) : ConnectionInterface
     {
         $Connection = new $class_name();

@@ -30,8 +30,7 @@ trait UsesServices
      */
     public static function uses_service(string $service_name): bool
     {
-
-        return static::uses_services() ? in_array($service_name, static::get_services() ) : FALSE;
+        return static::uses_services() ? in_array($service_name, static::get_services()) : FALSE;
     }
 
     /**
@@ -56,11 +55,11 @@ trait UsesServices
     public static function __callStatic(string $service_name, array $args): object
     {
         $called_class = get_called_class();
-        if (strpos($service_name,'_')!==FALSE) {
+        if (strpos($service_name, '_')!==FALSE) {
             throw new RunTimeException(sprintf(t::_('Static method %s::%s() does not exist.'), $called_class, $service_name));
         }
         if (!static::uses_service($service_name)) {
-             throw new RunTimeException(sprintf(t::_('The class %s does not use the service %s. If you need this service please check is it available in %s and then add it in %s::CONFIG_DEFAULTS[\'service\'].'), $called_class, $service_name, Container::class, $called_class));
+            throw new RunTimeException(sprintf(t::_('The class %s does not use the service %s. If you need this service please check is it available in %s and then add it in %s::CONFIG_DEFAULTS[\'service\'].'), $called_class, $service_name, Container::class, $called_class));
         }
 
         $ret = Kernel::get_service($service_name);

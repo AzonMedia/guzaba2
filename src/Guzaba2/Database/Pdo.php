@@ -71,9 +71,9 @@ abstract class Pdo extends Connection
     protected $cache_structures = true;
     protected $cache_path = './cache/sql/';
     protected $sql_rewriting_enabled = true;
-    protected $sql_rewriting = array(
+    protected $sql_rewriting = [
         0 => '\\org\\guzaba\\framework\\orm\\classes\\properties\\dynamicPropertiesSQLRewriting',
-    );
+    ];
     protected const ENABLE_DATA_PROCESSOR = true;
 
     /**
@@ -96,7 +96,7 @@ abstract class Pdo extends Connection
      *
      * @var array
      */
-    protected $transactions_nesting_data = array();
+    protected $transactions_nesting_data = [];
 
     /**
      * @var null|transaction
@@ -107,7 +107,7 @@ abstract class Pdo extends Connection
      * Put here all callbacks that should be executed when the outermost transaction is commited
      * @var array
      */
-    protected $transaction_callbacks = array();
+    protected $transaction_callbacks = [];
 
     /**
      * To be used by disableRollback & enableRollBack
@@ -124,12 +124,12 @@ abstract class Pdo extends Connection
      * This will not be collected if the execution is in batch mode @see kernel::is_batch_mode()
      * @var array
      */
-    protected $sql_history = array();
+    protected $sql_history = [];
 
     /**
      * @var array
      */
-    protected $sql_transaction_nesting = array();
+    protected $sql_transaction_nesting = [];
 
     /**
      * @var framework\cache\classes\cache
@@ -143,7 +143,7 @@ abstract class Pdo extends Connection
      */
     //protected $roll_back_all_disabled = false;
 
-    protected $current_transaction_started_by = array();
+    protected $current_transaction_started_by = [];
 
 
     /**
@@ -152,9 +152,9 @@ abstract class Pdo extends Connection
      */
     protected $fetch_data_processors = [];
 
-    abstract function getTransactionIsolationLevel(): int;
+    abstract public function getTransactionIsolationLevel(): int;
 
-    abstract function setTransactionIsolationLevel(int $level): void;
+    abstract public function setTransactionIsolationLevel(int $level): void;
 
     /**
      * Rework it so that cache is a service and it is declared in pdo_config
@@ -307,7 +307,7 @@ abstract class Pdo extends Connection
      * @throws framework\base\exceptions\runTimeException
      * @throws framework\database\exceptions\queryException
      */
-    public function prepare(string $sql, array $driver_options = array()): framework\database\interfaces\statement
+    public function prepare(string $sql, array $driver_options = []): framework\database\interfaces\statement
     {
 
 
@@ -410,7 +410,7 @@ abstract class Pdo extends Connection
 
                             if ($table == $prop) {
                                 $table = str_replace($this->tprefix, '', $collection_value['FROM'][0]['table']);
-                            } else if (isset($collection_value['FROM'][0]['table']) && $collection_value['FROM'][0]['table'] != $table) {
+                            } elseif (isset($collection_value['FROM'][0]['table']) && $collection_value['FROM'][0]['table'] != $table) {
                                 $original_table = str_replace($this->tprefix, '', $collection_value['FROM'][0]['table']);
                             }
 
@@ -428,7 +428,7 @@ abstract class Pdo extends Connection
                                             //$tables[$table]::load_dynamic_properties_list();no longer needed
                                             $tables[$table]::load_dynamic_properties();
                                         }
-                                    } else if ($opt['alias']['name'] == $table) {
+                                    } elseif ($opt['alias']['name'] == $table) {
                                         if (isset($original_table)) {
                                             $class = k::get_class_by_table_name($original_table);
                                         } else {
@@ -580,7 +580,6 @@ abstract class Pdo extends Connection
                 }
                 $sql = preg_replace('/,\s+\bFROM\b/is', ' FROM', $sql);
             }
-
         }
 
 
@@ -623,13 +622,12 @@ abstract class Pdo extends Connection
             $errorcode = isset($exception->errorInfo[1]) ? $exception->errorInfo[1] : 0;//driver specific
             $errormessage = isset($exception->errorInfo[2]) ? $exception->errorInfo[2] : $exception->getMessage();
             $query = $sql;
-            $params = array();//we dont have the parameters here - we are just preparing it
+            $params = [];//we dont have the parameters here - we are just preparing it
             //an error can still occur here if for example there is wrong column name
             //$debugdata = $this->debugDumpParams();
             $debugdata = '';
 
             throw new framework\database\exceptions\queryException(NULL, $sqlstate, $errorcode, $errormessage, $query, $params, $debugdata, $exception);
-
         }
 
         $php_pdo_statement->set_sql($sql);
@@ -665,7 +663,7 @@ abstract class Pdo extends Connection
      * @throws framework\orm\exceptions\singleValidationFailedException
      * @throws framework\transactions\exceptions\transactionException
      */
-    public function execute(string $sql, array $parameters = array(), bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE, bool $enforce_DQL_statements_only = TRUE): framework\database\classes\pdoStatement
+    public function execute(string $sql, array $parameters = [], bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE, bool $enforce_DQL_statements_only = TRUE): framework\database\classes\pdoStatement
     {
 
 
@@ -689,7 +687,7 @@ abstract class Pdo extends Connection
         //             $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, FALSE);
         //         }
 
-        //     } 
+        //     }
 
         // }
         //the above doesnt help must because most of the statements are created with $this->prepare() instead of being created and executed immediately with $this->execute()
@@ -736,7 +734,7 @@ abstract class Pdo extends Connection
         //return $statement->fetchAll();
     }
 
-    public function executeAny(string $sql, array $parameters = array(), bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE): framework\database\classes\pdoStatement
+    public function executeAny(string $sql, array $parameters = [], bool $buffered_query = TRUE, bool $disable_sql_cache = FALSE): framework\database\classes\pdoStatement
     {
         $ret = $this->execute($sql, $parameters, $buffered_query, $disable_sql_cache, FALSE);
 
@@ -799,7 +797,6 @@ abstract class Pdo extends Connection
      */
     public function &beginMasterTransaction(&$scope_reference = '&', &$commit_callback = '', &$rollback_callback = '')
     {
-
         if (self::DBG_USE_TXM) {
             //return TXM::beginMasterORMTx($scope_reference, $commit_callback, $rollback_callback);
             $callback_container = new framework\transactions\classes\callbackContainer();
@@ -810,8 +807,6 @@ abstract class Pdo extends Connection
                     //$callback_container::MODE_ON_COMMIT_AFTER_MASTER
                     $callback_container::DEFAULT_COMMIT_MODE
                 );
-
-
             }
             $commit_callback = $callback_container;//replace the container - this is needed for the reference in the method signature
 
@@ -822,8 +817,6 @@ abstract class Pdo extends Connection
                     $rollback_callback,
                     $callback_container::DEFAULT_ROLLBACK_MODE
                 );
-
-
             }
             $rollback_callback = $callback_container;//replace the container - this is needed for the reference in the method signature
 
@@ -881,21 +874,18 @@ abstract class Pdo extends Connection
                     //$callback_container::MODE_ON_ROLLBACK_AFTER_MASTER
                     $callback_container::DEFAULT_ROLLBACK_MODE
                 );
-
             }
             $rollback_callback = $callback_container;//replace the container - this is needed for the reference in the method signature
 
             //$transaction = TXM::beginORMTx($scope_reference, $commit_callback, $rollback_callback);
             $options['connection'] = $this;
             $transaction = TXM::beginTransaction(framework\orm\classes\ORMDBTransaction::class, $scope_reference, $callback_container, $options);
-
         } else {
-
             if ($commit_callback === '') {
                 $commit_callback = null;
             } elseif ($commit_callback === null) { //means an empty varialbe was passed - we want a reference to the callback comtainer
-                $commit_callback = new framework\database\classes\callbackContainer(array(), framework\database\classes\callbackContainer::TYPE_COMMIT);
-                //$commit_callback->set_container_type($commit_callback::TYPE_COMMIT);
+                $commit_callback = new framework\database\classes\callbackContainer([], framework\database\classes\callbackContainer::TYPE_COMMIT);
+            //$commit_callback->set_container_type($commit_callback::TYPE_COMMIT);
             } else {
                 //this may be a valid callback - this will be checked by transaction::__construct()
                 //throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported type %s was passed as $commit_callback to pdo::beginTransaction().'), gettype($commit_callback) ));
@@ -905,8 +895,8 @@ abstract class Pdo extends Connection
             if ($rollback_callback === '') {
                 $rollback_callback = null;
             } elseif ($rollback_callback === null) { //means an empty varialbe was passed - we want a reference to the callback comtainer
-                $rollback_callback = new framework\database\classes\callbackContainer(array(), framework\database\classes\callbackContainer::TYPE_ROLLBACK);
-                //$rollback_callback->set_container_type($rollback_callback::TYPE_ROLLBACK);
+                $rollback_callback = new framework\database\classes\callbackContainer([], framework\database\classes\callbackContainer::TYPE_ROLLBACK);
+            //$rollback_callback->set_container_type($rollback_callback::TYPE_ROLLBACK);
             } else {
                 //this may be a valid callback - this will be checked by transaction::__construct()
                 //throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported type %s was passed as $rollback_callback to pdo::beginTransaction().'), gettype($rollback_callback)  ));
@@ -996,7 +986,7 @@ abstract class Pdo extends Connection
             //$transaction = new transaction($this->pdo, $this->current_transaction, $commit_callback, $rollback_callback);
             //$transaction = new transaction($this, $this->current_transaction, $commit_callback, $rollback_callback);
             //changed constructor construct - the first argument is the code that we want to run
-            $options = array();
+            $options = [];
             $transaction = new transaction(null, $commit_callback, $rollback_callback, $options, $this, $this->current_transaction);
             //$this->current_transaction =& $transaction;//the transaction itself registers in current_transaction
 
@@ -1023,8 +1013,6 @@ abstract class Pdo extends Connection
 
             $this->transactions_nested++;
             */
-
-
         }
 
         return $transaction;
@@ -1040,11 +1028,8 @@ abstract class Pdo extends Connection
      */
     public function rollBack(framework\patterns\classes\scopeReference &$scope_reference)
     {
-
         if (self::DBG_USE_TXM) {
-
             TXM::rollback($scope_reference);
-
         } else {
 
             /*
@@ -1064,7 +1049,7 @@ abstract class Pdo extends Connection
 
             $this->sql_history[] = "ROLLBACK";
             if ($this->transactions_nested==1) {
-                
+
                 k::logtofile_backtrace('roll_bt');
                 $this->pdo->rollBack();
 
@@ -1098,7 +1083,6 @@ abstract class Pdo extends Connection
             if ($scope_reference instanceof framework\database\classes\scopeReferenceTransactionTracker) {
                 $scope_transaction = $scope_reference->get_transaction();
                 if ($scope_transaction != $this->current_transaction) {
-
                     $transaction_info_object = $scope_transaction->get_transaction_start_bt_info();
                     $current_transaction_info_object = $this->current_transaction->get_transaction_start_bt_info();
                     if ($transaction_info_object && $current_transaction_info_object) {
@@ -1124,8 +1108,6 @@ abstract class Pdo extends Connection
 
                 $message = sprintf(t::_('It appears you are trying to commit a transaction that was never started or it was all rolled back. There is no transaction running currently.'));
                 throw new framework\database\exceptions\transactionException($transaction = null, $message);
-
-
             } else {
                 $this->current_transaction->rollback();
             }
@@ -1147,12 +1129,9 @@ abstract class Pdo extends Connection
             } elseif ($scope_reference) {
                 k::logtofile_backtrace('scope_ref_not_correct');
             }
-
-
         }
 
         return true;
-
     }
 
     /**
@@ -1166,12 +1145,8 @@ abstract class Pdo extends Connection
     //public function commit(&$scope_reference = '&', $callback = null) {
     public function commit(framework\patterns\classes\scopeReference &$scope_reference)
     {
-
-
         if (self::DBG_USE_TXM) {
-
             TXM::commit($scope_reference);
-
         } else {
 
             /*
@@ -1217,7 +1192,6 @@ abstract class Pdo extends Connection
             }
 
             if ($scope_reference === null) {
-
             }
 
             //k::logtofile_indent('transactions.txt',gettype($this->current_transaction));
@@ -1252,7 +1226,6 @@ abstract class Pdo extends Connection
             } elseif ($scope_reference) {
                 k::logtofile_backtrace('scope_ref_not_correct');
             }
-
         }
 
 
@@ -1275,7 +1248,6 @@ abstract class Pdo extends Connection
             $ret = $this->current_transaction;
         }
         return $ret;
-
     }
 
     /**
@@ -1383,7 +1355,6 @@ abstract class Pdo extends Connection
     {
         //if (!$this->roll_back_all_disabled) {
         if (!$this->transaction_disabled_nested) {
-
             if ($this->inTransaction()) { //this shouldnt happen any more.. now the frameowrk tracks the transactions using the $TR reference. This reference will rolblack the problematic transaction and then the thrown exception will all roll it back
 
 
@@ -1416,17 +1387,16 @@ abstract class Pdo extends Connection
         return $ret;
     }
 
-    public abstract function lock_tables($table);
+    abstract public function lock_tables($table);
 
-    public abstract function unlock_tables();
+    abstract public function unlock_tables();
 
     public function __call(string $method, array $args)
     {
         if (method_exists($this->pdo, $method)) {
-            return call_user_func_array(array($this->pdo, $method), $args);
+            return call_user_func_array([$this->pdo, $method], $args);
         } else {
             return parent::__call($method, $args);
         }
     }
-
 }

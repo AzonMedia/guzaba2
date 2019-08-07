@@ -38,7 +38,8 @@ class ActiveEnvironment extends Singleton implements Wrapper
         return $this->env;
     }
 
-    public function set(Environment $env) {
+    public function set(Environment $env)
+    {
         $this->env = $env;
     }
 
@@ -47,7 +48,7 @@ class ActiveEnvironment extends Singleton implements Wrapper
         return $this->env->$property;
     }
 
-    public function __set(string $property,$value) : void
+    public function __set(string $property, $value) : void
     {
         $this->env->$property = $value;
     }
@@ -62,19 +63,22 @@ class ActiveEnvironment extends Singleton implements Wrapper
         unset($this->env->$property);
     }
 
-    public function __call(string $method, array $args) {
-        return call_user_func_array(array($this->env,$method),$args);
+    public function __call(string $method, array $args)
+    {
+        return call_user_func_array([$this->env,$method], $args);
     }
 
     //public function __invoke() {
-    public function &__invoke() { //PHP7
+    public function &__invoke()
+    { //PHP7
         //return $this->env();
         //return call_user_func_array($this->env,func_get_args());
-        $ret = call_user_func_array($this->env,func_get_args());//PHP7
+        $ret = call_user_func_array($this->env, func_get_args());//PHP7
         return $ret;
     }
 
-    public function __toString() {
+    public function __toString()
+    {
         return (string) $this->env;
     }
 
@@ -93,4 +97,3 @@ class ActiveEnvironment extends Singleton implements Wrapper
         // TODO: Implement destroy() method.
     }
 }
-

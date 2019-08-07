@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database\Sql\Mysql;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Exceptions\ParameterException;
 use Guzaba2\Database\Exceptions\QueryException;
@@ -15,8 +14,7 @@ use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 
-class StatementCoroutine extends Statement
-implements StatementInterface
+class StatementCoroutine extends Statement implements StatementInterface
 {
 
     /**
@@ -48,7 +46,7 @@ implements StatementInterface
         $this->expected_parameters = $expected_parameters;
     }
 
-    public function execute( array $parameters = []) : self
+    public function execute(array $parameters = []) : self
     {
         $this->rows = [];
 
@@ -84,11 +82,11 @@ implements StatementInterface
                 if ($error_code == '1062') {
                     // duplicate entry
                     throw new DuplicateKeyException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error));
-                } else if ($error_code == '1452') {
+                } elseif ($error_code == '1452') {
                     // foreign key constraint
                     throw new ForeignKeyConstraintException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error));
                 } else {
-                    throw new QueryException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error ));
+                    throw new QueryException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error));
                 }
             }
         }
@@ -100,7 +98,6 @@ implements StatementInterface
 
     public function fetch() : array
     {
-
     }
 
     public function fetchAll() : array
@@ -122,6 +119,4 @@ implements StatementInterface
     {
         return $this->query;
     }
-
-
 }

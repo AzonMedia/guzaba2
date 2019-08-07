@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Orm\Traits;
 
-
 trait ActiveRecordValidation
 {
     /**

@@ -6,7 +6,6 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 
 abstract class Database extends Store
 {
-
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'ConnectionFactory',
