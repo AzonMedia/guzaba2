@@ -54,6 +54,7 @@ on_success:
   - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
   - git config --global user.email "antonia@azonmedia.com"
   - git config --global user.name "Antonia"
-  - git checkout origin master
+  - git fetch
+  - git checkout master
   - git commit -m "push from appveyor" -- src
   - git push origin master
