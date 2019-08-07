@@ -12,7 +12,7 @@ environment:
 
 branches:
     only:
-        - %branch_name%
+        - $env:branch_name
 
 cache:
     - '%LOCALAPPDATA%\Composer\files -> composer.lock'
