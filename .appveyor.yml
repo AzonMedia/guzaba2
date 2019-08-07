@@ -6,13 +6,12 @@ clone_folder: C:\projects\guzaba2
 environment:
     matrix:
         - php_ver: 7.2
-        - branch_name: master
     access_token:
         secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
 
 branches:
     only:
-        - $env:branch_name
+        - master
 
 cache:
     - '%LOCALAPPDATA%\Composer\files -> composer.lock'
@@ -56,4 +55,4 @@ on_success:
   - git config --global user.email "antonia@azonmedia.com"
   - git config --global user.name "Antonia"
   - git commit -m "push from appveyor" -- src
-  - git push origin $env:branch_name
+  - git push origin %APPVEYOR_REPO_BRANCH%
