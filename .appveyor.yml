@@ -55,4 +55,4 @@ on_success:
   - git config --global user.email "antonia@azonmedia.com"
   - git config --global user.name "Antonia"
   - git commit -m "push from appveyor" -- src
-  - git push origin %APPVEYOR_REPO_BRANCH%
+  - git push origin master
