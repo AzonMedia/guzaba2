@@ -546,4 +546,12 @@ class Kernel
 //        file_put_contents(p::$PATHS['logs'][p::CURDIR].$filename, $string,FILE_APPEND);
     }
 
+    /**
+     * @return bool
+     * @todo implement
+     */
+    public static function is_production()
+    {
+        return false;
+    }
 }

@@ -2,7 +2,7 @@
 
 namespace Guzaba2\Database\Exceptions;
 
-class ForeignKeyConstraintException extends DatabaseException
+class ForeignKeyConstraintException extends QueryException
 {
 
 }
