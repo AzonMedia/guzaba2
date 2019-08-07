@@ -28,7 +28,9 @@
         "psr/log": "^1.1",
         "jbzoo/utils": "^2.3",
         "eaglewu/swoole-ide-helper": "dev-master",
-        "azonmedia/utilities": "dev-master"
+        "azonmedia/utilities": "dev-master",
+        "ext-pdo": "*",
+        "ext-mysqli": "*"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
