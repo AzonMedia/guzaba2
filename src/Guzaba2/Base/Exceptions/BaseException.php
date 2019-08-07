@@ -43,7 +43,6 @@ use Throwable;
  */
 abstract class BaseException extends \Exception
 {
-
     use SupportsObjectInternalId;
     use StaticStore;
     use ContextAware;
@@ -134,7 +133,6 @@ abstract class BaseException extends \Exception
      */
     public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL)
     {
-
         parent::__construct($message, $code, $previous);
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
@@ -150,7 +148,7 @@ abstract class BaseException extends \Exception
 
         list($usec, $sec) = explode(" ", microtime());
         $this->time_created = (int) $sec;
-        $this->microtime_created = ( (float)$usec + (float)$sec ) ;
+        $this->microtime_created = ((float)$usec + (float)$sec) ;
 
 
 
@@ -164,7 +162,7 @@ abstract class BaseException extends \Exception
         //if ( ! self::$is_in_clone_flag ) {
         //    self::$is_in_clone_flag = TRUE;
         //there is no risk of recursion when cloning the exception as the cloned exception is created without invoking its constructor
-            //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
+        //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
         //print_r(StackTraceUtil::get_backtrace());
         //self::set_static('CurrentException', $this->cloneException());
         if (Coroutine::inCoroutine()) {
@@ -214,7 +212,6 @@ abstract class BaseException extends \Exception
 //                $this->is_framework_exception_flag = TRUE;
 //            }
 //        }
-
     }
 
     public function _before_change_context() : void
@@ -223,7 +220,8 @@ abstract class BaseException extends \Exception
         self::unset_all_static();
     }
 
-    public function getDebugData() {
+    public function getDebugData()
+    {
         $ret =
             time().' '.date('Y-m-d H:i:s').PHP_EOL.
             $this->getMessage().':'.$this->getCode().PHP_EOL.
@@ -240,7 +238,8 @@ abstract class BaseException extends \Exception
         return $this->InterruptedTransaction;
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         //print 'EXC DESTR'.PHP_EOL;
         //self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
         if (!$this->context_changed_flag) {
@@ -270,8 +269,6 @@ abstract class BaseException extends \Exception
      */
     private function cloneException() : \Throwable
     {
-
-
         $class = get_class($this);
 
         $RClass = new \ReflectionClass($class);
@@ -329,8 +326,8 @@ abstract class BaseException extends \Exception
 
 
 
-    public function setAllData(framework\base\exceptions\traceInfoObject $traceInfoObject) {
-
+    public function setAllData(framework\base\exceptions\traceInfoObject $traceInfoObject)
+    {
     }
 
     public function get_memory_usage() : int
@@ -367,7 +364,8 @@ abstract class BaseException extends \Exception
      * There is a case when we want to append to the message of an exception that is thrown and inject this before it is being caught
      * This is done in the rollbackcontainer - we get the current transaction and then the interrupting exception and we can append it there
      */
-    public function appendMessage($message) {
+    public function appendMessage($message)
+    {
         $this->message .= ' '.$message;
     }
 
@@ -394,10 +392,8 @@ abstract class BaseException extends \Exception
         do {
             $messages[] = $exception->getMessage().' ';
             $exception = $exception->getPrevious();
-
-        } while($exception);
+        } while ($exception);
         return $messages;
-
     }
 
     /**
@@ -407,7 +403,7 @@ abstract class BaseException extends \Exception
      */
     public function getAllMessagesAsString() : string
     {
-        $message = implode(' ',$this->getAllMessagesAsArray());
+        $message = implode(' ', $this->getAllMessagesAsArray());
         return $message;
     }
 
@@ -416,7 +412,8 @@ abstract class BaseException extends \Exception
      * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
      * @return array
      */
-    protected function _get_caller($level=1) {
+    protected function _get_caller($level=1)
+    {
         $trace_arr = debug_backtrace();
         return $trace_arr[$level+1];
     }
@@ -426,13 +423,14 @@ abstract class BaseException extends \Exception
      * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
      * @return string
      */
-    protected function _get_caller_class($level=1) {
+    protected function _get_caller_class($level=1)
+    {
         //$caller_arr = $this->_get_caller($level);
         $trace_arr = debug_backtrace(0);
         $caller_arr = $trace_arr[$level+1];
         if (!isset($caller_arr['class'])) {
             $trace = debug_backtrace();
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_class() can not be used.'),$trace[1]['class'],$trace[1]['function']));
+            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_class() can not be used.'), $trace[1]['class'], $trace[1]['function']));
         }
         return $caller_arr['class'];
     }
@@ -442,13 +440,14 @@ abstract class BaseException extends \Exception
      * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
      * @return string
      */
-    protected function _get_caller_method($level=1) {
+    protected function _get_caller_method($level=1)
+    {
         //$caller_arr = $this->_get_caller($level);
         $trace_arr = debug_backtrace(0);
         $caller_arr = $trace_arr[$level+1];
         if (!isset($caller_arr['function'])) {
             $trace = debug_backtrace();
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_method() can not be used.'),$trace[1]['class'],$trace[1]['function']));
+            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_method() can not be used.'), $trace[1]['class'], $trace[1]['function']));
         }
         return $caller_arr['function'];
     }
@@ -458,8 +457,7 @@ abstract class BaseException extends \Exception
 
     public static function setPreviousExceptionStatic(\Throwable $exception, \Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
     {
-
-        if ($previous instanceof framework\base\interfaces\traceInfo ) {
+        if ($previous instanceof framework\base\interfaces\traceInfo) {
             $previous = $previous->getAsException();
         }
 
@@ -477,7 +475,7 @@ abstract class BaseException extends \Exception
      * @param framework\base\interfaces\traceInfo $exception
      */
     //public function setPreviousException(\Throwable $previous) : void
-    public function setPreviousException( \Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
+    public function setPreviousException(\Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
     {
         /*
         $reflection = new \ReflectionClass($this);
@@ -489,7 +487,7 @@ abstract class BaseException extends \Exception
         $prop->setValue($this, $previous);
         $prop->setAccessible(false);
         */
-        if ($previous instanceof framework\base\interfaces\traceInfo ) {
+        if ($previous instanceof framework\base\interfaces\traceInfo) {
             $previous = $previous->getAsException();
         }
 
@@ -519,7 +517,7 @@ abstract class BaseException extends \Exception
             if ($previous_exception) {
                 $exception = $previous_exception;
             }
-        } while($previous_exception);
+        } while ($previous_exception);
 
         return $exception;
     }
@@ -528,7 +526,4 @@ abstract class BaseException extends \Exception
     {
         return self::getFirstExceptionStatic($this);
     }
-
-
-
 }

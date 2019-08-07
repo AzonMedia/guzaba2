@@ -64,41 +64,41 @@ abstract class Statement extends GenericObject implements StatementInterface
      * @todo check if needed
      * @var array
      */
-    protected static $services = array(
+    protected static $services = [
         'execution_profile' => '',
-    );
+    ];
 
     /**
      * @param string $param
      * @param mixed $value
      */
-    public abstract function bindParam($param, &$value);
+    abstract public function bindParam($param, &$value);
 
     /**
      * @param string $column
      * @param mixed $value
      */
-    public abstract function bindColumn(string $column, &$value);
+    abstract public function bindColumn(string $column, &$value);
 
     /**
      * Returns the sql query with replaced placeholders
      * @return string
      */
-    public abstract function getQueryString();
+    abstract public function getQueryString();
 
-    public abstract function getParams();
+    abstract public function getParams();
 
-    public abstract function debugDumpParams();
+    abstract public function debugDumpParams();
 
     /**
      * @param string $column_name
      * @return mixed
      */
-    public abstract function fetchRow(string $column_name = '');
+    abstract public function fetchRow(string $column_name = '');
 
-    public abstract function fetchAll();
+    abstract public function fetchAll();
 
-    public abstract function execute($params = null);
+    abstract public function execute($params = null);
 
     /**
      * @return string
@@ -131,4 +131,3 @@ abstract class Statement extends GenericObject implements StatementInterface
         return $str;
     }
 }
-

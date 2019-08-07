@@ -108,7 +108,6 @@ class Kernel
 
     private function __construct()
     {
-
     }
 
     //////////////////////
@@ -138,7 +137,6 @@ class Kernel
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
-
     }
 
 
@@ -191,7 +189,6 @@ class Kernel
      */
     public static function run(callable $callable) : int
     {
-
         if (!self::is_initialized()) {
             throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
         }
@@ -204,7 +201,7 @@ class Kernel
         return $ret;
     }
 
-    public static function dump( /* mixed */ $var) : void
+    public static function dump(/* mixed */ $var) : void
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
@@ -334,7 +331,6 @@ class Kernel
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
             }
-
         }
 
         return $ret;
@@ -342,12 +338,9 @@ class Kernel
 
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
-
         $ret = NULL;
 
         try {
-
-
             if (\Swoole\Coroutine::getCid() > 0) {
                 $class_source = \Swoole\Coroutine::readFile($class_path);
             } else {
@@ -359,7 +352,6 @@ class Kernel
 
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
-
             } else {
                 $ret = require_once($class_path);
             }
@@ -397,8 +389,6 @@ class Kernel
 
             //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
-
-
                 $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
 
                 $runtime_config = $default_config;
@@ -455,11 +445,9 @@ class Kernel
 //                        };
                     }
                 }
-
             } else {
                 //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
-
         } else {
             //do nothing - does not require configuration
         }
@@ -471,14 +459,12 @@ class Kernel
      */
     protected static function initialize_class(string $class_name) : void
     {
-
         $RClass = new ReflectionClass($class_name);
 
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);
         }
-
     }
 
     /**
@@ -491,17 +477,14 @@ class Kernel
 
     public static function execute_in_worker($callable)
     {
-
     }
 
     public static function execute_delayed($callable, ?TraceInfoObject $trace_info = NULL)
     {
-
     }
 
     public static function execute_in_shutdown($callable, ?TraceInfoObject $trace_info = NULL)
     {
-
     }
 
 

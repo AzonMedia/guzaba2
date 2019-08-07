@@ -37,11 +37,11 @@ class Environment extends Base implements \ArrayAccess, \Iterator, \Countable
      * Version information
      * @var array
      */
-    protected static $_version_data = array(
+    protected static $_version_data = [
         'revision' => '$Rev:: 41                                               $:',
         'author' => '$Author:: vesko                                         $:',
         'date' => '$Date:: 2009-09-03 20:29:53 +0300 (Thu, 03 Sep 2009)    $:',
-    );
+    ];
 
     protected $init_vars;
 
@@ -109,13 +109,13 @@ class Environment extends Base implements \ArrayAccess, \Iterator, \Countable
      */
     public function _current_url()
     {
-        $url_arr = array(
+        $url_arr = [
             c\APP => $this->{c\APP},
             c\P => $this->{c\P},
             c\C => $this->{c\C},
             c\A => $this->{c\A},
             c\ID => $this->{c\ID},
-        );
+        ];
         return $url_arr;
     }
 
@@ -239,4 +239,3 @@ class Environment extends Base implements \ArrayAccess, \Iterator, \Countable
         return count($this->vars);
     }
 }
-

@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Patterns;
 
-
 use Guzaba2\Base\Base;
 
 class ScopeReference extends Base
@@ -13,12 +12,12 @@ class ScopeReference extends Base
     const DESTRUCTION_REASON_EXCEPTION = 2;//in a cycle the reference got overwritten by another one before being explicitly and correctly destroyed
     const DESTRUCTION_REASON_EXPLICIT = 3;//intentionally and correctly destroyed
 
-    public static $destruction_reason_map = array(
+    public static $destruction_reason_map = [
         self::DESTRUCTION_REASON_UNKNOWN => 'unknown',
         self::DESTRUCTION_REASON_OVERWRITING => 'overwriting',
         self::DESTRUCTION_REASON_EXCEPTION => 'exception',
         self::DESTRUCTION_REASON_EXPLICIT => 'explicit',
-    );
+    ];
 
     /**
      * These callbacks will be executed on object destruction

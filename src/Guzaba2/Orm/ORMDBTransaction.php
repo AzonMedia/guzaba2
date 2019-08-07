@@ -41,7 +41,7 @@ class ORMDBTransaction extends DistributedTransaction
     //protected static $default_transaction_type = 'ORMDB';
 
     //public function __construct(&$scope_reference = '&', $code = NULL, &$commit_callback = '', &$rollback_callback = '', array $options = [], ?transactionContext $context = NULL) {
-    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = array(), ?TransactionContext $transactionContext = null)
+    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = [], ?TransactionContext $transactionContext = null)
     {
         if (!isset($options['connection'])) { //we expect here a reference
             $options['connection'] = Connection::get_instance();
@@ -90,5 +90,4 @@ class ORMDBTransaction extends DistributedTransaction
         }
         return $ret;
     }
-
 }

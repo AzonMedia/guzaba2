@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RuntimeException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;

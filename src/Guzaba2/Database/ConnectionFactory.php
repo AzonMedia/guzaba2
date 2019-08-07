@@ -3,10 +3,10 @@
 
 namespace Guzaba2\Database;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
+
 //use Guzaba2\Patterns\WorkerSingleton;
 
 class ConnectionFactory extends Base
@@ -42,5 +42,4 @@ class ConnectionFactory extends Base
     {
         return $this->ConnectionProvider->stats($connection_class);
     }
-
 }

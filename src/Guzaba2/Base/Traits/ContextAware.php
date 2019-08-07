@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Base\Traits;
 
-
 trait ContextAware
 {
     protected $created_in_coroutine_id = 0;
@@ -14,7 +13,6 @@ trait ContextAware
         if ($cid > 0) {
             $this->created_in_coroutine_id = $cid;
         }
-
     }
 
     /**

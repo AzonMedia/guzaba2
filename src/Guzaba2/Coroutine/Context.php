@@ -17,10 +17,8 @@ use Guzaba2\Translator\Translator as t;
  * @package Guzaba2\Coroutine
  */
 //class Context extends \Swoole\Coroutine\Context
-class Context extends Base
-implements ObjectInternalIdInterface
+class Context extends Base implements ObjectInternalIdInterface
 {
-
     use SupportsObjectInternalId;
 
     /**
@@ -49,7 +47,6 @@ implements ObjectInternalIdInterface
                 $this->Context->created_backtrace = \Swoole\Coroutine::getBackTrace($pcid, \DEBUG_BACKTRACE_IGNORE_ARGS);
             }
         }
-
     }
 
     public function getBacktrace() : array
@@ -64,7 +61,6 @@ implements ObjectInternalIdInterface
 
     public function assignConnection(ConnectionInterface $Connection) : void
     {
-
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {
             if (!in_array($Connection, $this->Context->connections)) {
                 $this->Context->connections[] = $Connection;

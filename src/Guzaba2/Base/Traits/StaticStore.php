@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Base\Traits;
 
-
 use Guzaba2\Coroutine\Coroutine;
 
 /**
@@ -15,7 +14,6 @@ use Guzaba2\Coroutine\Coroutine;
  */
 trait StaticStore
 {
-
     public static function set_static(string $key, /* mixed */ $value) : void
     {
         $class = get_called_class();

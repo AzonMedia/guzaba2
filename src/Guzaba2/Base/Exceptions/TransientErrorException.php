@@ -21,5 +21,4 @@ namespace Guzaba2\Base\Exceptions;
  */
 interface TransientErrorException extends \Throwable
 {
-
 }

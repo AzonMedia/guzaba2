@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Orm\Store;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -17,10 +16,8 @@ use http\Exception\InvalidArgumentException;
  * It is to be used always as last fallback store so that an exception is thrown if the requested method is not found anywhere in the storage chain
  * @package Guzaba2\Orm\Store
  */
-class NullStore extends Store
-implements StoreInterface
+class NullStore extends Store implements StoreInterface
 {
-
     public function __construct(?StoreInterface $FallbackStore = NULL)
     {
         parent::__construct();

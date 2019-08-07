@@ -7,5 +7,4 @@ use Guzaba2\Base\Exceptions\BaseException;
 
 class AutoloadException extends BaseException
 {
-
 }

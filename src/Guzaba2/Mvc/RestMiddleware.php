@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Mvc;
 
-
 use Azonmedia\Routing\Interfaces\RouterInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
@@ -20,8 +19,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Filters the allowed methods to the ones supported by REST
  * @package Guzaba2\Mvc
  */
-class RestMiddleware extends Base
-    implements MiddlewareInterface
+class RestMiddleware extends Base implements MiddlewareInterface
 {
 
     /**
@@ -45,7 +43,6 @@ class RestMiddleware extends Base
     public function __construct()
     {
         parent::__construct();
-
     }
 
     /**
@@ -59,7 +56,7 @@ class RestMiddleware extends Base
         $method_const = $Request->getMethodConstant();
         if (!in_array($method_const, self::SUPPORTED_HTTP_METHODS)) {
             $Body = new Stream();
-            $Body->write(sprintf('The request is with method %s which is not a REST method.', $Request->getMethod() ));
+            $Body->write(sprintf('The request is with method %s which is not a REST method.', $Request->getMethod()));
             $BadRequestResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
             return $BadRequestResponse;
         }

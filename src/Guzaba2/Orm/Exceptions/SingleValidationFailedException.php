@@ -42,7 +42,7 @@ class SingleValidationFailedException extends ValidationFailedException
      */
     public function __construct(string $field_name, int $error_code, string $error_message, int $exception_code = 0)
     {
-        $error_arr = array();
+        $error_arr = [];
         if (!$field_name) {
             throw new InvalidArgumentException(sprintf(t::_('"%s" first argument $field_name must have value.'), __METHOD__));
         }

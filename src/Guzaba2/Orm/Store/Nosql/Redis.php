@@ -47,10 +47,9 @@ class Redis extends Database
 
     public function add_instance(ActiveRecordInterface $ActiveRecord) : string
     {
-
     }
 
-    public function &get_data_pointer( string $class, string $lookup_index) : array
+    public function &get_data_pointer(string $class, string $lookup_index) : array
     {
         //not implemented
         //currently immediately refers to falblack store

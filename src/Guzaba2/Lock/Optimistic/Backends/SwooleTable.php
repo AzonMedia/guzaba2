@@ -25,7 +25,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class SwooleTable extends Base
 {
-
     protected const CONFIG_DEFAULTS = [
         'max_rows'                      => 100000,
         'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
@@ -129,7 +128,7 @@ class SwooleTable extends Base
     {
         self::validate_data($data);
         $this->set($key, $data);
-        if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100 ) ) {
+        if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100)) {
             //95% usage is reached - cleanup is needed
             //the cleanup cleans more records than just 1 or few... If just a few are cleaned then the cleanup will be invoked much more often
             $this->cleanup();
@@ -182,8 +181,7 @@ class SwooleTable extends Base
             }
         }
         if (count($data) !== count(self::DATA_STRUCT)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided data contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT) ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided data contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT)));
         }
     }
-
 }

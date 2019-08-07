@@ -69,5 +69,4 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
     {
         throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is now allowed to set new object properties at run time.'), get_class($this), __CLASS__));
     }
-
 }

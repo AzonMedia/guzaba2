@@ -11,10 +11,8 @@ use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\MetaStore\Interfaces\metaStoreInterface;
 
-class Memory extends Store
-implements StoreInterface
+class Memory extends Store implements StoreInterface
 {
-
     protected const CONFIG_DEFAULTS = [
         'max_rows'                      => 100000,
         'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
@@ -68,7 +66,6 @@ implements StoreInterface
 
     public function __construct(StoreInterface $FallbackStore, ?MetaStoreInterface $MetaStore = NULL)
     {
-
         parent::__construct();
 
         $this->FallbackStore = $FallbackStore ?? new NullStore();
@@ -78,7 +75,6 @@ implements StoreInterface
         } else {
             $this->MetaStore = self::OrmMetaStore();
         }
-
     }
 
     /*
@@ -132,7 +128,7 @@ implements StoreInterface
      * @param $index
      * @return array
      */
-    public function &get_data_pointer( string $class, string $lookup_index) : array
+    public function &get_data_pointer(string $class, string $lookup_index) : array
     {
 
 
@@ -152,7 +148,6 @@ implements StoreInterface
             } else {
                 $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
             }
-
         } else {
             $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
         }
@@ -175,5 +170,4 @@ implements StoreInterface
 
         return $pointer;
     }
-
 }

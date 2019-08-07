@@ -27,7 +27,6 @@ use Guzaba2\Transaction\TransactionContext;
 use Guzaba2\Kernel\Kernel as k;
 use Guzaba2\Translator\Translator as t;
 
-
 /**
  * Currnetly if a second database transaction is needed a new class needs to be created - transation3, transaction4... that extends this class
  *
@@ -129,7 +128,6 @@ class Transaction extends \Guzaba2\Transaction\Transaction
                 FALSE//do not preserve the context
             );
         }
-
     }
 
     /**

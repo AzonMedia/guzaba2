@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Di;
 
-
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
@@ -19,10 +18,8 @@ use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Orm\MetaStore\SwooleTable;
 use Guzaba2\Orm\MetaStore\NullMetaStore;
 
-class Container extends \Azonmedia\Di\Container
-    implements ConfigInterface, ObjectInternalIdInterface
+class Container extends \Azonmedia\Di\Container implements ConfigInterface, ObjectInternalIdInterface
 {
-
     use SupportsObjectInternalId;
 
     use SupportsConfig;

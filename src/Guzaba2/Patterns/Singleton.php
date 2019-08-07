@@ -25,9 +25,6 @@ use Guzaba2\Patterns\Interfaces\SingletonInterface;
  * Class Singleton
  * @package Guzaba2\Patterns
  */
-abstract class Singleton extends Base
-implements SingletonInterface
+abstract class Singleton extends Base implements SingletonInterface
 {
-
-
 }

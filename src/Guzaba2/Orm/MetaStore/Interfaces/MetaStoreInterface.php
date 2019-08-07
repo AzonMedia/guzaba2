@@ -12,7 +12,6 @@ use Guzaba2\Orm\ActiveRecord;
  */
 interface MetaStoreInterface
 {
-
     public const DATA_STRUCT = [
         'updated_microtime'         => 'float',
         //'updated_from_worker_id'    => 'int',
@@ -54,5 +53,4 @@ interface MetaStoreInterface
      * @throws InvalidArgumentException
      */
     public function set_update_data_by_object(ActiveRecord $activeRecord, array $data) : void ;
-
 }

@@ -27,6 +27,4 @@ class OptimisticLockManager extends Base
         parent::__construct();
         $this->Backend = $Backend;
     }
-
-
 }

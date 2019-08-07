@@ -49,7 +49,6 @@ final class ScopeReferenceTracker extends ScopeReference
      */
     public function __construct(Transaction $transaction)
     {
-
         parent::__construct();
         $this->transaction = $transaction;
     }
@@ -99,7 +98,6 @@ final class ScopeReferenceTracker extends ScopeReference
 
             //if ($this->transaction->get_status() == transaction::STATUS_STARTED) {
             if (($this->transaction->get_status() == transaction::STATUS_STARTED || $this->transaction->get_status() == transaction::STATUS_SAVED) && $this->rollback_on_destroy) {
-
                 Kernel::logtofile_backtrace('DB_bt');
 
                 if (Database\Pdo::DBG_USE_STACK_BASED_ROLLBACK) {
@@ -114,7 +112,6 @@ final class ScopeReferenceTracker extends ScopeReference
                     }
 
                     if ($this->get_destruction_reason() == self::DESTRUCTION_REASON_UNKNOWN && BaseException::get_current_exception()) {
-
                         $this->set_destruction_reason(self::DESTRUCTION_REASON_EXCEPTION);
                         $this->transaction->set_interrupting_exception(BaseException::get_current_exception());
                         //then we better clear the current exception... it shouldnt stay...
@@ -138,15 +135,13 @@ final class ScopeReferenceTracker extends ScopeReference
 
                     //$connection->setCurrentTransaction($parent_transaction);
 
-                    //this may no longer be the case because the reference is gone...                    
+                    //this may no longer be the case because the reference is gone...
                 } else {
                     $message = sprintf(t::_('Transaction was not commited or rolled back by the end of the scope. It seems the scope was left without executing commit() or rollback() statement.'));
                     throw new TransactionException($cloned_transaction, $message);
                 }
-
             } else {
                 //just ignore this... everything is OK with the transaction
-
             }
         }
     }
@@ -167,6 +162,5 @@ final class ScopeReferenceTracker extends ScopeReference
 
     private function __clone()
     {
-
     }
 }

@@ -36,7 +36,7 @@ use Guzaba2\Translator\Translator as t;
  *
  * Allows the framework to be executed through proxy
  * For this a reverse proxy is setup
- * As per this task the followig code is added in 
+ * As per this task the followig code is added in
  * On the live server where the proxy will reside server (there is Include directive in the usr/local/apache/conf/httpd.conf in the virtual host section to incldue this file (in fact all files on the directory))
  * This file enables the reverse proxy for SSL and also adds some additional headers that are needed by Athena to function properly when accessed through the proxy.
  *
@@ -83,7 +83,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class Url extends Base implements \Iterator, \ArrayAccess
 {
-
     protected const DOMAIN = 'uscoachwaysonline.com';
     protected const DIR_PATH = '/PROJECTS/uscoachways_2/uscoachwaysonline-com/';
     protected const PORT = 8072;
@@ -121,20 +120,20 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
     //protected $dir_path;
 
-    protected $add_array = array();
+    protected $add_array = [];
     protected $flags = 0;
 
     protected $class_id;
-    protected $record_array = array();
+    protected $record_array = [];
     protected $url_string;
     protected $object;
 
     protected static $env;
     protected static $url_rewriting;
-    protected static $general_aliases_arr = array();
+    protected static $general_aliases_arr = [];
 
-    public function __construct($arg=array(), $flags=0) {
-
+    public function __construct($arg=[], $flags=0)
+    {
         if (!self::$env) {
             self::$env = framework\mvc\classes\activeEnvironment::get_instance();
         }
@@ -164,16 +163,14 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     $this->add_array = self::set_default_params($arg);
                 } else {
                     //in the initialization process (session,vars) an instance of the object may be needed and it must not reference constants
-                    $this->add_array = array();
+                    $this->add_array = [];
                 }
             }
         } elseif (is_object($arg)) {
-
             if ($arg instanceof url) {
                 $this->add_array = self::set_default_params($arg->get_array());
             //} elseif ($arg instanceof cms\navigation\interfaces\navigation_capable) {
             } elseif ($arg::_implements('org\guzaba\cms\navigation\interfaces\navigation_capable')) {
-
                 $view_operation = $arg->get_view_operation();
                 /*
                 $this->add_array[c\APP] = $view_operation['application'];
@@ -188,18 +185,20 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 $this->flags |= self::FROM_OBJECT;
                 $this->object = $arg;
             } else {
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported object of class %s was provided as argument to the constructor of the url.'),get_class($arg)));
+                throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported object of class %s was provided as argument to the constructor of the url.'), get_class($arg)));
             }
         } else {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported type %s was provided as argument to the constructor of the url.'),gettype($arg)));
+            throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported type %s was provided as argument to the constructor of the url.'), gettype($arg)));
         }
     }
 
-    public function get_array() {
+    public function get_array()
+    {
         return $this->add_array;
     }
 
-    public function get_string() {
+    public function get_string()
+    {
         if ($this->flags&self::NO_PROCESS) {
             $ret = $this->url_string;
         } elseif ($this->flags&self::FROM_RECORD) {
@@ -207,12 +206,13 @@ class Url extends Base implements \Iterator, \ArrayAccess
         } elseif ($this->flags&self::FROM_OBJECT) {
             $ret = $this->form_from_object($this->object);
         } else {
-            $ret = self::u($this->add_array,$this->flags);
+            $ret = self::u($this->add_array, $this->flags);
         }
         return $ret;
     }
 
-    protected function form_from_object(\org\guzaba\cms\navigation\interfaces\navigation_capable $object) {
+    protected function form_from_object(\org\guzaba\cms\navigation\interfaces\navigation_capable $object)
+    {
         $this->class_id = k::get_class_id($object::_class);
         //the rest of the fields (array for example) are not relevant here...
         $view_operation = $object->get_view_operation();
@@ -242,10 +242,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
 
         if (!($this->flags&self::DISABLE_CHECKS)) {
-
             if (!($this->flags&self::DISABLE_REWRITING)) {
-
-
                 $explicit_url_rewriting = $object->get_url_rewrite($lang);
                 if ($explicit_url_rewriting) {
                     $url_string .= $explicit_url_rewriting;
@@ -253,7 +250,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
                     //look is there a general alias for this class
                     foreach ($general_aliases as $general_alias_record) {
-
                         if ($general_alias_record['class_id']==$this->class_id) {
                             $general_alias = $general_alias_record['alias'];
                             break;
@@ -261,9 +257,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     }
                     if (isset($general_alias)) {
                         $url_string .= $general_alias.self::REWRITING_SEPARATOR.$object->get_index().self::REWRITING_SEPARATOR.$object->generate_url_rewrite($lang);
-
                     } else {
-
                         $url_string .=
                             ($this->{c\APP}!=self::$env->get_var_default_value(c\APP)?c\APP.self::REWRITING_SEPARATOR.$this->{c\APP}.self::REWRITING_SEPARATOR:'').
                             ($this->{c\P}!=self::$env->get_var_default_value(c\P)?c\P.self::REWRITING_SEPARATOR.$this->{c\P}.self::REWRITING_SEPARATOR:'').
@@ -274,7 +268,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     }
                 }
             } else {
-
                 $url_string .=
                     ($this->{c\APP}!=self::$env->get_var_default_value(c\APP)?c\APP.self::REWRITING_SEPARATOR.$this->{c\APP}.self::REWRITING_SEPARATOR:'').
                     ($this->{c\P}!=self::$env->get_var_default_value(c\P)?c\P.self::REWRITING_SEPARATOR.$this->{c\P}.self::REWRITING_SEPARATOR:'').
@@ -282,9 +275,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     ($this->{c\A}!=self::$env->get_var_default_value(c\A)?c\A.self::REWRITING_SEPARATOR.$this->{c\A}.self::REWRITING_SEPARATOR:'').
                     c\ID.self::REWRITING_SEPARATOR.$this->{c\ID};
             }
-
         } else {
-
             $url_string .=
                 ($this->{c\APP}!=self::$env->get_var_default_value(c\APP)?c\APP.self::REWRITING_SEPARATOR.$this->{c\APP}.self::REWRITING_SEPARATOR:'').
                 ($this->{c\P}!=self::$env->get_var_default_value(c\P)?c\P.self::REWRITING_SEPARATOR.$this->{c\P}.self::REWRITING_SEPARATOR:'').
@@ -294,7 +285,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
         }
         //k::logtofile('dev9',$url_string);
         if (!($this->flags&self::VARS_ONLY)) {
-
             if ($this->flags&self::WORKER) {
                 $url_string = 'worker_server.php'.self::REWRITING_SEPARATOR.$url_string;
             }
@@ -306,7 +296,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
             if ($this->flags&self::ABSOLUTE) {
                 if ($this->flags&self::HTTPS) {
                     $url_string = self::get_base_url_excluding_path('https://').$url_string;
-                    //$url_string = self::get_base_url_excluding_path('http://').$url_string;
+                //$url_string = self::get_base_url_excluding_path('http://').$url_string;
                 } elseif ($this->flags&self::HTTP) {
                     $url_string = self::get_base_url_excluding_path('http://').$url_string;
                 } else {
@@ -323,7 +313,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
     /**
      * This does not check permissions and does not do any requests to the database.
      */
-    protected function form_from_record() {
+    protected function form_from_record()
+    {
         //a new empty object is temporarily created with the provided data...
         //this way the object's own generate_url_rewrite method can be used
         $class_name = k::get_class_by_id($this->class_id);
@@ -359,7 +350,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $url_string;
     }
 
-    public function __toString() {
+    public function __toString()
+    {
     
         //because the __toString method should not throw exceptions all the exceptions should be caught here and logged
         $string = '';
@@ -369,32 +361,33 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 //throw new framework\base\exceptions\runTimeException(sprintf(t::_('The get_string() method of url did not return a string when called from __toString(). The return type is %s.'),gettype($string)));
                 //__toString should not throw an error;
                 $string = '#';
-                k::logtofile('runTimeErrors',sprintf(t::_('The get_string() method of url did not return a string when called from __toString(). The return type is %s.'),gettype($string)));
+                k::logtofile('runTimeErrors', sprintf(t::_('The get_string() method of url did not return a string when called from __toString(). The return type is %s.'), gettype($string)));
             }
         } catch (\Throwable $exception) {
-            k::logtofile('url_toString_exceptions',$exception->getFile().' '.$exception->getLine().' '.$exception->getMessage().PHP_EOL.PHP_EOL.$exception->getTraceAsString());
+            k::logtofile('url_toString_exceptions', $exception->getFile().' '.$exception->getLine().' '.$exception->getMessage().PHP_EOL.PHP_EOL.$exception->getTraceAsString());
         }
         return $string;
     }
 
-    public function &__invoke() {
+    public function &__invoke()
+    {
         $args = func_get_args();
-        return call_user_func_args(array(__CLASS__,'u'),$args);//a static call
+        return call_user_func_args([__CLASS__,'u'], $args);//a static call
     }
 
     //overloading
-    public function __set(string $property,$value) : void
+    public function __set(string $property, $value) : void
     {
-        if (array_key_exists($property,$this->add_array)) {
+        if (array_key_exists($property, $this->add_array)) {
             $this->add_array[$property] = $value;
         } else {
-            parent::__set($property,$value);
+            parent::__set($property, $value);
         }
     }
 
     public function __get(string $property)
     {
-        if (array_key_exists($property,$this->add_array)) {
+        if (array_key_exists($property, $this->add_array)) {
             $ret = $this->add_array[$property];
         } else {
             //throw new GeneralException(sprintf('Trying to get unexisting criterion "%s" on an instance of "%s" (ORM).',$property,get_class($this)));
@@ -410,7 +403,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
     public function __unset(string $property) : void
     {
-        if (array_key_exists($property,$this->add_array)) {
+        if (array_key_exists($property, $this->add_array)) {
             unset($this->add_array[$property]);
         } else {
             parent::__unset($property);
@@ -419,57 +412,67 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
 
     //implementation of \Iterator
-    public final function rewind() {
+    final public function rewind()
+    {
         reset($this->add_array);
     }
 
-    public final function current() {
+    final public function current()
+    {
         $var = current($this->add_array);
         return $var;
     }
 
-    public final function key() {
+    final public function key()
+    {
         $var = key($this->add_array);
         return $var;
     }
 
-    public final function next() {
+    final public function next()
+    {
         $var = next($this->add_array);
         return $var;
     }
 
-    public final function valid() {
+    final public function valid()
+    {
         $var = $this->current() !== false;
         return $var;
     }
 
     //implementation of \ArrayAccess
     //the implementation of ArrayAccess uses the overloading
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->{$offset});//use the overloading
     }
 
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return $this->{$offset};
     }
 
-    public function offsetSet($offset,$value) {
+    public function offsetSet($offset, $value)
+    {
         $this->{$offset} = $value;
     }
 
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->{$offset});
     }
 
 
     //static method below
 
-    public static function get_request_uri($flags=0) {
+    public static function get_request_uri($flags=0)
+    {
         $ret = '';
         if ($flags&self::ABSOLUTE) {
             if ($flags&self::HTTPS) {
                 $url_string = self::get_base_url_excluding_path('https://');
-                //$url_string = self::get_base_url_excluding_path('http://');
+            //$url_string = self::get_base_url_excluding_path('http://');
             } elseif ($flags&self::HTTP) {
                 $url_string = self::get_base_url_excluding_path('http://');
             } else {
@@ -478,7 +481,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
         }
         //$ret .= isset($_SERVER['REQUEST_URI'])?$_SERVER['REQUEST_URI']:'';
         if (isset($_SERVER['HTTP_X_FORWARDED_REQUEST_URI'])) {
-            $ret .= $_SERVER['HTTP_X_FORWARDED_REQUEST_URI']; 
+            $ret .= $_SERVER['HTTP_X_FORWARDED_REQUEST_URI'];
         } elseif (isset($_SERVER['REQUEST_URI'])) {
             $ret .= $_SERVER['REQUEST_URI'];
         } else {
@@ -497,13 +500,11 @@ class Url extends Base implements \Iterator, \ArrayAccess
      */
     public static function is_through_proxy() : bool
     {
-
         return isset($_SERVER['HTTP_X_FORWARDED_FOR']);
     }
 
     protected static function get_script_name() : string
     {
-
         if (isset($_SERVER['SCRIPT_NAME'])) {
             //$ret = dirname($_SERVER['SCRIPT_NAME'])==p::DIR?p::DIR:dirname($_SERVER['SCRIPT_NAME']).self::REWRITING_SEPARATOR;
             if (dirname($_SERVER['SCRIPT_NAME'])==p::DIR) {
@@ -512,7 +513,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 $ret = dirname(p::get_relative_path($_SERVER['SCRIPT_NAME']));
                 if ($ret==p::CURDIR) {
                     $ret = '';
-                } 
+                }
                 $ret = $ret.self::REWRITING_SEPARATOR;
             }
         } else {
@@ -520,11 +521,11 @@ class Url extends Base implements \Iterator, \ArrayAccess
             $ret = p::DIR;
         }
         //if (strpos($ret,'./')===0) { //we look at teh beginning
-        if (strpos($ret,'./')===0) { //we look at teh beginning
-            $ret = substr($ret,2);
+        if (strpos($ret, './')===0) { //we look at teh beginning
+            $ret = substr($ret, 2);
         }
         if ($ret[-1] == '/') {
-            $ret = substr($ret,0,-1);//remove trailing /
+            $ret = substr($ret, 0, -1);//remove trailing /
         }
         return $ret;
     }
@@ -533,11 +534,12 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * Returns the relative path fro mthe DocumentRoot to the index.php entry point where the application is deployed
      * @return string The directory part of the URL
      */
-    public static function get_dir_path() {
+    public static function get_dir_path()
+    {
         
         // /home/release5/aktivnipotrebiteli_subdomain/cli.php
         // /index.php
-        //must be able to get the requested dir path even if there is a 
+        //must be able to get the requested dir path even if there is a
 
         $script_name = self::get_script_name();
         
@@ -555,10 +557,9 @@ class Url extends Base implements \Iterator, \ArrayAccess
             if (!$script_name || $script_name == '/') { //this can happen on live where there is no subpath
                 $part_before = '/login/';//this is a harcoded value of the path on proxy server that will be used to proxy the site
                 $ret = $part_before;
-            } elseif ( strpos($request_uri, $script_name) !== FALSE) { //in DEV env there is usually a path
-                list ($part_before, $part_after) = explode($script_name, $request_uri);
+            } elseif (strpos($request_uri, $script_name) !== FALSE) { //in DEV env there is usually a path
+                list($part_before, $part_after) = explode($script_name, $request_uri);
                 $ret = $part_before.$script_name;
-
             } else {
                 //this is terribly wrong... but we still need to return something
                 k::logtofile_simple('WRONG_FORWARDING', $request_uri.' '.$script_name.PHP_EOL.print_r($_SERVER, TRUE));//NOVERIFY
@@ -571,7 +572,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
         //if ($ret[0]==p::CURDIR) {
         if (strlen($ret) && $ret[0]==p::CURDIR) {
-            $ret = substr($ret,1);
+            $ret = substr($ret, 1);
         }
         if (strlen($ret) && $ret[-1] != '/') {
             $ret .= p::DIR;//append /
@@ -585,10 +586,11 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $ret;
     }
 
-    public static function get_subdomain() {
+    public static function get_subdomain()
+    {
         if (isset($_SERVER['SERVER_NAME'])) {
             $domain = $_SERVER['SERVER_NAME'];
-            $domain_arr = explode('.',$domain);
+            $domain_arr = explode('.', $domain);
             if (isset($domain_arr[2])) {
                 //$subdomain = strtolower(str_replace('-',' ',$domain_arr[0]));
                 $subdomain = $domain_arr[0];
@@ -602,16 +604,17 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $subdomain;
     }
 
-    public static function form_subdomain($subdomain) {
-        return strtolower(str_replace(' ','-',$subdomain));
+    public static function form_subdomain($subdomain)
+    {
+        return strtolower(str_replace(' ', '-', $subdomain));
     }
 
-    public static function get_domain() {
+    public static function get_domain()
+    {
         //the domain can not be retreived by $_SERVER['SERVER_NAME'] because it is not know the TLD (some contain . like co.uk)
         //$url = url::get_instance();
         
         if (self::DOMAIN) {
-            
             $ret = self::DOMAIN;
         } else {
             if (isset($_SERVER['SERVER_NAME'])) {
@@ -627,7 +630,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * Returns the current domain as found in the server variables (including the forwarded one)
      *
      */
-    public static function get_current_domain() {
+    public static function get_current_domain()
+    {
         if (isset($_SERVER['HTTP_X_FORWARDED_SERVER_NAME'])) {
             $ret = $_SERVER['HTTP_X_FORWARDED_SERVER_NAME'];
         } elseif (isset($_SERVER['SERVER_NAME'])) {
@@ -645,7 +649,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
     }
 
 
-    public static function get_main_domain() {
+    public static function get_main_domain()
+    {
         $ret = self::DOMAIN;
         if (!$ret) {
             $ret = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
@@ -653,14 +658,16 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $ret;
     }
 
-    public static function get_base_url($protocol='') {
+    public static function get_base_url($protocol='')
+    {
         //return self::u(array(),true,true);
         $ret = self::get_base_url_excluding_path($protocol).self::get_dir_path();
 
         return $ret;
     }
 
-    public static function get_base_url_excluding_path($protocol='') {
+    public static function get_base_url_excluding_path($protocol='')
+    {
         //$domain = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
 
         $domain = self::get_current_domain();
@@ -673,7 +680,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 $protocol = 'https://';
             } elseif (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on') {
                 $protocol = 'https://';
-                //$protocol = 'http://';
+            //$protocol = 'http://';
             } else {
                 $protocol = 'http://';
             }
@@ -700,7 +707,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
         if (!$port && $protocol) {
             if ($protocol=='https://') {
                 $port = '443';
-                //$port = '80';
+            //$port = '80';
             } elseif (self::PORT) {
                 $port = self::PORT;
             } else {
@@ -719,17 +726,18 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * Returns a constant - self::HTTP or self::HTTPS or 0 if unknown
      * @return int
      */
-    public static function get_protocol($as_string=false) {
+    public static function get_protocol($as_string=false)
+    {
         if (!empty($_SERVER['HTTPS'])) {
             $ret = self::HTTPS;
-            //$ret = self::HTTP;
+        //$ret = self::HTTP;
         } else {
             $ret = self::HTTP;
         }
         if ($as_string) {
             if ($ret==self::HTTPS) {
                 $ret = 'https';
-                //$ret = 'http';
+            //$ret = 'http';
             } else {
                 $ret = 'http';
             }
@@ -737,7 +745,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $ret;
     }
 
-    public static function get_port() {
+    public static function get_port()
+    {
 
         //$ret = isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : null;
         if (isset($_SERVER['HTTP_X_FORWARDED_SERVER_PORT'])) {
@@ -754,7 +763,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
 
 
-    public static function u(array $add_array,$flags=0) {
+    public static function u(array $add_array, $flags=0)
+    {
         if (!is_array($add_array)) {
             throw new framework\base\exceptions\runTimeException(sprintf(t::_('The first argument is not an array. The URL can not be composed.')));
         }
@@ -869,7 +879,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
         foreach ($add_array as $varname=>$varvalue) {
             if (is_array($varvalue)) {
                 $arrays[$varname] = $varvalue;
-                unset ($add_array[$varname]);
+                unset($add_array[$varname]);
             }
         }
 
@@ -884,7 +894,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
 
 
-            $explicit_url_rewriting_data = self::$url_rewriting->search_for_alias($add_array[c\APP],$add_array[c\P],$add_array[c\C],$add_array[c\A],$id,$target_lang);
+            $explicit_url_rewriting_data = self::$url_rewriting->search_for_alias($add_array[c\APP], $add_array[c\P], $add_array[c\C], $add_array[c\A], $id, $target_lang);
 
 
             if (count($explicit_url_rewriting_data)) {
@@ -906,13 +916,9 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 }
                 $class_found = true;
 
-                //$explicit_url_rewriting = $explicit_url_rewriting_data[0]['alias'];//this is not used but can be used in order to save the object creation for the operations
-                
+            //$explicit_url_rewriting = $explicit_url_rewriting_data[0]['alias'];//this is not used but can be used in order to save the object creation for the operations
             } else {
-
-
                 foreach ($general_aliases as $general_alias) {
-
                     if ($general_alias['application']==$add_array[c\APP]&&$general_alias['package']==$add_array[c\P]&&$general_alias['controller']==$add_array[c\C]&&$general_alias['action']==$add_array[c\A]) {
                         $class = k::get_class_by_id($general_alias['class_id']);
                         //if ($class=='org\\guzaba\\framework\\operations\\classes\\operation') {
@@ -950,7 +956,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
 
                     if (!($flags&self::DISABLE_REWRITING)) {
-
                         $rewrite_automatic = $object->generate_url_rewrite($target_lang);
 
 
@@ -969,13 +974,10 @@ class Url extends Base implements \Iterator, \ArrayAccess
                             }
 
                             $url_string .= $explicit_rewrite;
-                            
                         } else { //then for some generic rewriting for this type of object
                             
                             foreach ($general_aliases as $general_alias) {
-                            
                                 if ($general_alias['class_id']==k::get_class_id($class)) {
-
                                     if (isset($add_array[c\L])||self::$url_rewriting->include_language) {
                                         //$url_string .= $add_array[c\L].self::REWRITING_SEPARATOR;
                                         $url_string .= $target_lang.self::REWRITING_SEPARATOR;
@@ -985,7 +987,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                                     }
 
                                     if (isset($add_array[c\COUNTRY])||self::$url_rewriting->include_country) {
-                                        $url_string .= $target_country.self::REWRITING_SEPARATOR;   
+                                        $url_string .= $target_country.self::REWRITING_SEPARATOR;
                                     }
 
                                     $url_string .= $general_alias['alias'].self::REWRITING_SEPARATOR;
@@ -999,9 +1001,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                             }
 
                             if (isset($general_alias_found)) {
-
                             } else {
-
                                 $add_array = self::clear_default_params($add_array);
                                 if (isset($rewrite_automatic)) {
                                     $add_array['rw'] = $rewrite_automatic;
@@ -1017,10 +1017,10 @@ class Url extends Base implements \Iterator, \ArrayAccess
                                     $add_array[c\COUNTRY] = $target_country;
                                 }
 
-                                //array_walk($add_array, function(&$value,&$key) { 
+                                //array_walk($add_array, function(&$value,&$key) {
                                 //    if (!$value || !strlen((string) $value)) {
                                 //        $value = '$$';
-                                //    } 
+                                //    }
                                 //} );
                                 //$url_string .= str_replace('=',self::REWRITING_SEPARATOR,http_build_query($add_array,'',self::REWRITING_SEPARATOR));
                                 //$url_string .= str_replace('=',self::REWRITING_SEPARATOR,urldecode(http_build_query($add_array,'',self::REWRITING_SEPARATOR)));
@@ -1028,10 +1028,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
                                 //$url_string .= self::$url_rewriting->append_to_automatic_rewriting;
                                 $url_string .= self::build_args($add_array);
                             }
-
                         }
                     } else {
-
                         $add_array = self::clear_default_params($add_array);
 
                         if (self::$url_rewriting->include_language) {
@@ -1042,7 +1040,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                             $add_array[c\COUNTRY] = $target_country;
                         }
 
-                        //array_walk($add_array, function(&$value,&$key) { 
+                        //array_walk($add_array, function(&$value,&$key) {
                         //    if (!$value || !strlen((string) $value)) {
                         //        $value = '$$';
                         //    }
@@ -1059,7 +1057,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     $url_string .= '#';
                 }
             } else {
-
                 $add_array = self::clear_default_params($add_array);
 
                 if (self::$url_rewriting->include_language) {
@@ -1070,7 +1067,7 @@ class Url extends Base implements \Iterator, \ArrayAccess
                     $add_array[c\COUNTRY] = $target_country;
                 }
 
-                //array_walk($add_array, function(&$value,&$key) { 
+                //array_walk($add_array, function(&$value,&$key) {
                 //    if (!$value || !strlen((string) $value)) {
                 //        $value='$$';
                 //    }
@@ -1082,7 +1079,6 @@ class Url extends Base implements \Iterator, \ArrayAccess
                 $url_string .= self::build_args($add_array);
             }
         } else {
-
             $add_array = self::clear_default_params($add_array);
 
             if (self::$url_rewriting->include_language) {
@@ -1109,21 +1105,14 @@ class Url extends Base implements \Iterator, \ArrayAccess
             $url_string = self::get_dir_path().$url_string;
 
             if ($flags&self::ABSOLUTE) {
-
-
-
-
                 if ($flags&self::HTTPS) {
                     $url_string = self::get_base_url_excluding_path('https://').$url_string;
-                    //$url_string = self::get_base_url_excluding_path('http://').$url_string;
+                //$url_string = self::get_base_url_excluding_path('http://').$url_string;
                 } elseif ($flags&self::HTTP) {
                     $url_string = self::get_base_url_excluding_path('http://').$url_string;
                 } else {
                     $url_string = self::get_base_url_excluding_path().$url_string;
                 }
-
-
-                
             }
         }
 
@@ -1138,7 +1127,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $url_string;
     }
 
-    public static function set_default_params(array $add_array) {
+    public static function set_default_params(array $add_array)
+    {
         if (!self::$env) {
             self::$env = framework\mvc\classes\activeEnvironment::get_instance();
         }
@@ -1152,8 +1142,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $add_array;
     }
 
-    public static function clear_default_params(array $add_array) {
-
+    public static function clear_default_params(array $add_array)
+    {
         if (!self::$env) {
             self::$env = framework\mvc\classes\activeEnvironment::get_instance();
         }
@@ -1218,7 +1208,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * @param string $anchor
      * @return array
      */
-    public static function parse($url_string,&$anchor=null) {
+    public static function parse($url_string, &$anchor=null)
+    {
         $path = self::get_dir_path();
 
 
@@ -1226,21 +1217,21 @@ class Url extends Base implements \Iterator, \ArrayAccess
 
         $index = p::$INDEXFILE.p::FILE.'html';
         if ($path!=self::REWRITING_SEPARATOR) {
-            $url_string = str_replace(array($path),'',$url_string);
+            $url_string = str_replace([$path], '', $url_string);
         }
         //$url_string = str_replace(array($path,$absolute,self::REWRITING_SEPARATOR.$index),array('','',''),$url_string);
-        $url_string = str_replace(array($absolute,self::REWRITING_SEPARATOR.$index),array('',''),$url_string);
+        $url_string = str_replace([$absolute,self::REWRITING_SEPARATOR.$index], ['',''], $url_string);
         if ($url_string&&$url_string{0}==self::REWRITING_SEPARATOR) {
-            $url_string = substr($url_string,1);
+            $url_string = substr($url_string, 1);
         }
         //if there is an anchor it must be cut and provided in the pass-by-reference $anchor
-        $anchor_pos = strrpos($url_string,'#');
+        $anchor_pos = strrpos($url_string, '#');
         if ($anchor_pos!==false) {
-            $anchor = substr($url_string,$anchor_pos);
-            $url_string = substr($url_string,0,$anchor_pos);
+            $anchor = substr($url_string, $anchor_pos);
+            $url_string = substr($url_string, 0, $anchor_pos);
         }
-        $url_elements = explode(self::REWRITING_SEPARATOR,$url_string);
-        $url_arr = array();
+        $url_elements = explode(self::REWRITING_SEPARATOR, $url_string);
+        $url_arr = [];
         for ($aa=0;$aa<count($url_elements);$aa=$aa+2) {
             if (isset($url_elements[$aa+1])) {
                 $url_arr[$url_elements[$aa]] = $url_elements[$aa+1];
@@ -1250,10 +1241,11 @@ class Url extends Base implements \Iterator, \ArrayAccess
     }
 
     /**
-     * @param int $long 
+     * @param int $long
      * @return string|int
      */
-    public static function get_ip_address($long=false) {
+    public static function get_ip_address($long=false)
+    {
         if (framework\session\classes\sessionSubject::is_instantiated()) { //we must avoid triggering the creation of sessionSubject here if it hasnt been instantiated so far
             $ip = (string) framework\session\classes\sessionSubject::get_instance()->remote_addr;//this is a property of subject, not sessionSubject
         } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -1273,17 +1265,19 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * @param int $long.
      * @return string|int
      */
-     public static function get_ip ($long = false) {
-         $real_client_ip = ''; // sanity
-         $keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR');
+    public static function get_ip($long = false)
+    {
+        $real_client_ip = ''; // sanity
+        $keys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR'];
 
         foreach ($keys as $key) {
             if (array_key_exists($key, $_SERVER)) {
                 $exp = explode(',', $_SERVER[$key]);
                 foreach ($exp as $ip) {
                     $real_client_ip = trim($ip);
-                    if (filter_var($real_client_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== FALSE)
+                    if (filter_var($real_client_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== FALSE) {
                         return ($long) ? ip2long($real_client_ip) : $real_client_ip;
+                    }
                 }
             }
         }
@@ -1298,7 +1292,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
      * Get the User Agent (the browser). If not defined returns empty string.
      * @return string
      */
-    public static function get_user_agent() {
+    public static function get_user_agent()
+    {
         return isset($_SERVER['HTTP_USER_AGENT'])?$_SERVER['HTTP_USER_AGENT']:'';
     }
 
@@ -1315,11 +1310,11 @@ class Url extends Base implements \Iterator, \ArrayAccess
     private static function build_args(array $add_array) : string
     {
         $url_string = '';
-        array_walk($add_array, function(&$value,&$key) { 
-           if (!$value || !strlen((string) $value)) {
-               $value = '$$';
-           }
-        } );
+        array_walk($add_array, function (&$value, &$key) {
+            if (!$value || !strlen((string) $value)) {
+                $value = '$$';
+            }
+        });
         //this will be handled in self::u()
         //look for an anchor (it may not be necessarily the last element - it doesnt matter where it is)
         //$anchor = '';
@@ -1328,8 +1323,8 @@ class Url extends Base implements \Iterator, \ArrayAccess
         //    unset($add_array[self::ANCHOR]);
         //}
 
-        $url_string .= str_replace('=',self::REWRITING_SEPARATOR,urldecode(http_build_query($add_array,'',self::REWRITING_SEPARATOR)));
-        $url_string .= self::REWRITING_SEPARATOR;//it is very important for the full urls to have a closing / (otherwise there will be a problem in certain situations... 
+        $url_string .= str_replace('=', self::REWRITING_SEPARATOR, urldecode(http_build_query($add_array, '', self::REWRITING_SEPARATOR)));
+        $url_string .= self::REWRITING_SEPARATOR;//it is very important for the full urls to have a closing / (otherwise there will be a problem in certain situations...
 
         //if ($anchor) {
         //    $url_string .= self::ANCHOR.$anchor;
@@ -1337,4 +1332,3 @@ class Url extends Base implements \Iterator, \ArrayAccess
         return $url_string;
     }
 }
-

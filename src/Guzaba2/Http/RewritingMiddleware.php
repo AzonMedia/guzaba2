@@ -14,8 +14,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Class RewritingMiddleware
  * @package Guzaba2\Http
  */
-class RewritingMiddleware extends Base
-implements MiddlewareInterface
+class RewritingMiddleware extends Base implements MiddlewareInterface
 {
 
     /**
@@ -35,7 +34,6 @@ implements MiddlewareInterface
      */
     public function __construct(Server $Server, Rewriter $Rewriter)
     {
-
         $this->HttpServer = $Server;
 
         $this->Rewriter = $Rewriter;

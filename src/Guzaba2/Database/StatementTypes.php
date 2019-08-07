@@ -446,5 +446,4 @@ final class StatementTypes extends Base
     {
         return self::getStatementGroup($sql) == self::STATEMENT_GROUP_TCL;
     }
-
 }

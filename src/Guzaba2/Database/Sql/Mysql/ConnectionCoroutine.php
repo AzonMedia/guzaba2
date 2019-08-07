@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database\Sql\Mysql;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
@@ -51,13 +50,13 @@ abstract class ConnectionCoroutine extends Connection
         $this->initialize();
     }
 
-    private function initialize(){
-
+    private function initialize()
+    {
         $this->MysqlCo = new \Swoole\Coroutine\Mysql();
 
         $ret = $this->MysqlCo->connect(static::CONFIG_RUNTIME);
         if (!$ret) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->MysqlCo->connect_errno, $this->MysqlCo->connect_error ));
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->MysqlCo->connect_errno, $this->MysqlCo->connect_error));
         }
     }
 
@@ -98,7 +97,7 @@ abstract class ConnectionCoroutine extends Connection
                 $this->initialize();
                 return $this->prepare($query);
             } else {
-                throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error ));
+                throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error));
             }
         }
         $Statement = new StatementCoroutine($NativeStatement, $query, $expected_parameters);
@@ -122,14 +121,13 @@ abstract class ConnectionCoroutine extends Connection
      */
     public function execute_multiple_queries(array $queries_data) : array
     {
-
         $queries_count = count($queries_data);
 
-        $channel = new \Swoole\Coroutine\Channel( count( $queries_data) );
+        $channel = new \Swoole\Coroutine\Channel(count($queries_data));
 
         $current_coroutine_query_data = array_pop($queries_data);
 
-        $Function = function(string $query, array $params = []) use ($channel) {
+        $Function = function (string $query, array $params = []) use ($channel) {
             print 'substart'.PHP_EOL;
             $Connection = self::ConnectionFactory()->get_connection(get_class($this), $CR);
             $Statement = $Connection->prepare($query);
@@ -150,7 +148,7 @@ abstract class ConnectionCoroutine extends Connection
         $channel->push($data);
 
         $ret = [];
-        for( $aa = 0; $aa<$channel->length(); $aa++) {
+        for ($aa = 0; $aa<$channel->length(); $aa++) {
             print 'pop'.PHP_EOL;
             $ret[] = $channel->pop();
         }
@@ -161,7 +159,6 @@ abstract class ConnectionCoroutine extends Connection
 
     private static function convert_query_for_binding($named_params_query, array &$expected_parameters = []) : string
     {
-
         preg_match_all('/:([a-zA-Z0-9_]*)/', $named_params_query, $matches);
         if (isset($matches[1]) && count($matches[1])) {
             $expected_parameters = $matches[1];

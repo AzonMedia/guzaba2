@@ -30,5 +30,4 @@ abstract class GenericObject extends Base
             $this->{$key} = $value;
         }
     }
-
 }

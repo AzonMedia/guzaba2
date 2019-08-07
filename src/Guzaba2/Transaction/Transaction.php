@@ -82,14 +82,14 @@ abstract class Transaction extends Base
     const STATUS_SAVED = 4;//this means that the transaction has reached its commit() statement but has an outer one
     //const STATUS_MASTER_ROLLED_BACK = 5;//to be raised (resursively to all nested) when the master transaction gets rolled-back
 
-    public static $status_map = array(
+    public static $status_map = [
         self::STATUS_ANY => 'any',//this is no real transaction status but it is used by callbackContainer to indicate event/mode that occurs on any status
         self::STATUS_STARTED => 'started',
         self::STATUS_ROLLED_BACK => 'rolled back',
         self::STATUS_COMMITTED => 'commited',
         self::STATUS_SAVED => 'savepoint created',
         //self::STATUS_MASTER_ROLLED_BACK => 'master transaction rolled back',
-    );
+    ];
 
     /**
      * Unkown reason why the transaction was rolled back or it is not rolled back (or not about to be rolled back)
@@ -152,7 +152,7 @@ abstract class Transaction extends Base
      * Array of nested transactions
      * @var transaction[]
      */
-    protected $nested_transactions = array();
+    protected $nested_transactions = [];
 
     /**
      *
@@ -278,7 +278,7 @@ abstract class Transaction extends Base
      * @throws LogicException
      * @throws TransactionException
      */
-    public function __construct(ScopeReferenceTracker &$scope_reference = NULL, callable $code = NULL, callable &$commit_callback = NULL, callable &$rollback_callback = NULL, array $options = array(), ?transactionContext $transactionContext = null, bool $do_not_begin = FALSE)
+    public function __construct(ScopeReferenceTracker &$scope_reference = NULL, callable $code = NULL, callable &$commit_callback = NULL, callable &$rollback_callback = NULL, array $options = [], ?transactionContext $transactionContext = null, bool $do_not_begin = FALSE)
     {
         //the scope reference will be provided only when used with the TXM
         //But actually the transactions will be never started by invoking directly their constructor - so we can have the scope
@@ -360,7 +360,6 @@ abstract class Transaction extends Base
                 //this is a new container and has no transaction set
                 $this->callback_container->set_transaction($this);
             }
-
         } else {
             //create the container
             $callback_container = new CallbackContainer([], 0, $this);
@@ -380,7 +379,7 @@ abstract class Transaction extends Base
                 $commit_callback = new Callback($commit_callback, TRUE);
             }
             $this->callback_container->add($commit_callback, callbackContainer::DEFAULT_COMMIT_MODE);
-            //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
+        //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
         } else {
             $type = is_object($commit_callback) ? get_class($commit_callback) : gettype($commit_callback);
             throw new InvalidArgumentException(sprintf(t::_('An unsupported type "%s" was provided as second argument (commit_callback) to the transaction constructor.'), $type));
@@ -395,7 +394,7 @@ abstract class Transaction extends Base
                 $rollback_callback = new Callback($rollback_callback, TRUE);
             }
             $this->callback_container->add($rollback_callback, callbackContainer::DEFAULT_ROLLBACK_MODE);
-            //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
+        //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
         } else {
             $type = is_object($rollback_callback) ? get_class($rollback_callback) : gettype($rollback_callback);
             throw new InvalidArgumentException(sprintf(t::_('An unsupported type "%s" was provided as third argument (rollback_callback) to the transaction constructor.'), $type));
@@ -410,7 +409,6 @@ abstract class Transaction extends Base
         if (!$do_not_begin) {
             $this->begin();
         }
-
     }
 
     /**
@@ -424,7 +422,7 @@ abstract class Transaction extends Base
      * @throws RunTimeException
      * @throws TransactionException
      */
-    public static function simple_construct(callable &$commit_callback = NULL, callable &$rollback_callback = NULL, array $options = array(), TransactionContext $transactionContext = null): self
+    public static function simple_construct(callable &$commit_callback = NULL, callable &$rollback_callback = NULL, array $options = [], TransactionContext $transactionContext = null): self
     {
         $transaction = new static($TR, NULL, $commit_callback, $rollback_callback, $options, $transactionContext);
         /** @var ScopeReferenceTracker $TR */
@@ -446,7 +444,7 @@ abstract class Transaction extends Base
      * Example use of this is when we need to create a transaction which will be part of a distributed transaction.
      * In this case we dont need the $TR scopeReference as the distributedTransaction will be handling the life of the attached transactions that are part of it.
      */
-    public static function simple_construct_without_callbacks(array $options = array(), TransactionContext $transactionContext = null): self
+    public static function simple_construct_without_callbacks(array $options = [], TransactionContext $transactionContext = null): self
     {
         $transaction = static::simple_construct($commit_callback, $rollback_callback, $options, $transactionContext);
         return $transaction;
@@ -492,7 +490,6 @@ abstract class Transaction extends Base
      */
     public function run()
     {
-
         if (!$this->is_runnable()) {
             throw new TransactionException($this, sprintf(t::_('Trying to run a transaction that is not runnable (means there is no attached executable PHP code to it).')));
         }
@@ -509,13 +506,11 @@ abstract class Transaction extends Base
         if ($rerun) {
             //catch the DB exceptions and rerun the transaction
             do {
-
                 try {
                     $run_counter++;
                     $code = $this->get_code();
                     $this->run_result = $code($this);
                     $run_successful = TRUE;
-
                 } catch (TransientErrorException $exception) {
                     //will be retried if this is enabled in the options
                     if (self::get_config_key('increment_wait_time_between_attempts')) {
@@ -672,7 +667,6 @@ abstract class Transaction extends Base
      */
     public function set_transaction_as_interrupted(): void
     {
-
         if (!$this->transaction_rollback_reason) {
             $this->transaction_rollback_reason = self::ROLLBACK_REASON_IMPLICIT;
         }
@@ -715,7 +709,6 @@ abstract class Transaction extends Base
      */
     public function set_interrupting_exception(\Throwable $exception = null)
     {
-
         if (!$this->transaction_rollback_reason) {
             $this->transaction_rollback_reason = self::ROLLBACK_REASON_EXCEPTION;
         }
@@ -751,7 +744,7 @@ abstract class Transaction extends Base
         $ret = NULL;
         $bt = $this->get_transaction_rollback_bt_info();
         if ($bt) {
-             $frame = StackTraceUtil::get_stack_frame_by(TransactionManager::class, 'rollback', debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+            $frame = StackTraceUtil::get_stack_frame_by(TransactionManager::class, 'rollback', debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
 
             if ($frame) {
                 $ret = $frame;
@@ -791,7 +784,6 @@ abstract class Transaction extends Base
      */
     public function get_transaction_rollback_reason(): int
     {
-
         if (!isset(self::ROLLBACK_REASON_MAP[$this->transaction_rollback_reason])) {
             throw new LogicException(sprintf(t::_('An invalid value "%s" is set to $transction->transaction_rollback_reason.'), AlphaNumUtil::as_string($this->transaction_rollback_reason)));
         }
@@ -940,7 +932,6 @@ abstract class Transaction extends Base
      */
     public function rollback($explicit_rollback = FALSE): void
     {
-
         if ($this->is_cloned()) {
             throw new TransactionException($this, sprintf(t::_('This transaction is cloned. %s() can not be executed.'), __METHOD__));
         }
@@ -1010,7 +1001,6 @@ abstract class Transaction extends Base
         }
 
         if ($this->has_parent()) {
-
             $this->execute_pre_callbacks();
 
             if ($this->get_status() == $current_status) {
@@ -1050,9 +1040,7 @@ abstract class Transaction extends Base
 
                 $this->execute_after_callbacks();
             }
-
         } else {
-
             $this->execute_pre_callbacks();
 
             if ($this->get_status() == $current_status) {
@@ -1110,14 +1098,12 @@ abstract class Transaction extends Base
             }
 
             $destroy_current_transaction = true;
-
         } // end if has_parent
 
 
         if (!empty($destroy_current_transaction)) {
             $this->destroy();
         }
-
     } //end rollback()
 
     /**
@@ -1126,7 +1112,6 @@ abstract class Transaction extends Base
      */
     public function commit(): void
     {
-
         if ($this->is_cloned()) {
             throw new TransactionException($this, sprintf(t::_('This transaction is cloned. %s() can not be executed.'), __METHOD__));
         }
@@ -1148,7 +1133,6 @@ abstract class Transaction extends Base
 
 
         if ($this->has_parent()) {
-
             $this->execute_pre_callbacks();
 
             if ($this->get_status() == $current_status) {
@@ -1160,7 +1144,6 @@ abstract class Transaction extends Base
             }
 
             if ($this->get_status() == self::STATUS_STARTED) {
-
                 $this->set_status(self::STATUS_SAVED);
                 //we need to mark this one as saved but there is no really need to create a savepoint
                 //there doesnt seem to be a case when we will be reverting to this savepoint - the parent transaction will not revert to this one
@@ -1201,7 +1184,7 @@ abstract class Transaction extends Base
             //if the status hasnt changed
             if ($this->get_status() == $current_status) {
                 //$this->callback_mode = callbackContainer::MODE_BEFORE_MASTER_COMMIT;
-                $this->execute_pre_master_commit_callbacks();//all the other 
+                $this->execute_pre_master_commit_callbacks();//all the other
             }
             if (self::get_config_key('enable_callbacks_tracing')) {
                 Kernel::logtofile_indent(self::get_config_key('callbacks_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' pre commit callbacks executed', 0);
@@ -1250,18 +1233,14 @@ abstract class Transaction extends Base
                 if (self::get_config_key('enable_callbacks_tracing')) {
                     Kernel::logtofile_indent(self::get_config_key('callbacks_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' after commit callbacks executed', 0);
                 }
-
             }
 
             $destroy_current_transaction = true;
-
         } //end if-else has_parent
 
         if (!empty($destroy_current_transaction)) {
-
             $this->destroy();
         }
-
     }
 
     private function call_nested_before_commit_callbacks(): void
@@ -1276,7 +1255,6 @@ abstract class Transaction extends Base
 
     private function call_nested_after_commit_callbacks(): void
     {
-
         if ($this->get_status() == self::STATUS_COMMITTED && $this->has_parent()) { //we need to skip the master transaction as it executes the callbacks in the commit() and to avoid double execution
 
             $this->execute_after_commit_callbacks();
@@ -1317,7 +1295,6 @@ abstract class Transaction extends Base
     protected function _before_destroy(): void
     {
         if ($this->get_status() == self::STATUS_STARTED || $this->get_status() == self::STATUS_SAVED) {
-
             if (self::get_config_key('enable_transactions_tracing')) {
                 Kernel::logtofile_indent(self::get_config_key('transactions_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' rollback-by-destructor', 0);
             }
@@ -1501,20 +1478,19 @@ abstract class Transaction extends Base
             $this->set_status(self::STATUS_STARTED);
             $this->execute_begin();
         }
-
     }
 
-    protected abstract function execute_begin(): bool;
+    abstract protected function execute_begin(): bool;
 
-    protected abstract function execute_commit(): bool;
+    abstract protected function execute_commit(): bool;
 
-    protected abstract function execute_rollback(): bool;
+    abstract protected function execute_rollback(): bool;
 
-    protected abstract function execute_create_savepoint(string $savepoint): bool;
+    abstract protected function execute_create_savepoint(string $savepoint): bool;
 
-    protected abstract function execute_rollback_to_savepoint(string $savepoint): bool;
+    abstract protected function execute_rollback_to_savepoint(string $savepoint): bool;
 
-    protected abstract function execute_release_savepoint(string $savepoint): bool;
+    abstract protected function execute_release_savepoint(string $savepoint): bool;
 
     /**
      * This is called when BEGIN is called but there is a parent transaction
@@ -1524,7 +1500,7 @@ abstract class Transaction extends Base
      * @return bool
      * @throws TransactionException
      */
-    protected final function createSavepoint(string $savepoint_name): bool
+    final protected function createSavepoint(string $savepoint_name): bool
     {
         if ($this->is_cloned()) {
             throw new TransactionException($this, sprintf(t::_('This transaction is cloned. %s() can not be executed.'), __METHOD__));
@@ -1547,7 +1523,7 @@ abstract class Transaction extends Base
      * @return bool
      * @throws TransactionException
      */
-    protected final function rollbackToSavepoint(string $savepoint): bool
+    final protected function rollbackToSavepoint(string $savepoint): bool
     {
         if ($this->is_cloned()) {
             throw new TransactionException($this, sprintf(t::_('This transaction is cloned. %s() can not be executed.'), __METHOD__));
@@ -1603,7 +1579,6 @@ abstract class Transaction extends Base
         if ($this->callback_container) {
             $this->callback_container($this, callbackContainer::MODE_BEFORE);
         }
-
     }
 
     /**
@@ -1620,7 +1595,6 @@ abstract class Transaction extends Base
         if ($this->callback_container) {
             $this->callback_container($this, callbackContainer::MODE_AFTER);
         }
-
     }
 
     private function execute_pre_rollback_callbacks(): void
@@ -1772,7 +1746,6 @@ abstract class Transaction extends Base
         }
 
         if ($this->callback_container) {
-
             $this->is_in_save_callback_flag = true;
             //if ($this->is_saved()) { // this cant happen - at this stage if it was saved it is now committed
             if ($this->is_commited()) {
@@ -1805,7 +1778,6 @@ abstract class Transaction extends Base
             $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_IN_WORKER);
             $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_AFTER_CONTROLLER);
             $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_IN_SHUTDOWN);
-
         }
     }
 
@@ -1856,5 +1828,4 @@ abstract class Transaction extends Base
     {
         return $this->getCallbackContainer();
     }
-    
 }

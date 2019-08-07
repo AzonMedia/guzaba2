@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Orm\MetaStore;
 
-
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -12,7 +11,6 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
 class NullMetaStore extends MetaStore
 {
-
     public function __construct(?StoreInterface $FallbackStore = NULL)
     {
         parent::__construct();

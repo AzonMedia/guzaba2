@@ -23,6 +23,4 @@ namespace Guzaba2\Database\Exceptions;
 
 class ResultException extends DatabaseException
 {
-
 }
-

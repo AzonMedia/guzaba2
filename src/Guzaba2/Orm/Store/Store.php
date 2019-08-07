@@ -3,16 +3,13 @@
 
 namespace Guzaba2\Orm\Store;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
-class Store extends Base
-    implements StoreInterface
+class Store extends Base implements StoreInterface
 {
-
     public function __construct()
     {
         parent::__construct();

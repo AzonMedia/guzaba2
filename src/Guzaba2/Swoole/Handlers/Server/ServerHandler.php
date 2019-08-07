@@ -6,5 +6,4 @@ use Guzaba2\Base\Base;
 
 abstract class ServerHandler extends Base
 {
-
 }

@@ -3,16 +3,13 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
-abstract class Message extends Base
-implements MessageInterface
+abstract class Message extends Base implements MessageInterface
 {
-
     protected $reasonPhrase = '';
 
     /**
@@ -78,10 +75,10 @@ implements MessageInterface
      * new protocol version.
      *
      * @param string $version HTTP protocol version
-     * @return static     
+     * @return static
      * @throws InvalidArgumentException if the http version is an invalid number
      */
-    public function withProtocolVersion( /* string */ $version) /* self */
+    public function withProtocolVersion(/* string */ $version) /* self */
     //public function withProtocolVersion(string $version) : self
     {
         if (!isset(self::$validProtocolVersions[$version])) {
@@ -134,7 +131,7 @@ implements MessageInterface
      *     name using a case-insensitive string comparison. Returns false if
      *     no matching header name is found in the message.
      */
-    public function hasHeader( /* string */ $name) /* string */
+    public function hasHeader(/* string */ $name) /* string */
     //public function hasHeader(string $name) : string
     {
         return array_key_exists($name, $this->headers);
@@ -154,7 +151,7 @@ implements MessageInterface
      *    header. If the header does not appear in the message, this method MUST
      *    return an empty array.
      */
-    public function getHeader( /* string */ $name) : array
+    public function getHeader(/* string */ $name) : array
     //public function getHeader(string $name) : array
     {
         $name = strtolower($name);
@@ -180,10 +177,10 @@ implements MessageInterface
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
      */
-    public function getHeaderLine( /* string */  $name) : string
+    public function getHeaderLine(/* string */  $name) : string
     //public function getHeaderLine(string $name) : string
     {
-        return implode(',', array_key_exists($name, $this->headers) ? $this->headers[$name] : [] );
+        return implode(',', array_key_exists($name, $this->headers) ? $this->headers[$name] : []);
     }
 
     /**
@@ -201,11 +198,11 @@ implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withHeader( /* string */ $name, /* mixed */ $value) : self
+    public function withHeader(/* string */ $name, /* mixed */ $value) : self
     //public function withHeader(string $name, /* mixed */ $value) : self
     {
         $Message = clone $this;
-        if ( !is_array( $value ) ) {
+        if (!is_array($value)) {
             $value = [$value];
         }
 
@@ -230,7 +227,7 @@ implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withAddedHeader( /* string */ $name, /* mixed */ $value) : self
+    public function withAddedHeader(/* string */ $name, /* mixed */ $value) : self
     //public function withAddedHeader(string $name, /* mixed */ $value) : self
     {
         $Message = clone $this;
@@ -254,7 +251,7 @@ implements MessageInterface
      * @param string $name Case-insensitive header field name to remove.
      * @return static
      */
-    public function withoutHeader( /* string */ $name) : self
+    public function withoutHeader(/* string */ $name) : self
     //public function withoutHeader(string $name) : self
     {
         $Message = clone $this;

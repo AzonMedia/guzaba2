@@ -19,13 +19,13 @@ use Guzaba2\Orm\Traits\ActiveRecordOverloading;
 use Guzaba2\Orm\Traits\ActiveRecordSave;
 use Guzaba2\Orm\Traits\ActiveRecordLoad;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
+
 //use Guzaba2\Orm\Traits\ActiveRecordValidation;
 //use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
 //use Guzaba2\Orm\Traits\ActiveRecordDelete;
 
 
-class ActiveRecord extends GenericObject
-implements ActiveRecordInterface
+class ActiveRecord extends GenericObject implements ActiveRecordInterface
 {
     const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
 
@@ -116,12 +116,12 @@ implements ActiveRecordInterface
      * @param StoreInterface|null $Store
      * @throws \ReflectionException
      */
-    public function __construct( /* mixed*/ $index, ?StoreInterface $Store = NULL)
+    public function __construct(/* mixed*/ $index, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
-            throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class() ));
+            throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
 
         if ($Store) {
@@ -172,8 +172,6 @@ implements ActiveRecordInterface
 //                $this->{$property_name} =& $pointer[$property_name];
 //            }
 //        }
-
-
     }
 
     /**
@@ -186,7 +184,7 @@ implements ActiveRecordInterface
         if (count($primary_index_columns) === 1) {
             $ret = $this->record_data[$primary_index_columns[0]];
         } else {
-            foreach($primary_index_columns as $primary_index_column) {
+            foreach ($primary_index_columns as $primary_index_column) {
                 $ret[] = $this->record_data[$primary_index_column];
             }
         }
@@ -205,7 +203,5 @@ implements ActiveRecordInterface
 
     public function save() : ActiveRecord
     {
-
     }
-
 }

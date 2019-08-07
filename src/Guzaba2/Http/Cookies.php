@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Http\Interfaces\CookiesInterface;
@@ -11,8 +10,7 @@ use Guzaba2\Http\Interfaces\CookiesInterface;
 /**
  * Cookie helper
  */
-class Cookies extends Base
-implements CookiesInterface
+class Cookies extends Base implements CookiesInterface
 {
     /**
      * Cookies from HTTP request
@@ -126,7 +124,7 @@ implements CookiesInterface
      *
      * @return string
      */
-    protected function toHeader( /* string */ $name, array $properties) /* string */
+    protected function toHeader(/* string */ $name, array $properties) /* string */
     {
         $result = urlencode($name) . '=' . urlencode($properties['value']);
 
@@ -179,7 +177,7 @@ implements CookiesInterface
      *
      * @throws InvalidArgumentException if the cookie data cannot be parsed
      */
-    public static function parseHeader( /* string */ $header) /* array */
+    public static function parseHeader(/* string */ $header) /* array */
     {
         if (is_array($header) === true) {
             $header = isset($header[0]) ? $header[0] : '';

@@ -42,7 +42,7 @@ class CallbackContainer extends Base
      * @param array $callables Array of callables
      * @throws RunTimeException
      */
-    public function __construct(array $callables = array())
+    public function __construct(array $callables = [])
     {
         foreach ($callables as $callable) {
             if (!is_callable($callable)) {

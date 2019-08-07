@@ -26,6 +26,4 @@ namespace Guzaba2\Database\Exceptions;
  */
 class SQLParsingException extends DatabaseException
 {
-
 }
-

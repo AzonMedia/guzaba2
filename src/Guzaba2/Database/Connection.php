@@ -8,10 +8,8 @@ use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Translator\Translator as t;
 
-abstract class Connection extends Base
-implements ConnectionInterface
+abstract class Connection extends Base implements ConnectionInterface
 {
-
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'ConnectionFactory'
@@ -32,7 +30,6 @@ implements ConnectionInterface
     public function __construct()
     {
         parent::__construct();
-
     }
 
     public function __destruct()
@@ -56,7 +53,7 @@ implements ConnectionInterface
     public function decrement_scope_counter() : void
     {
         $this->scope_counter--;
-        if ($this->scope_counter === 0 ){
+        if ($this->scope_counter === 0) {
             if ($this->is_created_from_factory()) {
                 self::ConnectionFactory()->free_connection($this);
             }
@@ -99,7 +96,6 @@ implements ConnectionInterface
      */
     public function assign_to_coroutine(int $cid) : void
     {
-
         if ($this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is already assigned to another coroutine.')));
         }
@@ -107,7 +103,6 @@ implements ConnectionInterface
         if (Coroutine::getcid()) { //if we are in coroutine context
             Coroutine::getContext()->assignConnection($this);
         }
-
     }
 
     public function unassign_from_coroutine() : void
@@ -149,7 +144,4 @@ implements ConnectionInterface
     {
         return static::CONFIG_RUNTIME['database'];
     }
-
-
-
 }

@@ -6,5 +6,4 @@ use Guzaba2\Base\Exceptions\BaseException;
 
 abstract class DatabaseException extends BaseException
 {
-
 }
