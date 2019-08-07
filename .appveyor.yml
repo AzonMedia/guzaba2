@@ -57,4 +57,4 @@ on_success:
   - git fetch
   - git checkout master
   - git commit -m "push from appveyor" -- src
-  - git push origin master
+  #- git push origin master
