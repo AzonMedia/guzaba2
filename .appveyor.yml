@@ -6,12 +6,16 @@ clone_folder: C:\projects\guzaba2
 environment:
     matrix:
         - php_ver: 7.2
+        - app_message: push from appveyor
     access_token:
         secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
 
 branches:
     only:
         - TESTING_APPVEYOR
+
+skip_commits:
+  message: %app_message%
 
 cache:
     #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
@@ -50,16 +54,8 @@ test_script:
     - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
 on_success:
-    # var=$(git diff --stat -- src/)
-    # if [ -z "$var" ]
-    # then
-    #     echo "\$var is empty"
-    # else
-    #     echo "\$var is NOT empty"
-    # fi
     - git diff --stat -- src/
     - FOR /F "Tokens=*" %%I in ('git diff --stat -- src/') DO SET CHANGED_FILES=%%I
-    # - SET CHANGED_FILES=('git diff --stat -- src/')
     - ECHO %CHANGED_FILES%
 
     - git config --global credential.helper store
@@ -68,5 +64,5 @@ on_success:
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
     - IF NOT "%CHANGED_FILES%"=="" git fetch
     - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR
-    - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
+    - IF NOT "%CHANGED_FILES%"=="" git commit -m "%app_message%" -- src
     - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
