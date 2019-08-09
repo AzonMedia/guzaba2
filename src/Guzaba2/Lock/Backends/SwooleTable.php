@@ -5,7 +5,7 @@ namespace Guzaba2\Lock\Backends;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
-use Guzaba2\Translator\Translator as ;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class SwooleTable
