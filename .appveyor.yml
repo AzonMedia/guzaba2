@@ -53,8 +53,8 @@ on_success:
     - git diff --stat -- src/
     - SET CHANGED_FILES=$(git diff --stat -- src/)
 
-    - IF NOT "%CHANGED_FILES%"=="" git config --global credential.helper store
-    - IF NOT "%CHANGED_FILES%"=="" ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+    - git config --global credential.helper store
+    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
     - IF NOT "%CHANGED_FILES%"=="" git fetch
