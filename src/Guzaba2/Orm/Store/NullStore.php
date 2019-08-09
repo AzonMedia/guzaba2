@@ -44,6 +44,12 @@ class NullStore extends Store implements StoreInterface
         return [];
     }
 
+    /**
+     * @param string $class
+     * @param string $lookup_index
+     * @return array
+     * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
+     */
     public function &get_data_pointer(string $class, string $lookup_index) : array
     {
         $this->throw_not_found_exception($class, $lookup_index);

@@ -31,6 +31,7 @@ use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
 /**
  * Class Kernel
@@ -456,6 +457,7 @@ class Kernel
 
     /**
      * @param string $class_name
+     * @throws \ReflectionException
      */
     protected static function initialize_class(string $class_name) : void
     {
@@ -464,7 +466,7 @@ class Kernel
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);
-        }
+        }https://www.youtube.com/watch?v=5QlOnbe1R_8
     }
 
     /**
@@ -536,5 +538,20 @@ class Kernel
     public static function is_production()
     {
         return false;
+    }
+
+    /**
+     * Logs a a message using the default logger
+     *
+     * @param string $message
+     * @param string $level
+     * @param array $context
+     * @return bool
+     */
+    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
+    {
+        $Logger = self::get_logger();
+        $Logger->log($level, $message, $context);
+        return TRUE;
     }
 }

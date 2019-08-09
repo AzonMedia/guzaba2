@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace Guzaba2\Transaction;
 
 use Guzaba2\Base\Exceptions\BaseException;
+use Guzaba2\Database\Exceptions\TransactionException;
+use Guzaba2\Database\Pdo;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Patterns\ScopeReference;
 use Guzaba2\Translator\Translator as t;
@@ -79,7 +81,9 @@ final class ScopeReferenceTracker extends ScopeReference
     }
 
     /**
-     * @throws TransactionException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Database\Exceptions\TransactionException
      */
     public function __destruct()
     {
@@ -100,7 +104,7 @@ final class ScopeReferenceTracker extends ScopeReference
             if (($this->transaction->get_status() == transaction::STATUS_STARTED || $this->transaction->get_status() == transaction::STATUS_SAVED) && $this->rollback_on_destroy) {
                 Kernel::logtofile_backtrace('DB_bt');
 
-                if (Database\Pdo::DBG_USE_STACK_BASED_ROLLBACK) {
+                if (Pdo::DBG_USE_STACK_BASED_ROLLBACK) {
                     //if we are throwing an exception this is not even needed
                     //this must be enabled is we want to silently rollback the current transaction and not trhow the exception
                     //$connection = $this->transaction->get_connection();
