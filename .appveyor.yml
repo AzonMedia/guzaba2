@@ -63,5 +63,5 @@ on_success:
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
     - IF NOT "%CHANGED_FILES%"=="" git fetch
     - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR
-    - IF NOT "%CHANGED_FILES%"=="" git commit -m "%app_message%" -- src
+    - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
     - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
