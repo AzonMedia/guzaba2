@@ -15,7 +15,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class SwooleTable extends Base
 {
-
     protected $SwooleTable;
 
     public function __construct()
@@ -33,5 +32,4 @@ class SwooleTable extends Base
         $this->SwooleTable->column('updated_from_coroutine_id', \Swoole\Table::TYPE_INT);
         $this->SwooleTable->create();
     }
-
 }
