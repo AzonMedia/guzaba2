@@ -65,5 +65,6 @@ on_success:
     # - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR    
     - IF NOT "%CHANGED_FILES%"=="" git add src/*
     - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
-    # - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
-    - IF NOT "%CHANGED_FILES%"=="" git push
+    - IF NOT "%CHANGED_FILES%"=="" FOR /F "Tokens=*" %%I in ('git branch --contains HEAD') DO SET BRANCH_NAME=%%I
+    - IF NOT "%CHANGED_FILES%"=="" ECHO %BRANCH_NAME%
+    - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
