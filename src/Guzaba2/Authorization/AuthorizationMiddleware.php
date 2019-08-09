@@ -12,7 +12,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-class AuthorizationMiddleware extends Base implements MiddlewareInterface
+class AuthorizationMiddleware extends Base 
+implements MiddlewareInterface
 {
     public function __construct()
     {
