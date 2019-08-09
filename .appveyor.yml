@@ -24,7 +24,7 @@ cache:
 init:
     - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
     - SET COMPOSER_NO_INTERACTION=1
-    - SET PHP=0 # This var is connected to PHP install cache
+    - SET PHP=1 # This var is connected to PHP install cache
 
 install:
     #php
@@ -46,18 +46,17 @@ install:
 
 test_script:
     - cd C:\projects\guzaba2
-    - set PHP_CS_FIXER_FUTURE_MODE=1
+    - SET PHP_CS_FIXER_FUTURE_MODE=1
     - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
 on_success:
     - SET CHANGED_FILES=$(git ls-files -m)
-    - IF "%CHANGED_FILES%"=="" (ECHO exithere) ELSE (ECHO There are changed files => continue)
 
-    - git config --global credential.helper store
-    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-    - git config --global user.email "antonia@azonmedia.com"
-    - git config --global user.name "Antonia"
-    - git fetch
-    - git checkout master
-    - git commit -m "push from appveyor" -- src
+    - IF "%CHANGED_FILES%"=="" git config --global credential.helper store
+    - IF "%CHANGED_FILES%"=="" ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+    - IF "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
+    - IF "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
+    - IF "%CHANGED_FILES%"=="" git fetch
+    - IF "%CHANGED_FILES%"=="" git checkout master
+    - IF "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
     #- git push origin master
