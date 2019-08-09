@@ -51,7 +51,7 @@ test_script:
 
 on_success:
     - SET CHANGED_FILES=$(git ls-files -m)
-    - IF "%CHANGED_FILES%"=="" (EXIT /B 0) ELSE (ECHO There are changed files => continue)
+    - IF "%CHANGED_FILES%"=="" (ECHO exithere) ELSE (ECHO There are changed files => continue)
 
     - git config --global credential.helper store
     - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
