@@ -50,11 +50,14 @@ test_script:
     - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
 on_success:
-  - git config --global credential.helper store
-  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-  - git config --global user.email "antonia@azonmedia.com"
-  - git config --global user.name "Antonia"
-  - git fetch
-  - git checkout master
-  - git commit -m "push from appveyor" -- src
-  #- git push origin master
+    - SET CHANGED_FILES=$(git ls-files -m)
+    - IF "%CHANGED_FILES%"=="" (EXIT /B 0)
+
+    - git config --global credential.helper store
+    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+    - git config --global user.email "antonia@azonmedia.com"
+    - git config --global user.name "Antonia"
+    - git fetch
+    - git checkout master
+    - git commit -m "push from appveyor" -- src
+    #- git push origin master
