@@ -25,6 +25,7 @@ init:
     - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
     - SET COMPOSER_NO_INTERACTION=1
     - SET PHP=1 # This var is connected to PHP install cache
+    - SET CHANGED_FILES=0
 
 install:
     #php
@@ -51,13 +52,13 @@ test_script:
 
 on_success:
     - git diff --stat -- src/
-    - SET CHANGED_FILES=$(git diff --stat -- src/)
+    - If $(git diff --stat -- src/) SET CHANGED_FILES=1
 
     - git config --global credential.helper store
     - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-    - IF NOT "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
-    - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
-    - IF NOT "%CHANGED_FILES%"=="" git fetch
-    - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR
-    - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
-    - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
+    - IF NOT "%CHANGED_FILES%"==0 git config --global user.email "antonia@azonmedia.com"
+    - IF NOT "%CHANGED_FILES%"==0 git config --global user.name "Antonia"
+    - IF NOT "%CHANGED_FILES%"==0 git fetch
+    - IF NOT "%CHANGED_FILES%"==0 git checkout TESTING_APPVEYOR
+    - IF NOT "%CHANGED_FILES%"==0 git commit -m "push from appveyor" -- src
+    - IF NOT "%CHANGED_FILES%"==0 git push origin TESTING_APPVEYOR
