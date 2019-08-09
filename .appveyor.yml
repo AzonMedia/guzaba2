@@ -58,7 +58,8 @@ on_success:
     #     echo "\$var is NOT empty"
     # fi
     - git diff --stat -- src/
-    - SET CHANGED_FILES=('git diff --stat -- src/')
+    - FOR /F "Tokens=*" %%I in ('git diff --stat -- src/') DO SET CHANGED_FILES=%%I
+    # - SET CHANGED_FILES=('git diff --stat -- src/')
     - ECHO %CHANGED_FILES%
 
     - git config --global credential.helper store
