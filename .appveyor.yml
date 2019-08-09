@@ -15,7 +15,7 @@ branches:
         - TESTING_APPVEYOR
 
 skip_commits:
-  message: /push from appveyor/
+  message: /appveyor/
 
 cache:
     #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
