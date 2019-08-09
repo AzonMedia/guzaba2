@@ -14,7 +14,7 @@ branches:
         - TESTING_APPVEYOR
 
 cache:
-    - '%LOCALAPPDATA%\Composer\files -> composer.lock'
+    #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
     # Cache chocolatey packages
     - C:\ProgramData\chocolatey\bin -> .appveyor.yml
     - C:\ProgramData\chocolatey\lib -> .appveyor.yml
@@ -61,4 +61,3 @@ on_success:
     - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR
     - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
     - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
-    
