@@ -424,26 +424,26 @@ class Kernel
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
 
-
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
                         $runtime_config[$key_name] = $registry_config[$key_name];
                     }
                     //check also if there any any prefix in the var name that matches a prefix in the config array
-                    if (is_array($key_value)) {
-                        //look for $key_name as part of a var name
-                        //assuming _ as separator between the array
-
-                        foreach ($registry_config as $reg_key_name => $reg_key_value) {
-                            if (strpos($reg_key_name, $key_name) === 0) { //begins with
-                                $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
+                    if (is_array($key_value)) {                   
+                        
+                        $WalkArrays = function($registry_config) use (&$WalkArrays) {
+                            foreach ($registry_config as $reg_key_name => $reg_key_value) {
+                                if(is_array($reg_key_value)){                                   
+                                    $WalkArrays($reg_key_value);
+                                } else{
+                                    //look for $key_name as part of a var name
+                                    //assuming _ as separator between the array
+                                    if (strpos($reg_key_name, $key_name) === 0) { //begins with
+                                        $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
+                                    }
+                                }
                             }
-                        }
-                        //todo - rework with a closure to handle multidomentional arrays
-//                        $WalkArrays = function () use (&$runtime_config, $registry_config) : void
-//                        {
-//
-//                        };
+                        };
                     }
                 }
             } else {
