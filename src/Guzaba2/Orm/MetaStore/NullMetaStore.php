@@ -11,17 +11,23 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
 class NullMetaStore extends MetaStore
 {
+    /**
+     * NullMetaStore constructor.
+     * @param StoreInterface|null $FallbackStore
+     * @throws InvalidArgumentException
+     */
     public function __construct(?StoreInterface $FallbackStore = NULL)
     {
         parent::__construct();
         if ($FallbackStore) {
-            throw new \http\Exception\InvalidArgumentException(sprintf(t::_('ORM Meta Store %s does not support fallback store.'), __CLASS__));
+            throw new InvalidArgumentException(sprintf(t::_('ORM Meta Store %s does not support fallback store.'), __CLASS__));
         }
     }
 
     /**
      * @param string $key
      * @return array|null
+     * @throws RecordNotFoundException
      */
     public function get_meta_data(string $key) : ?array
     {
@@ -43,6 +49,7 @@ class NullMetaStore extends MetaStore
     /**
      * @param string $key
      * @return float|null
+     * @throws RecordNotFoundException
      */
     public function get_last_update_time(string $key) : ?float
     {
@@ -57,6 +64,7 @@ class NullMetaStore extends MetaStore
     /**
      * @param ActiveRecord $ActiveRecord
      * @return float|null
+     * @throws RecordNotFoundException
      */
     public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
     {
@@ -85,7 +93,7 @@ class NullMetaStore extends MetaStore
      */
     public function set_update_data_by_object(ActiveRecord $activeRecord, array $data) : void
     {
-        $key = self::get_key($ActiveRecord);
+        $key = self::get_key($activeRecord);
         $this->set_update_data($key, $data);
     }
 }

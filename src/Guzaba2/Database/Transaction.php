@@ -22,21 +22,37 @@ declare(strict_types=1);
 namespace Guzaba2\Database;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Database\Interfaces\ConnectionInterface;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Transaction\ScopeReferenceTracker;
 use Guzaba2\Transaction\TransactionContext;
 use Guzaba2\Kernel\Kernel as k;
 use Guzaba2\Translator\Translator as t;
+use org\guzaba\framework\database\classes\QueryCache;
+use Psr\Log\LogLevel;
 
 /**
  * Currnetly if a second database transaction is needed a new class needs to be created - transation3, transaction4... that extends this class
- *
+ * @method static ConnectionFactory ConnectionFactory()
+ * @method static QueryCache QueryCache()
  */
 class Transaction extends \Guzaba2\Transaction\Transaction
 {
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'ConnectionFactory',
+            'QueryCache',
+        ],
+        'default_connection' => null
+
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     protected const DB_TRANSACTION_LOGGING_ENABLED = false;
 
     /**
-     * @var Connection
+     * @var ConnectionInterface
      */
     protected $connection;
 
@@ -44,14 +60,6 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      * @var array
      */
     protected $statements = [];
-
-    /**
-     * @todo check if need to be refactored
-     * @var array
-     */
-    protected static $supportedOptions = [
-        'connection' => '',
-    ];
 
     /**
      * @var int
@@ -65,36 +73,23 @@ class Transaction extends \Guzaba2\Transaction\Transaction
     /**
      * Transaction constructor.
      * @param ScopeReferenceTracker|null $scope_reference
+     * @param string $connection_class
      * @param callable|null $code
      * @param callable|null $commit_callback
      * @param callable|null $rollback_callback
      * @param array $options
      * @param TransactionContext|null $transactionContext
      * @throws Exceptions\TransactionException
+     * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Base\Exceptions\LogicException
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
-    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = [], ?TransactionContext $transactionContext = null)
+    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, string $connection_class = self::CONFIG_RUNTIME['default_connection'], ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = [], ?TransactionContext $transactionContext = null)
     {
-
+        $this->connection = self::ConnectionFactory()->get_connection($connection_class);
         //if a transaction is started then the execution data should be stored
         //this must happen before the transaction is started in DB as otherwise then the execution data may get rolled back
         k::get_execution()->perform_save_in_db();
-
-        if (!isset($options['connection'])) { //we expect here a reference
-            $this->connection = Connection::get_instance();
-        } else {
-            if (!($options['connection'] instanceof Connection)) {
-                throw new framework\objects\exceptions\objectOptionException(sprintf(t::_('The provided value to the "connection" option to the %s class must be of class %s.'), __CLASS__, Connection::class));
-            }
-            $this->connection = $options['connection'];
-        }
-        $options['connection'] = $this->connection;
-
-        if (!isset($options['transaction_type'])) {
-            $options['transaction_type'] = get_class($this->connection);
-        }
 
         parent::__construct($scope_reference, $code, $commit_callback, $rollback_callback, $options, $transactionContext);
 
@@ -108,7 +103,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
                     if (isset($this->get_context()->invalidate_tables_for_cache)) {
                         $invalidate_tables_for_cache = $this->get_context()->invalidate_tables_for_cache;
                         foreach ($invalidate_tables_for_cache as $table) {
-                            queryCache::get_instance()->update_table_modification_microtime($table, PdoStatement::UPDATE_QUERY_CACHE_LOCK_TIMEOUT);
+                            self::QueryCache()->update_table_modification_microtime($table, PdoStatement::UPDATE_QUERY_CACHE_LOCK_TIMEOUT);
                         }
                     }
                 },
@@ -120,7 +115,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
                     if (isset($this->get_context()->invalidate_tables_for_cache)) {
                         $invalidate_tables_for_cache = $this->get_context()->invalidate_tables_for_cache;
                         foreach ($invalidate_tables_for_cache as $table) {
-                            queryCache::get_instance()->update_table_modification_microtime($table);
+                            self::QueryCache()->update_table_modification_microtime($table);
                         }
                     }
                 },
@@ -170,13 +165,13 @@ class Transaction extends \Guzaba2\Transaction\Transaction
             }
         }
 
-        $ret = $this->connection->get_driver()->beginTransaction();
+        $ret = $this->connection->beginTransaction();
 
         if (self::DB_TRANSACTION_LOGGING_ENABLED && $this->is_master()) {
             //the logger service is not affected by the transactions as it uses a second connection
             $message = sprintf(t::_('Started a MASTER DB transaction.'));
             $label = 'transactions';
-            self::logger()->info($message, $label);
+            Kernel::log($message, LogLevel::INFO, ['label' => $label]);
         }
 
         return $ret;
@@ -187,13 +182,13 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      */
     protected function execute_commit(): bool
     {
-        $ret = $this->connection->get_driver()->commit();
+        $ret = $this->connection->commit();
 
         if (self::DB_TRANSACTION_LOGGING_ENABLED && $this->is_master()) {
             //the logger service is not affected by the transactions as it uses a second connection
             $message = sprintf(t::_('Commited a MASTER DB transaction.'));
             $label = 'transactions';
-            self::logger()->info($message, $label);
+            Kernel::log($message, LogLevel::INFO, ['label' => $label]);
         }
 
         return $ret;
@@ -204,13 +199,13 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      */
     protected function execute_rollback(): bool
     {
-        $ret = $this->connection->get_driver()->rollback();
+        $ret = $this->connection->rollback();
 
         if (self::DB_TRANSACTION_LOGGING_ENABLED && $this->is_master()) {
             //the logger service is not affected by the transactions as it uses a second connection
             $message = sprintf(t::_('Rolled back a MASTER DB transaction.'));
             $label = 'transactions';
-            self::logger()->info($message, $label);
+            Kernel::log($message, LogLevel::INFO, ['label' => $label]);
         }
 
         return $ret;
@@ -222,7 +217,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      */
     protected function execute_create_savepoint(string $savepoint): bool
     {
-        return $this->connection->get_driver()->createSavepoint($savepoint);
+        return $this->connection->createSavepoint($savepoint);
     }
 
     /**
@@ -231,7 +226,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      */
     protected function execute_rollback_to_savepoint(string $savepoint): bool
     {
-        return $this->connection->get_driver()->rollbackToSavepoint($savepoint);
+        return $this->connection->rollbackToSavepoint($savepoint);
     }
 
     /**
@@ -240,7 +235,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
      */
     protected function execute_release_savepoint(string $savepoint): bool
     {
-        return $this->connection->get_driver()->releaseSavepoint($savepoint);
+        return $this->connection->releaseSavepoint($savepoint);
     }
 
     protected function _before_destroy(): void

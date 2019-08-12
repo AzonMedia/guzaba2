@@ -31,6 +31,11 @@ class SwooleTable extends MetaStore
     protected $FallbackMetaStore;
 
 
+    /**
+     * SwooleTable constructor.
+     * @param MetaStoreInterface $FallbackMetaStore
+     * @throws RunTimeException
+     */
     public function __construct(MetaStoreInterface $FallbackMetaStore)
     {
         parent::__construct();

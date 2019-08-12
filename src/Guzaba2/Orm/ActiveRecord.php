@@ -110,11 +110,13 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
 
     //public function __construct(StoreInterface $Store)
+
     /**
      * ActiveRecord constructor.
      * @param $index
      * @param StoreInterface|null $Store
      * @throws \ReflectionException
+     * @throws RunTimeException
      */
     public function __construct(/* mixed*/ $index, ?StoreInterface $Store = NULL)
     {

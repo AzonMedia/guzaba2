@@ -25,6 +25,7 @@ class ConnectionFactory extends Base
     //TODO - add as a second argument a scope reference which when destroyed will free the connection
     /**
      * @param string $class_name
+     * @param string $ScopeReference
      * @return ConnectionInterface
      */
     //public function get_connection(string $class_name, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface

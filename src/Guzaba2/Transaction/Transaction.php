@@ -264,6 +264,8 @@ abstract class Transaction extends Base
      */
     protected $transaction_rollback_bt_info;
 
+    protected $priority;
+
     /**
      * Transaction constructor.
      * @param ScopeReferenceTracker|NULL $scope_reference
@@ -529,7 +531,7 @@ abstract class Transaction extends Base
             $this->run_result = $code($this);
         }
 
-        if (!$run_successful) {
+        if (!$run_successful && isset($exception)) {
             $message = sprintf(t::_('The transaction failed after %s attempts and waiting time of %s seconds. The error is: %s.'), $run_counter, $total_wait_time, $exception->getMessage());
             throw new TransactionException($this, $message, $exception);
         }

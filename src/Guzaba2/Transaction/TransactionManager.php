@@ -37,7 +37,7 @@ class TransactionManager extends Base
      * There are different type of transactions - these will be per class - this includes the distributedTransaction and globalDistributedTransaction
      * @var array
      */
-    protected static $currentTransactions = [];
+    protected $currentTransactions = [];
 
 
     /**
@@ -48,7 +48,7 @@ class TransactionManager extends Base
      * @param string $transaction_type This is needed because there can be NULL provided to $transaction and then we need to know which type has no master transaction.
      * @throws InvalidArgumentException
      */
-    public static function setCurrentTransaction(?Transaction $transaction, string $transaction_type = '')
+    public function setCurrentTransaction(?Transaction $transaction, string $transaction_type = '')
     {
         //self::$currentTransactions[$transaction->getOptionValue('transaction_type')] =& $transaction;
         if ($transaction) {
@@ -59,7 +59,7 @@ class TransactionManager extends Base
             }
         }
 
-        self::$currentTransactions[$transaction_type] = $transaction;
+        $this->currentTransactions[$transaction_type] = $transaction;
     }
 
     /**
@@ -68,11 +68,11 @@ class TransactionManager extends Base
      * @param string $transaction_type
      * @return Transaction|NULL
      */
-    public static function getCurrentTransaction(string $transaction_type): ?Transaction
+    public function getCurrentTransaction(string $transaction_type): ?Transaction
     {
         $ret = NULL;
-        if (!empty(self::$currentTransactions[$transaction_type])) {
-            $ret = self::$currentTransactions[$transaction_type];
+        if (!empty($this->currentTransactions[$transaction_type])) {
+            $ret = $this->currentTransactions[$transaction_type];
         }
         return $ret;
     }

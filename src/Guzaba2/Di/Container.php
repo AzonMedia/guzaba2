@@ -17,6 +17,7 @@ use Guzaba2\Orm\Store\NullStore;
 
 use Guzaba2\Orm\MetaStore\SwooleTable;
 use Guzaba2\Orm\MetaStore\NullMetaStore;
+use org\guzaba\framework\database\classes\QueryCache;
 
 class Container extends \Azonmedia\Di\Container implements ConfigInterface, ObjectInternalIdInterface
 {
@@ -67,7 +68,6 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
                 'FallbackStore'                 => NULL,
             ],
         ],
-
         'OrmMetaStore'                  => [
             'class'                         => SwooleTable::class,
             'args'                          => [
@@ -80,7 +80,13 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'args'                          => [
                 'FallbackStore'                 => NULL,
             ],
-        ]
+        ],
+        'QueryCache' => [
+            'class'                         => QueryCache::class,
+            'args'                          => [
+                // TODO add required params
+            ],
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];

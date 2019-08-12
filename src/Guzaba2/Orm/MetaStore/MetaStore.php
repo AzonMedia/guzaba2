@@ -4,7 +4,9 @@
 namespace Guzaba2\Orm\MetaStore;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
+use Guzaba2\Translator\Translator as t;
 
 abstract class MetaStore extends Base implements MetaStoreInterface
 {
@@ -14,9 +16,9 @@ abstract class MetaStore extends Base implements MetaStoreInterface
      * @param array $data
      * @throws InvalidArgumentException
      */
-    protected static function validate_data(array $data) : void
+    protected static function validate_data(array $data): void
     {
-        foreach ($data as $key=>$value) {
+        foreach ($data as $key => $value) {
             if (!isset(self::DATA_STRUCT[$key])) {
                 throw new InvalidArgumentException(sprintf(t::_('The provided lock data contains an unsupported key %s.'), $key));
             } elseif (gettype($value) !== self::DATA_STRUCT[$key]) {
