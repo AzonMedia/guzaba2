@@ -466,7 +466,8 @@ class Kernel
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);
-        }https://www.youtube.com/watch?v=5QlOnbe1R_8
+        }
+        https://www.youtube.com/watch?v=5QlOnbe1R_8
     }
 
     /**

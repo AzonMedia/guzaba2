@@ -44,7 +44,7 @@ class ORMObjectTransaction extends Transaction
      */
     protected $object_ids_added_at_transaction_start = [];
 
-    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = array(), ?TransactionContext $transactionContext = null)
+    public function __construct(?ScopeReferenceTracker &$scope_reference = NULL, ?callable $code = NULL, ?callable &$commit_callback = NULL, ?callable &$rollback_callback = NULL, array $options = [], ?TransactionContext $transactionContext = null)
     {
         if (!isset($options['transaction_type'])) {
             $options['transaction_type'] = self::class;
@@ -115,7 +115,6 @@ class ORMObjectTransaction extends Transaction
             }
 
             if (!isset($this->transaction_data[$object->get_object_internal_id()])) {
-
                 k::logtoemail('', 'MEMORY TRANSACTION OBJECT ERROR', null, true);
 
                 //die(print_r($this->transaction_data));//NOVERIFY
@@ -131,7 +130,7 @@ class ORMObjectTransaction extends Transaction
 
                 $this->dump_debug_data();
 
-                //this means that the instance that was tracked no longer exists??
+            //this means that the instance that was tracked no longer exists??
             } else {
                 //for ORM objects that were created during the transaction instead of returning them to empty object better convert them to rolledbackInstance
                 //if ($object instanceof ActiveRecord && $object->is_or_was_new()) {//this check is not correct as the object may still be new but to have been created before the transaction - in this case it should not be destroyed - only its properties should be rolled back
@@ -149,10 +148,7 @@ class ORMObjectTransaction extends Transaction
                 } else {
                     $object->_set_all_properties($this->transaction_data[$object_internal_id]);
                 }
-
             }
-
         }
     }
-
 }
