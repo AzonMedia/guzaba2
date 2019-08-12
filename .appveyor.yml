@@ -16,6 +16,9 @@ branches:
 skip_commits:
     message: /appveyor/
 
+skip_commits:
+    message: /appveyor/
+
 cache:
     #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
     # Cache chocolatey packages
@@ -61,9 +64,7 @@ on_success:
     - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
     - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
-    # - IF NOT "%CHANGED_FILES%"=="" git fetch
-    # - IF NOT "%CHANGED_FILES%"=="" git checkout TESTING_APPVEYOR    
-    - IF NOT "%CHANGED_FILES%"=="" git add src/*
+    - IF NOT "%CHANGED_FILES%"=="" git fetch
+    - IF NOT "%CHANGED_FILES%"=="" git checkout master
     - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
-    # - IF NOT "%CHANGED_FILES%"=="" git push origin TESTING_APPVEYOR
-    - IF NOT "%CHANGED_FILES%"=="" git push
+    - IF NOT "%CHANGED_FILES%"=="" git push origin master

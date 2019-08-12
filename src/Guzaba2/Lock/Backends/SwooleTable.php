@@ -5,7 +5,7 @@ namespace Guzaba2\Lock\Backends;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
-use Guzaba2\Translator\Translator as ;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class SwooleTable
@@ -15,7 +15,6 @@ use Guzaba2\Translator\Translator as ;
  */
 class SwooleTable extends Base
 {
-
     protected $SwooleTable;
 
     public function __construct()
@@ -33,5 +32,4 @@ class SwooleTable extends Base
         $this->SwooleTable->column('updated_from_coroutine_id', \Swoole\Table::TYPE_INT);
         $this->SwooleTable->create();
     }
-
 }
