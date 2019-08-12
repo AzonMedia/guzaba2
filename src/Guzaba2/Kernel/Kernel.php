@@ -429,13 +429,12 @@ class Kernel
                         $runtime_config[$key_name] = $registry_config[$key_name];
                     }
                     //check also if there any any prefix in the var name that matches a prefix in the config array
-                    if (is_array($key_value)) {                   
-                        
-                        $WalkArrays = function($registry_config) use (&$WalkArrays) {
+                    if (is_array($key_value)) {
+                        $WalkArrays = function ($registry_config) use (&$WalkArrays) {
                             foreach ($registry_config as $reg_key_name => $reg_key_value) {
-                                if(is_array($reg_key_value)){                                   
+                                if (is_array($reg_key_value)) {
                                     $WalkArrays($reg_key_value);
-                                } else{
+                                } else {
                                     //look for $key_name as part of a var name
                                     //assuming _ as separator between the array
                                     if (strpos($reg_key_name, $key_name) === 0) { //begins with
