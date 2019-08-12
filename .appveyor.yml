@@ -11,10 +11,7 @@ environment:
 
 branches:
     only:
-        - TESTING_APPVEYOR
-
-skip_commits:
-    message: /appveyor/
+        - master
 
 skip_commits:
     message: /appveyor/
