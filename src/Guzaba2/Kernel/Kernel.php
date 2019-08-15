@@ -252,7 +252,8 @@ class Kernel
     }
 
     /**
-     * Error handler works even in Swoole worker context
+     * Error handler works even in Swoole worker context.
+     * Converts all notices/errors/warnings to ErrorException.
      * @param int $errno
      * @param string $errstr
      * @param string $errfile
@@ -273,6 +274,15 @@ class Kernel
         //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
         //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
+    }
+
+    /**
+     * Prints a message to the default output of the server (in daemon mode this is redirected to file).
+     * @param $message
+     */
+    public static function printk(string $message) : void
+    {
+        print $message;
     }
 
     /**
@@ -337,6 +347,11 @@ class Kernel
         return $ret;
     }
 
+    /**
+     * @param string $class_path
+     * @param string $class_name
+     * @return mixed|null
+     */
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
         $ret = NULL;
@@ -357,10 +372,10 @@ class Kernel
                 $ret = require_once($class_path);
             }
         } catch (\Throwable $exception) {
-            print '==================='.PHP_EOL;
+            //print '==================='.PHP_EOL;
             print 'ERROR IN CLASS GENERATION'.PHP_EOL;
             print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
-            print '==================='.PHP_EOL;
+            //print '==================='.PHP_EOL;
         }
 
 

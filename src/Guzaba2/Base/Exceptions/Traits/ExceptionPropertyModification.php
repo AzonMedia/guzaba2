@@ -4,6 +4,14 @@ namespace Guzaba2\Base\Exceptions\Traits;
 
 trait ExceptionPropertyModification
 {
+
+    /**
+     * Prepends the provided backtrace to the backtrace of the Exception.
+     * This is used when an exception in a subcoroutine is caught in the create() wrapper.
+     * There the backtrace where originally this coroutine was created is prepended.
+     * @param array $backtrace
+     */
+
     public function prependTrace(array $backtrace) : void
     {
         $this_backtrace = $this->getTrace();

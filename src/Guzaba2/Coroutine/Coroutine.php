@@ -105,7 +105,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             };
             //$Function($current_cid);//this will execute before the defer() put in the init()
             defer(function () use ($Function, $current_cid) {
-                print 'Cleanup'.PHP_EOL;
                 $Function($current_cid);
             });
 

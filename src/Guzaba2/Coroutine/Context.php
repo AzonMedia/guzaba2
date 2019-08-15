@@ -26,6 +26,12 @@ class Context extends Base implements ObjectInternalIdInterface
      */
     protected $Context;
 
+    /**
+     * Context constructor.
+     * @param \Swoole\Coroutine\Context $Context
+     * @param int $cid
+     * @throws InvalidArgumentException
+     */
     public function __construct(\Swoole\Coroutine\Context $Context, int $cid)
     {
         if (!$cid) {
@@ -54,11 +60,19 @@ class Context extends Base implements ObjectInternalIdInterface
         return $this->Context->created_backtrace;
     }
 
+    /**
+     * Returns the coroutine ID to which this context is attached.
+     * @return int
+     */
     public function getCid() : int
     {
         return $this->Context->cid;
     }
 
+    /**
+     * Assign a connection to the coroutine context.
+     * @param ConnectionInterface $Connection
+     */
     public function assignConnection(ConnectionInterface $Connection) : void
     {
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {
@@ -68,6 +82,10 @@ class Context extends Base implements ObjectInternalIdInterface
         }
     }
 
+    /**
+     * Unassign a connection from the coroutine context. This is to be called when the coroutine no longer uses this connection.
+     * @param ConnectionInterface $Connection
+     */
     public function unassignConnection(ConnectionInterface $Connection) : void
     {
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {
