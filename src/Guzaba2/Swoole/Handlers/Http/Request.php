@@ -1,25 +1,22 @@
 <?php
-declare(strict_types=1);
 
-namespace Guzaba2\Swoole;
+namespace Guzaba2\Swoole\Handlers\Http;
 
-use Azonmedia\Glog\Application\MysqlConnection;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
-use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Execution\RequestExecution;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\QueueRequestHandler;
-use Guzaba2\Http\Request;
 use Guzaba2\Http\Response;
-use Guzaba2\Kernel\Kernel;
 use Guzaba2\Http\StatusCode;
-use Guzaba2\Execution\RequestExecution;
+use Guzaba2\Kernel\Kernel;
+use Guzaba2\Swoole\Server;
+use Guzaba2\Swoole\SwooleToGuzaba;
 use Throwable;
 
-class RequestHandler extends Base
+class Request extends HandlerBase
 {
-
 //    protected const CONFIG_DEFAULTS = [
 //        'services'      => [
 //            'ConnectionFactory'
@@ -40,24 +37,17 @@ class RequestHandler extends Base
     protected $DefaultResponse;
 
     /**
-     * @var Server
-     */
-    protected $HttpServer;
-
-    /**
      * RequestHandler constructor.
      * @param array $middlewares
      * @param Server $HttpServer
      * @param Response|null $DefaultResponse
      * @throws RunTimeException
      */
-    public function __construct(array $middlewares = [], Server $HttpServer, ?Response $DefaultResponse = NULL)
+    public function __construct(Server $HttpServer, array $middlewares = [], ?Response $DefaultResponse = NULL)
     {
-        parent::__construct();
+        parent::__construct($HttpServer);
 
         $this->middlewares = $middlewares;
-
-        $this->HttpServer = $HttpServer;
 
         if (!$DefaultResponse) {
             $Body = new Stream();
@@ -241,7 +231,7 @@ class RequestHandler extends Base
             //print 'aaaaaaaaa';
             //print print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
 
-            $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new Request());
+            $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->set_server($this->HttpServer);
 
 

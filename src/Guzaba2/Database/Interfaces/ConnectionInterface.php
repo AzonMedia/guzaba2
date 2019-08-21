@@ -9,15 +9,17 @@ interface ConnectionInterface
 
     public function free() : void;
 
-    public function beginTransaction();
+    /*
+    public function begin_transaction();
 
     public function commit();
 
     public function rollback();
 
-    public function createSavepoint($savepoint);
+    public function create_savepoint(string $savepoint);
 
-    public function rollbackToSavepoint($savepoint);
+    public function rollback_to_savepoint(string $savepoint);
 
-    public function releaseSavepoint($savepoint);
+    public function release_savepoint(string $savepoint);
+    */
 }

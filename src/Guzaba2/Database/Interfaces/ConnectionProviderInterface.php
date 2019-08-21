@@ -13,5 +13,5 @@ interface ConnectionProviderInterface
 
     public function free_connection(ConnectionInterface $Connection);
 
-    public function stats($connection_class);
+    public function stats(string $connection_class = '') : array;
 }
