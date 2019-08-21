@@ -7,7 +7,6 @@ use Guzaba2\Base\Base;
 
 class Debugger extends Base
 {
-
     protected const CONFIG_DEFAULTS = [
         'enabled'   => TRUE,
         'base_port' => 10000,//on this port the first worker will listen

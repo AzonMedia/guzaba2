@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Swoole\Handlers\WebSocket;
 
-
 abstract class HandlerBase extends \Guzaba2\Swoole\Handlers\Http\HandlerBase
 {
 

@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Swoole\Handlers;
 
-
 class WorkerStart extends HandlerBase
 {
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
@@ -54,9 +53,6 @@ class WorkerStart extends HandlerBase
 //            }
 //
 //        });
-
-
-
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

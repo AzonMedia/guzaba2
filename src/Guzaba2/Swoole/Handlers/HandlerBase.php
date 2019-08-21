@@ -5,8 +5,7 @@ namespace Guzaba2\Swoole\Handlers;
 use Guzaba2\Base\Base;
 use Guzaba2\Swoole\Handlers\Interfaces\HandlerInterface;
 
-abstract class HandlerBase extends Base
-implements HandlerInterface
+abstract class HandlerBase extends Base implements HandlerInterface
 {
     /**
      * A list of supported events
