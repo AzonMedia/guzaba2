@@ -169,4 +169,29 @@ abstract class ConnectionCoroutine extends Connection
         $query = preg_replace('/:([a-zA-Z0-9_]*)/', '?', $named_params_query);
         return $query;
     }
+    
+    /**
+     * Returns '=' is the value is not null and IS if it is. This function is needed by mysql (and possibly others) because in mysql WHERE column = null is not giving the expected result. Must be used for WHERE clauses on columns that can be null.
+     * @param mixed $value
+     * @return string '=' or 'IS'
+     */
+    public static function equals($value) : string
+    {
+        if (is_null($value)) {
+            return 'IS';
+        } else {
+            return '=';
+        }
+    }
+    
+    /**
+     * Returns the ID of the last insert.
+     * Must be executed immediately after the insert query
+     *
+     * @return int
+     */
+    public function get_last_insert_id() : int
+    {
+        return $this->MysqlCo->insert_id;
+    }
 }

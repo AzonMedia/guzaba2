@@ -78,7 +78,6 @@ implements StoreInterface
         } else {
             $this->MetaStore = self::OrmMetaStore();
         }
-
     }
 
     /*
@@ -132,19 +131,20 @@ implements StoreInterface
      * @param $index
      * @return array
      */
-    public function &get_data_pointer( string $class, string $lookup_index) : array
+    public function &get_data_pointer( string $class, array $lookup_index) : array
     {
-
-
+        $index = implode(':', array_values($lookup_index));
         //check local storage at $data
-        if (isset($this->data[$class][$lookup_index])) {
+        if (isset($this->data[$class][$index])) {
             //if found check is it current in SwooleTable
-            $key = $class.'_'.$lookup_index;
-            $last_update_time = $this->SwooleTable->get_last_update_time($key);
+            $key = $class.'_'.$index;
+            //TODO IVO ENABLE
+            $last_update_time = NULL;
+            //$last_update_time = $this->SwooleTable->get_last_update_time($key);
             if ($last_update_time) {
                 //check is there data for this time
-                if (isset($this->data[$class][$lookup_index][$last_update_time])) {
-                    $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                if (isset($this->data[$class][$index][$last_update_time])) {
+                    $pointer =& $this->data[$class][$index][$last_update_time];
                 } else {
                     //this store has no current data (has for a previous version)
                     $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
@@ -152,11 +152,12 @@ implements StoreInterface
             } else {
                 $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
             }
+            
+            
 
         } else {
             $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
         }
-
 
         //this means the data was pulled from the fallback store
         //we need to update the local store and the update time data
@@ -167,9 +168,11 @@ implements StoreInterface
             //add transaction_id
             //and execution_id
         ];
-        $this->SwooleTable->set_update_data($key, $update_data);
+        //TODO IVO ENABLE
+        //$this->SwooleTable->set_update_data($key, $update_data);
+
         //$this->data[$class][$lookup_index][$pointer->updated_microtime] = $pointer;//with versioning
-        $this->data[$class][$lookup_index] = $pointer;//temporary
+        $this->data[$class][$index] = $pointer;//temporary
         //there can be other versions for the same class & lookup_index
 
 

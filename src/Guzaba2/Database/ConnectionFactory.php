@@ -30,7 +30,7 @@ class ConnectionFactory extends Base
     //public function get_connection(string $class_name, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
     public function get_connection(string $class_name, &$ScopeReference = '') : ConnectionInterface
     {
-        return$this->ConnectionProvider->get_connection($class_name, $ScopeReference);
+        return $this->ConnectionProvider->get_connection($class_name, $ScopeReference);
     }
 
     public function free_connection(ConnectionInterface $Connection) : void

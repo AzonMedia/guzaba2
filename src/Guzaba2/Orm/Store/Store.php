@@ -30,10 +30,12 @@ class Store extends Base
 
     public static function get_record_structure(array $unified_column_structure) : array
     {
+        
         $ret = [];
         foreach ($unified_column_structure as $column_data) {
             $ret[$column_data['name']] = $column_data['default_value'];
         }
+        
         return $ret;
     }
 }

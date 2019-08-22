@@ -47,7 +47,7 @@ implements StoreInterface
         return [];
     }
 
-    public function &get_data_pointer(string $class, string $lookup_index) : array
+    public function &get_data_pointer(string $class, array $lookup_index) : array
     {
         $this->throw_not_found_exception($class, $lookup_index);
         return [];
