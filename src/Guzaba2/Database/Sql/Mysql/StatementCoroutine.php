@@ -114,22 +114,22 @@ class StatementCoroutine extends Statement implements StatementInterface
 
     public function fetchRow(string $column_name = '') /*mixed*/
     {
-        if(count($this->rows)){
-            $row = array_change_key_case($this->rows[0],CASE_LOWER);
+        if (count($this->rows)) {
+            $row = array_change_key_case($this->rows[0], CASE_LOWER);
             if ($column_name) {
-                if (array_key_exists($column_name,$row)) {
+                if (array_key_exists($column_name, $row)) {
                     $ret = $row[$column_name];
                 } else {
-                    throw new framework\database\exceptions\resultException(sprintf(t::_('The column named "%s" does not exist in the fetched data.'),$column_name));
+                    throw new framework\database\exceptions\resultException(sprintf(t::_('The column named "%s" does not exist in the fetched data.'), $column_name));
                 }
             } else {
                 $ret = $row;
-            }  
+            }
         } else {
             if ($column_name) {
                 $ret = null;
             } else {
-                $ret = array();
+                $ret = [];
             }
         }
         

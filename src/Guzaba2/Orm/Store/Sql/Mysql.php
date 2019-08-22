@@ -54,11 +54,11 @@ class Mysql extends Database
         return $this->unify_columns_data($storage_structure_arr);
     }
     
-     /**
-     * Returns the backend storage structure
-     * @param string $table_name
-     * @return array
-     */
+    /**
+    * Returns the backend storage structure
+    * @param string $table_name
+    * @return array
+    */
     
     public function get_storage_columns_data_by_table_name(string $table_name) : array
     {
@@ -82,7 +82,7 @@ ORDER BY
         $ret = $s->execute()->fetchAll();
         
         return $ret;
-    }    
+    }
 
     /**
      * Returns the backend storage structure
@@ -105,7 +105,7 @@ ORDER BY
     }
     
     /**
-     * 
+     *
      * @param array $storage_structure_arr
      * @return array
      */
@@ -114,7 +114,7 @@ ORDER BY
         $ret = [];
         for ($aa=0; $aa<count($storage_structure_arr); $aa++) {
             $column_structure_arr = $storage_structure_arr[$aa];
-            $ret[$aa] = array(
+            $ret[$aa] = [
                 'name'                  => strtolower($column_structure_arr['COLUMN_NAME']),
                 'native_type'           => $column_structure_arr['DATA_TYPE'],
                 'php_type'              => MysqlDB::TYPES_MAP[$column_structure_arr['DATA_TYPE']],
@@ -124,13 +124,13 @@ ORDER BY
                 'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
                 'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
                 'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
-            );
+            ];
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
             
             ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_COLUMNS_STRUCTURE);
         }
         
-        return $ret;        
+        return $ret;
     }
 
     public function add_instance(ActiveRecordInterface $ActiveRecord) : string
@@ -139,7 +139,7 @@ ORDER BY
         //save data to DB
     }
 
-    public function &get_data_pointer( string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $lookup_index) : array
     {
         //initialization
         $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
@@ -162,7 +162,7 @@ ORDER BY
         //we need to always join all the main tables
         //otherwise the loaded object will be mising properties
         //but these can be loaded on request
-        //so if we 
+        //so if we
         
         $table_name = $class::get_main_table();
         
@@ -175,8 +175,8 @@ ORDER BY
         //}
         
         
-        $main_index = $class::get_primary_index_columns();             
-        //$index = [$main_index[0] => $lookup_index]; 
+        $main_index = $class::get_primary_index_columns();
+        //$index = [$main_index[0] => $lookup_index];
 
         foreach ($lookup_index as $field_name=>$field_value) {
             if (!is_string($field_name)) {
@@ -185,10 +185,10 @@ ORDER BY
             }
 
             if (!array_key_exists($field_name, $record_data)) {
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'),$field_name,$class));
+                throw new framework\base\exceptions\runTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
             }
 
-            //TODO IVO add owners_table, meta table 
+            //TODO IVO add owners_table, meta table
 
             $j[$table_name] = $Connection::get_tprefix().$table_name;//if it gets assigned multiple times it will overwrite it
             //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
@@ -199,7 +199,6 @@ ORDER BY
                 $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} :{$field_name}";
                 $b[$field_name] = $field_value;
             }
-
         } //end foreach
 
         //here we join the tables and load only the data from the joined tables
@@ -237,7 +236,7 @@ ORDER BY
         unset($j, $j_alias_arr);
         $w_str = implode(" AND ", $w);
         unset($w);
-$q = "
+        $q = "
 SELECT 
 *
 FROM
@@ -250,14 +249,14 @@ WHERE
         $Statement->execute($b);
         $data = $Statement->fetchAll();
         
-        if(count($data)){
+        if (count($data)) {
             //TODO meta data object onwenrs table, i will set it manuly until save() is finished
             $record_data['meta']['updated_microtime'] = time();
             //TODO IVO [0]
             $record_data['data'] = $data[0];
         } else {
             //TODO IVO may be should be moved in ActiveRecord
-            throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'),$class,var_export($lookup_index,true)));
+            throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
         }
 
         return $record_data;

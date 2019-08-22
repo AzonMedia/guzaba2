@@ -128,7 +128,7 @@ class Memory extends Store implements StoreInterface
      * @param $index
      * @return array
      */
-    public function &get_data_pointer( string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $lookup_index) : array
     {
         $index = implode(':', array_values($lookup_index));
         //check local storage at $data

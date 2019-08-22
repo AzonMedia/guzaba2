@@ -94,7 +94,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Are the method hooks like _before_save enabled or not.
      * @see activeRecord::disable_method_hooks()
      * @see activeRecord::enable_method_hooks()
-     * 
+     *
      * @var bool
      */
     protected $disable_method_hooks_flag = FALSE;
@@ -124,18 +124,18 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Indexed array containing the
      * @var array
      */
-    protected static $primary_index_columns = [];    
+    protected static $primary_index_columns = [];
     
     /**
      * @var bool
-     */    
+     */
     protected $autoincrement_index = FALSE;
     
     /**
      * Contains an indexed array with the name of the primary key columns. usually it is one but can be more.
      * @var array
      */
-    protected $main_index = array();
+    protected $main_index = [];
 
     /**
      * Contains the index provided to the get_instance()
@@ -167,7 +167,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     
     public static function _initialize_class() : void
     {
-        
     }
     
     //public function __construct(StoreInterface $Store)
@@ -179,7 +178,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * @throws \ReflectionException
      * @throws RunTimeException
      */
-    public function __construct( /* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
+    public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
@@ -200,8 +199,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         /*
         if($this->maintain_ownership_record){
             if(empty(self::$meta_columns_data)){
-                //TODO               
-            }            
+                //TODO
+            }
         }
         */
         
@@ -211,14 +210,14 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             foreach ($unified_columns_data as $column_datum) {
                 self::$columns_data[$column_datum['name']] = $column_datum;
                 
-                if($column_datum['autoincrement'] === TRUE){
+                if ($column_datum['autoincrement'] === TRUE) {
                     //may be autoincrement_index should be static prop
                     $this->autoincrement_index = TRUE;
                 }
             }
         } else {
-            foreach(self::$columns_data as $column_datum){
-                if($column_datum['autoincrement'] === TRUE){
+            foreach (self::$columns_data as $column_datum) {
+                if ($column_datum['autoincrement'] === TRUE) {
                     //may be autoincrement_index should be static prop
                     $this->autoincrement_index = TRUE;
                 }
@@ -238,7 +237,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         // 1. check is there main index loaded
         // if $this->index is still empty this means that this table has no primary index
         if (!count($this->main_index)) {
-            throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The table "%s" has no primary index defined.'),$this->db->tprefix.$this->get_main_table()));
+            throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The table "%s" has no primary index defined.'), $this->db->tprefix.$this->get_main_table()));
         }
 
         // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
@@ -254,19 +253,19 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             if (ctype_digit($this->index)) {
                 $this->index = (int) $this->index;
             }
-            $this->index = array($this->main_index[0] => $this->index);
+            $this->index = [$this->main_index[0] => $this->index];
         } elseif (is_array($this->index)) {
             // no check for count($this->index)==count($this->main_index) as an array with some criteria may be supplied instead of index
             // no change
         } else {
-            throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'),gettype($index),get_class($this)));
+            throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
         if ($index) {
             $pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
 
             // reset the index
-            $this->index = array(); 
+            $this->index = [];
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->initialize_record_data($pointer['data']);
@@ -276,7 +275,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
                 $this->load_ownership();
             }
         } else {
-            $this->record_data = $this->Store::get_record_structure(self::$columns_data);    
+            $this->record_data = $this->Store::get_record_structure(self::$columns_data);
         }
 
 
@@ -329,18 +328,18 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     public static function get_meta_table() : string
     {
         return static::CONFIG_RUNTIME['meta_table'];
-    }    
+    }
     
     public function save() : ActiveRecord
-    {        
-        if (method_exists($this,'_before_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */ ) {
+    {
+        if (method_exists($this, '_before_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) {
             $args = func_get_args();
-            $ret = call_user_func_array(array($this,'_before_save'),$args);
+            $ret = call_user_func_array([$this,'_before_save'], $args);
         }
 
         // basic checks
         if (!$this->is_new() && !$this->index[$this->main_index[0]]) {
-            throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('Trying to save an object/record from %s class that is not new and has no primary index.'),get_class($this)));
+            throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('Trying to save an object/record from %s class that is not new and has no primary index.'), get_class($this)));
         }
 
         // saving data
@@ -355,20 +354,19 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             }
                        
             if (!$this->index[$this->main_index[0]]) {
-                
                 if (!$this->autoincrement_index) {
                     //TODO IVO
-                    $this->index[$this->main_index[0]] = $this->db->get_new_id($partition_name,$this->main_index[0]);
-                    $field_names_arr = array_unique(array_merge($partition_fields,$this->main_index));
-                    $field_names_str = implode(', ',$field_names_arr);
-                    $placeholder_str = implode(', ',array_map($prepare_binding_holders_function, $field_names_arr));
-                    $data_arr = array_merge($record_data_to_save,$this->index);
+                    $this->index[$this->main_index[0]] = $this->db->get_new_id($partition_name, $this->main_index[0]);
+                    $field_names_arr = array_unique(array_merge($partition_fields, $this->main_index));
+                    $field_names_str = implode(', ', $field_names_arr);
+                    $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
+                    $data_arr = array_merge($record_data_to_save, $this->index);
                 } else {
                     $field_names_arr = $this->get_field_names();//this includes the full index
                     // the first column has to be excluded
-                    $pos = array_search($this->main_index[0],$field_names_arr);
+                    $pos = array_search($this->main_index[0], $field_names_arr);
                     if ($pos===false) {
-                        throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('The first column of the primary index is not found within the field names returned by get_field_names() for object of class %s.'),get_class($this)));
+                        throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('The first column of the primary index is not found within the field names returned by get_field_names() for object of class %s.'), get_class($this)));
                     }
                     unset($field_names_arr[$pos]);
                     // it needs to be removed from the data array too
@@ -379,25 +377,29 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
                         unset($record_data_to_save[$this->main_index[0]]);
                     }
 
-                    $field_names_str = implode(', ',$field_names_arr);
-                    $placeholder_str = implode(', ',array_map(function($value) { return ':'.$value; } ,$field_names_arr));
+                    $field_names_str = implode(', ', $field_names_arr);
+                    $placeholder_str = implode(', ', array_map(function ($value) {
+                        return ':'.$value;
+                    }, $field_names_arr));
                     $index = $this->index;
                     array_shift($index);
-                    $data_arr = array_merge($record_data_to_save,$index);
+                    $data_arr = array_merge($record_data_to_save, $index);
                 }
             } else {
                 // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
-                $field_names_arr = array_unique(array_merge($this->get_field_names(),$this->main_index));
-                $field_names_str = implode(', ',$field_names_arr);
-                $placeholder_str = implode(', ',array_map(function($value) { return ':'.$value; } ,$field_names_arr));
-                $data_arr = array_merge($record_data_to_save,$this->index);
+                $field_names_arr = array_unique(array_merge($this->get_field_names(), $this->main_index));
+                $field_names_str = implode(', ', $field_names_arr);
+                $placeholder_str = implode(', ', array_map(function ($value) {
+                    return ':'.$value;
+                }, $field_names_arr));
+                $data_arr = array_merge($record_data_to_save, $this->index);
             }
             
             $Connection = self::ConnectionFactory()->get_connection(\Azonmedia\Glog\Application\MysqlConnection::class, $CR);
 
             $data_arr = $this->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$this::get_main_table());
                         
-$q = "
+            $q = "
 INSERT
 INTO
     {$Connection::get_tprefix()}{$this::get_main_table()}
@@ -411,22 +413,22 @@ VALUES
                 ";
 
 
-                try { 
-                    $Statement = $Connection->prepare($q);
-                    $Statement->execute($data_arr);   
-                } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
-                    throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
-                } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
-                    throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
-                }
+            try {
+                $Statement = $Connection->prepare($q);
+                $Statement->execute($data_arr);
+            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
+                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
+            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
+                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
+            }
                 
-                if ($this->autoincrement_index && !$this->index[$this->main_index[0]]) {
-                    // the index is autoincrement and it is not yet set
-                    $last_insert_id = $Connection->get_last_insert_id();
-                    $this->index[$this->main_index[0]] = $last_insert_id;
-                    // this updated the property of the object that is the primary key
-                    $this->record_data[$this->main_index[0]] = $last_insert_id;
-                }               
+            if ($this->autoincrement_index && !$this->index[$this->main_index[0]]) {
+                // the index is autoincrement and it is not yet set
+                $last_insert_id = $Connection->get_last_insert_id();
+                $this->index[$this->main_index[0]] = $last_insert_id;
+                // this updated the property of the object that is the primary key
+                $this->record_data[$this->main_index[0]] = $last_insert_id;
+            }
         } else {
             $record_data_to_save = [];
             $field_names = $modified_field_names = $this->get_field_names();
@@ -446,19 +448,21 @@ VALUES
             if (count($record_data_to_save)) { //certain partitions may have nothing to save
                 // set_str is used only if it is UPDATE
                 // for REPLACE we need
-                $columns_str = implode(', ', array_keys($record_data_to_save) );
+                $columns_str = implode(', ', array_keys($record_data_to_save));
 
                 // $where_str = implode(PHP_EOL.'AND ',array_map(function($value){return "{$value} = :{$value}";},$this->main_index));
                 // the params must not repeat
                 // $where_str = implode(PHP_EOL.'AND ',array_map(function($value){return "{$value} = :where_{$value}";},$this->main_index));
                 // the above is for UPDATE
                 // when using REPLACE we need
-                $values_str = implode(', ',array_map(function($value){return ":insert_{$value}";}, array_keys($record_data_to_save )) );
+                $values_str = implode(', ', array_map(function ($value) {
+                    return ":insert_{$value}";
+                }, array_keys($record_data_to_save)));
 
                 if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
                     $data_arr = $record_data_to_save;
                 } else {
-                    $data_arr = array_merge($record_data_to_save,$this->index);
+                    $data_arr = array_merge($record_data_to_save, $this->index);
                 }
                 // in the update str we need to exclude the index
                 $upd_arr = $record_data_to_save;
@@ -466,7 +470,9 @@ VALUES
                 foreach ($this->main_index as $index_column_name) {
                     unset($upd_arr[$index_column_name]);
                 }
-                $update_str = implode(', ',array_map(function($value){return "{$value} = :update_{$value}";}, array_keys($upd_arr) ));
+                $update_str = implode(', ', array_map(function ($value) {
+                    return "{$value} = :update_{$value}";
+                }, array_keys($upd_arr)));
                 
                 $Connection = self::ConnectionFactory()->get_connection(\Azonmedia\Glog\Application\MysqlConnection::class, $CR);
 
@@ -496,24 +502,24 @@ ON DUPLICATE KEY UPDATE
 
                 try {
                     $Statement = $Connection->prepare($q);
-                    $Statement->execute($data_arr);   
+                    $Statement->execute($data_arr);
                 } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
                     throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
                 } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
                     throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
                 }
-            }     
+            }
         }
         
         if ($this->is_new() /*&& !$already_in_save */) {
             if ($this->maintain_ownership_record) {
                 $this->initialize_object();
-            }    
+            }
         } else {
             // update the object_last_change_time and object_last_change_role_id
             // but this should be done only for non versioned objects as the versioned in fact always are initialized
             // the versioned objects are always new so they will not get here
-            if ($this->maintain_ownership_record) {  
+            if ($this->maintain_ownership_record) {
                 $this->update_ownership();
             }
         }
@@ -524,9 +530,9 @@ ON DUPLICATE KEY UPDATE
             $this->load_ownership();
         }
                         
-        if (method_exists($this,'_after_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */ ) { //we check for recursion against the parent method save()
+        if (method_exists($this, '_after_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) { //we check for recursion against the parent method save()
             $args = func_get_args();
-            $ret = call_user_func_array(array($this,'_after_save'),$args);  
+            $ret = call_user_func_array([$this,'_after_save'], $args);
         }
        
         return $this;
@@ -536,7 +542,8 @@ ON DUPLICATE KEY UPDATE
      * Returns true is the record is just being created now and it is not yet saved
      * @return bool
      */
-    public function is_new() {
+    public function is_new()
+    {
         return $this->is_new_flag;
     }
     
@@ -568,14 +575,14 @@ ON DUPLICATE KEY UPDATE
     {
         // altough we have lazy loading we need to store in record_data whatever we obtained - this will set the index (so get_index() works)
         foreach ($initial_data as $key=>$value) {
-            if (array_key_exists($key,$this->record_data)) {
+            if (array_key_exists($key, $this->record_data)) {
                 $type = $this->get_column_type($key, $nullable);
                 if (!isset($type)) {
-                    throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('There is date for column %s from object %s but there is no such column in table %s.'),$key,$this->get_internal_name(),$this->main_table));
+                    throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('There is date for column %s from object %s but there is no such column in table %s.'), $key, $this->get_internal_name(), $this->main_table));
                 }
 
-                if (in_array($key,$this->main_index)) {
-                    settype($value,($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
+                if (in_array($key, $this->main_index)) {
+                    settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
                     $this->index[$key] = $value;
                 }
             } // else - ignore
@@ -612,15 +619,15 @@ ON DUPLICATE KEY UPDATE
         
         $column_found = FALSE;
         foreach (self::$columns_data as $column_key_name => $column_data) {
-            if($column_data['name'] == $column){
+            if ($column_data['name'] == $column) {
                 $type = $column_data['php_type'];
                 $nullable = (bool) $column_data['nullable'];
                 $column_found = TRUE;
                 break;
-            }            
+            }
         }
         
-        if(!$column_found){
+        if (!$column_found) {
             $message = sprintf(t::_('The column "%s" is not found in table "%s". Please clear the cache and try again. If the error persists it would mean wrong column name.'), $column, self::get_main_table());
             throw new RunTimeException($message);
         }
@@ -640,7 +647,7 @@ ON DUPLICATE KEY UPDATE
      * It also checks if a field is ===NULL and the column is not nullable then converts as follows:
      * - strings to ''
      * - ints and floats to 0
-     * 
+     *
      * @param array $data_arr
      * @param string $table_name
      * @return array The provided array after the processing
@@ -654,7 +661,7 @@ ON DUPLICATE KEY UPDATE
                 // there is no value - lets see what it has to be
                 // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
                 // look for the field
-                for ($aa = 0; $aa < count ($columns_data); $aa++) {
+                for ($aa = 0; $aa < count($columns_data); $aa++) {
                     if ($columns_data[$aa]['name'] == $field_name) {
                         if ($columns_data[$aa]['php_type'] == 'string') {
                             // this is OK - a string can be empty
@@ -677,12 +684,11 @@ ON DUPLICATE KEY UPDATE
                         break;// we found our column
                     }
                 }
-
             } elseif ($field_value===NULL) {
                 // we need to check does the column support this type
                 // if it doesnt we need to cast it to 0 or ''
                 // look for the field
-                for ($aa = 0; $aa < count ($columns_data); $aa++) {
+                for ($aa = 0; $aa < count($columns_data); $aa++) {
                     if ($columns_data[$aa]['name'] == $field_name) {
                         if (!$columns_data[$aa]['nullable']) { // the column does not support NULL but the value is null
                             // we will need to cast it
@@ -709,10 +715,10 @@ ON DUPLICATE KEY UPDATE
      */
     public function get_field_names() : array
     {
-        $ret = array();
+        $ret = [];
         foreach (self::$columns_data as $field_data) {
             $ret[] = $field_data['name'];
-        }        
+        }
         return $ret;
     }
     
@@ -720,7 +726,8 @@ ON DUPLICATE KEY UPDATE
      * Returns the field names of the modified properties
      * @return array
      */
-    public function get_modified_field_names() {
+    public function get_modified_field_names()
+    {
         return $this->record_modified_data;
     }
     
@@ -733,7 +740,7 @@ ON DUPLICATE KEY UPDATE
      * @return bool
      * @throws \Guzaba2\Base\Exceptions\LogicException
      */
-    public final function load_ownership(array $row=array() ) : bool
+    final public function load_ownership(array $row=[]) : bool
     {
         $table = self::get_meta_table();
 
@@ -742,7 +749,7 @@ ON DUPLICATE KEY UPDATE
             if (count($row)) {
                 $this->meta_data = $row;
             } else {
-                throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('The object of class "%s" with index "%s" was loaded but it is missing its ownership record. This type of object is supposed to have an ownership record. This error may be due to missing record in object_owners table or due to missing role pointed by object_create_role_id and object_last_change_role_id fields.<br />If an object uses permisisons or ownership you should not be manually entering records in the database.'),get_class($this),print_r($this->get_index(self::RETURN_INDEX_ARRAY),true)));//NOVERIFY
+                throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('The object of class "%s" with index "%s" was loaded but it is missing its ownership record. This type of object is supposed to have an ownership record. This error may be due to missing record in object_owners table or due to missing role pointed by object_create_role_id and object_last_change_role_id fields.<br />If an object uses permisisons or ownership you should not be manually entering records in the database.'), get_class($this), print_r($this->get_index(self::RETURN_INDEX_ARRAY), true)));//NOVERIFY
             }
         } else {
             $this->meta_data = $row;
@@ -766,7 +773,7 @@ WHERE
     AND ownership.object_id = :object_id
         ";
         
-        $params = array('class_name'=>get_class($this),'object_id'=>$this->get_index());
+        $params = ['class_name'=>get_class($this),'object_id'=>$this->get_index()];
         
         $Statement = $Connection->prepare($q);
         return $Statement->execute($params)->fetchRow();
@@ -781,7 +788,7 @@ WHERE
     {
         if ($this->uses_ownership()) {
             $this->set_ownership();
-        }    
+        }
     }
     
     
@@ -789,19 +796,19 @@ WHERE
      *
      * @return bool
      */
-    public function uses_ownership() : bool 
+    public function uses_ownership() : bool
     {
         return $this->maintain_ownership_record;
     }
     
     /**
      * Sets the session subject as the owner of the object. If needed after saving the object it can be changed using change_ownership()
-     * @param object $object 
+     * @param object $object
      */
     protected function set_ownership() : void
     {
         if (!$this->is_new()) {
-            throw new RunTimeException(sprintf(t::_('Trying to set the initial ownership on object of class "%s" with index "%s". The set_ownership() method can not be used on objects that are not new.'),get_class($object),print_r($object->get_index($object::RETURN_INDEX_ARRAY),true)));//NOVERIFY
+            throw new RunTimeException(sprintf(t::_('Trying to set the initial ownership on object of class "%s" with index "%s". The set_ownership() method can not be used on objects that are not new.'), get_class($object), print_r($object->get_index($object::RETURN_INDEX_ARRAY), true)));//NOVERIFY
         }
     
         // versioned object must be handled a little differently... for versioned objects the initial object_create_time must remain the same for all versions (after it was set initially for the first)
@@ -829,14 +836,14 @@ VALUES
 )
         ";
 
-        $params = array('class_name'=>get_class($this),
+        $params = ['class_name'=>get_class($this),
                         'object_id'=>$this->get_index(),
                         'object_create_microtime'=> $object_create_microtime,
                         'object_last_update_microtime' => $object_last_update_microtime
-                  );
+                  ];
         
         $Statement = $Connection->prepare($q);
-        $Statement->execute($params);    
+        $Statement->execute($params);
     }
     
     /**
@@ -861,16 +868,16 @@ GROUP BY
     p1.object_id
         ";
 
-        $params = array('class_name'=>get_class($this),'object_id'=>$this->get_index());
+        $params = ['class_name'=>get_class($this),'object_id'=>$this->get_index()];
         
         $Statement = $Connection->prepare($q);
        
-        return (int) $Statement->execute($params)->fetchRow('object_create_microtime'); 
+        return (int) $Statement->execute($params)->fetchRow('object_create_microtime');
     }
         
     /**
      * Returns current microtime.
-     * 
+     *
      * @return int microtime
      */
     public static function get_current_microtime() : int
@@ -880,14 +887,14 @@ GROUP BY
         
         // Note: Using a string here to prevent loss of precision
         // in case of "overflow" (PHP converts it to a double)
-        return (int) sprintf('%d%03d', $sec, $usec * 1000);    
+        return (int) sprintf('%d%03d', $sec, $usec * 1000);
     }
       
     public function update_ownership() : void
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
-        if ($this->is_new() /* &&  !$object->is_in_method_twice('save') */ ) {
-            throw new RunTimeException(sprintf(t::_('Trying to update the ownership record of a new object of class "%s" with index "%s". Instead the new obejcts should be initialized using the manager::initialize_object() method.'),get_class($object),$object->get_index()));
+        if ($this->is_new() /* &&  !$object->is_in_method_twice('save') */) {
+            throw new RunTimeException(sprintf(t::_('Trying to update the ownership record of a new object of class "%s" with index "%s". Instead the new obejcts should be initialized using the manager::initialize_object() method.'), get_class($object), $object->get_index()));
         }
         $Connection = self::ConnectionFactory()->get_connection(\Azonmedia\Glog\Application\MysqlConnection::class, $CR);
         $meta_table = self::get_meta_table();
@@ -904,13 +911,13 @@ WHERE
     AND object_id = :object_id
         ";
         
-        $params = array('object_last_update_microtime' => $object_last_update_microtime,
+        $params = ['object_last_update_microtime' => $object_last_update_microtime,
                         'class_name'=>get_class($this),
                         'object_id'=>$this->get_index()
                         
-        );
+        ];
         
         $Statement = $Connection->prepare($q);
-        $Statement->execute($params); 
+        $Statement->execute($params);
     }
 }
