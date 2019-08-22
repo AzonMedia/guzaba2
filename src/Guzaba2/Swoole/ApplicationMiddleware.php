@@ -20,8 +20,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Swoole server is not used to serve static files like na ordinary Http server but only as an application server.
  * @package Guzaba2\Swoole
  */
-class ApplicationMiddleware extends Base
-    implements MiddlewareInterface
+class ApplicationMiddleware extends Base implements MiddlewareInterface
 {
 
     /**
@@ -57,7 +56,6 @@ class ApplicationMiddleware extends Base
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
-
         $request_ok = TRUE;
         $path = $Request->getUri()->getPath();
         foreach (self::FILE_EXTENSIONS_TO_FILTER as $ext) {

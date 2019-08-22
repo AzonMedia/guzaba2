@@ -3,13 +3,11 @@
 
 namespace Guzaba2\Mvc;
 
-
 use Guzaba2\Base\Base;
 use Psr\Http\Message\ResponseInterface;
 
 class View extends Base
 {
-
     protected $Response;
 
     public function __construct(ResponseInterface $Response)

@@ -23,8 +23,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * @package Guzaba2\Mvc
  */
-class ExecutorMiddleware extends Base
-implements MiddlewareInterface
+class ExecutorMiddleware extends Base implements MiddlewareInterface
 {
     /**
      * @var Server
@@ -52,7 +51,6 @@ implements MiddlewareInterface
 
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
-
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             $controller_arguments = $Request->getAttribute('controller_arguments');
@@ -89,7 +87,7 @@ implements MiddlewareInterface
                     }
                 }
 
-                \call_user_func_array([$controller_callable[0], '_init'] , $parameters_order);
+                \call_user_func_array([$controller_callable[0], '_init'], $parameters_order);
             }
             $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
             $parameters = $RMethod->getParameters();
@@ -164,7 +162,6 @@ implements MiddlewareInterface
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
             $view_class = str_replace('\\Controllers\\', '\\Views\\', $controller_class);
             if (class_exists($view_class)) {
-
                 if (method_exists($view_class, $controller_callable[1])) {
                     ob_start();
                     [new $view_class($Response), $controller_callable[1]]();
@@ -179,8 +176,6 @@ implements MiddlewareInterface
                 } else {
                     throw new RunTimeException(sprintf(t::_('The view class %s has no method %s.'), $view_class, $controller_callable[1]));
                 }
-
-
             } else {
                 if ($content_type === NULL) {
                     //no content type is requested (or recognized) and we have a structured response
@@ -278,5 +273,4 @@ implements MiddlewareInterface
         extract($Response->getBody()->getStructure());
         include $template;
     }
-
 }

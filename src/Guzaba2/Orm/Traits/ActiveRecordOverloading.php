@@ -57,20 +57,25 @@ trait ActiveRecordOverloading
         return $ret;
     }
 
+    /**
+     * @param string $property
+     * @return mixed
+     * @throws RunTimeException
+     */
     public function &__get(string $property) /* mixed */
     {
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_before_get_'.$property)) {
-            call_user_func_array(array($this,'_before_get_'.$property),array());
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
+            call_user_func_array([$this,'_before_get_'.$property], []);
         }
 
-        if (array_key_exists($property,$this->record_data)) {
+        if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];
         } else {
-            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this) ));
+            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_after_get_'.$property)) {
-            $ret = call_user_func_array(array($this,'_after_get_'.$property),array($ret));
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
+            $ret = call_user_func_array([$this,'_after_get_'.$property], [$ret]);
         }
         return $ret;
     }
@@ -78,24 +83,24 @@ trait ActiveRecordOverloading
     /**
      * The overloading is used so that all the columns/fields fro mthe database can appear as properties on instance.
      * The logic of the framework includes handling also of multilanguage and array properties.
+     * @param string $property The name of the property that is being accessed
+     * @return mixed
+     * @throws RunTimeException
+     * @see http://gitlab.azonmedia.com:4500/root/guzaba-framework/wikis/documentation-0.7/dynamic-properties
+     *
+     * This method returns by reference so that array properties can have their values modified directly
+     *
      * @example
      * print $page->page_id
      * print $page->en->page_title
      * print $blog->blog_tag_id[1];
      *
      * This also supports accessing dynamic properties (properties that are derived from other)
-     * @see http://gitlab.azonmedia.com:4500/root/guzaba-framework/wikis/documentation-0.7/dynamic-properties
-     *
-     * This method returns by reference so that array properties can have their values modified directly
-     *
-     * @param string $property The name of the property that is being accessed
-     * @return mixed
      */
     public function &__get_old(string $property)
     {
-
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_before_get_'.$property)) {
-            call_user_func_array(array($this,'_before_get_'.$property),array());
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
+            call_user_func_array([$this,'_before_get_'.$property], []);
         }
 
         //if ($is_dynamic_property) {
@@ -104,7 +109,7 @@ trait ActiveRecordOverloading
         //} elseif (in_array($property,$this->languages)) {
 
         //usually the needed property is in this array
-        if (array_key_exists($property,$this->record_data)) {
+        if (array_key_exists($property, $this->record_data)) {
             // //in this case also a permission check on a per property basis is needed
             // $required_permissions_to_read = array();//no need to include read - the object is loaded so there is read permission
             // if ( isset($this->fields_permissions_to_read) && isset($this->fields_permissions_to_read[$property]) ) {
@@ -124,13 +129,13 @@ trait ActiveRecordOverloading
             //     //the properties that are saved in the database will not use booleans (instead integers 0 & 1). Null will not be used, because it is legal value in the database and often some fields will have null value
             // }
             $ret = $this->record_data[$property];
-        } elseif (array_key_exists($property,$this->meta_data) && $property!='class_id' && $property!='object_id') {
+        } elseif (array_key_exists($property, $this->meta_data) && $property!='class_id' && $property!='object_id') {
             //there is no need for permissions check here - the ownerhsip data can be read if there is read permission (which is present, because the object is loaded)
             $ret = $this->meta_data[$property];
         } elseif ($this->property_is_language($property)) {
             $this->current_language = $property;
             $ret = $this;
-        } elseif (isset($this->languages_record_data[$this->current_language])&&array_key_exists($property,$this->languages_record_data[$this->current_language])) {
+        } elseif (isset($this->languages_record_data[$this->current_language])&&array_key_exists($property, $this->languages_record_data[$this->current_language])) {
             //THE BELOW IS TOO SLOW
             //TODO - convert the mapping required for permissions to read a specific property to a constant or a static var in config
             //permissions check on a per property basis is needed here
@@ -149,8 +154,6 @@ trait ActiveRecordOverloading
             //     $ret = null;// no exception will be thrown here, instead return null
             // }
             $ret = $this->languages_record_data[$this->current_language][$property];
-
-
         } else {
 
             /*
@@ -177,27 +180,27 @@ trait ActiveRecordOverloading
                 //throw new framework\database\exceptions\parameterException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'),$property,get_class($this)));
             }
             */
-            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this) ));
+            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
 
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_after_get_'.$property)) {
-            $ret = call_user_func_array(array($this,'_after_get_'.$property),array($ret));
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
+            $ret = call_user_func_array([$this,'_after_get_'.$property], [$ret]);
         }
         return $ret;
     }
 
     public function __set(string $property, /* mixed */ $value) : void
     {
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_before_set_'.$property)) {
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
-            $value = call_user_func_array(array($this,'_before_set_'.$property),array($value));
+            $value = call_user_func_array([$this,'_before_set_'.$property], [$value]);
         }
 
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_after_set_'.$property)) {
-            call_user_func_array(array($this,'_after_set_'.$property),array($value));
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
+            call_user_func_array([$this,'_after_set_'.$property], [$value]);
         }
 
         if (array_key_exists($property, $this->record_data)) {
@@ -217,13 +220,12 @@ trait ActiveRecordOverloading
 
             $this->assign_property_value($property, $value);
         } else {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this) ));
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_after_set_'.$property)) {
-            call_user_func_array(array($this,'_after_set_'.$property),array($value));
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
+            call_user_func_array([$this,'_after_set_'.$property], [$value]);
         }
-
     }
 
     private function unhook_data_pointer() : void
@@ -240,8 +242,9 @@ trait ActiveRecordOverloading
      * @param string $property The name of the property that is being accessed
      * @param mixed $value
      * @return void
+     * @throws RunTimeException
      */
-    public  function __set_old(string $property, $value) : void
+    public function __set_old(string $property, $value) : void
     {
 
         /*
@@ -265,17 +268,15 @@ trait ActiveRecordOverloading
 
         $properties_to_log = self::get_properties_with_enabled_logging();
         if ($properties_to_log) {
-
         }
 
         if (in_array($property, $properties_to_log)) {
-
             $current_value = $this->record_data[$property];
             $new_value = $value;
 
             $is_modified = FALSE;
             if (is_numeric($current_value)) {
-                if (abs((double) $new_value - (double) $current_value) > 0.001 ) {
+                if (abs((double) $new_value - (double) $current_value) > 0.001) {
                     $is_modified = TRUE;
                 }
             } else {
@@ -318,9 +319,9 @@ trait ActiveRecordOverloading
             */
         }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_before_set_'.$property)) {
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
-            $value = call_user_func_array(array($this,'_before_set_'.$property),array($value));
+            $value = call_user_func_array([$this,'_before_set_'.$property], [$value]);
         }
 
         //check the current transaction  - if it is different than the one as per the pointer make another level
@@ -328,19 +329,19 @@ trait ActiveRecordOverloading
 
         //commented out for BUSRENTAL
         /*if ($this->is_readonly_flag) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('The object of class %s is read only. The %s property can not be set.'),get_class($this),$property));
+            throw new RunTimeException(sprintf(t::_('The object of class %s is read only. The %s property can not be set.'),get_class($this),$property));
         }*/
-        if (array_key_exists($property,$this->meta_data)) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to set record ownership property "%s" of instance of "%s". Ownership properties are read only.'),$property,get_class($this)));
+        if (array_key_exists($property, $this->meta_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to set record ownership property "%s" of instance of "%s". Ownership properties are read only.'), $property, get_class($this)));
         }
         if ($property==$this->main_index&&!$this->is_new_flag) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to set the index "%s" on existing record/object from class "%s". This is allowed only on new objects/records.'),$property,get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to set the index "%s" on existing record/object from class "%s". This is allowed only on new objects/records.'), $property, get_class($this)));
         }
-        if (in_array($property,$this->main_index)) {
+        if (in_array($property, $this->main_index)) {
             $this->index[$property] = $value;
         }
         //if (in_array($property,$this->languages_field_names)) {
-        if (in_array($property,$this->languages_field_names)&&!in_array($property,$this->main_index)) {
+        if (in_array($property, $this->languages_field_names)&&!in_array($property, $this->main_index)) {
             //here ther will be no permissions checks on a per property basis - these will be performed on calling save()
             if (is_array($value)) {
                 //an array with values for all languages is supplied for the specifiv property
@@ -351,19 +352,17 @@ trait ActiveRecordOverloading
                             $this->is_modified_flag = true;
                         }
                         $this->languages_record_data[$lang][$property] = $value[$lang];
-                        //if this is a newly added language and there are no records up to the moment for this language the id and lang will be missing
+                    //if this is a newly added language and there are no records up to the moment for this language the id and lang will be missing
                         //$this->languages_record_data[$lang]['lang'] = $lang;
 
                         //$this->languages
                     } else {
-                        throw new framework\base\exceptions\runTimeException(sprintf(t::_('The supplied language array for the property "%s" to an object of class "%s" (ORM) does not contain data for "%s" language.'),$property,get_class($this),$lang));
+                        throw new RunTimeException(sprintf(t::_('The supplied language array for the property "%s" to an object of class "%s" (ORM) does not contain data for "%s" language.'), $property, get_class($this), $lang));
                     }
                 }
             } else {
                 //a scalar is supplied using $object->lang->property invokation
                 if ($this->current_language) {
-
-
                     if ($this->languages_record_data[$this->current_language][$property]!=$value) {
                         $this->record_modified_data[] = $property;
                         $this->is_modified_flag = true;
@@ -372,7 +371,7 @@ trait ActiveRecordOverloading
                 } elseif ($property==='lang') {
                     //ignore it - we do not need to set this if submitted
                 } else {
-                    throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'),$property,get_class($this)));
+                    throw new RunTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'), $property, get_class($this)));
                 }
             }
 
@@ -387,24 +386,24 @@ trait ActiveRecordOverloading
                 }
                 $this->languages_record_data[$this->current_language][$property] = $value;
             } else {
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'),$property,get_class($this)));
+                throw new RunTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'),$property,get_class($this)));
             }
             */
-        } elseif (in_array($property,$this->array_field_names)) {
+        } elseif (in_array($property, $this->array_field_names)) {
             if ($this->record_data[$property]!=$value) {
                 $this->record_modified_data[] = $property;
                 $this->is_modified_flag = true;
             }
             //$this->record_data[$property] = $value;//the arrays are assigned this way here too
             $this->assign_property_value($property, $value);
-        } elseif (in_array($property,$this->assoc_array_field_names)) {
+        } elseif (in_array($property, $this->assoc_array_field_names)) {
             if ($this->record_data[$property]!=$value) {
                 $this->record_modified_data[] = $property;
                 $this->is_modified_flag = true;
             }
             //$this->record_data[$property] = $value;//the arrays are assigned this way here too
             $this->assign_property_value($property, $value);
-            //} elseif (in_array($property,$this->field_names)) {
+        //} elseif (in_array($property,$this->field_names)) {
         } elseif ($this->get_field_table_name($property)) { //if there is a table returned it is OK - we should data in record_data
             if (is_float($this->record_data[$property]) && is_float($value)) {
                 if (abs($this->record_data[$property] - $value) > 0.00001) {
@@ -421,12 +420,12 @@ trait ActiveRecordOverloading
             //$this->record_data[$property] = $value;
             $this->assign_property_value($property, $value);
         } else {
-            parent::__set($property,$value);
+            parent::__set($property, $value);
             //throw new GeneralException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'),$property,get_class($this)));
         }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this,'_after_set_'.$property)) {
-            call_user_func_array(array($this,'_after_set_'.$property),array($value));
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
+            call_user_func_array([$this,'_after_set_'.$property], [$value]);
         }
 
         //now the current language has to be reset
@@ -449,7 +448,6 @@ trait ActiveRecordOverloading
             $pointer =& $
         }
         */
-
     }
 
 
@@ -479,7 +477,7 @@ trait ActiveRecordOverloading
             return parent::__isset($property);
         }
         */
-        return array_key_exists($property,$this->record_data);
+        return array_key_exists($property, $this->record_data);
     }
 
     /**
@@ -487,20 +485,21 @@ trait ActiveRecordOverloading
      * If the property is not a database column the call is forwarded to the overloading in the parent class (base - where unsetting properties is not allowed either).
      * @param string $property The name of the property that is being accessed
      * @return void
+     * @throws RunTimeException
      */
     public function __unset(string $property) : void
     {
         /*
         //throw new GeneralException(sprintf(t::_('Trying to unset the "%s" property of an instance of "%s" (ORM). Unsetting properties/fields is not allowed.'),$property,get_class($this)));
         if (array_key_exists($property,$this->get_all_field_names())) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to unset the data property "%s" of an object of class "%s". Unsetting data properties of an ORM object is now allowed.'),$property,get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to unset the data property "%s" of an object of class "%s". Unsetting data properties of an ORM object is now allowed.'),$property,get_class($this)));
         } elseif (array_key_exists($property,$this->meta_data)) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('Trying to unset the ownership property "%s" of an object of class "%s". Unsetting ownership properties of an ORM object is now allowed.'),$property,get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to unset the ownership property "%s" of an object of class "%s". Unsetting ownership properties of an ORM object is now allowed.'),$property,get_class($this)));
         } else {
             parent::__unset($property);
         }
         */
-        throw new RunTimeException(sprintf(t::_('It is not allowed to unset overloaded properties on ORM classes.') ));
+        throw new RunTimeException(sprintf(t::_('It is not allowed to unset overloaded properties on ORM classes.')));
     }
 
     /**
@@ -534,7 +533,7 @@ trait ActiveRecordOverloading
      * @param string $method The method name should be like _validate_static_PROPERTYNAME
      * @param array $args There should be only a single argument provided to the overloaded method so the args should be an indexed array with one element
      * @return array | object If this is a service it may return an object (service), otherwise it should return a twodimensional indexed array with validation errors.
-     * @throws framework\base\exceptions\runTimeException
+     * @throws RunTimeException
      * @author vesko@azonmedia.com
      * @created 02.09.2018
      * @since 0.7.1
@@ -552,22 +551,22 @@ trait ActiveRecordOverloading
         }
 
         if (strpos($method, '_validate_static_')===FALSE) {
-            //throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unknown static method "%s" was invoked on class "%s". The static overloading __callStatic supports only property validation method that are to be invoked like %s::_validate_static_PROPERTYNAME($value).'), $method, get_class($instance), get_class($instance) ));
+            //throw new RunTimeException(sprintf(t::_('An unknown static method "%s" was invoked on class "%s". The static overloading __callStatic supports only property validation method that are to be invoked like %s::_validate_static_PROPERTYNAME($value).'), $method, get_class($instance), get_class($instance) ));
             $ret = parent::__callStatic($method, $args);
             return $ret;
         }
         $property = str_replace('_validate_static_', '', $method);
         if (!$instance->has_property($property)) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('The class "%s" does not support a property named "%s".'), get_class($instance), $property));
+            throw new RunTimeException(sprintf(t::_('The class "%s" does not support a property named "%s".'), get_class($instance), $property));
         }
         if (!count($args)) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('There was no argument/value provided to %s::%s(). A value against which the validation will be performed is required.'), get_class($instance), $method ));
+            throw new RunTimeException(sprintf(t::_('There was no argument/value provided to %s::%s(). A value against which the validation will be performed is required.'), get_class($instance), $method ));
         }
         if (count($args)>1) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('More tha one argument/value was provided to %s::%s(). Only one value against which the validation will be performed must be provided.'), get_class($instance), $method ));
+            throw new RunTimeException(sprintf(t::_('More tha one argument/value was provided to %s::%s(). Only one value against which the validation will be performed must be provided.'), get_class($instance), $method ));
         }
         if (!is_scalar($args[0]) && !is_array($args[0])) {
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported value of type "%s" was provided to %s::%s(). The provided value against which the validation will be performed must be of the scalar or array.'), gettype($args[0]), get_class($instance), $method ));
+            throw new RunTimeException(sprintf(t::_('An unsupported value of type "%s" was provided to %s::%s(). The provided value against which the validation will be performed must be of the scalar or array.'), gettype($args[0]), get_class($instance), $method ));
         }
         $ret = self::validate_field_static($property, $args[0]);
         return $ret;
@@ -578,7 +577,8 @@ trait ActiveRecordOverloading
      *
      * @implements \ArrayAccess
      */
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->$offset);
     }
 
@@ -586,7 +586,8 @@ trait ActiveRecordOverloading
      *
      * @implements \ArrayAccess
      */
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return $this->$offset;
     }
 
@@ -594,7 +595,8 @@ trait ActiveRecordOverloading
      *
      * @implements \ArrayAccess
      */
-    public function offsetSet($offset,$value) {
+    public function offsetSet($offset, $value)
+    {
         $this->$offset = $value;
     }
 
@@ -602,7 +604,8 @@ trait ActiveRecordOverloading
      *
      * @implements \ArrayAccess
      */
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->$offset);
     }
 
@@ -610,7 +613,8 @@ trait ActiveRecordOverloading
      *
      * @implements \Countable
      */
-    public function count() {
+    public function count()
+    {
         //return count($this->record_data) + count($this->record_data_2);
         return count($this->record_data);
     }
@@ -628,7 +632,7 @@ trait ActiveRecordOverloading
      * @param string $property
      * @param mixed $value
      * @return void
-     * @throws framework\base\exception\runTimeException
+     * @throws RunTimeException
      */
     private function assign_property_value($property, $value) : void
     {
@@ -637,27 +641,27 @@ trait ActiveRecordOverloading
             if ($is_nullable && is_null($value)) {
                 //if there is type mismatch it will be still OK if the value is NULL and the column is nullable
                 $this->record_data[$property] = $value;
-            } else if (empty($value) && in_array(gettype($value), ['integer','int','double','float'] ) && in_array($field_type, ['integer','int','double','float'])) {
+            } elseif (empty($value) && in_array(gettype($value), ['integer','int','double','float']) && in_array($field_type, ['integer','int','double','float'])) {
                 // we don't need error on zeros - casting (float) 0 still treated as integer
-                $this->record_data[$property] = $this->_cast($field_type ,$value );
-                //also we should always allow INT to be set on FLOAT column but not the reverse - a FLOAT to be set to an INT column
+                $this->record_data[$property] = $this->_cast($field_type, $value);
+            //also we should always allow INT to be set on FLOAT column but not the reverse - a FLOAT to be set to an INT column
                 //$value is the value being set, $field_type is the type of the column
-            } else if (gettype($value)=='double' && $field_type=='integer') {
+            } elseif (gettype($value)=='double' && $field_type=='integer') {
                 //this is allowed
-                $this->record_data[$property] = $this->_cast($field_type ,$value );
-                //} else if (gettype($value)=='integer' && $field_type=='double') {//no need to explicitly have a case for this as it will go into the section below
+                $this->record_data[$property] = $this->_cast($field_type, $value);
+            //} else if (gettype($value)=='integer' && $field_type=='double') {//no need to explicitly have a case for this as it will go into the section below
             } else {
                 //casting is needed
                 if (self::CAST_PROPERTIES_ON_ASSIGNMENT) {
 
                     //check if a nonnumeric string is assigned to an integer or double
-                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='' ) { //empty string is treated like 0
+                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
                         //we should allow $500 and convert it to 500
                         if ($value[0]=='$') {
                             $value = substr($value, 1);
                         }
                         //also 1,200.50 should be converted to 1200.50
-                        if (strpos($value,',')!==FALSE) {
+                        if (strpos($value, ',')!==FALSE) {
                             $value = str_replace(',', '', $value);
                         }
 
@@ -665,51 +669,49 @@ trait ActiveRecordOverloading
                     }
 
                     //after the transformations above lets check again...
-                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='' ) { //empty string is treated like 0
-                        $message = sprintf(t::_('Trying to assign a string nonnumeric value "%s" to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type );
+                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
+                        $message = sprintf(t::_('Trying to assign a string nonnumeric value "%s" to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                         } else {
                             //this will be thrown even if THROW_EXCEPTION_ON_PROPERTY_CAST=FALSE because it is a major issue
-                            throw new framework\base\exceptions\runTimeException($message);
+                            throw new RunTimeException($message);
                         }
                         //we cant allow a string that parses to float (like "1.5") to be cast and assigned to an int
-                    } elseif (gettype($value)=='string' && in_array($field_type, ['integer','int']) && strpos($value,'.')!==FALSE && $value!='' ) { //empty string is treated like 0
-                        $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type );
+                    } elseif (gettype($value)=='string' && in_array($field_type, ['integer','int']) && strpos($value, '.')!==FALSE && $value!='') { //empty string is treated like 0
+                        $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                         } else {
                             //this will be thrown even if THROW_EXCEPTION_ON_PROPERTY_CAST=FALSE because it is a major issue
-                            throw new framework\base\exceptions\runTimeException($message);
+                            throw new RunTimeException($message);
                         }
                     } elseif (!is_array($value) && $field_type=='array') {
-                        $message = sprintf(t::_('Trying to assign a non array type "%s" to an array property "%s" of an instance of class "%s".'), gettype($value), $property, get_class($this) );
+                        $message = sprintf(t::_('Trying to assign a non array type "%s" to an array property "%s" of an instance of class "%s".'), gettype($value), $property, get_class($this));
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                         } else {
-                            throw new framework\base\exceptions\runTimeException($message);
+                            throw new RunTimeException($message);
                         }
                     }
                     if (!$value && $is_nullable) {
                         $value = NULL;
                     }
-                    $this->record_data[$property] = $this->_cast($field_type ,$value );
+                    $this->record_data[$property] = $this->_cast($field_type, $value);
 
                     $message = sprintf(t::_('The property "%s" on instance of "%s" is of type "%s" but is being assigned value of type "%s".'), $property, get_class($this), $field_type, gettype($value));
                     if (self::LOG_NOTICE_ON_PROPERTY_CAST) {
                         //self::logger()::notice($message, self::logger()::OPTION_BACKTRACE );//suppress this logger due to too many errors
                     }
                     if (self::THROW_EXCEPTION_ON_PROPERTY_CAST) {
-                        throw new framework\base\exceptions\runTimeException($message);
+                        throw new RunTimeException($message);
                     }
                     if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                         $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                     }
-
                 } else {
                     $this->record_data[$property] = $value;
                 }
-
             }
         } else {
             //the type matches - no need to cast
@@ -727,8 +729,8 @@ trait ActiveRecordOverloading
             return $cache[$called_class];
         }
 
-        $classes = array_merge([$called_class], class_parents($called_class) );
-        if ( defined($called_class.'::LOGGING_ENABLED_FOR_SETTING_PROPERTIES') && is_array(static::LOGGING_ENABLED_FOR_SETTING_PROPERTIES)) {
+        $classes = array_merge([$called_class], class_parents($called_class));
+        if (defined($called_class.'::LOGGING_ENABLED_FOR_SETTING_PROPERTIES') && is_array(static::LOGGING_ENABLED_FOR_SETTING_PROPERTIES)) {
             //go through all the parents
             foreach ($classes as $class) {
                 if (defined($class.'::LOGGING_ENABLED_FOR_SETTING_PROPERTIES') && is_array($class::LOGGING_ENABLED_FOR_SETTING_PROPERTIES)) {
@@ -787,5 +789,4 @@ trait ActiveRecordOverloading
         parent::_set_all_properties($properties);
         $this->enable_property_hooks();
     }
-
 }

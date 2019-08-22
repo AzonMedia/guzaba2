@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 abstract class Method
 {
     const HTTP_CONNECT  = 1;

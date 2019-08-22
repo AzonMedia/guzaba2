@@ -17,10 +17,8 @@ use Guzaba2\Translator\Translator as t;
  * @package Guzaba2\Coroutine
  */
 //class Context extends \Swoole\Coroutine\Context
-class Context extends Base
-implements ObjectInternalIdInterface
+class Context extends Base implements ObjectInternalIdInterface
 {
-
     use SupportsObjectInternalId;
 
     /**
@@ -28,6 +26,12 @@ implements ObjectInternalIdInterface
      */
     protected $Context;
 
+    /**
+     * Context constructor.
+     * @param \Swoole\Coroutine\Context $Context
+     * @param int $cid
+     * @throws InvalidArgumentException
+     */
     public function __construct(\Swoole\Coroutine\Context $Context, int $cid)
     {
         if (!$cid) {
@@ -49,7 +53,6 @@ implements ObjectInternalIdInterface
                 $this->Context->created_backtrace = \Swoole\Coroutine::getBackTrace($pcid, \DEBUG_BACKTRACE_IGNORE_ARGS);
             }
         }
-
     }
 
     public function getBacktrace() : array
@@ -57,14 +60,21 @@ implements ObjectInternalIdInterface
         return $this->Context->created_backtrace;
     }
 
+    /**
+     * Returns the coroutine ID to which this context is attached.
+     * @return int
+     */
     public function getCid() : int
     {
         return $this->Context->cid;
     }
 
+    /**
+     * Assign a connection to the coroutine context.
+     * @param ConnectionInterface $Connection
+     */
     public function assignConnection(ConnectionInterface $Connection) : void
     {
-
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {
             if (!in_array($Connection, $this->Context->connections)) {
                 $this->Context->connections[] = $Connection;
@@ -72,6 +82,10 @@ implements ObjectInternalIdInterface
         }
     }
 
+    /**
+     * Unassign a connection from the coroutine context. This is to be called when the coroutine no longer uses this connection.
+     * @param ConnectionInterface $Connection
+     */
     public function unassignConnection(ConnectionInterface $Connection) : void
     {
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {

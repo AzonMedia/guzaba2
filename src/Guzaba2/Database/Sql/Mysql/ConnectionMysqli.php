@@ -11,7 +11,6 @@ use Guzaba2\Database\Interfaces\StatementInterface;
  */
 abstract class ConnectionMysqli extends \Guzaba2\Database\Connection
 {
-
     protected const CONFIG_DEFAULTS = [
         'host'      => 'localhost',
         'port'      => 3306,

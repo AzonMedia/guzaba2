@@ -47,7 +47,6 @@ class Redis extends Database
 
     public function add_instance(ActiveRecordInterface $ActiveRecord) : string
     {
-
     }
 
     public function &get_data_pointer( string $class, array $lookup_index) : array

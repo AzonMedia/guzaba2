@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
 use http\Env\Response;
@@ -16,10 +15,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  * This is just a basic request handler that will serve the provided $ResponsePrototype
  * @package Guzaba2\Http
  */
-class RequestHandler extends Base
-implements RequestHandlerInterface
+class RequestHandler extends Base implements RequestHandlerInterface
 {
-
     protected $Response;
 
     public function __construct(?ResponseInterface $ResponsePrototype = NULL)

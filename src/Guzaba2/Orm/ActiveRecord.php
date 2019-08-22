@@ -19,13 +19,13 @@ use Guzaba2\Orm\Traits\ActiveRecordOverloading;
 use Guzaba2\Orm\Traits\ActiveRecordSave;
 use Guzaba2\Orm\Traits\ActiveRecordLoad;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
+
 //use Guzaba2\Orm\Traits\ActiveRecordValidation;
 //use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
 //use Guzaba2\Orm\Traits\ActiveRecordDelete;
 
 
-class ActiveRecord extends GenericObject
-implements ActiveRecordInterface
+class ActiveRecord extends GenericObject implements ActiveRecordInterface
 {
     const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
 
@@ -171,18 +171,20 @@ implements ActiveRecordInterface
     }
     
     //public function __construct(StoreInterface $Store)
+
     /**
      * ActiveRecord constructor.
      * @param $index
      * @param StoreInterface|null $Store
      * @throws \ReflectionException
+     * @throws RunTimeException
      */
     public function __construct( /* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
-            throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class() ));
+            throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
         
         if ($this->index == self::INDEX_NEW) { //checks is the index already set (as it may be set in _before_construct()) - if not set it
@@ -295,8 +297,6 @@ implements ActiveRecordInterface
 //                $this->{$property_name} =& $pointer[$property_name];
 //            }
 //        }
-
-
     }
 
     /**
@@ -309,7 +309,7 @@ implements ActiveRecordInterface
         if (count($primary_index_columns) === 1) {
             $ret = $this->record_data[$primary_index_columns[0]];
         } else {
-            foreach($primary_index_columns as $primary_index_column) {
+            foreach ($primary_index_columns as $primary_index_column) {
                 $ret[] = $this->record_data[$primary_index_column];
             }
         }

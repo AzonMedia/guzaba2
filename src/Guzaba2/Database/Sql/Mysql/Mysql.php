@@ -48,9 +48,9 @@ abstract class Mysql extends Base
         //TODO - test all types
         if (!empty($row['CHARACTER_MAXIMUM_LENGTH'])) {
             return $row['CHARACTER_MAXIMUM_LENGTH'];
-        } elseif(!empty($row['CHARACTER_OCTET_LENGTH'])) {
+        } elseif (!empty($row['CHARACTER_OCTET_LENGTH'])) {
             return $row['CHARACTER_OCTET_LENGTH'];
-        } elseif(!empty($row['NUMERIC_PRECISION'])) {
+        } elseif (!empty($row['NUMERIC_PRECISION'])) {
             return $row['NUMERIC_PRECISION'];
         } else {
             throw new InvalidArgumentException(sprintf(t::_('Unable to determine the column size based on the provided data.')));

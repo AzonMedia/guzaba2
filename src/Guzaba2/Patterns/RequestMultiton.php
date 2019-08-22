@@ -23,5 +23,4 @@ namespace Guzaba2\Patterns;
  */
 abstract class RequestMultiton extends Multiton
 {
-
 }

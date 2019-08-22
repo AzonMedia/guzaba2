@@ -31,7 +31,7 @@ class ControllerHelper
             }
             if (is_object($callable[0])) {
                 $hash = md5(spl_object_hash($callable[0]) . $callable[1]);
-                //NOTE - if the object gets destroyed its spl object hash may get reused by another!
+            //NOTE - if the object gets destroyed its spl object hash may get reused by another!
             } elseif (is_string($callable[0])) {
                 $hash = md5($callable[0] . $callable[1]);
             } else {
@@ -39,7 +39,7 @@ class ControllerHelper
             }
         } elseif (is_object($callable)) {
             $hash = md5(spl_object_hash($callable));
-            //NOTE - if the object gets destroyed its spl object hash may get reused by another!
+        //NOTE - if the object gets destroyed its spl object hash may get reused by another!
         } else {
             throw new InvalidArgumentException(sprintf(t::_('The provided argument doesnt seem to be a valid callable. It is of type "%s".'), gettype($callable)));
         }

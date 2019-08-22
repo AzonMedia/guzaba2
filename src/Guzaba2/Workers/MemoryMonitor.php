@@ -59,7 +59,7 @@ class MemoryMonitor extends WorkerSingleton
                 break;
             case self::UNIT_KILOBYTES:
                 break;
-            case self::UNIT_MEGABYTES;
+            case self::UNIT_MEGABYTES:
                 break;
             default:
                 throw new InvalidArgumentException(sprintf(t::_('The provided $units argument does not contain a valid value.')));
@@ -85,5 +85,4 @@ class MemoryMonitor extends WorkerSingleton
 
         return $ret;
     }
-
 }

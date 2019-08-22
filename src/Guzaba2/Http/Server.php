@@ -12,7 +12,6 @@ use Guzaba2\Base\Base as Base;
  */
 abstract class Server extends Base
 {
-
     protected $host;
 
     protected $port;
@@ -26,9 +25,9 @@ abstract class Server extends Base
         $this->options = $options;
     }
 
-    public abstract function start();
+    abstract public function start();
 
-    public abstract function stop();
+    abstract public function stop();
 
-    public abstract function on(string $event_name, callable $callable);
+    abstract public function on(string $event_name, callable $callable);
 }

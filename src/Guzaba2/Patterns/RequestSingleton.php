@@ -30,7 +30,6 @@ use Guzaba2\Patterns\Interfaces\SingletonInterface;
  */
 abstract class RequestSingleton extends Singleton
 {
-
     private static $instances = [];
 
     /**
@@ -92,5 +91,4 @@ abstract class RequestSingleton extends Singleton
         self::$instances[$called_class] = NULL;
         unset(self::$instances[$called_class]);
     }
-
 }

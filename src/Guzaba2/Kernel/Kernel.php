@@ -31,6 +31,7 @@ use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
 /**
  * Class Kernel
@@ -108,7 +109,6 @@ class Kernel
 
     private function __construct()
     {
-
     }
 
     //////////////////////
@@ -138,7 +138,6 @@ class Kernel
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
-
     }
 
 
@@ -191,7 +190,6 @@ class Kernel
      */
     public static function run(callable $callable) : int
     {
-
         if (!self::is_initialized()) {
             throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
         }
@@ -204,7 +202,7 @@ class Kernel
         return $ret;
     }
 
-    public static function dump( /* mixed */ $var) : void
+    public static function dump(/* mixed */ $var) : void
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
@@ -254,7 +252,8 @@ class Kernel
     }
 
     /**
-     * Error handler works even in Swoole worker context
+     * Error handler works even in Swoole worker context.
+     * Converts all notices/errors/warnings to ErrorException.
      * @param int $errno
      * @param string $errstr
      * @param string $errfile
@@ -275,6 +274,15 @@ class Kernel
         //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
         //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
+    }
+
+    /**
+     * Prints a message to the default output of the server (in daemon mode this is redirected to file).
+     * @param $message
+     */
+    public static function printk(string $message) : void
+    {
+        print $message;
     }
 
     /**
@@ -334,20 +342,21 @@ class Kernel
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
             }
-
         }
 
         return $ret;
     }
 
+    /**
+     * @param string $class_path
+     * @param string $class_name
+     * @return mixed|null
+     */
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
-
         $ret = NULL;
 
         try {
-
-
             if (\Swoole\Coroutine::getCid() > 0) {
                 $class_source = \Swoole\Coroutine::readFile($class_path);
             } else {
@@ -359,15 +368,14 @@ class Kernel
 
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
-
             } else {
                 $ret = require_once($class_path);
             }
         } catch (\Throwable $exception) {
-            print '==================='.PHP_EOL;
+            //print '==================='.PHP_EOL;
             print 'ERROR IN CLASS GENERATION'.PHP_EOL;
             print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
-            print '==================='.PHP_EOL;
+            //print '==================='.PHP_EOL;
         }
 
 
@@ -397,8 +405,6 @@ class Kernel
 
             //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
-
-
                 $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
 
                 $runtime_config = $default_config;
@@ -433,33 +439,30 @@ class Kernel
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $registry_config = self::$Registry->get_class_config_values($class_name);
 
-
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
                         $runtime_config[$key_name] = $registry_config[$key_name];
                     }
                     //check also if there any any prefix in the var name that matches a prefix in the config array
                     if (is_array($key_value)) {
-                        //look for $key_name as part of a var name
-                        //assuming _ as separator between the array
-
-                        foreach ($registry_config as $reg_key_name => $reg_key_value) {
-                            if (strpos($reg_key_name, $key_name) === 0) { //begins with
-                                $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
+                        $WalkArrays = function ($registry_config) use (&$WalkArrays) {
+                            foreach ($registry_config as $reg_key_name => $reg_key_value) {
+                                if (is_array($reg_key_value)) {
+                                    $WalkArrays($reg_key_value);
+                                } else {
+                                    //look for $key_name as part of a var name
+                                    //assuming _ as separator between the array
+                                    if (strpos($reg_key_name, $key_name) === 0) { //begins with
+                                        $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
+                                    }
+                                }
                             }
-                        }
-                        //todo - rework with a closure to handle multidomentional arrays
-//                        $WalkArrays = function () use (&$runtime_config, $registry_config) : void
-//                        {
-//
-//                        };
+                        };
                     }
                 }
-
             } else {
                 //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
-
         } else {
             //do nothing - does not require configuration
         }
@@ -468,17 +471,16 @@ class Kernel
 
     /**
      * @param string $class_name
+     * @throws \ReflectionException
      */
     protected static function initialize_class(string $class_name) : void
     {
-
         $RClass = new ReflectionClass($class_name);
 
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);
         }
-
     }
 
     /**
@@ -491,17 +493,14 @@ class Kernel
 
     public static function execute_in_worker($callable)
     {
-
     }
 
     public static function execute_delayed($callable, ?TraceInfoObject $trace_info = NULL)
     {
-
     }
 
     public static function execute_in_shutdown($callable, ?TraceInfoObject $trace_info = NULL)
     {
-
     }
 
 
@@ -546,4 +545,27 @@ class Kernel
 //        file_put_contents(p::$PATHS['logs'][p::CURDIR].$filename, $string,FILE_APPEND);
     }
 
+    /**
+     * @return bool
+     * @todo implement
+     */
+    public static function is_production()
+    {
+        return false;
+    }
+
+    /**
+     * Logs a a message using the default logger
+     *
+     * @param string $message
+     * @param string $level
+     * @param array $context
+     * @return bool
+     */
+    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
+    {
+        $Logger = self::get_logger();
+        $Logger->log($level, $message, $context);
+        return TRUE;
+    }
 }

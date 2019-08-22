@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
 
@@ -25,8 +24,7 @@ use Psr\Http\Message\StreamInterface;
  * Class Response
  * @package Guzaba2\Http
  */
-class Response extends Message
-implements ResponseInterface
+class Response extends Message implements ResponseInterface
 {
 
     /**
@@ -79,7 +77,7 @@ implements ResponseInterface
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus( /* int */ $code, /* string */ $reasonPhrase = '') /* self */
+    public function withStatus(/* int */ $code, /* string */ $reasonPhrase = '') /* self */
     //public function withStatus(int $code, string $reasonPhrase = '') : self
     {
         $this->checkStatus($code);

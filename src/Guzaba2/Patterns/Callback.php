@@ -42,8 +42,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class Callback extends Base
 {
-
-
     protected $callable;
 
     /**
@@ -80,9 +78,8 @@ class Callback extends Base
      * @throws RunTimeException
      */
     //callable typehint treats the array as callable too but only if the provided array is actually a valid callback!
-    public function __construct( /* callable */ $callable, bool $preserve_context = TRUE, ?TraceInfoObject $trace_info = NULL)
+    public function __construct(/* callable */ $callable, bool $preserve_context = TRUE, ?TraceInfoObject $trace_info = NULL)
     {
-
         if (is_array($callable)) {
             if (!isset($callable[0])) {
                 Kernel::logtofile('EXECUTE_CALLABLE_DEBUG_3', 'the provided array as callable has no key 0.');
@@ -129,7 +126,6 @@ class Callback extends Base
                 $this->callable[0]->destroy_reference();
             }
         }
-
     }
 
     /**
@@ -163,7 +159,7 @@ class Callback extends Base
         try {
             if ($this->executionContext && !$this->executionContext->contextIsApplied()) {
                 //$this->executionContext->execute();
-                $ret = call_user_func_array(array($this->executionContext, 'execute'), $args);
+                $ret = call_user_func_array([$this->executionContext, 'execute'], $args);
             } else { //either there is no context or it is already applied
                 $ret = call_user_func_array($this->callable, $args);
             }
@@ -188,7 +184,6 @@ class Callback extends Base
      */
     public function getCallable() /* callable|array */
     {
-
         if ($this->callable instanceof ExecutionContext) {
             return $this->executionContext->getCallable();
         } else {
@@ -237,9 +232,8 @@ class Callback extends Base
         } else {
             if ($this->callable instanceof \Closure) {
                 $this->prepare_for_serialization();
-                //$this->callable is now in self::properties_not_to_be_serialized_cache
+            //$this->callable is now in self::properties_not_to_be_serialized_cache
                 //$this->callable = null;//we remove the callable if it is a closure instead of putting it in self::$properties_not_to_be_serialized because thiw would mean always to skip it. And we need to leave the callable if it is of any other type but Closure
-
             } else {
                 //we can leave it as it is - only the closures cant be serialized.
                 $this->callable_source = $this->callable;
@@ -251,7 +245,6 @@ class Callback extends Base
 
     protected function _after_unserialize(): void
     {
-
         if (is_string($this->callable_source)) {
             $this->callable = k::eval_code($this->callable_source);//this does not use php eval but instead includes the file from memory
         } else {
@@ -289,7 +282,6 @@ class Callback extends Base
                         //but if just passed directly this will not be the case
                     }
                     $source = '$' . $key . ' = \\' . $class . '::get_instance(' . $index . ', $' . strtoupper($key) . ');' . PHP_EOL . $source;
-
                 } elseif ($value instanceof TableGateway) {
                     // TODO implement if needed TableGateway
                     $class = get_class($value);
@@ -302,8 +294,6 @@ class Callback extends Base
 
             $this->callable_source = $source;
             //TODO add support for parsing & serializing the arguments
-
         } //TODO add support for the other types of callbacks
     }
-
 }
