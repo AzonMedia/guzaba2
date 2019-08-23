@@ -12,7 +12,6 @@ use Guzaba2\Base\Base;
  */
 class Debugger extends Base
 {
-
     protected const CONFIG_DEFAULTS = [
         'enabled'   => TRUE,
         'base_port' => 10000,//on this port the first worker will listen
@@ -64,8 +63,7 @@ class Debugger extends Base
 //            }
 //        });
         //$this->DebugServer->handle([$this,'connection_handler']);//Triggers Uncaught TypeError: Argument 1 passed to Swoole\Coroutine\Server::handle() must be callable, array given
-        $Function = function(\Swoole\Coroutine\Server\Connection $Connection) : void
-        {
+        $Function = function (\Swoole\Coroutine\Server\Connection $Connection) : void {
             while (true) {
                 $command = $Connection->recv();
                 $response = $this->Debugger->handle($command);
@@ -80,8 +78,6 @@ class Debugger extends Base
         };
         $this->DebugServer->handle($Function);
         $this->DebugServer->start();
-
-
     }
 
     protected function connection_handler(\Swoole\Coroutine\Server\Connection $Connection) : void

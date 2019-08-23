@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Swoole\Handlers;
 
-
 use Guzaba2\Swoole\Debug\Debugger;
 
 /**
