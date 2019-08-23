@@ -72,6 +72,16 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer->set($options);
     }
 
+    public function get_host() : string
+    {
+        return $this->host;
+    }
+
+    public function get_port() : int
+    {
+        return $this->port;
+    }
+
     public function start() : void
     {
         //before entering in coroutine mode it is a good idea to disable the blocking functions:
@@ -79,6 +89,8 @@ class Server extends \Guzaba2\Http\Server
         \Swoole\Runtime::enableStrictMode();
 
         printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port);
+
+        //Kernel::printk(sprintf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port));
         $this->SwooleHttpServer->start();
     }
 

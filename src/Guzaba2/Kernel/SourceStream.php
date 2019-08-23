@@ -153,6 +153,7 @@ class SourceStream extends Base
         eval($class_without_config_source);
 
         $runtime_config = Kernel::get_runtime_configuration($class_name.'_without_config');
+
         //print 'DDDD';
         $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
         $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ', var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
