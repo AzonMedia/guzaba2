@@ -82,11 +82,20 @@ class Debugger extends Base
                     $Connection->close();
                     return;
                 } else {
-                    $response = $this->Debugger->handle($command);
+                    $set_prompt_to = NULL;
+                    $response = $this->Debugger->handle($command, $this->get_prompt(), $set_prompt_to);
 
                     Kernel::printk('Debugger response: '.$response.PHP_EOL);
                     if ($response === NULL) {
                         $response = sprintf(t::_('Unknown command provided. Try "help" or "quit".'));
+                    }
+                    if ($set_prompt_to !== NULL) {
+                        if ($set_prompt_to === '{RESTORE}') {
+                            $this->restore_prompt();
+                        } else {
+                            $this->set_prompt($set_prompt_to);
+                        }
+
                     }
                     //$json = json_decode($data, true);
                     //Assert::eq(is_array($json), $json['data'], 'hello');

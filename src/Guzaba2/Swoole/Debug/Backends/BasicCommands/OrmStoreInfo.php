@@ -17,7 +17,7 @@ class OrmStoreInfo implements CommandInterface
 //
 //    protected const CONFIG_RUNTIME = [];
 
-    public function handle(string $command) : ?string
+    public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = NULL) : ?string
     {
         $ret = NULL;
         if ($this->can_handle($command)) {
