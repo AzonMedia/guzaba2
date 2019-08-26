@@ -5,8 +5,7 @@ namespace Guzaba2\Swoole\Debug\Backends\BasicCommands;
 use Azonmedia\Debug\Interfaces\CommandInterface;
 use Guzaba2\Kernel\Kernel;
 
-class OrmStoreInfo
-    implements CommandInterface
+class OrmStoreInfo implements CommandInterface
 {
 
     //this class does not extend base so no services here

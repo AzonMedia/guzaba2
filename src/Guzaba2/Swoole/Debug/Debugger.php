@@ -93,7 +93,6 @@ class Debugger extends Base
                     $response .= PHP_EOL;
                     $Connection->send($response);
                 }
-
             }
         };
         $this->DebugServer->handle($Function);
