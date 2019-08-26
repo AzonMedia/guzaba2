@@ -9,8 +9,14 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
-class Store extends Base implements StoreInterface
+abstract class Store extends Base implements StoreInterface
 {
+
+    /**
+     * @var StoreInterface|null
+     */
+    protected $FallbackStore;
+
     public function __construct()
     {
         parent::__construct();
@@ -43,5 +49,10 @@ class Store extends Base implements StoreInterface
         }
         
         return $ret;
+    }
+
+    public function get_fallback_store() : ?StoreInterface
+    {
+        return $this->FallbackStore;
     }
 }

@@ -232,7 +232,9 @@ class Kernel
     public static function exception_handler(\Throwable $exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
     {
         $output = '';
-        $output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
+        //$output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
+        //should not depend on the translator (t::_()) or any other code that is additionally autoloaded
+        $output .= sprintf('Exception %s: %s in %s#%s', get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
 
@@ -282,6 +284,8 @@ class Kernel
      */
     public static function printk(string $message) : void
     {
+        //TODO - would be nice if this can also print to any connected debugger session...
+        //better - instead there can be Console sessions attached for these messages (which is different from debug session)
         print $message;
     }
 

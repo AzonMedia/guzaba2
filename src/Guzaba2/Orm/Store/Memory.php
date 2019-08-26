@@ -24,10 +24,6 @@ class Memory extends Store implements StoreInterface
 
     protected const CONFIG_RUNTIME = [];
 
-    /**
-     * @var StoreInterface|null
-     */
-    protected $FallbackStore;
 
     /**
      * @var MetaStoreInterface

@@ -86,7 +86,8 @@ class Server extends \Guzaba2\Http\Server
     {
         //before entering in coroutine mode it is a good idea to disable the blocking functions:
         //https://wiki.swoole.com/wiki/page/1006.html
-        \Swoole\Runtime::enableStrictMode();
+        //\Swoole\Runtime::enableStrictMode();
+        //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
 
         printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port);
 
