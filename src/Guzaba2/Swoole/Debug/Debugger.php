@@ -95,7 +95,6 @@ class Debugger extends Base
                         } else {
                             $this->set_prompt($set_prompt_to);
                         }
-
                     }
                     //$json = json_decode($data, true);
                     //Assert::eq(is_array($json), $json['data'], 'hello');
