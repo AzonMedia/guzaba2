@@ -15,7 +15,6 @@ use Guzaba2\Translator\Translator as t;
 
 class Mysql extends Database
 {
-
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta',
     ];
@@ -232,8 +231,6 @@ WHERE
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_index();
         if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
-            
-
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
@@ -388,7 +385,6 @@ ON DUPLICATE KEY UPDATE
                     throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
                 }
             }
-
         }
 
 //        if ($this->is_new() /*&& !$already_in_save */) {
@@ -428,7 +424,6 @@ ON DUPLICATE KEY UPDATE
 
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
-
     }
 
     public function &get_data_pointer(string $class, array $index) : array

@@ -60,6 +60,6 @@ class NullStore extends Store implements StoreInterface
 
     public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
-        throw new RunTimeException(sprintf(t::_('ORM Store %s does not support updating records.'), __CLASS__ ));
+        throw new RunTimeException(sprintf(t::_('ORM Store %s does not support updating records.'), __CLASS__));
     }
 }

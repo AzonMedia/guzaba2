@@ -65,7 +65,6 @@ trait ActiveRecordOverloading
 
     public function __set(string $property, /* mixed */ $value) : void
     {
-
         $this->unhook_data_pointer();
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
