@@ -1,6 +1,6 @@
 <?php
 
-namespace Guzaba2\Lock\Backends;
+namespace Guzaba2\Lock\Pessimistic\Backends;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;

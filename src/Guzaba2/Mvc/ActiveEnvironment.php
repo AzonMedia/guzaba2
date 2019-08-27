@@ -82,7 +82,7 @@ class ActiveEnvironment extends Singleton implements Wrapper
         return (string) $this->env;
     }
 
-    public static function get_instance(): \Guzaba2\Patterns\Interfaces\SingletonInterface
+    public static function &get_instance(): \Guzaba2\Patterns\Interfaces\SingletonInterface
     {
         // TODO: Implement get_instance() method.
     }

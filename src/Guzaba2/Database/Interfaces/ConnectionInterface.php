@@ -12,9 +12,9 @@ interface ConnectionInterface
     /*
     public function begin_transaction();
 
-    public function commit();
+    public function commit(\Guzaba2\Database\scopeReference &$scope_reference);
 
-    public function rollback();
+    public function rollback(\Guzaba2\Database\scopeReference &$scope_reference);
 
     public function create_savepoint(string $savepoint);
 

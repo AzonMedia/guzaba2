@@ -1026,7 +1026,7 @@ abstract class Pdo extends Connection
      * @throws framework\database\exceptions\transactionException
      * @throws framework\transactions\exceptions\transactionException
      */
-    public function rollBack(framework\patterns\classes\scopeReference &$scope_reference)
+    public function rollBack(scopeReference &$scope_reference)
     {
         if (self::DBG_USE_TXM) {
             TXM::rollback($scope_reference);
@@ -1143,7 +1143,7 @@ abstract class Pdo extends Connection
      * @throws framework\database\exceptions\transactionException
      */
     //public function commit(&$scope_reference = '&', $callback = null) {
-    public function commit(framework\patterns\classes\scopeReference &$scope_reference)
+    public function commit(scopeReference &$scope_reference)
     {
         if (self::DBG_USE_TXM) {
             TXM::commit($scope_reference);

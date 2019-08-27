@@ -368,7 +368,7 @@ final class PdoStatement extends Statement
      * @return object|void
      * @todo fix no static call of statement
      */
-    public static function __callStatic(string $method, array $args)
+    public static function __callStatic(string $method, array $args): object
     {
         call_user_func_array([get_class($this->statement)], $args);
     }

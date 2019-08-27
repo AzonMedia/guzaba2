@@ -18,7 +18,7 @@
  */
 
 
-namespace org\guzaba\framework\database\classes;
+namespace Guzaba2\Database;
 
 use org\guzaba\framework;
 use org\guzaba\framework\constants as c;
@@ -29,7 +29,9 @@ use org\guzaba\framework\translator\classes\translator as t;
 /**
  * An object that wraps around the array returned from a query.
  */
-class resultSet extends resultSet_config implements \Iterator, \ArrayAccess, \Countable
+class ResultSet
+//extends resultSet_config
+implements \Iterator, \ArrayAccess, \Countable
 {
 
     /**

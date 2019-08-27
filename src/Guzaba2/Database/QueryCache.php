@@ -19,7 +19,7 @@ declare(strict_types=1);
  * @author        Vesselin Kenashkov <vesko@webstudiobulgaria.com>
  */
 
-namespace org\guzaba\framework\database\classes;
+namespace Guzaba2\Database;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Database\PdoStatement;
@@ -169,7 +169,7 @@ final class QueryCache extends Singleton
         return $tables;
     }
 
-    public static function get_instance(): \Guzaba2\Patterns\Interfaces\SingletonInterface
+    public static function &get_instance(): \Guzaba2\Patterns\Interfaces\SingletonInterface
     {
         // TODO: Implement get_instance() method.
     }
