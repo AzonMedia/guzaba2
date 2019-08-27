@@ -12,19 +12,17 @@ use Guzaba2\Kernel\Kernel;
  */
 class Printk implements CommandInterface
 {
-
     public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = NULL) : ?string
     {
         $ret = NULL;
         if ($this->can_handle($command)) {
-            $message = str_replace('printk ','',$command).' ';
+            $message = str_replace('printk ', '', $command).' ';
             if (!strlen($message)) {
                 $ret = 'Please provide the message to be printed.';
             } else {
                 $ret = sprintf('The message "%s" printed to the standard output of the swoole server.', $message);
                 Kernel::printk($message.PHP_EOL);
             }
-
         }
         return $ret;
     }
