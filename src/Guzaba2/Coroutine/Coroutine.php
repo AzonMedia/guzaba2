@@ -629,7 +629,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function awaitSubCoroutines(?int $timeout = NULL) : void
     {
-        print 'Await'.self::getCid().PHP_EOL;
+        //print 'Await'.self::getCid().PHP_EOL;
         if ($timeout === NULL) {
             $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }

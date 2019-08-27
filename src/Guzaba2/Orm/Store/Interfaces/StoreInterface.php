@@ -22,5 +22,5 @@ interface StoreInterface
 
     public function &get_data_pointer(string $class, array $lookup_index) : array ;
 
-    public function add_instance(ActiveRecordInterface $ActiveRecord) : string ;
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void ;
 }

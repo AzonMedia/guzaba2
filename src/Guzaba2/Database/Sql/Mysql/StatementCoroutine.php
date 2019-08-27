@@ -52,7 +52,8 @@ class StatementCoroutine extends Statement implements StatementInterface
 
 
         if ($parameters && $this->params) {
-            throw new ParameterException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
+            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
+            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__ ));
         }
 
         if (!$parameters) {
@@ -62,12 +63,12 @@ class StatementCoroutine extends Statement implements StatementInterface
         //validate the set parameters do they correspond to the expected parameters
         foreach ($this->expected_parameters as $expected_parameter) {
             if (!array_key_exists($expected_parameter, $parameters)) {
-                throw new ParameterException(sprintf(t::_('The prepared statement expects parameter named %s and this is not found in the provided parameters.'), $expected_parameter));
+                throw new ParameterException($expected_parameter, sprintf(t::_('The prepared statement expects parameter named %s and this is not found in the provided parameters.'), $expected_parameter), $this->query, $parameters);
             }
         }
         foreach ($parameters as $provided_parameter=>$value) {
             if (!in_array($provided_parameter, $this->expected_parameters)) {
-                throw new ParameterException(sprintf(t::_('An unexpected paramtere named %s is provided to the prepared statement.'), $provided_parameter));
+                throw new ParameterException($provided_parameter, sprintf(t::_('An unexpected paramtere named %s is provided to the prepared statement.'), $provided_parameter), $this->query, $parameters);
             }
         }
         $position_parameters = array_values($parameters);//execute() expects indexed array
@@ -93,7 +94,7 @@ class StatementCoroutine extends Statement implements StatementInterface
         if (is_array($ret)) {
             $this->rows = $ret;
         }
-        print 'StatementCoroutine execute';
+        //print 'StatementCoroutine execute';
         
         return $this;
     }

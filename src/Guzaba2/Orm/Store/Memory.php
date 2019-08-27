@@ -106,16 +106,15 @@ class Memory extends Store implements StoreInterface
     }
 
     /**
-     * For adding newly created instances or instances.
-     * It is also used when an instance that does not exist in the cache is pulled from a fallback storage.
      * @param ActiveRecordInterface $ActiveRecord
      * @return string
      */
-    public function add_instance(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
-        $class = get_class($ActiveRecord);
-        $lookup_index = $ActiveRecord->get_lookup_index();
+        //$class = get_class($ActiveRecord);
+        //$lookup_index = $ActiveRecord->get_lookup_index();
         //$this->data[$class][$lookup_index] = $this->process_instance();
+        $this->FallbackStore->update_record($ActiveRecord);
     }
 
     /**

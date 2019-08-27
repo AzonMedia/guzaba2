@@ -36,7 +36,7 @@ trait ActiveRecordStructure
 //            //return 'string';//the value column on the arr_table and assoc_arr_table is string
 //            return 'array';//but returning string will be very misleading so we better return array
 //        }
-        return self::$columns_data[$field_name]['php_type'];
+        return static::get_columns_data()[$field_name]['php_type'];
     }
 
     /**
@@ -57,7 +57,7 @@ trait ActiveRecordStructure
             //return 'string';//the value column on the arr_table and assoc_arr_table is string
             return 'array';//but returning string will be very misleading so we better return array (even that mysql actually doesnt support array as a native type (PG does!))
         }
-        return self::$columns_data[$field_name]['native_type'];
+        return static::get_columns_data()[$field_name]['native_type'];
     }
 
     /**
@@ -86,7 +86,7 @@ trait ActiveRecordStructure
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
         }
         //this will also work for array_field_names and assoc_array_field_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
-        return self::$columns_data[$field_name];
+        return static::get_columns_data()[$field_name];
     }
 
     /**
@@ -113,7 +113,7 @@ trait ActiveRecordStructure
     public function has_field(string $field_name) : bool
     {
         //return isset(self::$columns_data[$field_name]) || $this->is_field_array($field_name) || $field_name==$this->get_field_prefix().'_url_rewrite';
-        return array_key_exists($field_name, self::$columns_data);
+        return array_key_exists($field_name, static::get_columns_data());
     }
 
     /**
@@ -133,7 +133,7 @@ trait ActiveRecordStructure
 //        if ($this->is_field_array($field_name)) {
 //            return FALSE;//the array fields cant contain NULLs
 //        }
-        return self::$columns_data[$field_name]['nullable'];
+        return static::get_columns_data()[$field_name]['nullable'];
     }
 
     /**
@@ -154,6 +154,6 @@ trait ActiveRecordStructure
 //            return '';//the default value is empty string (the value column are of type string)
 //        }
 
-        return self::$columns_data[$field_name]['default_value'];
+        return static::get_columns_data()[$field_name]['default_value'];
     }
 }

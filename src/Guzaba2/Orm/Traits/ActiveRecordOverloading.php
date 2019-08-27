@@ -10,57 +10,21 @@ trait ActiveRecordOverloading
 {
 
     /**
-     * Returns TRUE if the provided property is actually a language, not a real property.
-     * @example $instance->en->some_property
-     * @param string $property
-     * @return bool
-     * @created 07.11.2017
-     * @author vesko@azonmedia.com
-     * @since 0.7.1
-     */
-    protected function property_is_language(string $property) : bool
-    {
-        /*
-        $ret = false;
-
-        //speedup
-        if ($property == k::SOURCE_LANG) {
-            $ret = true;
-            goto ret;
-        } elseif (strlen($property) != 2) {
-            goto ret;
-        } else {
-
-            static $static_cache = [];
-            if (array_key_exists($property, $static_cache)) {
-                $ret = $static_cache[$property];
-                goto ret;
-            }
-
-            foreach ($this->_langs as $lang_key=>$lang_name) {
-                if ($property == $lang_key) {
-                    $ret = true;
-                    goto ret;
-                }
-            }
-            $static_cache[$property] = $ret;
-
-        }
-
-
-        ret:
-        */
-        $ret = FALSE;
-        if (strlen($property) === 2) {
-            $ret = TRUE;
-        }
-        return $ret;
-    }
-
-    /**
-     * @param string $property
+     * The overloading is used so that all the columns/fields fro mthe database can appear as properties on instance.
+     * The logic of the framework includes handling also of multilanguage and array properties.
+     * @param string $property The name of the property that is being accessed
      * @return mixed
      * @throws RunTimeException
+     * @see http://gitlab.azonmedia.com:4500/root/guzaba-framework/wikis/documentation-0.7/dynamic-properties
+     *
+     * This method returns by reference so that array properties can have their values modified directly
+     *
+     * @example
+     * print $page->page_id
+     * print $page->en->page_title
+     * print $blog->blog_tag_id[1];
+     *
+     * This also supports accessing dynamic properties (properties that are derived from other)
      */
     public function &__get(string $property) /* mixed */
     {
@@ -97,102 +61,13 @@ trait ActiveRecordOverloading
      *
      * This also supports accessing dynamic properties (properties that are derived from other)
      */
-    public function &__get_old(string $property)
-    {
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
-            call_user_func_array([$this,'_before_get_'.$property], []);
-        }
 
-        //if ($is_dynamic_property) {
-        //    $dynamic_property_instance = static::get_dynamic_property_instance($property);
-        //    $ret = $dynamic_property_instance->get_value($this);
-        //} elseif (in_array($property,$this->languages)) {
-
-        //usually the needed property is in this array
-        if (array_key_exists($property, $this->record_data)) {
-            // //in this case also a permission check on a per property basis is needed
-            // $required_permissions_to_read = array();//no need to include read - the object is loaded so there is read permission
-            // if ( isset($this->fields_permissions_to_read) && isset($this->fields_permissions_to_read[$property]) ) {
-            //     if (is_array($this->fields_permissions_to_read[$property])) {
-            //         $required_permissions_to_read = array_merge($required_permissions_to_read,$this->fields_permissions_to_read[$property]);
-            //     } else {
-            //         $required_permissions_to_read = $this->fields_permissions_to_read[$property];
-            //     }
-            // }
-
-            // //if ($this->check_permission($required_permissions_to_read)) {
-            // if ($this->session_subject_can($required_permissions_to_read)) {
-            //     $ret = $this->record_data[$property];
-            // } else {
-            //     //$ret = null;// no exception will be thrown here, instead return null
-            //     $ret = false;//returned false means that there are no permissions to read this property
-            //     //the properties that are saved in the database will not use booleans (instead integers 0 & 1). Null will not be used, because it is legal value in the database and often some fields will have null value
-            // }
-            $ret = $this->record_data[$property];
-        } elseif (array_key_exists($property, $this->meta_data) && $property!='class_id' && $property!='object_id') {
-            //there is no need for permissions check here - the ownerhsip data can be read if there is read permission (which is present, because the object is loaded)
-            $ret = $this->meta_data[$property];
-        } elseif ($this->property_is_language($property)) {
-            $this->current_language = $property;
-            $ret = $this;
-        } elseif (isset($this->languages_record_data[$this->current_language])&&array_key_exists($property, $this->languages_record_data[$this->current_language])) {
-            //THE BELOW IS TOO SLOW
-            //TODO - convert the mapping required for permissions to read a specific property to a constant or a static var in config
-            //permissions check on a per property basis is needed here
-            // $required_permissions_to_read = array();//no need to include read - the object is loaded so there is read permission
-            // if (isset($this->fields_permissions_to_read)&&isset($this->fields_permissions_to_read[$property])) {
-            //     if (is_array($this->fields_permissions_to_read[$property])) {
-            //         $required_permissions_to_read = array_merge($required_permissions_to_read,$this->fields_permissions_to_read[$property]);
-            //     } else {
-            //         $required_permissions_to_read = $this->fields_permissions_to_read[$property];
-            //     }
-            // }
-            // //if ($this->check_permission($required_permissions_to_read)) {
-            // if ($this->session_subject_can($required_permissions_to_read)) {
-            //     $ret = $this->languages_record_data[$this->current_language][$property];
-            // } else {
-            //     $ret = null;// no exception will be thrown here, instead return null
-            // }
-            $ret = $this->languages_record_data[$this->current_language][$property];
-        } else {
-
-            /*
-            $is_dynamic_property = false;
-            if (ctype_upper(str_replace('_','',$property))) {
-                if (!static::dynamic_properties_list_loaded()) {
-                    static::load_dynamic_properties_list();
-                }
-                if (static::dynamic_property_exists($property)) {
-                    if (!static::dynamic_properties_loaded()) {
-                        static::load_dynamic_properties();
-                    }
-                    $is_dynamic_property = true;
-                }
-                //it is in CAPS but doesnt seem to be a dynamic property
-            }
-
-            if ($is_dynamic_property) {
-                $dynamic_property_instance = static::get_dynamic_property_instance($property);
-                $ret = $dynamic_property_instance->get_value($this);
-            } else {
-                $ret = parent::__get($property);//callign the overloading of base
-                //or a specific ORM/database excpetion could be thrown here
-                //throw new framework\database\exceptions\parameterException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'),$property,get_class($this)));
-            }
-            */
-            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
-        }
-
-
-
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
-            $ret = call_user_func_array([$this,'_after_get_'.$property], [$ret]);
-        }
-        return $ret;
-    }
 
     public function __set(string $property, /* mixed */ $value) : void
     {
+
+        $this->unhook_data_pointer();
+
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
             $value = call_user_func_array([$this,'_before_set_'.$property], [$value]);
@@ -238,220 +113,6 @@ trait ActiveRecordOverloading
     }
 
     /**
-     * This overloading is used to set the values of the properties that match the database columns.
-     * @param string $property The name of the property that is being accessed
-     * @param mixed $value
-     * @return void
-     * @throws RunTimeException
-     */
-    public function __set_old(string $property, $value) : void
-    {
-
-        /*
-        $is_dynamic_property = false;
-        if (ctype_upper(str_replace('_','',$property))) {
-            if (!static::dynamic_properties_list_loaded()) {
-                static::load_dynamic_properties_list();
-            }
-            if (static::dynamic_property_exists($property)) {
-                if (!static::dynamic_properties_loaded()) {
-                    static::load_dynamic_properties();
-                }
-                $is_dynamic_property = true;
-            }
-            //it is in CAPS but doesnt seem to be a dynamic property
-        }
-        if ($is_dynamic_property) {
-            throw new framework\base\exceptions\logicException(sprintf(t::_('Trying to set a value to a dynamic property "%s". The dynamic properties are read only.'), $property));
-        }
-        */
-
-        $properties_to_log = self::get_properties_with_enabled_logging();
-        if ($properties_to_log) {
-        }
-
-        if (in_array($property, $properties_to_log)) {
-            $current_value = $this->record_data[$property];
-            $new_value = $value;
-
-            $is_modified = FALSE;
-            if (is_numeric($current_value)) {
-                if (abs((double) $new_value - (double) $current_value) > 0.001) {
-                    $is_modified = TRUE;
-                }
-            } else {
-                if ($new_value != $current_value) {
-                    $is_modified = TRUE;
-                }
-            }
-
-            /*
-            if ($is_modified) {
-                //added logging for price changes
-                $caller_1 = k::get_caller(1);
-                //$caller_str = print_r($caller, TRUE);
-                $called_at_file = $caller_1['file'];
-                $called_at_line = $caller_1['line'];
-
-                $caller_2 = k::get_caller(2);
-                $caller_class = $caller_2['class'];
-                $caller_function = $caller_2['function'];
-
-
-                $current_transaction = self::txm()::getCurrentTransaction(framework\orm\classes\ORMDBTransaction::class);
-                $transaction_id = $current_transaction ? $current_transaction->get_object_internal_id() : NULL;
-                $execution_id = k::get_execution_id();
-                $log_entry = [
-                    'current_value'         => $current_value,
-                    'new_value'             => $new_value,
-                    'called_at_file'        => $called_at_file,
-                    'called_at_line'        => $called_at_line,
-                    'caller_class'          => $caller_class,
-                    'caller_function'       => $caller_function,
-                    'transaction_id'        => $transaction_id,
-                    'execution_id'          => $execution_id,
-                    'microtime'             => microtime(TRUE),
-                    'subject_id'            => framework\session\classes\sessionSubject::get_instance()->get_index(),
-                ];
-
-                $this->properties_value_change_log[$property][] = $log_entry;
-            }
-            */
-        }
-
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
-            //call_user_func_array(array($this,'_before_set_'.$property),array($value));
-            $value = call_user_func_array([$this,'_before_set_'.$property], [$value]);
-        }
-
-        //check the current transaction  - if it is different than the one as per the pointer make another level
-        //$this->check_current_transaction();//no longer done this way
-
-        //commented out for BUSRENTAL
-        /*if ($this->is_readonly_flag) {
-            throw new RunTimeException(sprintf(t::_('The object of class %s is read only. The %s property can not be set.'),get_class($this),$property));
-        }*/
-        if (array_key_exists($property, $this->meta_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to set record ownership property "%s" of instance of "%s". Ownership properties are read only.'), $property, get_class($this)));
-        }
-        if ($property==$this->main_index&&!$this->is_new_flag) {
-            throw new RunTimeException(sprintf(t::_('Trying to set the index "%s" on existing record/object from class "%s". This is allowed only on new objects/records.'), $property, get_class($this)));
-        }
-        if (in_array($property, $this->main_index)) {
-            $this->index[$property] = $value;
-        }
-        //if (in_array($property,$this->languages_field_names)) {
-        if (in_array($property, $this->languages_field_names)&&!in_array($property, $this->main_index)) {
-            //here ther will be no permissions checks on a per property basis - these will be performed on calling save()
-            if (is_array($value)) {
-                //an array with values for all languages is supplied for the specifiv property
-                foreach ($this->languages as $lang) {
-                    if (isset($value[$lang])) {
-                        if ($this->languages_record_data[$lang][$property]!=$value[$lang]) {
-                            $this->record_modified_data[] = $property;
-                            $this->is_modified_flag = true;
-                        }
-                        $this->languages_record_data[$lang][$property] = $value[$lang];
-                    //if this is a newly added language and there are no records up to the moment for this language the id and lang will be missing
-                        //$this->languages_record_data[$lang]['lang'] = $lang;
-
-                        //$this->languages
-                    } else {
-                        throw new RunTimeException(sprintf(t::_('The supplied language array for the property "%s" to an object of class "%s" (ORM) does not contain data for "%s" language.'), $property, get_class($this), $lang));
-                    }
-                }
-            } else {
-                //a scalar is supplied using $object->lang->property invokation
-                if ($this->current_language) {
-                    if ($this->languages_record_data[$this->current_language][$property]!=$value) {
-                        $this->record_modified_data[] = $property;
-                        $this->is_modified_flag = true;
-                    }
-                    $this->languages_record_data[$this->current_language][$property] = $value;
-                } elseif ($property==='lang') {
-                    //ignore it - we do not need to set this if submitted
-                } else {
-                    throw new RunTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'), $property, get_class($this)));
-                }
-            }
-
-            /*
-            } elseif ($this->property_is_language($property)) {
-                $this->current_language = $property;//we just set the current language
-            } elseif ($this->current_language) {
-                //we have set the language and now we should set the property
-                if ($this->languages_record_data[$this->current_language][$property]!=$value) {
-                    $this->record_modified_data[] = $property;
-                    $this->is_modified_flag = true;
-                }
-                $this->languages_record_data[$this->current_language][$property] = $value;
-            } else {
-                throw new RunTimeException(sprintf(t::_('Trying to set a value for a property ("%s") for a language without selecting first the language on an object of class "%s" (ORM). The correct syntax is "$object->lang->property = $value";'),$property,get_class($this)));
-            }
-            */
-        } elseif (in_array($property, $this->array_field_names)) {
-            if ($this->record_data[$property]!=$value) {
-                $this->record_modified_data[] = $property;
-                $this->is_modified_flag = true;
-            }
-            //$this->record_data[$property] = $value;//the arrays are assigned this way here too
-            $this->assign_property_value($property, $value);
-        } elseif (in_array($property, $this->assoc_array_field_names)) {
-            if ($this->record_data[$property]!=$value) {
-                $this->record_modified_data[] = $property;
-                $this->is_modified_flag = true;
-            }
-            //$this->record_data[$property] = $value;//the arrays are assigned this way here too
-            $this->assign_property_value($property, $value);
-        //} elseif (in_array($property,$this->field_names)) {
-        } elseif ($this->get_field_table_name($property)) { //if there is a table returned it is OK - we should data in record_data
-            if (is_float($this->record_data[$property]) && is_float($value)) {
-                if (abs($this->record_data[$property] - $value) > 0.00001) {
-                    $this->record_modified_data[] = $property;
-                    $this->is_modified_flag = true;
-                }
-            } else {
-                if ($this->record_data[$property]!=$value) {
-                    $this->record_modified_data[] = $property;
-                    $this->is_modified_flag = true;
-                }
-            }
-
-            //$this->record_data[$property] = $value;
-            $this->assign_property_value($property, $value);
-        } else {
-            parent::__set($property, $value);
-            //throw new GeneralException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'),$property,get_class($this)));
-        }
-
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
-            call_user_func_array([$this,'_after_set_'.$property], [$value]);
-        }
-
-        //now the current language has to be reset
-        $this->current_language = '';
-
-        /*
-        //get the current transaction and track the changes in the properties as per the transaction
-        $current_transaction = $this->db->get_current_transaction();
-        if ($current_transaction) {
-            $transaction_id = $current_transaction->get_id();
-        } else {
-            $transaction_id = null;
-        }
-        if ($transaction_id) {
-            if (!isset($this->record_transaction_changes[$transaction_id])) {
-                $this->record_transaction_changes[$transaction_id] = array();
-            }
-            $pointer =& $this->record_transaction_changes[$transaction_id];
-        } else {
-            $pointer =& $
-        }
-        */
-    }
-
-
-    /**
      * This will return TRUE if the property exists, even if the value is NULL!
      * You can also check does the class has a property with @see self::has_property()
      * @param string $property The name of the property that is being accessed
@@ -459,24 +120,6 @@ trait ActiveRecordOverloading
      */
     public function __isset(string $property) : bool
     {
-        /*
-        //return isset($this->record_data[$property]);
-        //the correct check is with array_key_exists() because if isset() is used it will return false if the value is null (but the correct is true becasue such key exists and is a object/record variabe)
-        //return array_key_exists($property,$this->record_data);
-        //if (array_key_exists($property,$this->record_data) || array_key_exists($property, $this->record_data_2)) {
-        if (array_key_exists($property,$this->record_data) ) {
-            return true;
-        } elseif (array_key_exists($property,$this->meta_data)) {
-            return true;
-        } elseif (isset($this->languages_record_data[$this->current_language]) && array_key_exists($property,$this->languages_record_data[$this->current_language])) {
-            return true;
-            //} elseif ($this->property_is_language($property)) { //this fixes isset($obj->en->property)
-        } elseif (strlen($property)==2) { //for speed
-            return true;
-        } else {
-            return parent::__isset($property);
-        }
-        */
         return array_key_exists($property, $this->record_data);
     }
 
@@ -489,16 +132,6 @@ trait ActiveRecordOverloading
      */
     public function __unset(string $property) : void
     {
-        /*
-        //throw new GeneralException(sprintf(t::_('Trying to unset the "%s" property of an instance of "%s" (ORM). Unsetting properties/fields is not allowed.'),$property,get_class($this)));
-        if (array_key_exists($property,$this->get_all_field_names())) {
-            throw new RunTimeException(sprintf(t::_('Trying to unset the data property "%s" of an object of class "%s". Unsetting data properties of an ORM object is now allowed.'),$property,get_class($this)));
-        } elseif (array_key_exists($property,$this->meta_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to unset the ownership property "%s" of an object of class "%s". Unsetting ownership properties of an ORM object is now allowed.'),$property,get_class($this)));
-        } else {
-            parent::__unset($property);
-        }
-        */
         throw new RunTimeException(sprintf(t::_('It is not allowed to unset overloaded properties on ORM classes.')));
     }
 

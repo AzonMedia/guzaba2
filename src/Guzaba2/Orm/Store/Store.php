@@ -55,4 +55,9 @@ abstract class Store extends Base implements StoreInterface
     {
         return $this->FallbackStore;
     }
+
+    public static function form_lookup_index(array $index)
+    {
+        return implode(':', $index);
+    }
 }

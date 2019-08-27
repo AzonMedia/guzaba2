@@ -4,6 +4,7 @@
 namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
@@ -57,8 +58,8 @@ class NullStore extends Store implements StoreInterface
         return [];
     }
 
-    public function add_instance(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
-        //does nothing
+        throw new RunTimeException(sprintf(t::_('ORM Store %s does not support updating records.'), __CLASS__ ));
     }
 }

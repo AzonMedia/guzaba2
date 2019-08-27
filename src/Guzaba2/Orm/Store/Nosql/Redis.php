@@ -45,8 +45,9 @@ class Redis extends Database
         return $ret;
     }
 
-    public function add_instance(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
+        $this->FallbackStore->update_record($ActiveRecord);
     }
 
     public function &get_data_pointer(string $class, array $lookup_index) : array

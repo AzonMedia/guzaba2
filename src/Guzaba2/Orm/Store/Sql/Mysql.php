@@ -11,9 +11,16 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\NullStore;
 
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
+use Guzaba2\Translator\Translator as t;
 
 class Mysql extends Database
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'meta_table'    => 'object_meta',
+    ];
+
+    protected const CONFIG_RUNTIME = [];
 
     /**
      * @var StoreInterface|null
@@ -133,13 +140,298 @@ ORDER BY
         return $ret;
     }
 
-    public function add_instance(ActiveRecordInterface $ActiveRecord) : string
+    public static function get_meta_table() : string
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-        //save data to DB
+        return self::CONFIG_RUNTIME['meta_table'];
     }
 
-    public function &get_data_pointer(string $class, array $lookup_index) : array
+    public function update_meta(ActiveRecordInterface $ActiveRecord) : void
+    {
+        // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
+        if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
+            throw new RunTimeException(sprintf(t::_('Trying to update the ownership record of a new object of class "%s" with index "%s". Instead the new obejcts should be initialized using the manager::initialize_object() method.'), get_class($object), $object->get_index()));
+        }
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $meta_table = self::get_meta_table();
+
+        $object_last_update_microtime = microtime(TRUE);
+
+        $q = "
+UPDATE
+    {$Connection::get_tprefix()}{$meta_table} 
+SET
+    object_last_update_microtime = :object_last_update_microtime
+WHERE
+    class_name = :class_name
+    AND object_id = :object_id
+        ";
+
+        $params = [
+            'class_name'                    => get_class($ActiveRecord),
+            'object_id'                     => $ActiveRecord->get_index(),
+            'object_last_update_microtime'  => $object_last_update_microtime,
+        ];
+
+        $Statement = $Connection->prepare($q);
+        $Statement->execute($params);
+    }
+
+    public function create_meta(ActiveRecordInterface $ActiveRecord) : void
+    {
+        // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
+        if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
+            throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s" with index "%s".'), get_class($ActiveRecord), $ActiveRecord->get_index()));
+        }
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $meta_table = self::get_meta_table();
+
+        $object_create_microtime = microtime(TRUE);
+
+        $q = "
+UPDATE
+    {$Connection::get_tprefix()}{$meta_table} 
+SET
+    object_create_microtime = :object_create_microtime
+WHERE
+    class_name = :class_name
+    AND object_id = :object_id
+        ";
+
+        $params = [
+            'class_name'                    => get_class($ActiveRecord),
+            'object_id'                     => $ActiveRecord->get_index(),
+            'object_create_microtime'       => $object_create_microtime,
+        ];
+
+        $Statement = $Connection->prepare($q);
+        $Statement->execute($params);
+    }
+
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void
+    {
+
+        //BEGIN DB TRANSACTION
+
+
+//        if (method_exists($ActiveRecord, '_before_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) {
+//            $args = func_get_args();
+//            $ret = call_user_func_array([$ActiveRecord,'_before_save'], $args);
+//        }
+
+        // basic checks
+        if (!$ActiveRecord->is_new() && !$ActiveRecord->index[$main_index[0]]) {
+            throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('Trying to save an object/record from %s class that is not new and has no primary index.'), get_class($this)));
+        }
+
+        // saving data
+        // funny thing here - if there is another save() in the _after_save and this occurs on a new object it will try to create the record twice and trhow duplicateKeyException
+        // the issue here is that the is_new_flag is set to FALSE only after _after_save() and this is the expected behaviour
+        // so we must check are we in save() method and we must do this check BEFORE we have pushed to the calls_stack because otherwise we will always be in save()
+        $columns_data = $ActiveRecord::get_columns_data();
+        $record_data = $ActiveRecord->get_record_data();
+        $main_index = $ActiveRecord->get_primary_index_columns();
+        $index = $ActiveRecord->get_index();
+        if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
+            
+
+            $record_data_to_save = [];
+            foreach ($columns_data as $field_data) {
+                $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
+            }
+
+            if (!$index[$main_index[0]]) {
+                if (!$ActiveRecord::uses_autoincrement()) {
+                    //TODO IVO
+                    $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
+                    $field_names_arr = array_unique(array_merge($partition_fields, $main_index));
+                    $field_names_str = implode(', ', $field_names_arr);
+                    $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
+                    $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+                } else {
+                    $field_names_arr = $ActiveRecord->get_field_names();//this includes the full index
+
+//                    if (array_key_exists($main_index[0], $record_data_to_save)) {
+//                        unset($record_data_to_save[$main_index[0]]);
+//                    }
+
+                    $field_names_str = implode(', ', $field_names_arr);
+                    $placeholder_str = implode(', ', array_map(function ($value) {
+                        return ':'.$value;
+                    }, $field_names_arr));
+
+                    $data_arr = $record_data_to_save;
+                }
+            } else {
+                // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
+                $field_names_arr = array_unique(array_merge($ActiveRecord->get_field_names(), $main_index));
+                $field_names_str = implode(', ', $field_names_arr);
+                $placeholder_str = implode(', ', array_map(function ($value) {
+                    return ':'.$value;
+                }, $field_names_arr));
+                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+            }
+
+            $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+
+            $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
+
+
+            $q = "
+INSERT
+INTO
+    {$Connection::get_tprefix()}{$ActiveRecord::get_main_table()}
+(
+    {$field_names_str}
+)
+VALUES
+(
+    {$placeholder_str}
+)
+                ";
+
+
+            try {
+                $Statement = $Connection->prepare($q);
+                $Statement->execute($data_arr);
+            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
+                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
+            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
+                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
+            }
+
+            //if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->index[$main_index[0]]) {
+            if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_index()) {
+                // the index is autoincrement and it is not yet set
+                $last_insert_id = $Connection->get_last_insert_id();
+//                $ActiveRecord->index[$main_index[0]] = $last_insert_id;
+//                // this updated the property of the object that is the primary key
+//                $ActiveRecord->record_data[$main_index[0]] = $last_insert_id;
+                $ActiveRecord->update_primary_index($last_insert_id);
+            }
+        } else {
+            $record_data_to_save = [];
+            $field_names = $modified_field_names = $ActiveRecord->get_field_names();
+
+//            if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
+//                $modified_field_names = $ActiveRecord->get_modified_field_names();
+//            }
+
+            foreach ($modified_field_names as $field_name) {
+                // $record_data_to_save[$field_name] = $ActiveRecord->record_data[$field_name];
+                // we need to save only the fields that are part of the current shard
+                if (in_array($field_name, $field_names)) {
+                    $record_data_to_save[$field_name] = $ActiveRecord->record_data[$field_name];
+                }
+            }
+
+            if (count($record_data_to_save)) { //certain partitions may have nothing to save
+                // set_str is used only if it is UPDATE
+                // for REPLACE we need
+                $columns_str = implode(', ', array_keys($record_data_to_save));
+
+                // $where_str = implode(PHP_EOL.'AND ',array_map(function($value){return "{$value} = :{$value}";},$main_index));
+                // the params must not repeat
+                // $where_str = implode(PHP_EOL.'AND ',array_map(function($value){return "{$value} = :where_{$value}";},$main_index));
+                // the above is for UPDATE
+                // when using REPLACE we need
+                $values_str = implode(', ', array_map(function ($value) {
+                    return ":insert_{$value}";
+                }, array_keys($record_data_to_save)));
+
+                if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
+                    $data_arr = $record_data_to_save;
+                } else {
+                    $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+                }
+                // in the update str we need to exclude the index
+                $upd_arr = $record_data_to_save;
+
+                foreach ($main_index as $index_column_name) {
+                    unset($upd_arr[$index_column_name]);
+                }
+                $update_str = implode(', ', array_map(function ($value) {
+                    return "{$value} = :update_{$value}";
+                }, array_keys($upd_arr)));
+
+                $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+
+                $data_arr = $ActiveRecord->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
+
+                foreach ($data_arr as $key=>$value) {
+                    $data_arr['insert_'.$key] = $value;
+                    if (!in_array($key, array_values($main_index))) {
+                        $data_arr['update_'.$key] = $value;
+                    }
+                    unset($data_arr[$key]);
+                }
+
+                // suing REPLACE does not work because of the foreign keys
+                // so UPDATE
+                $q = "
+INSERT INTO
+{$Connection::get_tprefix()}{$ActiveRecord::get_main_table()}
+({$columns_str})
+VALUES
+({$values_str})
+ON DUPLICATE KEY UPDATE
+{$update_str}
+                ";
+
+
+
+                try {
+                    $Statement = $Connection->prepare($q);
+                    $Statement->execute($data_arr);
+                } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
+                    throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
+                } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
+                    throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
+                }
+            }
+
+        }
+
+//        if ($this->is_new() /*&& !$already_in_save */) {
+//            if ($this->maintain_ownership_record) {
+//                $this->initialize_object();
+//            }
+//        } else {
+//            // update the object_last_change_time and object_last_change_role_id
+//            // but this should be done only for non versioned objects as the versioned in fact always are initialized
+//            // the versioned objects are always new so they will not get here
+//            if ($this->maintain_ownership_record) {
+//                $this->update_ownership();
+//            }
+//        }
+
+        if ($ActiveRecord->is_new()) {
+            $this->create_meta($ActiveRecord);
+        } else {
+            $this->update_meta($ActiveRecord);
+        }
+
+
+
+
+        // after the object is saved
+        // the ownership reload must happen before permissions reload
+//        if ($this->maintain_ownership_record) {
+//            $this->load_ownership();
+//        }
+
+//        if (method_exists($this, '_after_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) { //we check for recursion against the parent method save()
+//            $args = func_get_args();
+//            $ret = call_user_func_array([$this,'_after_save'], $args);
+//        }
+
+        //COMMIT DB TRANSACTION
+
+        //$this->is_new = FALSE;
+        //this flag will be updated in activerecord::save()
+
+    }
+
+    public function &get_data_pointer(string $class, array $index) : array
     {
         //initialization
         $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
@@ -176,16 +468,16 @@ ORDER BY
         
         
         $main_index = $class::get_primary_index_columns();
-        //$index = [$main_index[0] => $lookup_index];
+        //$index = [$main_index[0] => $index];
 
-        foreach ($lookup_index as $field_name=>$field_value) {
+        foreach ($index as $field_name=>$field_value) {
             if (!is_string($field_name)) {
                 //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
+                throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
             }
 
             if (!array_key_exists($field_name, $record_data)) {
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
+                throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
             }
 
             //TODO IVO add owners_table, meta table
@@ -256,7 +548,8 @@ WHERE
             $record_data['data'] = $data[0];
         } else {
             //TODO IVO may be should be moved in ActiveRecord
-            throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
+            //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
+            $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
         return $record_data;
