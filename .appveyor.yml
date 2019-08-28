@@ -79,7 +79,8 @@ on_success:
 notifications:
     - provider: Email
     to:
-    - '{{commitAuthorEmail}}'
+        - antonia@azonmedia.com
+        #- '{{commitAuthorEmail}}'
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: true
