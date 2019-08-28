@@ -317,7 +317,7 @@ VALUES
 //                $ActiveRecord->index[$main_index[0]] = $last_insert_id;
 //                // this updated the property of the object that is the primary key
 //                $ActiveRecord->record_data[$main_index[0]] = $last_insert_id;
-                $ActiveRecord->update_primary_index($last_insert_id);
+//                $ActiveRecord->update_primary_index($last_insert_id);
             }
         } else {
             $record_data_to_save = [];
@@ -327,11 +327,12 @@ VALUES
 //                $modified_field_names = $ActiveRecord->get_modified_field_names();
 //            }
 
+            $record_data = $ActiveRecord->get_record_data();
             foreach ($modified_field_names as $field_name) {
                 // $record_data_to_save[$field_name] = $ActiveRecord->record_data[$field_name];
                 // we need to save only the fields that are part of the current shard
                 if (in_array($field_name, $field_names)) {
-                    $record_data_to_save[$field_name] = $ActiveRecord->record_data[$field_name];
+                    $record_data_to_save[$field_name] = $record_data[$field_name];
                 }
             }
 
