@@ -55,7 +55,7 @@ test_script:
 
   #code static analysis with phpstan
   - cd C:\projects\guzaba2\vendor\bin
-  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage -Category Information "%%I"
+  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage -Message "%%I" -Category Information
 
 on_success:
   #check for changed files from php-cs-fixer
