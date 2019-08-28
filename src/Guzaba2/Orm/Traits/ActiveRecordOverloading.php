@@ -65,7 +65,21 @@ trait ActiveRecordOverloading
 
     public function __set(string $property, /* mixed */ $value) : void
     {
-        $this->unhook_data_pointer();
+
+
+        //$this->unhook_data_pointer();
+        //instead of unhooking we need to rehook it to a new version called "0" until saved
+        //if this is a new object then we do not really need (or can) hook as there is no yet primary index
+        if (!$this->is_modified_flag && !$this->is_new()) {
+            //if this is the first modification (and is not a new object - the new objects are not hooked)
+            //then a new revision "0" needs to be created in the store and the record to be hooked to it
+            //this is needed instead of just keeping the changes local in the object in case the same object is created in another scope in the code
+            //this new object should see the modifications that were already done in the parent scope
+            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->index);
+
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+        }
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
@@ -105,10 +119,10 @@ trait ActiveRecordOverloading
     private function unhook_data_pointer() : void
     {
         //unhook the record_data pointer from the central storage (this is valid only if it is the MemoryStore)
-        $record_data = $this->record_data;
-        $this->record_data =& $record_data;
-        $meta_data = $this->meta_data;
-        $this->meta_data =& $meta_data;
+//        $record_data = $this->record_data;
+//        $this->record_data =& $record_data;
+//        $meta_data = $this->meta_data;
+//        $this->meta_data =& $meta_data;
     }
 
     /**

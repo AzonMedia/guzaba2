@@ -4,6 +4,7 @@
 namespace Guzaba2\Orm\MetaStore;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
@@ -29,9 +30,9 @@ class NullMetaStore extends MetaStore
      * @return array|null
      * @throws RecordNotFoundException
      */
-    public function get_meta_data(string $key) : ?array
+    public function get_meta_data(string $class, array $primary_index) : ?array
     {
-        throw new RecordNotFoundException(sprintf(t::_('No metadata for record of class %s with lookup index %s is found.'), $class, $lookup_index));
+        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index, TRUE)));
         return NULL;
     }
 
@@ -41,7 +42,7 @@ class NullMetaStore extends MetaStore
      */
     public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
-        $key = self::get_key($ActiveRecord);
+        $key = self::get_key_by_object($ActiveRecord);
         $data = $this->get_update_data($key);
         return $data;
     }
@@ -51,12 +52,13 @@ class NullMetaStore extends MetaStore
      * @return float|null
      * @throws RecordNotFoundException
      */
-    public function get_last_update_time(string $key) : ?float
+    public function get_last_update_time(string $class, array $primary_index) : ?float
     {
         $ret = NULL;
+        $key = self::get_key($class, $primary_index);
         $data = $this->get_meta_data($key);
-        if (isset($data['updated_microtime'])) {
-            $ret = $data['updated_microtime'];
+        if (isset($data['object_last_update_microtime'])) {
+            $ret = $data['object_last_update_microtime'];
         }
         return $ret;
     }
@@ -68,22 +70,21 @@ class NullMetaStore extends MetaStore
      */
     public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
     {
-        $key = self::get_key($ActiveRecord);
+        $key = self::get_key_by_object($ActiveRecord);
         return $this->get_last_update_time($key);
     }
 
 
     /**
-     * To be invoked when a record is updated or when a record is not present in the SwooleTable and was accessed and the lock information needs to be updated.
+     *
      * @param string $key
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data(string $key, array $data) : void
+    public function set_meta_data(string $class, array $primary_index, array $data) : void
     {
-        self::validate_data($data);
 
-        //does nothing
+        //it is expected to be called - do nothing
     }
 
     /**
@@ -91,9 +92,9 @@ class NullMetaStore extends MetaStore
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data_by_object(ActiveRecord $activeRecord, array $data) : void
+    public function set_meta_data_by_object(ActiveRecord $ActiveRecord, array $data) : void
     {
-        $key = self::get_key($activeRecord);
+        $key = self::get_key_by_object($ActiveRecord);
         $this->set_update_data($key, $data);
     }
 }

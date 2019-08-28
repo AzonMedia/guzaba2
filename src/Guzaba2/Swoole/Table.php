@@ -13,7 +13,9 @@ abstract class Table extends Base
      */
     public const TYPES_MAP = [
         'int'       => \Swoole\Table::TYPE_INT,
+        'integer'   => \Swoole\Table::TYPE_INT,
         'float'     => \Swoole\Table::TYPE_FLOAT,
+        'double'    => \Swoole\Table::TYPE_FLOAT,
         'string'    => \Swoole\Table::TYPE_STRING,
     ];
 }

@@ -4,6 +4,7 @@ namespace Guzaba2\Orm;
 
 use Azonmedia\Reflection\ReflectionClass;
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -115,15 +116,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Contains the index provided to the get_instance()
      * @var mixed
      */
-    protected $index = self::INDEX_NEW;
-    
-    /**
-     * Each table that we have loaded the data from will be added to this array.
-     * If a property is not found then we look at all tables and the check are there any tables that are not in the $data_is_loaded_from_tables and then we load all these.
-     * If the table is not loaded the it will be loaded and added to this array. The array contains the names of the tables as in the database but excluding the prefix.
-     * @var array
-     */
-    public $data_is_loaded_from_tables = [];
+    //protected $index = self::INDEX_NEW;
     
     //const SAVE_MODE_ALL = 1;//overwrites all properties
     
@@ -183,9 +176,9 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
         
-        if ($this->index == self::INDEX_NEW) { //checks is the index already set (as it may be set in _before_construct()) - if not set it
-            $this->index = $index;
-        }
+        //if ($this->index == self::INDEX_NEW) { //checks is the index already set (as it may be set in _before_construct()) - if not set it
+        //    $this->index = $index;
+        //}
 
         if ($Store) {
             $this->Store = $Store;
@@ -193,24 +186,13 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             $this->Store = static::OrmStore();//use the default service
         }
         
-        /*
-        if($this->maintain_ownership_record){
-            if(empty(self::$meta_columns_data)){
-                //TODO
-            }
-        }
-        */
+
         $called_class = get_class($this);
         if (empty(self::$columns_data[$called_class])) {
             $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
 
             foreach ($unified_columns_data as $column_datum) {
                 self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
-
-//                if ($column_datum['autoincrement'] === TRUE) {
-//                    //may be autoincrement_index should be static prop
-//                    self::$autoincrement_index = TRUE;
-//                }
             }
         }
 //        } else {
@@ -230,26 +212,27 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             }
         }
 
+        $primary_columns = static::get_primary_index_columns();
+
         // 1. check is there main index loaded
         // if $this->index is still empty this means that this table has no primary index
-        if (!count(self::$primary_index_columns[$called_class])) {
-            throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The table "%s" has no primary index defined.'), $this->db->tprefix.$this->get_main_table()));
-        }
-
-        // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
-        // providing only one component for the primary index is still supported but needs to be provided as array
-        if (count(self::$primary_index_columns[$called_class]) > 1) {
-            if (is_scalar($this->index) && $this->index != self::INDEX_NEW) {
-                $message = sprintf(t::_(' The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), get_class($this), $this->get_main_table(), implode(', ', self::$primary_index_columns), $this->index);
-                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException($message);
-            }
+        if (!count($primary_columns)) {
+            throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The class %s has no primary index defined.'), $called_class));
         }
         
-        if (is_scalar($this->index)) {
-            if (ctype_digit($this->index)) {
-                $this->index = (int) $this->index;
+        if (is_scalar($index)) {
+            if (ctype_digit($index)) {
+                $index = (int) $index;
             }
-            $this->index = [self::$primary_index_columns[$called_class][0] => $this->index];
+
+            // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
+            // providing only one component for the primary index is still supported but needs to be provided as array
+            if (count($primary_columns) === 1) {
+                $index = [$primary_columns[0] => $index];
+            } else {
+                $message = sprintf(t::_(' The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
+                throw new InvalidArgumentException($message);
+            }
         } elseif (is_array($this->index)) {
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
@@ -258,20 +241,17 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         }
 
         if ($index) {
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $this->index);
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
 
-            // reset the index
-            $this->index = [];
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
-            $this->initialize_record_data($pointer['data']);
+            // reset the index
+            //$index = $class::get_index_from_data($this->record_data['data']);//no need as this is not preserved
+            //$this->initialize_record_data($pointer['data']);
             $this->is_new_flag = FALSE;
-            
-            if ($this->maintain_ownership_record) {
-                $this->load_ownership();
-            }
         } else {
-            $this->record_data = $this->Store::get_record_structure(self::$columns_data[$called_class]);
+            $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
+            //the new records are unhooked
         }
 
 
@@ -298,15 +278,63 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Returns the primary index for the object.
      * Returns an array if the primary index is from multiple columns.
      */
-    public function get_index() /* mixed */
+//    public function get_index() /* mixed */
+//    {
+//        $primary_index_columns = static::get_primary_index_columns();
+//        if (count($primary_index_columns) === 1) {
+//            $ret = $this->record_data[$primary_index_columns[0]];
+//        } else {
+//            foreach ($primary_index_columns as $primary_index_column) {
+//                $ret[] = $this->record_data[$primary_index_column];
+//            }
+//        }
+//        return $ret;
+//    }
+
+    /**
+     * Works only for classes that have a single primary index.
+     * If the class has a compound index throws a RunTimeException.
+     * @return int
+     */
+    public function get_index() /* scalar */
     {
         $primary_index_columns = static::get_primary_index_columns();
-        if (count($primary_index_columns) === 1) {
-            $ret = $this->record_data[$primary_index_columns[0]];
-        } else {
-            foreach ($primary_index_columns as $primary_index_column) {
-                $ret[] = $this->record_data[$primary_index_column];
+        if (count($primary_index_columns) > 1) {
+            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
+        }
+        $ret = $this->record_data[$primary_index_columns[0]];
+    }
+
+    /**
+     * Returns the primary index as an associative array.
+     * For all purposes in the framework this method is to be used.
+     * @return array
+     */
+    public function get_primary_index() : array
+    {
+        $ret = [];
+        $primary_index_columns = static::get_primary_index_columns();
+        foreach ($primary_index_columns as $primary_index_column) {
+            $ret[$primary_index_column] = $this->record_data[$primary_index_column];
+        }
+        return $ret;
+    }
+
+
+    /**
+     * @param array $data
+     * @return int|null
+     */
+    public static function get_index_from_data(array $data) /* mixed */
+    {
+        $called_class = get_called_class();
+        $ret = NULL;
+        $primary_columns = static::get_primary_index_columns();
+        foreach ($primary_columns as $primary_column) {
+            if (!array_key_exists($primary_column, $data)) {
+                break;//not enough data to construct the primary index
             }
+            $ret[$primary_column] = $data[$primary_column];
         }
         return $ret;
     }
@@ -340,10 +368,10 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         return static::CONFIG_RUNTIME['main_table'];
     }
     
-    public static function get_meta_table() : string
-    {
-        return static::CONFIG_RUNTIME['meta_table'];
-    }
+    //public static function get_meta_table() : string
+    //{
+    //    return static::CONFIG_RUNTIME['meta_table'];
+    //}
 
     public function save() : ActiveRecord
     {
@@ -358,7 +386,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         //COMMIT
 
-        $this->is_new = FALSE;
+        $this->is_new_flag = FALSE;
 
         return $this;
     }
@@ -443,7 +471,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         }
         
         $column_found = FALSE;
-        foreach (self::$columns_data as $column_key_name => $column_data) {
+        foreach (static::get_columns_data() as $column_key_name => $column_data) {
             if ($column_data['name'] == $column) {
                 $type = $column_data['php_type'];
                 $nullable = (bool) $column_data['nullable'];

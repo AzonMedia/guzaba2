@@ -13,12 +13,13 @@ use Guzaba2\Orm\ActiveRecord;
 interface MetaStoreInterface
 {
     public const DATA_STRUCT = [
-        'updated_microtime'         => 'float',
+        'object_create_microtime'               => 'integer',
+        'object_last_update_microtime'          => 'integer',
         //'updated_from_worker_id'    => 'int',
         //'updated_from_coroutine_id' => 'int',
     ];
 
-    public function get_meta_data(string $key) : ?array ;
+    public function get_meta_data(string $class, array $primary_index) : ?array ;
 
     /**
      * @param ActiveRecord $ActiveRecord
@@ -30,7 +31,7 @@ interface MetaStoreInterface
      * @param string $key
      * @return float|null
      */
-    public function get_last_update_time(string $key) : ?float ;
+    public function get_last_update_time(string $class, array $primary_index) : ?float ;
 
     /**
      * @param ActiveRecord $ActiveRecord
@@ -45,12 +46,12 @@ interface MetaStoreInterface
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data(string $key, array $data) : void ;
+    public function set_meta_data(string $class, array $primary_index, array $data) : void ;
 
     /**
      * @param ActiveRecord $activeRecord
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data_by_object(ActiveRecord $activeRecord, array $data) : void ;
+    public function set_meta_data_by_object(ActiveRecord $activeRecord, array $data) : void ;
 }
