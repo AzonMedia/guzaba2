@@ -32,7 +32,7 @@ class NullMetaStore extends MetaStore
      */
     public function get_meta_data(string $class, array $primary_index) : ?array
     {
-        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index,TRUE ) ));
+        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index, TRUE)));
         return NULL;
     }
 

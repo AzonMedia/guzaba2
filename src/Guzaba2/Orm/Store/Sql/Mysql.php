@@ -245,7 +245,6 @@ VALUES
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_index();
         if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
-
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
@@ -567,7 +566,6 @@ WHERE
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
-
         } else {
             //TODO IVO may be should be moved in ActiveRecord
             //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));

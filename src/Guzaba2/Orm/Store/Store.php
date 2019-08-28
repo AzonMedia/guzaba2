@@ -11,7 +11,6 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
 abstract class Store extends Base implements StoreInterface
 {
-
     public const KEY_SEPARATOR = ':';
 
     /**

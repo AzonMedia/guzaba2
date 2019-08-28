@@ -94,7 +94,7 @@ class SwooleTable extends MetaStore
     public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
         $key = self::get_key_by_object($ActiveRecord);
-        $data = $this->get_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index() );
+        $data = $this->get_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
         return $data;
     }
 
@@ -118,7 +118,7 @@ class SwooleTable extends MetaStore
      */
     public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
     {
-        return $this->get_last_update_time(get_class($ActiveRecord), $ActiveRecord->get_primary_index() );
+        return $this->get_last_update_time(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
     }
 
 
@@ -154,5 +154,4 @@ class SwooleTable extends MetaStore
     {
         $this->set_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $data);
     }
-
 }

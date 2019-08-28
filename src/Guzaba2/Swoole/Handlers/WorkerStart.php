@@ -29,8 +29,6 @@ class WorkerStart extends HandlerBase
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
             $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $worker_id, $Debugger);
         }
-
-
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

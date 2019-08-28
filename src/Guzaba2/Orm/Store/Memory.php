@@ -152,7 +152,7 @@ class Memory extends Store implements StoreInterface
         $primary_index = $class::get_index_from_data($pointer['data']);//the primary index has to be available here
         $lookup_index = self::form_lookup_index($primary_index);
         if (!$primary_index) {
-            throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE) ));
+            throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
         }
 
         $last_update_time = $pointer['meta']['object_last_update_microtime'];
@@ -186,7 +186,7 @@ class Memory extends Store implements StoreInterface
         $lookup_index = self::form_lookup_index($primary_index);
         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
         if (isset($this->data[$class][$primary_index][$last_update_time])) {
-            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE) ));
+            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
         }
         $this->data[$class][$primary_index][0] = $this->data[$class][$primary_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
         return $this->data[$class][$primary_index][0];

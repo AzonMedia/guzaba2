@@ -12,7 +12,6 @@ use Guzaba2\Translator\Translator as t;
 
 abstract class MetaStore extends Base implements MetaStoreInterface
 {
-
     protected const KEY_SEPARATOR = '|';
 
     /**
@@ -42,6 +41,6 @@ abstract class MetaStore extends Base implements MetaStoreInterface
 
     public static function get_key_by_object(ActiveRecordInterface $ActiveRecord) : string
     {
-        return self::get_key(get_class($ActiveRecord), $ActiveRecord->get_primary_index() );
+        return self::get_key(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
     }
 }
