@@ -6,7 +6,7 @@ clone_folder: C:\projects\guzaba2
 environment:
   matrix:
     - php_ver: 7.2
-  broken_files: ""
+  #broken_files: ""
   access_token:
     secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
 
@@ -57,8 +57,9 @@ test_script:
   #code static analysis with phpstan
   #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
   - cd C:\projects\guzaba2\vendor\bin
-  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO SET broken_files=%%I
-  - ps: 'Add-AppveyorMessage "$env:broken_files"'
+  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage %%I
+  #- FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO SET broken_files=%%I
+  #- ps: 'Add-AppveyorMessage "$env:broken_files"'
   #- ECHO %BROKEN_FILES%
 
 on_success:
