@@ -242,10 +242,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         if ($index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-            //the new records are unhooked
+        //the new records are unhooked
         } else {
-
-
             $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
 
             $this->record_data =& $pointer['data'];

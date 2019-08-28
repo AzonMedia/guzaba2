@@ -194,7 +194,7 @@ class Memory extends Store implements StoreInterface
         $lookup_index = self::form_lookup_index($primary_index);
         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
         if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
-            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE) ));
+            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
         }
         $this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
         return $this->data[$class][$lookup_index][0];
