@@ -144,16 +144,34 @@ ORDER BY
         return self::CONFIG_RUNTIME['meta_table'];
     }
 
+    public function get_meta(string $class_name, int $object_id) : array
+    {
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $q = "
+SELECT
+    *
+FROM
+    {$Connection::get_tprefix()}{$this::get_meta_table()}
+WHERE
+    class_name = :class_name
+    AND object_id = :object_id
+        ";
+        $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
+        unset($data['class_name']);
+        unset($data['object_id']);
+        return $data;
+    }
+
     public function update_meta(ActiveRecordInterface $ActiveRecord) : void
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
-            throw new RunTimeException(sprintf(t::_('Trying to update the ownership record of a new object of class "%s" with index "%s". Instead the new obejcts should be initialized using the manager::initialize_object() method.'), get_class($object), $object->get_index()));
+            throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s" with index "%s". Instead the new obejcts hav their metadata created with Mysql::create_meta() method.'), get_class($object), $object->get_index()));
         }
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
 
-        $object_last_update_microtime = microtime(TRUE);
+        $object_last_update_microtime = microtime(TRUE) * 1000000;
 
         $q = "
 UPDATE
@@ -177,29 +195,25 @@ WHERE
 
     public function create_meta(ActiveRecordInterface $ActiveRecord) : void
     {
-        // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
-        if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
-            throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s" with index "%s".'), get_class($ActiveRecord), $ActiveRecord->get_index()));
-        }
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
 
-        $object_create_microtime = microtime(TRUE);
+        $object_create_microtime = microtime(TRUE) * 1000000;
 
         $q = "
-UPDATE
-    {$Connection::get_tprefix()}{$meta_table} 
-SET
-    object_create_microtime = :object_create_microtime
-WHERE
-    class_name = :class_name
-    AND object_id = :object_id
+INSERT
+INTO
+    {$Connection::get_tprefix()}{$meta_table}
+    (class_name, object_id, object_create_microtime, object_last_update_microtime)
+VALUES
+    (:class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
         ";
 
         $params = [
             'class_name'                    => get_class($ActiveRecord),
             'object_id'                     => $ActiveRecord->get_index(),
             'object_create_microtime'       => $object_create_microtime,
+            'object_last_update_microtime'  => $object_create_microtime,
         ];
 
         $Statement = $Connection->prepare($q);
@@ -231,6 +245,7 @@ WHERE
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_index();
         if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
+
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
@@ -538,16 +553,28 @@ WHERE
         
         if (count($data)) {
             //TODO meta data object onwenrs table, i will set it manuly until save() is finished
-            $record_data['meta']['updated_microtime'] = time();
+            //$record_data['meta']['updated_microtime'] = time();
+            //based on the returned data we need to determine the primary index (which needs to be a single column for the objects which support meta data)
+            //$record_data['meta'] = $this->get_meta($class, );
             //TODO IVO [0]
-            $record_data['data'] = $data[0];
+            //$record_data['data'] = $data[0];
+            $primary_index = $class::get_index_from_data($data[0]);
+            if (is_null($primary_index)) {
+                throw new RunTimeException(sprintf(t::_('The primary index for class %s is not found in the retreived data.'), $class));
+            }
+            if (count($primary_index) > 1) {
+                throw new RunTimeException(sprintf(t::_('The class %s has compound index and can not have meta data.'), $class));
+            }
+            $ret['meta'] = $this->get_meta($class, current($primary_index));
+            $ret['data'] = $data[0];
+
         } else {
             //TODO IVO may be should be moved in ActiveRecord
             //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
-        return $record_data;
+        return $ret;
     }
     //private function
 }

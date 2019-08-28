@@ -3,6 +3,7 @@
 namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -123,48 +124,71 @@ class Memory extends Store implements StoreInterface
      * @param $index
      * @return array
      */
-    public function &get_data_pointer(string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $index) : array
     {
-        $index = implode(':', array_values($lookup_index));
+        //$index = implode(':', array_values($lookup_index));
         //check local storage at $data
-        if (isset($this->data[$class][$index])) {
-            //if found check is it current in SwooleTable
-            $key = $class.'_'.$index;
-            //TODO IVO ENABLE
-            $last_update_time = NULL;
-            //$last_update_time = $this->SwooleTable->get_last_update_time($key);
-            if ($last_update_time) {
-                //check is there data for this time
-                if (isset($this->data[$class][$index][$last_update_time])) {
-                    $pointer =& $this->data[$class][$index][$last_update_time];
-                } else {
-                    //this store has no current data (has for a previous version)
-                    $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
+        //$lookup_index = self::form_lookup_index($index);
+        //the provided index is array
+        //check is the provided array matching the primary index
+        $primary_index = $class::get_index_from_data($index);
+        if ($primary_index) {
+            $lookup_index = self::form_lookup_index($primary_index);
+            if (isset($this->data[$class][$lookup_index])) {
+                //if found check is it current in MetaStore
+                $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+                //print $last_update_time.'AAA'.PHP_EOL;
+                if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                    return $pointer;
                 }
-            } else {
-                $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
             }
         } else {
-            $pointer =& $this->FallbackStore->get_data_pointer($class, $lookup_index);
+            //TODO - do a search in the available memory objects....
         }
 
-        //this means the data was pulled from the fallback store
-        //we need to update the local store and the update time data
-        $update_data = [
-            'updated_microtime'         => $pointer['meta']['updated_microtime'],
-            //'updated_from_worker_id'    => $pointer['meta']['updated_from_worker_id'],
-            //'updated_from_coroutine_id' => $pointer['meta']['updated_from_coroutine_id'],
-            //add transaction_id
-            //and execution_id
-        ];
-        //TODO IVO ENABLE
-        //$this->SwooleTable->set_update_data($key, $update_data);
+        $pointer =& $this->FallbackStore->get_data_pointer($class, $index);
 
-        //$this->data[$class][$lookup_index][$pointer->updated_microtime] = $pointer;//with versioning
-        $this->data[$class][$index] = $pointer;//temporary
+        $primary_index = $class::get_index_from_data($pointer['data']);//the primary index has to be available here
+        $lookup_index = self::form_lookup_index($primary_index);
+        if (!$primary_index) {
+            throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE) ));
+        }
+
+        $last_update_time = $pointer['meta']['object_last_update_microtime'];
+        //print $last_update_time.'BBB'.PHP_EOL;
+        $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
         //there can be other versions for the same class & lookup_index
 
+        $meta = [];
+        //we need to provide only the needed data
+        foreach (MetaStoreInterface::DATA_STRUCT as $key_name=>$value_type) {
+            if (isset($pointer['meta'][$key_name])) {
+                $meta[$key_name] = $pointer['meta'][$key_name];
+            }
+        }
+        $this->MetaStore->set_meta_data($class, $primary_index, $meta);
 
-        return $pointer;
+        return $this->data[$class][$lookup_index][$last_update_time];
+    }
+
+    /**
+     * Unlike get_data_pointer() which accepts any type of index there $primary_index is expected (as it is known - this method is to be invoked only by objects that are loaded)
+     * @param string $class
+     * @param array $primary_index
+     * @return array
+     * @throws LogicException
+     */
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    {
+        //at this stage the object has gone through get_data_pointer() (even if it was new it should be all test)
+        //so the MetaStore should have the correct data
+        $lookup_index = self::form_lookup_index($primary_index);
+        $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+        if (isset($this->data[$class][$primary_index][$last_update_time])) {
+            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE) ));
+        }
+        $this->data[$class][$primary_index][0] = $this->data[$class][$primary_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+        return $this->data[$class][$primary_index][0];
     }
 }

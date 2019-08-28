@@ -12,6 +12,8 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 abstract class Store extends Base implements StoreInterface
 {
 
+    public const KEY_SEPARATOR = ':';
+
     /**
      * @var StoreInterface|null
      */
@@ -56,8 +58,8 @@ abstract class Store extends Base implements StoreInterface
         return $this->FallbackStore;
     }
 
-    public static function form_lookup_index(array $index)
+    public static function form_lookup_index(array $primary_index) : string
     {
-        return implode(':', $index);
+        return implode(':', $primary_index);
     }
 }

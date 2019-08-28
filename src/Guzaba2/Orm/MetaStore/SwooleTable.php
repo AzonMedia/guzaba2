@@ -30,6 +30,11 @@ class SwooleTable extends MetaStore
      */
     protected $FallbackMetaStore;
 
+    protected const SWOOLE_TABLE_SIZES = [
+        'object_create_microtime'               => 8,
+        'object_last_update_microtime'          => 8,
+    ];
+
 
     /**
      * SwooleTable constructor.
@@ -50,7 +55,7 @@ class SwooleTable extends MetaStore
         //$this->SwooleTable->column('updated_from_worker_id', \Swoole\Table::TYPE_INT);
         //$this->SwooleTable->column('updated_from_coroutine_id', \Swoole\Table::TYPE_INT);
         foreach (self::DATA_STRUCT as $key=>$php_type) {
-            $this->SwooleTable->column($key, \Guzaba2\Swoole\Table::TYPES_MAP[$php_type]);
+            $this->SwooleTable->column($key, \Guzaba2\Swoole\Table::TYPES_MAP[$php_type], self::SWOOLE_TABLE_SIZES[$key]);
         }
         $this->SwooleTable->create();
 
@@ -71,11 +76,13 @@ class SwooleTable extends MetaStore
      * @param string $key
      * @return array|null
      */
-    public function get_meta_data(string $key) : ?array
+    public function get_meta_data(string $class, array $primary_index) : ?array
     {
+        $key = self::get_key($class, $primary_index);
+        //print 'get '.$key.PHP_EOL;
         $data = $this->SwooleTable->get($key);
         if (!$data) {
-            $data = $this->FallbackMetaStore->get_update_data($key);
+            $data = $this->FallbackMetaStore->get_meta_data($class, $primary_index);
         }
         return $data;
     }
@@ -86,8 +93,8 @@ class SwooleTable extends MetaStore
      */
     public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
-        $key = self::get_key($ActiveRecord);
-        $data = $this->get_update_data($key);
+        $key = self::get_key_by_object($ActiveRecord);
+        $data = $this->get_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index() );
         return $data;
     }
 
@@ -95,12 +102,12 @@ class SwooleTable extends MetaStore
      * @param string $key
      * @return float|null
      */
-    public function get_last_update_time(string $key) : ?float
+    public function get_last_update_time(string $class, array $primary_index) : ?float
     {
         $ret = NULL;
-        $data = $this->get_meta_data($key);
-        if (isset($data['updated_microtime'])) {
-            $ret = $data['updated_microtime'];
+        $data = $this->get_meta_data($class, $primary_index);
+        if (isset($data['object_last_update_microtime'])) {
+            $ret = $data['object_last_update_microtime'];
         }
         return $ret;
     }
@@ -111,8 +118,7 @@ class SwooleTable extends MetaStore
      */
     public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
     {
-        $key = self::get_key($ActiveRecord);
-        return $this->get_last_update_time($key);
+        return $this->get_last_update_time(get_class($ActiveRecord), $ActiveRecord->get_primary_index() );
     }
 
 
@@ -122,16 +128,21 @@ class SwooleTable extends MetaStore
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data(string $key, array $data) : void
+    public function set_meta_data(string $class, array $primary_index, array $data) : void
     {
+        $key = self::get_key($class, $primary_index);
+        //print 'set '.$key.PHP_EOL;
+
         self::validate_data($data);
-        $this->set($key, $data);
+        $this->SwooleTable->set($key, $data);
+
+        //print_r($this->SwooleTable->get($key));
         if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100)) {
             //95% usage is reached - cleanup is needed
             //the cleanup cleans more records than just 1 or few... If just a few are cleaned then the cleanup will be invoked much more often
             $this->cleanup();
         }
-        $this->FallbackMetaStore->set_update_data($key, $data);
+        $this->FallbackMetaStore->set_meta_data($class, $primary_index, $data);
     }
 
     /**
@@ -139,20 +150,9 @@ class SwooleTable extends MetaStore
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_update_data_by_object(ActiveRecord $activeRecord, array $data) : void
+    public function set_meta_data_by_object(ActiveRecord $ActiveRecord, array $data) : void
     {
-        $key = self::get_key($ActiveRecord);
-        $this->set_update_data($key, $data);
+        $this->set_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $data);
     }
 
-
-
-
-    protected static function get_key(ActiveRecord $ActiveRecord) : string
-    {
-        $class = get_class($ActiveRecord);
-        $lookup_index = $ActiveRecord->get_lookup_index();
-        $key = $class.'_'.$lookup_index;
-        return $key;
-    }
 }
