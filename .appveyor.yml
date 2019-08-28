@@ -28,8 +28,6 @@ init:
   - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
   - SET COMPOSER_NO_INTERACTION=1
   - SET PHP=1 # This var is connected to PHP install cache
-  - SET CHANGED_FILES=""
-  - SET BROKEN_FILES=""
 
 install:
   #php
@@ -58,7 +56,8 @@ test_script:
   #code static analysis with phpstan
   #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
   - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
-  - ps: Add-AppveyorMessage "%BROKEN_FILES%"
+  - ps: Add-AppveyorMessage "%BROKEN_FILES%""
+  - ECHO %BROKEN_FILES%
 
 on_success:
   #check for changed files from php-cs-fixer
@@ -84,6 +83,6 @@ notifications:
       #- antonia@azonmedia.com
       - '{{commitAuthorEmail}}'
     message: '{{#jobs}} {{#messages}} {{message}} {{/messages}} {{/jobs}}'
-    on_build_success: true
-    on_build_failure: true
-    on_build_status_changed: true
+    on_build_success: false
+    on_build_failure: false
+    on_build_status_changed: false
