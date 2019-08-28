@@ -54,9 +54,9 @@ test_script:
   - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
   #code static analysis with phpstan
-  - cd C:\projects\guzaba2\vendor\bin
-  #- ps: $phpstan_output = (.\phpstan analyse ../../src/Guzaba2 --level 0) | Out-String
-  #- ps: Add-AppveyorMessage -Message "$phpstan_output" -Category Information
+  #- cd C:\projects\guzaba2\vendor\bin
+  - ps: $phpstan_output = (vendor\bin\phpstan analyse ../../src/Guzaba2 --level 0) | Out-String
+  - ps: Add-AppveyorMessage -Message "$phpstan_output" -Category Information
   #- FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage -Message %%I -Category Information
 
 on_success:
