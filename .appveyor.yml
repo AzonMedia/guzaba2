@@ -55,7 +55,7 @@ test_script:
 
   #code static analysis with phpstan
   - cd C:\projects\guzaba2\vendor\bin
-  - ps: $phpstan_output = (phpstan analyse ../../src/Guzaba2 --level 0) | Out-String
+  - ps: $phpstan_output = (.\phpstan analyse ../../src/Guzaba2 --level 0) | Out-String
   - ps: Add-AppveyorMessage -Message "$phpstan_output" -Category Information
   #- FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage -Message "%%I" -Category Information
 
