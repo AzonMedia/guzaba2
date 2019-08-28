@@ -71,7 +71,7 @@ on_success:
   - IF NOT "%CHANGED_FILES%"=="" git push origin master
 
   #code static analysis with phpstan
-  - vendor/bin/phpstan analyse src/Guzaba2 --level 0
+  #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
   - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
   - ps: Add-AppveyorMessage "%BROKEN_FILES%"
 
@@ -79,8 +79,8 @@ notifications:
   #send email
   - provider: Email
     to:
-      - antonia@azonmedia.com
-      #- '{{commitAuthorEmail}}'
+      #- antonia@azonmedia.com
+      - '{{commitAuthorEmail}}'
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: true
