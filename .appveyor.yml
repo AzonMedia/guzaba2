@@ -56,7 +56,7 @@ test_script:
   #code static analysis with phpstan
   #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
   - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
-  - ps: Add-AppveyorMessage "%BROKEN_FILES%""
+  - ps: Add-AppveyorMessage "%BROKEN_FILES%"
   - ECHO %BROKEN_FILES%
 
 on_success:
