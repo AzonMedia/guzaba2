@@ -71,8 +71,8 @@ on_success:
   - IF NOT "%CHANGED_FILES%"=="" git push origin master
 
   #code static analysis with phpstan
-  - vendor/bin/phpstan analyse Guzaba2 --level 0
-  - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
+  - vendor/bin/phpstan analyse src/Guzaba2 --level 0
+  - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
   - ps: Add-AppveyorMessage "%BROKEN_FILES%"
 
 notifications:
