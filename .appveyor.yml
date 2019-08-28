@@ -1,86 +1,86 @@
-build: false
 version: dev-{build}
+build: false
 
 clone_folder: C:\projects\guzaba2
 
 environment:
-    matrix:
-        - php_ver: 7.2
-    access_token:
-        secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
+  matrix:
+    - php_ver: 7.2
+  access_token:
+    secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
 
 branches:
-    only:
-        - master
+  only:
+    - master
 
 skip_commits:
-    message: /appveyor/
+  message: /appveyor/
 
 cache:
-    #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
-    # Cache chocolatey packages
-    - C:\ProgramData\chocolatey\bin -> .appveyor.yml
-    - C:\ProgramData\chocolatey\lib -> .appveyor.yml
-    # Cache php install
-    - C:\tools\php -> .appveyor.yml
+  #- '%LOCALAPPDATA%\Composer\files -> composer.lock'
+  # Cache chocolatey packages
+  - C:\ProgramData\chocolatey\bin -> .appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> .appveyor.yml
+  # Cache php install
+  - C:\tools\php -> .appveyor.yml
 
 init:
-    - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
-    - SET COMPOSER_NO_INTERACTION=1
-    - SET PHP=1 # This var is connected to PHP install cache
+  - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
+  - SET COMPOSER_NO_INTERACTION=1
+  - SET PHP=1 # This var is connected to PHP install cache
 
 install:
-    #php
-    - IF NOT EXIST C:\tools\php (SET PHP=0)
-    - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
-    - cd C:\tools\php   
-    - copy php.ini-production php.ini
-    - echo extension_dir=ext >> php.ini
-    - echo extension=php_openssl.dll >> php.ini 
-    - echo extension=php_mysqli.dll >> php.ini
-    - echo extension=php_pdo.dll >> php.ini
-    #composer
-    - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
-    - IF %PHP%==0 appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
-    #install
-    - cd C:\projects\guzaba2
-    - appveyor-retry composer install --no-progress --profile
-    - appveyor-retry composer require friendsofphp/php-cs-fixer --no-progress --profile
-    - appveyor-retry composer require --dev phpstan/phpstan --no-progress --profile
+  #php
+  - IF NOT EXIST C:\tools\php (SET PHP=0)
+  - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
+  - cd C:\tools\php   
+  - copy php.ini-production php.ini
+  - echo extension_dir=ext >> php.ini
+  - echo extension=php_openssl.dll >> php.ini 
+  - echo extension=php_mysqli.dll >> php.ini
+  - echo extension=php_pdo.dll >> php.ini
+  #composer
+  - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
+  - IF %PHP%==0 appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
+  #install
+  - cd C:\projects\guzaba2
+  - appveyor-retry composer install --no-progress --profile
+  - appveyor-retry composer require friendsofphp/php-cs-fixer --no-progress --profile
+  - appveyor-retry composer require --dev phpstan/phpstan --no-progress --profile
 
 test_script:
-    - cd C:\projects\guzaba2
-    - SET PHP_CS_FIXER_FUTURE_MODE=1
-    - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
+  - cd C:\projects\guzaba2
+  - SET PHP_CS_FIXER_FUTURE_MODE=1
+  - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
 on_success:
-    #check for changed files from php-cs-fixer
-    - git diff --stat -- src/
-    - FOR /F "Tokens=*" %%I in ('git diff --stat -- src/') DO SET CHANGED_FILES=%%I
-    - ECHO %CHANGED_FILES%
+  #check for changed files from php-cs-fixer
+  - git diff --stat -- src/
+  - FOR /F "Tokens=*" %%I in ('git diff --stat -- src/') DO SET CHANGED_FILES=%%I
+  - ECHO %CHANGED_FILES%
 
-    - git config --global credential.helper store
-    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+  - git config --global credential.helper store
+  - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
 
-    #push to master branch
-    - IF NOT "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
-    - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
-    - IF NOT "%CHANGED_FILES%"=="" git fetch
-    - IF NOT "%CHANGED_FILES%"=="" git checkout master
-    - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
-    - IF NOT "%CHANGED_FILES%"=="" git push origin master
+  #push to master branch
+  - IF NOT "%CHANGED_FILES%"=="" git config --global user.email "antonia@azonmedia.com"
+  - IF NOT "%CHANGED_FILES%"=="" git config --global user.name "Antonia"
+  - IF NOT "%CHANGED_FILES%"=="" git fetch
+  - IF NOT "%CHANGED_FILES%"=="" git checkout master
+  - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
+  - IF NOT "%CHANGED_FILES%"=="" git push origin master
 
-    #code static analysis with phpstan
-    - vendor/bin/phpstan analyse Guzaba2 --level 0
-    - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
-    - ps: {Add-AppveyorMessage "%BROKEN_FILES%"}
+  #code static analysis with phpstan
+  - vendor/bin/phpstan analyse Guzaba2 --level 0
+  - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
+  - ps: {Add-AppveyorMessage "%BROKEN_FILES%"}
 
-    #send email
 notifications:
-    - provider: Email
+  #send email
+  - provider: Email
     to:
-        - antonia@azonmedia.com
-        #- '{{commitAuthorEmail}}'
+      - antonia@azonmedia.com
+      #- '{{commitAuthorEmail}}'
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: true
