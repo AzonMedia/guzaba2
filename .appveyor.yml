@@ -28,6 +28,8 @@ init:
   - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
   - SET COMPOSER_NO_INTERACTION=1
   - SET PHP=1 # This var is connected to PHP install cache
+  - SET CHANGED_FILES=""
+  - SET BROKEN_FILES=""
 
 install:
   #php
@@ -53,11 +55,16 @@ test_script:
   - SET PHP_CS_FIXER_FUTURE_MODE=1
   - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
+  #code static analysis with phpstan
+  #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
+  - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
+  - ps: Add-AppveyorMessage "%BROKEN_FILES%"
+
 on_success:
   #check for changed files from php-cs-fixer
   - git diff --stat -- src/
   - FOR /F "Tokens=*" %%I in ('git diff --stat -- src/') DO SET CHANGED_FILES=%%I
-  - ECHO %CHANGED_FILES%
+  #- ECHO %CHANGED_FILES%
 
   - git config --global credential.helper store
   - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
@@ -69,11 +76,6 @@ on_success:
   - IF NOT "%CHANGED_FILES%"=="" git checkout master
   - IF NOT "%CHANGED_FILES%"=="" git commit -m "push from appveyor" -- src
   - IF NOT "%CHANGED_FILES%"=="" git push origin master
-
-  #code static analysis with phpstan
-  #- vendor/bin/phpstan analyse src/Guzaba2 --level 0
-  - FOR /F "Tokens=*" %%I in ('vendor/bin/phpstan analyse src/Guzaba2 --level 0') DO SET BROKEN_FILES=%%I
-  - ps: Add-AppveyorMessage "%BROKEN_FILES%"
 
 notifications:
   #send email
