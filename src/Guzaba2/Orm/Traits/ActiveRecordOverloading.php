@@ -75,7 +75,7 @@ trait ActiveRecordOverloading
             //then a new revision "0" needs to be created in the store and the record to be hooked to it
             //this is needed instead of just keeping the changes local in the object in case the same object is created in another scope in the code
             //this new object should see the modifications that were already done in the parent scope
-            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->index);
+            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index() );
 
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];

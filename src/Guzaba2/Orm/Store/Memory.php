@@ -116,6 +116,8 @@ class Memory extends Store implements StoreInterface
         //$lookup_index = $ActiveRecord->get_lookup_index();
         //$this->data[$class][$lookup_index] = $this->process_instance();
         $this->FallbackStore->update_record($ActiveRecord);
+        //the meta data needs to be updated
+        $this->update_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $ActiveRecord->get_meta_data());
     }
 
     /**
@@ -139,6 +141,7 @@ class Memory extends Store implements StoreInterface
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    print 'DDD';
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                     return $pointer;
                 }
@@ -160,16 +163,21 @@ class Memory extends Store implements StoreInterface
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
         //there can be other versions for the same class & lookup_index
 
+        $this->update_meta_data($class, $primary_index, $pointer['meta']);
+
+        return $this->data[$class][$lookup_index][$last_update_time];
+    }
+
+    protected function update_meta_data(string $class, array $primary_index, array $meta_data) : void
+    {
         $meta = [];
         //we need to provide only the needed data
         foreach (MetaStoreInterface::DATA_STRUCT as $key_name=>$value_type) {
-            if (isset($pointer['meta'][$key_name])) {
-                $meta[$key_name] = $pointer['meta'][$key_name];
+            if (isset($meta_data[$key_name])) {
+                $meta[$key_name] = $meta_data[$key_name];
             }
         }
         $this->MetaStore->set_meta_data($class, $primary_index, $meta);
-
-        return $this->data[$class][$lookup_index][$last_update_time];
     }
 
     /**
@@ -186,9 +194,9 @@ class Memory extends Store implements StoreInterface
         $lookup_index = self::form_lookup_index($primary_index);
         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
         if (isset($this->data[$class][$primary_index][$last_update_time])) {
-            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
+            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE) ));
         }
-        $this->data[$class][$primary_index][0] = $this->data[$class][$primary_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
-        return $this->data[$class][$primary_index][0];
+        $this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+        return $this->data[$class][$lookup_index][0];
     }
 }

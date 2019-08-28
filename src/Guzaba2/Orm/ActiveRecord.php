@@ -240,7 +240,12 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
-        if ($index) {
+        if ($index[$primary_columns[0]] === self::INDEX_NEW) {
+            $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
+            //the new records are unhooked
+        } else {
+
+
             $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
 
             $this->record_data =& $pointer['data'];
@@ -249,9 +254,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             //$index = $class::get_index_from_data($this->record_data['data']);//no need as this is not preserved
             //$this->initialize_record_data($pointer['data']);
             $this->is_new_flag = FALSE;
-        } else {
-            $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-            //the new records are unhooked
         }
 
 
@@ -493,6 +495,11 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     public function get_record_data() : array
     {
         return $this->record_data;
+    }
+
+    public function get_meta_data() : array
+    {
+        return $this->meta_data;
     }
         
     /**

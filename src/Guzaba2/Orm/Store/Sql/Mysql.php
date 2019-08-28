@@ -232,9 +232,9 @@ VALUES
 //        }
 
         // basic checks
-        if (!$ActiveRecord->is_new() && !$ActiveRecord->index[$main_index[0]]) {
-            throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('Trying to save an object/record from %s class that is not new and has no primary index.'), get_class($this)));
-        }
+        //if (!$ActiveRecord->is_new() && !$ActiveRecord->index[$main_index[0]]) {
+        //    throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('Trying to save an object/record from %s class that is not new and has no primary index.'), get_class($this)));
+        //}
 
         // saving data
         // funny thing here - if there is another save() in the _after_save and this occurs on a new object it will try to create the record twice and trhow duplicateKeyException
