@@ -56,10 +56,10 @@ test_script:
   - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
   #code static analysis with phpstan
-  - ps: $phpstan_output = (vendor\bin\phpstan analyse src/Guzaba2 --level 0 2>&1) | Out-String
+  - ps: $phpstan_output = (vendor\bin\phpstan analyse src/Guzaba2 --no-progress --level 0 2>&1) | Out-String
   - ps: Write-Output "$phpstan_output"
   - cd C:\projects\guzaba2\vendor\bin
-  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO SET broken_files=%%I
+  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --no-progress --level 0') DO SET broken_files=%%I
   - ps: Add-AppveyorMessage "$env:broken_files"
 
 on_success:
