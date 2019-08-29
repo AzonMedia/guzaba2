@@ -594,5 +594,4 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     {
         return $this->record_modified_data;
     }
-
 }
