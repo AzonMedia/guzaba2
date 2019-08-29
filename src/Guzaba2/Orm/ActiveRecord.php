@@ -70,7 +70,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var array
      */
-    protected $record_data = [];
+    public $record_data = [];
 
     /**
      * @var array
@@ -270,7 +270,9 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         if (count($primary_index_columns) > 1) {
             throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
         }
+        
         $ret = $this->record_data[$primary_index_columns[0]];
+        
         return $ret;
     }
 
@@ -359,6 +361,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         self::OrmStore()->update_record($this);
 
         self::LockManager()->release_lock('', $LR);
+
         //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
         //instead the lock levle should be updated (lock reacquired)
         if ($this->is_new()) {
@@ -735,7 +738,7 @@ GROUP BY
     {
         // the index is autoincrement and it is not yet set
         $main_index = static::get_primary_index_columns();
-        $this->index[$main_index[0]] = $index;
+//        $this->index[$main_index[0]] = $index;
         // this updated the property of the object that is the primary key
         $this->record_data[$main_index[0]] = $index;
     }

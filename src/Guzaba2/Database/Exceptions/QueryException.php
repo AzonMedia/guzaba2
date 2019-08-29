@@ -3,6 +3,7 @@
 namespace Guzaba2\Database\Exceptions;
 
 use Guzaba2\Database\PdoStatement;
+use Guzaba2\Database\Interfaces\StatementInterface;
 
 class QueryException extends DatabaseException
 {
@@ -47,7 +48,7 @@ class QueryException extends DatabaseException
      * The data for the first three argument is supposed to be obtained from \PDOStatement::errorInfo()
      * The executed query can be obtained from \PDOStatement::queryString
      * The extra debug data is spupposed to be obtained from \PDOStatement::debugDumpParams
-     * @param PdoStatement|null $pdoStatement
+     * @param StatementInterface|null $statementInterface
      * @param string $sqlstate SQLSTATE error code (a five characters alphanumeric identifier defined in the ANSI SQL standard).
      * @param string $errorcode Driver specific error code.
      * @param string $errormsg Driver specific error message.
@@ -56,7 +57,7 @@ class QueryException extends DatabaseException
      * @param string $debugdata Additional debug data regarding the bound parameters.
      * @param null $previous_exception
      */
-    public function __construct(?PdoStatement $pdoStatement, $sqlstate, $errorcode, $errormsg, $query, $params, $debugdata = '', $previous_exception = null)
+    public function __construct(?StatementInterface $statementInterface, $sqlstate, $errorcode, $errormsg, $query, $params, $debugdata = '', $previous_exception = null)
     {
         //this exception should be thrown only from org\guzaba\framework\database\classes\pdostatement::execute()
         $trace_arr = debug_backtrace();
@@ -67,7 +68,7 @@ class QueryException extends DatabaseException
 
         parent::__construct($errormsg, 0, $previous_exception);
 
-        $this->pdoStatement = $pdoStatement;
+        $this->pdoStatement = $statementInterface;
         $this->sqlstate = $sqlstate;
         $this->errorcode = $errorcode;
         $this->query = $query;

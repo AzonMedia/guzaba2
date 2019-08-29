@@ -78,16 +78,16 @@ class StatementCoroutine extends Statement implements StatementInterface
         $error_code = $this->NativeStatement->errno ?? 0;
         if ($ret === FALSE) {
             if ($error_code=='40001') { //deadlock TODO need to check
-                throw new DeadlockException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error));
+                throw new DeadlockException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
             } else {
                 if ($error_code == '1062') {
                     // duplicate entry
-                    throw new DuplicateKeyException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error));
+                    throw new DuplicateKeyException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
                 } elseif ($error_code == '1452') {
                     // foreign key constraint
-                    throw new ForeignKeyConstraintException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error));
-                } else {
-                    throw new QueryException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error));
+                    throw new ForeignKeyConstraintException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
+                } else {            
+                    throw new QueryException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
                 }
             }
         }
