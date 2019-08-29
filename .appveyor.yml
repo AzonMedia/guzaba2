@@ -59,7 +59,7 @@ test_script:
   - ps: Write-Output "$phpstan_output"
   - cd C:\projects\guzaba2\vendor\bin
   - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO SET broken_files=%%I
-  - Add-AppveyorMessage "$env:broken_files"
+  - ps: Add-AppveyorMessage "$env:broken_files"
 
 on_success:
   #check for changed files from php-cs-fixer
