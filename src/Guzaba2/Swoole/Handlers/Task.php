@@ -3,6 +3,6 @@
 
 namespace Guzaba2\Swoole\Handlers;
 
-class Task extends HanlderBase
+class Task extends HandlerBase
 {
 }

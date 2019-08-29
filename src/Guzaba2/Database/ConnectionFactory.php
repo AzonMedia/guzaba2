@@ -29,6 +29,9 @@ class ConnectionFactory extends Base
      * @return ConnectionInterface
      */
     //public function get_connection(string $class_name, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
+    /**
+     * @param-out $ScopeReference
+     */
     public function get_connection(string $class_name, &$ScopeReference = '') : ConnectionInterface
     {
         return $this->ConnectionProvider->get_connection($class_name, $ScopeReference);

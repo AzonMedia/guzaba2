@@ -32,7 +32,7 @@ use Guzaba2\Translator\Translator as t;
  * A container class for callbacks.
  * When executed will execute all callbacks in the order they were pushed
  */
-class CallbackContainer extends \Guzaba2\Patterns\CallbackContainer
+class CallbackContainer extends \Guzaba2\Base\Base
 {
     const MODE_BEFORE_COMMIT = 10;//this means really COMMIT not just save
     const MODE_AFTER_COMMIT = 20;//this means really COMMIT not just save (and it means after master as it cant be committed before that)

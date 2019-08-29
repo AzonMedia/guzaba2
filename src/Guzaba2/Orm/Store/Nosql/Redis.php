@@ -56,4 +56,12 @@ class Redis extends Database
         //currently immediately refers to falblack store
         return $this->FallbackStore->get_data_pointer($class, $lookup_index);
     }
+    
+    public function get_meta(string $class_name, int $object_id) : array
+    {
+        //not implemented
+        //currently immediately refers to falblack store
+        return $this->FallbackStore->get_meta($class_name, $object_id); 
+    }
+   
 }

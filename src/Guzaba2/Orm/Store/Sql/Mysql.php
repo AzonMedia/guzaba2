@@ -172,7 +172,7 @@ WHERE
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
-            throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s" with index "%s". Instead the new obejcts hav their metadata created with Mysql::create_meta() method.'), get_class($object), $object->get_index()));
+            throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s". Instead the new obejcts have their metadata created with Mysql::create_meta() method.'), get_class($ActiveRecord)));
         }
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
@@ -428,20 +428,6 @@ ON DUPLICATE KEY UPDATE
         } else {
             $this->update_meta($ActiveRecord);
         }
-
-
-
-
-        // after the object is saved
-        // the ownership reload must happen before permissions reload
-//        if ($this->maintain_ownership_record) {
-//            $this->load_ownership();
-//        }
-
-//        if (method_exists($this, '_after_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) { //we check for recursion against the parent method save()
-//            $args = func_get_args();
-//            $ret = call_user_func_array([$this,'_after_save'], $args);
-//        }
 
         //COMMIT DB TRANSACTION
 
