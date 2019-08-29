@@ -47,7 +47,7 @@ install:
   #install
   - cd C:\projects\guzaba2
   - appveyor-retry composer install --no-progress --profile
-  - appveyor-retry composer require friendsofphp/php-cs-fixer --no-progress --profile
+  #- appveyor-retry composer require friendsofphp/php-cs-fixer --no-progress --profile
   #- appveyor-retry composer require --dev phpstan/phpstan --no-progress --profile
 
 test_script:
