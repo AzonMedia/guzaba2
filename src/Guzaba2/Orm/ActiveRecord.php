@@ -219,7 +219,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         if ($index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-            //the new records are unhooked
+        //the new records are unhooked
             //no locking here
         } else {
             $this->load($index);
@@ -232,13 +232,13 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         self::LockManager()->release_lock($resource);
     }
 
-    protected function load( /* mixed */ $index) : void
+    protected function load(/* mixed */ $index) : void
     {
 
         //_before_load() event
         if (method_exists($this, '_before_load') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array(array($this,'_before_load'),$args);//must return void
+            call_user_func_array([$this,'_before_load'], $args);//must return void
         }
 
         $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
@@ -255,7 +255,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //_after_load() event
         if (method_exists($this, '_after_load') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array(array($this,'_after_load'),$args);//must return void
+            call_user_func_array([$this,'_after_load'], $args);//must return void
         }
     }
 
