@@ -143,7 +143,7 @@ class Memory extends Store implements StoreInterface
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                    Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index) ), LogLevel::DEBUG);
+                    Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
             }
