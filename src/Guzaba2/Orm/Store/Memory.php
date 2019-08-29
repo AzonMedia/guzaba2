@@ -6,11 +6,13 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\MetaStore\Interfaces\metaStoreInterface;
+use Psr\Log\LogLevel;
 
 class Memory extends Store implements StoreInterface
 {
@@ -74,18 +76,10 @@ class Memory extends Store implements StoreInterface
         }
     }
 
-    /*
-    public function get_record_structure(string $class) : array
-    {
-        if (isset($this->record_structures[$class])) {
-            $ret = $this->record_structures[$class];
-        } else {
-            $ret = $this->FallbackStore->get_record_structure($class);
-        }
-        return $ret;
-    }
-    */
-
+    /**
+     * @param string $class
+     * @return array
+     */
     public function get_unified_columns_data(string $class) : array
     {
         if (isset($this->unified_columns_data[$class])) {
@@ -96,6 +90,10 @@ class Memory extends Store implements StoreInterface
         return $ret;
     }
 
+    /**
+     * @param string $class
+     * @return array
+     */
     public function get_storage_columns_data(string $class) : array
     {
         if (isset($this->storage_columns_data[$class])) {
@@ -118,6 +116,9 @@ class Memory extends Store implements StoreInterface
         $this->FallbackStore->update_record($ActiveRecord);
         //the meta data needs to be updated
         $this->update_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $ActiveRecord->get_meta_data());
+        $class = get_class($ActiveRecord);
+        $lookup_index = self::form_lookup_index($ActiveRecord->getPrimary_index());
+        unset($this->data[$class][$lookup_index][0]);
     }
 
     /**
@@ -141,8 +142,8 @@ class Memory extends Store implements StoreInterface
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
-                    print 'DDD';
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                    Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
             }

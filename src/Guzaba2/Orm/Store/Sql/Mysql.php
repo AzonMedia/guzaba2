@@ -28,6 +28,12 @@ class Mysql extends Database
 
     protected $connection_class;
 
+    const SAVE_MODE_ALL = 1;//overwrites all properties
+
+    const SAVE_MODE_MODIFIED = 2;//saves only the modified ones
+
+    const SAVE_MODE = self::SAVE_MODE_ALL;
+
     public function __construct(StoreInterface $FallbackStore, ?string $connection_class = NULL)
     {
         parent::__construct();
@@ -353,7 +359,8 @@ VALUES
                 if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
                     $data_arr = $record_data_to_save;
                 } else {
-                    $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+                    //$data_arr = array_merge($record_data_to_save, $ActiveRecord->index);//not needed
+                    $data_arr = $record_data_to_save;
                 }
                 // in the update str we need to exclude the index
                 $upd_arr = $record_data_to_save;
