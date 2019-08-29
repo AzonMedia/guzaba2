@@ -59,6 +59,6 @@ abstract class Store extends Base implements StoreInterface
 
     public static function form_lookup_index(array $primary_index) : string
     {
-        return implode(':', $primary_index);
+        return implode(self::KEY_SEPARATOR, $primary_index);
     }
 }

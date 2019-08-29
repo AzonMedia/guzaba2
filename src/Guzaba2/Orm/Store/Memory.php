@@ -117,7 +117,7 @@ class Memory extends Store implements StoreInterface
         //the meta data needs to be updated
         $this->update_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $ActiveRecord->get_meta_data());
         $class = get_class($ActiveRecord);
-        $lookup_index = self::form_lookup_index($ActiveRecord->getPrimary_index());
+        $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         unset($this->data[$class][$lookup_index][0]);
     }
 

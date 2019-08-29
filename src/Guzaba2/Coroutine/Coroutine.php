@@ -91,7 +91,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         if (!isset(self::$coroutines_ids[$current_cid])) {
             //every coroutine will have its own channel to ensure that it awaits for all its child coroutines to be over
 
-            //defers are called in revers order
+            //defers are called in reverse order (the first added will be the last called)
 
             //before unsetting the master coroutine unset the IDs of all subcoroutines
             $Function = function (int $cid) use (&$Function) : void {
@@ -110,7 +110,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
 
             $Context = self::createContextWrapper($current_cid, $context_class);
-            parent::defer(function () use ($Context) {
+            //parent::defer(function () use ($Context) {
+            defer(function () use ($Context) {
                 $Context->freeAllConnections();
                 $Context->end_microtime = microtime(TRUE);
             });
