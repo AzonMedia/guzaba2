@@ -32,7 +32,7 @@
         "azonmedia/utilities": "dev-master",
         "ext-pdo": "*",
         "ext-mysqli": "*",
-        "ext-swoole": "*"
+        //"ext-swoole": "*"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
