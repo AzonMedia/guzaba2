@@ -2,12 +2,14 @@
 
 namespace Guzaba2\Orm;
 
+use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Orm\MetaStore\MetaStore;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
@@ -35,6 +37,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         'services'      => [
             //'ConnectionFactory',
             'OrmStore',
+            'LockManager',
         ]
     ];
 
@@ -216,35 +219,45 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         if ($index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-        //the new records are unhooked
+            //the new records are unhooked
+            //no locking here
         } else {
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
-
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
-            // reset the index
-            //$index = $class::get_index_from_data($this->record_data['data']);//no need as this is not preserved
-            //$this->initialize_record_data($pointer['data']);
-            $this->is_new_flag = FALSE;
+            $this->load($index);
         }
     }
 
-    /**
-     * Returns the primary index for the object.
-     * Returns an array if the primary index is from multiple columns.
-     */
-//    public function get_index() /* mixed */
-//    {
-//        $primary_index_columns = static::get_primary_index_columns();
-//        if (count($primary_index_columns) === 1) {
-//            $ret = $this->record_data[$primary_index_columns[0]];
-//        } else {
-//            foreach ($primary_index_columns as $primary_index_column) {
-//                $ret[] = $this->record_data[$primary_index_column];
-//            }
-//        }
-//        return $ret;
-//    }
+    public function __destruct()
+    {
+        $resource = MetaStore::get_key_by_object($this);
+        self::LockManager()->release_lock($resource);
+    }
+
+    protected function load( /* mixed */ $index) : void
+    {
+
+        //_before_load() event
+        if (method_exists($this, '_before_load') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array(array($this,'_before_load'),$args);//must return void
+        }
+
+        $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+
+        $this->record_data =& $pointer['data'];
+        $this->meta_data =& $pointer['meta'];
+
+        $resource = MetaStore::get_key_by_object($this);
+        $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+        self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+
+        $this->is_new_flag = FALSE;
+
+        //_after_load() event
+        if (method_exists($this, '_after_load') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array(array($this,'_after_load'),$args);//must return void
+        }
+    }
 
     /**
      * Works only for classes that have a single primary index.
@@ -258,6 +271,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
         }
         $ret = $this->record_data[$primary_index_columns[0]];
+        return $ret;
     }
 
     /**
@@ -339,7 +353,12 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             call_user_func_array([$this,'_before_save'], $args);//must return void
         }
 
+        $resource = MetaStore::get_key_by_object($this);
+        self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+
         self::OrmStore()->update_record($this);
+
+        self::LockManager()->release_lock('', $LR);
 
         //_after_save() event
         if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
@@ -350,7 +369,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //COMMIT
 
         //reattach the pointer
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
 
         $this->record_data =& $pointer['data'];
         $this->meta_data =& $pointer['meta'];
