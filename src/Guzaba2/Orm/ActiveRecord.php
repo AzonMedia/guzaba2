@@ -62,11 +62,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var bool
      */
-    protected $was_new_flag = FALSE;
-
-    /**
-     * @var bool
-     */
     protected $is_modified_flag = FALSE;
 
     /**
@@ -87,7 +82,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var bool
      */
-    protected $maintain_ownership_record = true;
+    //protected $maintain_ownership_record = true;
     
     /**
      * @var bool
@@ -106,7 +101,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var bool
      */
-    protected $validation_is_disabled_flag = FALSE;
+    //protected $validation_is_disabled_flag = FALSE;
   
 
 
@@ -233,24 +228,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             $this->is_new_flag = FALSE;
         }
 
-
-        //all properties defined in this class must be references to the store in MemoryCache
-        //if new properties are defined these will be contained in this instance, instead of being referenced in the Store
-        //the Store contains only the ORM properties
-//        $RClass = new ReflectionClass($this);
-//        $properties = $RClass->getOwnDynamicProperties();
-//        foreach ($properties as $RProperty) {
-//            if (array_key_exists($RProperty->name, $pointer)) {
-//                $this->{$RProperty->name} =& $pointer[$RProperty->name];
-//            }
-//        }
-
-        //do not link these - these will stay separate for each instance
-//        foreach (self::PROPERTIES_TO_LINK as $property_name) {
-//            if (array_key_exists($property_name, $pointer)) {
-//                $this->{$property_name} =& $pointer[$property_name];
-//            }
-//        }
     }
 
     /**
@@ -358,10 +335,18 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
         //_before_save() event
+        if (method_exists($this, '_before_save') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array(array($this,'_before_save'),$args);//must return void
+        }
 
         self::OrmStore()->update_record($this);
 
         //_after_save() event
+        if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array(array($this,'_after_save'),$args);//must return void
+        }
 
         //COMMIT
 
@@ -380,9 +365,14 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Returns true is the record is just being created now and it is not yet saved
      * @return bool
      */
-    public function is_new()
+    public function is_new() : bool
     {
         return $this->is_new_flag;
+    }
+
+    public function is_modified() : bool
+    {
+        return $this->is_modified_flag;
     }
     
     public function disable_method_hooks() : void

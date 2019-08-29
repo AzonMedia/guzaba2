@@ -66,8 +66,6 @@ trait ActiveRecordOverloading
     public function __set(string $property, /* mixed */ $value) : void
     {
 
-
-        //$this->unhook_data_pointer();
         //instead of unhooking we need to rehook it to a new version called "0" until saved
         //if this is a new object then we do not really need (or can) hook as there is no yet primary index
         if (!$this->is_modified_flag && !$this->is_new()) {
@@ -114,15 +112,6 @@ trait ActiveRecordOverloading
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
             call_user_func_array([$this,'_after_set_'.$property], [$value]);
         }
-    }
-
-    private function unhook_data_pointer() : void
-    {
-        //unhook the record_data pointer from the central storage (this is valid only if it is the MemoryStore)
-//        $record_data = $this->record_data;
-//        $this->record_data =& $record_data;
-//        $meta_data = $this->meta_data;
-//        $this->meta_data =& $meta_data;
     }
 
     /**
