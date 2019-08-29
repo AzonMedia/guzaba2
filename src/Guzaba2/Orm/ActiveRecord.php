@@ -70,7 +70,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var array
      */
-    public $record_data = [];
+    protected $record_data = [];
 
     /**
      * @var array
