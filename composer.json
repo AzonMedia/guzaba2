@@ -36,5 +36,8 @@
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^0.11.15"
     }
 }
