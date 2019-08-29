@@ -23,6 +23,7 @@ namespace Guzaba2\Patterns;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * A container class for callbacks.

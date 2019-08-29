@@ -50,7 +50,7 @@ class MemoryMonitor extends WorkerSingleton
     public function get_memory_usage_metric(string $metric, string $unit = self::UNIT_BYTES) : float
     {
         $memory_usage = $this->get_memory_usage();
-        if (!isset($memory_usage[$metrix])) {
+        if (!isset($memory_usage[$metric])) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $metrix argument does not contain a valid value.')));
         }
 
