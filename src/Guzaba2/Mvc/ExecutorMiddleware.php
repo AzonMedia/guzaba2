@@ -190,7 +190,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             if ($content_type === NULL) {
                 return $this->json_handler($Request, $Response);
             } else {
-                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, $controller_class));
+                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, print_r($controller_callable, TRUE)));
             }
         }
     }
