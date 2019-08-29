@@ -31,8 +31,7 @@
         "eaglewu/swoole-ide-helper": "dev-master",
         "azonmedia/utilities": "dev-master",
         "ext-pdo": "*",
-        "ext-mysqli": "*",
-        //"ext-swoole": "*"
+        "ext-mysqli": "*"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
