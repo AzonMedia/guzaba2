@@ -227,7 +227,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             //$this->initialize_record_data($pointer['data']);
             $this->is_new_flag = FALSE;
         }
-
     }
 
     /**
@@ -337,7 +336,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //_before_save() event
         if (method_exists($this, '_before_save') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array(array($this,'_before_save'),$args);//must return void
+            call_user_func_array([$this,'_before_save'], $args);//must return void
         }
 
         self::OrmStore()->update_record($this);
@@ -345,7 +344,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //_after_save() event
         if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array(array($this,'_after_save'),$args);//must return void
+            call_user_func_array([$this,'_after_save'], $args);//must return void
         }
 
         //COMMIT
