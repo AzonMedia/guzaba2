@@ -86,7 +86,7 @@ class StatementCoroutine extends Statement implements StatementInterface
                 } elseif ($error_code == '1452') {
                     // foreign key constraint
                     throw new ForeignKeyConstraintException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
-                } else {            
+                } else {
                     throw new QueryException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
                 }
             }

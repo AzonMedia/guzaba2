@@ -61,7 +61,6 @@ class Redis extends Database
     {
         //not implemented
         //currently immediately refers to falblack store
-        return $this->FallbackStore->get_meta($class_name, $object_id); 
+        return $this->FallbackStore->get_meta($class_name, $object_id);
     }
-   
 }

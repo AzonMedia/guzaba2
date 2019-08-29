@@ -323,7 +323,7 @@ VALUES
 //                $ActiveRecord->index[$main_index[0]] = $last_insert_id;
 //                // this updated the property of the object that is the primary key
 //                $ActiveRecord->record_data[$main_index[0]] = $last_insert_id;
-                // we need this part of code. It will set $ActiveRecord->record_data[$main_index[0]] 
+                // we need this part of code. It will set $ActiveRecord->record_data[$main_index[0]]
                 $ActiveRecord->update_primary_index($last_insert_id);
             }
         } else {
@@ -433,8 +433,6 @@ ON DUPLICATE KEY UPDATE
 
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
-        
-        
     }
 
     public function &get_data_pointer(string $class, array $index) : array
