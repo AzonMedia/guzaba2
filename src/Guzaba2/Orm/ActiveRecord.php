@@ -47,6 +47,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     //use ActiveRecordLoad;
     use ActiveRecordStructure;
 
+    const INDEX_NEW = 0;
+
     /**
      * @var StoreInterface
      */
@@ -105,30 +107,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * @var bool
      */
     protected $validation_is_disabled_flag = FALSE;
-
-    
-    /**
-     * @var bool
-     */
-    //protected static $autoincrement_index = FALSE;
-
-    /**
-     * Contains the index provided to the get_instance()
-     * @var mixed
-     */
-    //protected $index = self::INDEX_NEW;
-    
-    //const SAVE_MODE_ALL = 1;//overwrites all properties
-    
-    //const SAVE_MODE_MODIFIED = 2;//saves only the modified ones
-    
-    //const SAVE_MODE = self::SAVE_MODE_ALL;
   
-    const INDEX_NEW = 0;
-    
-    //const RETURN_INDEX_SCALAR = 1;
-    
-    //const RETURN_INDEX_ARRAY = 2;
 
 
     /**
@@ -385,6 +364,12 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         //_after_save() event
 
         //COMMIT
+
+        //reattach the pointer
+        $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+
+        $this->record_data =& $pointer['data'];
+        $this->meta_data =& $pointer['meta'];
 
         $this->is_new_flag = FALSE;
 

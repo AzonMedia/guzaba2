@@ -13,6 +13,7 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Server;
 use Guzaba2\Swoole\SwooleToGuzaba;
+use Psr\Log\LogLevel;
 use Throwable;
 
 class Request extends HandlerBase
@@ -285,7 +286,9 @@ class Request extends HandlerBase
 
 
             $end_time = microtime(TRUE);
-            print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            $message = 'Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            Kernel::log($message, LogLevel::INFO);
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
         } catch (Throwable $Exception) {
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
