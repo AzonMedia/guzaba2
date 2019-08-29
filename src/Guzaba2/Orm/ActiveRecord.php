@@ -359,12 +359,20 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         self::OrmStore()->update_record($this);
 
         self::LockManager()->release_lock('', $LR);
+        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
+        //instead the lock levle should be updated (lock reacquired)
+        if ($this->is_new()) {
+            $resource = MetaStore::get_key_by_object($this);
+            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+            self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+        }
 
         //_after_save() event
         if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_save'], $args);//must return void
         }
+        
 
         //COMMIT
 
