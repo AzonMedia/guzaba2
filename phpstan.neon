@@ -1,0 +1,5 @@
+parameters:
+    autoload_files:
+        - vendor/autoload.php
+    autoload_directories:
+        - %rootDir%/../../../src/Guzaba2
