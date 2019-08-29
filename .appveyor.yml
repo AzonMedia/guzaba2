@@ -8,6 +8,7 @@ environment:
     - php_ver: 7.2
   access_token:
     secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
+  broken_files: ""
 
 branches:
   only:
@@ -54,11 +55,11 @@ test_script:
   - vendor/bin/php-cs-fixer --config=.php_cs.dist --diff -v fix
 
   #code static analysis with phpstan
-  #- cd C:\projects\guzaba2\vendor\bin
-  - ps: $phpstan_output = (vendor\bin\phpstan analyse src/Guzaba2/Authorization --level 0 2>&1) | Out-String
+  - ps: $phpstan_output = (vendor\bin\phpstan analyse src/Guzaba2 --level 0 2>&1) | Out-String
   - ps: Write-Output "$phpstan_output"
-  - ps: Add-AppveyorMessage "$phpstan_output" -Category Information
-  #- FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO appveyor AddMessage -Message %%I -Category Information
+  - cd C:\projects\guzaba2\vendor\bin
+  - FOR /F "Tokens=*" %%I in ('phpstan analyse ../../src/Guzaba2 --level 0') DO SET broken_files=%%I
+  - Add-AppveyorMessage "$env:broken_files"
 
 on_success:
   #check for changed files from php-cs-fixer
@@ -82,7 +83,13 @@ notifications:
   - provider: Email
     to:
       - '{{commitAuthorEmail}}'
-    message: '{{#jobs}} {{#messages}} {{message}} {{/messages}} {{/jobs}}'
+    #message: '{{#jobs}} {{#messages}} {{message}} {{/messages}} {{/jobs}}'
+    message: '{{#passed}}<h1><a href="{{buildUrl}}" style="font-size: 150%;color:#078DC7;">Build {{projectName}} {{buildVersion}} completed</a></h1>{{/passed}}
+              {{#failed}}<h1><a href="{{buildUrl}}" style="font-size: 150%;color:#ff3228;">Build {{projectName}} {{buildVersion}} failed</a></h1>{{/failed}}
+              <p style="color: #888;">Commit <a href="{{commitUrl}}">{{commitId}}</a> by <a href="mailto:{{commitAuthorEmail}}">{{commitAuthor}}</a> on {{commitDate}}:</p>
+              <p style="font-size: 110%;color:#222;">{{commitMessage}}</p>
+              <p>Build messages:</p><ul>{{#jobs}} {{#messages}}  <li>{{message}}</li> {{/messages}} {{/jobs}}</ul>'
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: true
+
