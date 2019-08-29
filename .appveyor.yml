@@ -33,7 +33,7 @@ init:
 install:
   #php
   - IF NOT EXIST C:\tools\php (SET PHP=0)
-  - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver%
+  - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version %php_ver% --no-progress
   - cd C:\tools\php   
   - copy php.ini-production php.ini
   - echo extension_dir=ext >> php.ini
