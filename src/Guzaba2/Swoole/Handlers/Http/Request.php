@@ -93,7 +93,7 @@ class Request extends HandlerBase
 
             \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
 
-            $Execution =& RequestExecution::get_instance();
+            //$Execution =& RequestExecution::get_instance();
             //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
 
 
@@ -301,7 +301,7 @@ class Request extends HandlerBase
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
-            $Execution->destroy();
+            //$Execution->destroy();
         }
         //print 'MASTER END'.PHP_EOL;
     }

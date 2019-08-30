@@ -194,6 +194,9 @@ class Kernel
             throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
         }
 
+        //due to concurrency issues it is better to load all classes used by the application and the framework before the server is started
+        self::load_all_classes();
+
         $ret = $callable();
 
         if (!is_int($ret)) {
@@ -313,80 +316,6 @@ class Kernel
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
     }
 
-    /////////////////////////
-    /// PROTECTED METHODS ///
-    /////////////////////////
-
-    protected static function autoloader(string $class_name): bool
-    {
-        //print $class_name.PHP_EOL;
-        $ret = FALSE;
-
-        foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
-            if (strpos($class_name, $namespace_base) === 0) {
-                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
-                //$class_path = realpath($class_path);
-                if (is_readable($class_path)) {
-                    //require_once($class_path);
-                    self::require_class($class_path, $class_name);
-                    //the file may exist but it may not contain the needed file
-                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
-                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
-                        throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-                    }
-                    self::initialize_class($class_name);
-                    self::$loaded_classes[] = $class_name;
-                    self::$loaded_paths[] = $class_path;
-                    $ret = TRUE;
-                } else {
-                    //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                    $message = sprintf('Class %s (path %s) is not found (or not readable).', $class_name, $class_path);
-                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-                }
-            } else {
-                //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * @param string $class_path
-     * @param string $class_name
-     * @return mixed|null
-     */
-    protected static function require_class(string $class_path, string $class_name) /* mixed */
-    {
-        $ret = NULL;
-
-        try {
-            if (\Swoole\Coroutine::getCid() > 0) {
-                $class_source = \Swoole\Coroutine::readFile($class_path);
-            } else {
-                $class_source = file_get_contents($class_path);
-            }
-
-
-            if ($class_name != SourceStream::class && strpos($class_source, 'protected const CONFIG_RUNTIME') !== FALSE) {
-
-                //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
-                $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
-            } else {
-                $ret = require_once($class_path);
-            }
-        } catch (\Throwable $exception) {
-            //print '==================='.PHP_EOL;
-            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
-            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
-            //print '==================='.PHP_EOL;
-        }
-
-
-
-        return $ret;
-    }
-
     /**
      * @param string $path
      * @param string|null $error
@@ -472,6 +401,111 @@ class Kernel
         }
         return $runtime_config;
     }
+
+    /////////////////////////
+    /// PROTECTED METHODS ///
+    /////////////////////////
+
+    protected static function autoloader(string $class_name): bool
+    {
+        //print $class_name.PHP_EOL;
+        $ret = FALSE;
+
+        foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
+            if (strpos($class_name, $namespace_base) === 0) {
+                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
+                //$class_path = realpath($class_path);
+                if (is_readable($class_path)) {
+                    //require_once($class_path);
+                    self::require_class($class_path, $class_name);
+                    //the file may exist but it may not contain the needed file
+                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
+                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
+                        throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                    }
+                    self::initialize_class($class_name);
+                    self::$loaded_classes[] = $class_name;
+                    self::$loaded_paths[] = $class_path;
+                    $ret = TRUE;
+                } else {
+                    //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
+                    $message = sprintf('Class %s (path %s) is not found (or not readable).', $class_name, $class_path);
+                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                }
+            } else {
+                //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
+            }
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Loads all classes found under the registered autoload paths.
+     * @see self::$autoloader_lookup_paths
+     * @see self::register_autoloader_path()
+     * @return void
+     */
+    public static function load_all_classes() : void
+    {
+        foreach (self::$autoloader_lookup_paths as $namespace_base=>$autoload_lookup_path) {
+            $Directory = new \RecursiveDirectoryIterator($autoload_lookup_path);
+            $Iterator = new \RecursiveIteratorIterator($Directory);
+            $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
+            foreach ($Regex as $path=>$match) {
+                $ns_with_forward_slash = str_replace('\\','/',$namespace_base);
+                if ( ($pos = strpos($path, $ns_with_forward_slash) ) !== FALSE ){
+                    $class = str_replace( ['/','.php'], ['\\',''], substr($path, $pos) );
+                    //we also need to check again already included files
+                    //as including a certain file may trigger the autoload and load other classes that will be included a little later
+                    $included_files = get_included_files();
+                    if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
+                        //skip this file - it is already included
+                        continue;
+                    }
+                    self::autoloader($class);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param string $class_path
+     * @param string $class_name
+     * @return mixed|null
+     */
+    protected static function require_class(string $class_path, string $class_name) /* mixed */
+    {
+        $ret = NULL;
+
+        try {
+            if (\Swoole\Coroutine::getCid() > 0) {
+                $class_source = \Swoole\Coroutine::readFile($class_path);
+            } else {
+                $class_source = file_get_contents($class_path);
+            }
+
+            //TODO - he below is a very primitive check - needs to be improved and use tokenizer
+            if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source , 'protected const CONFIG_RUNTIME =') !== FALSE) {
+
+                //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
+                $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
+            } else {
+                $ret = require_once($class_path);
+            }
+        } catch (\Throwable $exception) {
+            //print '==================='.PHP_EOL;
+            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
+            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
+            //print '==================='.PHP_EOL;
+        }
+
+
+
+        return $ret;
+    }
+
+
 
     /**
      * @param string $class_name

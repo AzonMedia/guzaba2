@@ -28,6 +28,8 @@ use Guzaba2\Translator\Translator as t;
 use org\guzaba\framework\helpers\classes\controllerHelpers as h;
 use org\guzaba\framework\transactions\classes\transactionManager as TXM;
 
+//TODO - not ported yet
+
 /**
  * Class pdo
  * @package org\guzaba\framework\database\classes
@@ -164,7 +166,7 @@ abstract class Pdo extends Connection
      */
     public static function _initialize_class(): void
     {
-        self::$cache = framework\cache\classes\cache::get_instance();
+        //self::$cache = framework\cache\classes\cache::get_instance();
     }
 
     /**

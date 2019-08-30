@@ -32,7 +32,7 @@ use Guzaba2\Transaction\TransactionManager;
  * @package org\guzaba\framework\database\classes
  * @todo refactor and re-implement
  */
-final class QueryCache extends Singleton
+class QueryCache extends Singleton
 {
     protected const CACHE_TTL = 3600;
     protected const CACHE_QUERIES_CONTAINING_RAND = false;

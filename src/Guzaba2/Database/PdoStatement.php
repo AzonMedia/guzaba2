@@ -36,6 +36,8 @@ use Guzaba2\Orm\Exceptions\SingleValidationFailedException;
 use Guzaba2\Transaction\TransactionManager;
 use Guzaba2\Translator\Translator as t;
 
+//TODO - not ported
+
 /**
  * Supports only named placeholders (:place). It is overloaded and values can be bind to the parameters directly $stmt->param = $value.
  *
@@ -140,7 +142,7 @@ final class PdoStatement extends Statement
 
     public static function _initialize_class(): void
     {
-        self::$query_cache = queryCache::get_instance();
+        //self::$query_cache = queryCache::get_instance();
     }
 
     /**
