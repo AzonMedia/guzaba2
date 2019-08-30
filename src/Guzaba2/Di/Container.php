@@ -3,6 +3,7 @@
 
 namespace Guzaba2\Di;
 
+use Azonmedia\Lock\Backends\SwooleTableBackend;
 use Azonmedia\Lock\CoroutineLockManager;
 use Azonmedia\Lock\Backends\NullBackend;
 use Guzaba2\Base\Interfaces\ConfigInterface;
@@ -98,7 +99,7 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'initialize_immediately'        => TRUE,
         ],
         'LockManagerBackend'            => [
-            'class'                         => NullBackend::class,
+            'class'                         => SwooleTableBackend::class,
             'args'                          => [],
         ],
     ];

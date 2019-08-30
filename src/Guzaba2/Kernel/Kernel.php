@@ -241,13 +241,15 @@ class Kernel
         $output .= PHP_EOL;
         $output .= $exception->getTraceAsString();
 
-        self::logtofile($output);
+        self::log($output, LogLevel::EMERGENCY);
+        //file_put_contents('AAA', $output.PHP_EOL, FILE_APPEND);
+        //self::logtofile($output);
         //die($output);
         //print $output;
         //die(1);//kill that worker
         //why kill the whole worker... why not just terminate the coroutine/request
         //in fact this code will be used only before the server is started
-        print $output.PHP_EOL;
+        //print $output.PHP_EOL;//the logger is used instead
         if ($exit_code !== NULL) {
             die($exit_code);
         } else {

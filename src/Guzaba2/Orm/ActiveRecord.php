@@ -228,6 +228,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
+        print 'DESTRUCT'.PHP_EOL;
         $resource = MetaStore::get_key_by_object($this);
         self::LockManager()->release_lock($resource);
     }

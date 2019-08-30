@@ -42,6 +42,12 @@ class Pool extends Base implements ConnectionProviderInterface
 //        }
     }
 
+    /**
+     * Returns a new connection no matter if there is already a connection provided to the current coroutine.
+     * @param string $connection_class
+     * @return ConnectionInterface
+     * @throws RunTimeException
+     */
     public function get_new_connection(string $connection_class) : ConnectionInterface
     {
         if (!Coroutine::inCoroutine()) {
@@ -84,7 +90,7 @@ class Pool extends Base implements ConnectionProviderInterface
                 //print 'CLOSED'.PHP_EOL;
                 $Connection->close();
                 unset($Connection);
-                return $this->get_connection($connection_class);//this should go to if (count(busy_connections)<max_connections)
+                return $this->get_new_connection($connection_class);//this should go to if (count(busy_connections)<max_connections)
             }
         } else {
             //there are no available connections
@@ -114,7 +120,7 @@ class Pool extends Base implements ConnectionProviderInterface
 
                 //the connection will be resumed here
                 //if it is resumed it is assumed that there are connections active
-                return $this->get_connection($connection_class);
+                return $this->get_new_connection($connection_class);
             }
         }
     }
@@ -127,7 +133,7 @@ class Pool extends Base implements ConnectionProviderInterface
      * @return ConnectionInterface
      */
     //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
-    public function get_connection(string $connection_class, &$ScopeReference = '') : ConnectionInterface
+    public function get_connection(string $connection_class, &$ScopeReference = '&') : ConnectionInterface
     {
         if (is_string($ScopeReference)) {
             throw new InvalidArgumentException(sprintf(t::_('There is no provided ScopeReference variable to %s.'), __METHOD__));
