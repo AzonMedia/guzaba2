@@ -453,9 +453,9 @@ class Kernel
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path=>$match) {
-                $ns_with_forward_slash = str_replace('\\','/',$namespace_base);
-                if ( ($pos = strpos($path, $ns_with_forward_slash) ) !== FALSE ){
-                    $class = str_replace( ['/','.php'], ['\\',''], substr($path, $pos) );
+                $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
+                if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
+                    $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
                     //we also need to check again already included files
                     //as including a certain file may trigger the autoload and load other classes that will be included a little later
                     $included_files = get_included_files();
@@ -486,7 +486,7 @@ class Kernel
             }
 
             //TODO - he below is a very primitive check - needs to be improved and use tokenizer
-            if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source , 'protected const CONFIG_RUNTIME =') !== FALSE) {
+            if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== FALSE) {
 
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
