@@ -97,14 +97,24 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
         parent::__construct();
     }
 
-    public function set_server(Server $Server) : void
+    public function setServer(Server $Server) : void
     {
         $this->Server = $Server;
     }
 
-    public function get_server() : ?Server
+    public function set_server(Server $Server) : void
+    {
+        $this->setServer($Server);
+    }
+
+    public function getServer() : ?Server
     {
         return $this->Server;
+    }
+
+    public function get_server(): ?Server
+    {
+        return $this->getServer();
     }
 
     /**

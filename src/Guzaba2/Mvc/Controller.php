@@ -25,12 +25,19 @@ abstract class Controller extends Base
      */
     private $Request;
 
+    /**
+     * Controller constructor.
+     * @param RequestInterface $Request
+     */
     public function __construct(RequestInterface $Request)
     {
         parent::__construct();
         $this->Request = $Request;
     }
 
+    /**
+     * @return RequestInterface
+     */
     public function get_request() : RequestInterface
     {
         return $this->Request;

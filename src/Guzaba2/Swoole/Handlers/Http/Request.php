@@ -233,7 +233,7 @@ class Request extends HandlerBase
             //print print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
-            $PsrRequest->set_server($this->HttpServer);
+            $PsrRequest->setServer($this->HttpServer);
 
 
 //            $o = new class () {

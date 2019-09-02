@@ -12,9 +12,6 @@ namespace Guzaba2\Swoole;
  */
 class Server extends \Guzaba2\Http\Server
 {
-    protected $SwooleHttpServer;
-
-    public const SUPPPORTED_EVENTS = [];
 
     /**
      * @see https://www.swoole.co.uk/docs/modules/swoole-server/configuration
@@ -29,9 +26,10 @@ class Server extends \Guzaba2\Http\Server
         'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_PROCESS or SWOOLE_BASE
     ];
 
-    public const SERVER_MODE = [
-
-    ];
+    /**
+     * @var \Swoole\Http\Server
+     */
+    protected $SwooleHttpServer;
 
     protected $host = self::SWOOLE_DEFAULTS['host'];
 
@@ -110,19 +108,32 @@ class Server extends \Guzaba2\Http\Server
         return call_user_func_array([$this->SwooleHttpServer, $method], $args);
     }
 
-    /**
-     * Sets the worker ID for the server after the server is started.
-     * After the server is started and the workers forked each worker has its own instance of the Server object.
-     * Each server object will have its own worker_id set
-     * @param int $worker_id
-     */
-    public function set_worker_id(int $worker_id) : void
+//    /**
+//     * Sets the worker ID for the server after the server is started.
+//     * After the server is started and the workers forked each worker has its own instance of the Server object.
+//     * Each server object will have its own worker_id set
+//     * @param int $worker_id
+//     */
+//    public function set_worker_id(int $worker_id) : void
+//    {
+//        $this->worker_id = $worker_id;
+//    }
+//
+//    /**
+//     * @return int
+//     */
+//    public function get_worker_id() : int
+//    {
+//        return $this->worker_id;
+//    }
+
+    public function get_swoole_server() : \Swoole\Http\Server
     {
-        $this->worker_id = $worker_id;
+        return $this->SwooleHttpServer;
     }
 
     public function get_worker_id() : int
     {
-        return $this->worker_id;
+        return $this->SwooleHttpServer->worker_id;
     }
 }

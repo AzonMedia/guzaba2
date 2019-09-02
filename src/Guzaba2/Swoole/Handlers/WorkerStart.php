@@ -22,7 +22,7 @@ class WorkerStart extends HandlerBase
 
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
-        $this->HttpServer->set_worker_id($worker_id);
+        //$this->HttpServer->set_worker_id($worker_id);
         if (Debugger::is_enabled()) {
             $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic();
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);

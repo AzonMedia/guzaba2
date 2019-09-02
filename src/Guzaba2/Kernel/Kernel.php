@@ -283,6 +283,12 @@ class Kernel
         self::$Logger->debug($content, $context);
     }
 
+    public static function bt(array $context = []) : void
+    {
+        $bt = print_r(Coroutine::getSimpleBacktrace(), TRUE);
+        self::$Logger->debug($bt, $context);
+    }
+
     /**
      * Prints a message to the default output of the server (in daemon mode this is redirected to file).
      * @param $message

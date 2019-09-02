@@ -12,9 +12,13 @@ use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Database\ScopeReference;
 use Guzaba2\Translator\Translator as t;
 
+//TODO - refactor to use channels and make it compatible with the preemptive scheduler
+//currently if the coroutine is switched just after the if (count($this->available_connections[$connection_class])) { this can produce error
+//while if channels are used then it will just block
+
 /**
  * Class Pool
- * Provides a pool of connections (coroutine based connections) to be used with coroutines
+ * Provides a pool of connections (coroutine based connections) to be used with coroutines.
  * @package Guzaba2\Database
  */
 class Pool extends Base implements ConnectionProviderInterface

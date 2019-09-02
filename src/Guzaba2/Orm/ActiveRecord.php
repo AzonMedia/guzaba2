@@ -233,6 +233,11 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         self::LockManager()->release_lock($resource);
     }
 
+    public final function __toString() : string
+    {
+        return MetaStore::get_key_by_object($this);
+    }
+
     protected function load(/* mixed */ $index) : void
     {
 
