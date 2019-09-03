@@ -297,7 +297,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             throw new RunTimeException(sprintf(t::_('The code is not running in a coroutine thus the context is not available.')));
         }
         if (!array_key_exists($cid, self::$coroutines_ids)) {
-            throw new RunTimeException(sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create'));
+            $message = sprintf(t::_('The coroutine ID %s was not found in the tree of coroutines. This means that the coroutine %s was not created by using %s::%s().'), $cid, $cid, __CLASS__, 'create');
+            throw new RunTimeException($message);
         }
         $Context = self::$coroutines_ids[$cid]['context'];
         return $Context;

@@ -127,7 +127,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * Should locking be used when creating (read lock) and saving (write lock) objects.
      * It can be set to FALSE if the REST method used doesnt imply writing.
      * This property is to be used only in NON-coroutine mode.
-     * In coroutine mode the Context is to be used
+     * In coroutine mode the Context is to be used.
+     * @see self::is_locking_enabled()
      * @var bool
      */
     protected static $locking_enabled_flag = TRUE;
@@ -215,8 +216,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         if ($index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-        //the new records are unhooked
-            //no locking here
+            //the new records are not referencing the OrmStore
+            //no locking here either
         } else {
             $this->load($index);
         }
@@ -224,15 +225,27 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
+
+        $this->Store->cleanup($this);
+
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             self::LockManager()->release_lock($resource);
         }
+
     }
 
     final public function __toString() : string
     {
         return MetaStore::get_key_by_object($this);
+    }
+
+    public function _before_change_context() : void
+    {
+        if ($this->is_modified()) {
+            $message = sprintf(t::_('It is not allowed to pass modified but unsaved ActiveRecord objects between coroutines. The object of class %s with index %s is modified but unsaved.'), get_class($this), print_r($this->get_primary_index(), TRUE) );
+            throw new RunTimeException($message);
+        }
     }
 
     /**
@@ -283,10 +296,21 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             call_user_func_array([$this,'_before_load'], $args);//must return void
         }
 
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+        if ($this->Store->there_is_pointer_for_new_version( get_class($this), $index )) {
+            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index );
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+            $this->record_modified_data =& $pointer['modified'];
+        } else {
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
 
-        $this->record_data =& $pointer['data'];
-        $this->meta_data =& $pointer['meta'];
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+            $this->record_modified_data = [];
+        }
+
+
+        //do a check is there a modified data
 
         if (self::is_locking_enabled()) {
             //if ($this->locking_enabled_flag) {
@@ -434,6 +458,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         $this->record_data =& $pointer['data'];
         $this->meta_data =& $pointer['meta'];
+        $this->record_modified_data = [];
 
         $this->is_new_flag = FALSE;
 
@@ -660,5 +685,10 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 //        $this->index[$main_index[0]] = $index;
         // this updated the property of the object that is the primary key
         $this->record_data[$main_index[0]] = $index;
+    }
+
+    public function debug_get_data()
+    {
+        return $this->Store->debug_get_data();
     }
 }

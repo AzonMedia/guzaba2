@@ -26,12 +26,14 @@ class OrmStoreInfo implements CommandInterface
             $structure = [];
             //$OrmStore = self::OrmStore();
             $OrmStore = Kernel::get_service('OrmStore');
+            $PrimaryOrmStore = $OrmStore;
             do {
                 $structure[] = get_class($OrmStore);
                 $FallbackStore = $OrmStore->get_fallback_store();
                 $OrmStore = $FallbackStore;
             } while ($FallbackStore);
             $ret .= implode(' --> ', $structure).PHP_EOL;
+            $ret .= print_r($PrimaryOrmStore->debug_get_data(), TRUE);
         }
         return $ret;
     }

@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
@@ -123,10 +124,11 @@ class Memory extends Store implements StoreInterface
         $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $this->FallbackStore->get_meta($class, $ActiveRecord->get_index()));
 
 
+        //cleanup
         //unset($this->data[$class][$lookup_index][0]);
-
-        $rcid = self::get_root_coroutine_id();
-        unset($this->data[$class][$lookup_index]['cid_'.$rcid]);
+        //$cid = self::get_root_coroutine_id();
+        $cid = \Co::getCid();
+        unset($this->data[$class][$lookup_index]['cid_'.$cid]);
     }
 
     /**
@@ -209,9 +211,47 @@ class Memory extends Store implements StoreInterface
         //return $this->data[$class][$lookup_index][0];
         //the above is wrong - if multiple coroutines at the same time create a new version of the same object they will be pointing to the same revision - 0
         //$cid = \Co::getCid();
-        $rcid = self::get_root_coroutine_id();
+        //$cid = self::get_root_coroutine_id();
+        //it is correct to have different data for the separate subcoroutines
+        $cid = \Co::getCid();
         //better use the root coroutine as it may happen an object to be passed between coroutines
-        $this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
-        return $this->data[$class][$lookup_index]['cid_'.$rcid];
+
+        //this also allows to use defer() for cleanup
+        if (!$this->there_is_pointer_for_new_version($class, $primary_index)) {
+            //!!! copying arrays actually copies the pointers
+            //$this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+            //$this->data[$class][$lookup_index]['cid_'.$rcid]['modified'] = [];
+            //instead a new array is to be formed from the existing one by assigning the keys one by one
+            $new_arr = [];
+            foreach ($this->data[$class][$lookup_index][$last_update_time] as $key=>$value) {
+                $new_arr[$key] = $value;
+            }
+            $new_arr['modified'] = [];
+            $this->data[$class][$lookup_index]['cid_'.$cid] = $new_arr;
+            defer(function() use ($class, $lookup_index, $cid) {
+                unset($this->data[$class][$lookup_index]['cid_'.$cid]);
+            });
+        }
+
+        return $this->data[$class][$lookup_index]['cid_'.$cid];
+
+    }
+
+    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    {
+        //$rcid = self::get_root_coroutine_id();
+        $cid = \Co::getCid();
+        $lookup_index = self::form_lookup_index($primary_index);
+        return isset($this->data[$class][$lookup_index]['cid_'.$cid]);
+    }
+
+    public function cleanup(ActiveRecord $activeRecord) : void
+    {
+
+    }
+
+    public function debug_get_data()
+    {
+        return $this->data;
     }
 }

@@ -77,7 +77,7 @@ class Debugger extends Base
             while (true) {
                 $Connection->send($this->get_prompt());
                 $command = trim($Connection->recv());
-                Kernel::printk('Received debug command: '.$command.PHP_EOL);
+                //Kernel::printk('Received debug command: '.$command.PHP_EOL);
                 if (strtolower($command) === 'quit') {
                     $Connection->close();
                     return;
@@ -85,7 +85,7 @@ class Debugger extends Base
                     $set_prompt_to = NULL;
                     $response = $this->Debugger->handle($command, $this->get_prompt(), $set_prompt_to);
 
-                    Kernel::printk('Debugger response: '.$response.PHP_EOL);
+                    //Kernel::printk('Debugger response: '.$response.PHP_EOL);
                     if ($response === NULL) {
                         $response = sprintf(t::_('Unknown command provided. Try "help" or "quit".'));
                     }
