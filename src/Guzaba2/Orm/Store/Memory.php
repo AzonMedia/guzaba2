@@ -213,6 +213,5 @@ class Memory extends Store implements StoreInterface
         //better use the root coroutine as it may happen an object to be passed between coroutines
         $this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
         return $this->data[$class][$lookup_index]['cid_'.$rcid];
-
     }
 }

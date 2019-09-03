@@ -264,11 +264,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 //     */
 //    public static function unsetData(string $class, string $key) : void
 //    {
-////        if (self::inCoroutine()) {
-////            unset(self::getContext()->static_store[$class][$key]);
-////        } else {
-////            unset(self::$static_data[$class][$key]);
-////        }
+    ////        if (self::inCoroutine()) {
+    ////            unset(self::getContext()->static_store[$class][$key]);
+    ////        } else {
+    ////            unset(self::$static_data[$class][$key]);
+    ////        }
 //        throw new LogicException(sprintf('Static data can not be unset.'));
 //    }
 

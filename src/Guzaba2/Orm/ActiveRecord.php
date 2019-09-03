@@ -33,7 +33,6 @@ use Guzaba2\Orm\Traits\ActiveRecordStructure;
 
 class ActiveRecord extends GenericObject implements ActiveRecordInterface
 {
-
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             //'ConnectionFactory',
@@ -225,7 +224,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
-
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             self::LockManager()->release_lock($resource);
@@ -291,7 +289,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         $this->meta_data =& $pointer['meta'];
 
         if (self::is_locking_enabled()) {
-        //if ($this->locking_enabled_flag) {
+            //if ($this->locking_enabled_flag) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
