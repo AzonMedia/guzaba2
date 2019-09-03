@@ -228,13 +228,12 @@ class Memory extends Store implements StoreInterface
             }
             $new_arr['modified'] = [];
             $this->data[$class][$lookup_index]['cid_'.$cid] = $new_arr;
-            defer(function() use ($class, $lookup_index, $cid) {
+            defer(function () use ($class, $lookup_index, $cid) {
                 unset($this->data[$class][$lookup_index]['cid_'.$cid]);
             });
         }
 
         return $this->data[$class][$lookup_index]['cid_'.$cid];
-
     }
 
     public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
@@ -247,7 +246,6 @@ class Memory extends Store implements StoreInterface
 
     public function cleanup(ActiveRecord $activeRecord) : void
     {
-
     }
 
     public function debug_get_data()

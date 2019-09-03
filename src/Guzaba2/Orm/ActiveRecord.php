@@ -216,7 +216,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
         if ($index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
-            //the new records are not referencing the OrmStore
+        //the new records are not referencing the OrmStore
             //no locking here either
         } else {
             $this->load($index);
@@ -225,14 +225,12 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
-
         $this->Store->cleanup($this);
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             self::LockManager()->release_lock($resource);
         }
-
     }
 
     final public function __toString() : string
@@ -243,7 +241,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     public function _before_change_context() : void
     {
         if ($this->is_modified()) {
-            $message = sprintf(t::_('It is not allowed to pass modified but unsaved ActiveRecord objects between coroutines. The object of class %s with index %s is modified but unsaved.'), get_class($this), print_r($this->get_primary_index(), TRUE) );
+            $message = sprintf(t::_('It is not allowed to pass modified but unsaved ActiveRecord objects between coroutines. The object of class %s with index %s is modified but unsaved.'), get_class($this), print_r($this->get_primary_index(), TRUE));
             throw new RunTimeException($message);
         }
     }
@@ -296,8 +294,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             call_user_func_array([$this,'_before_load'], $args);//must return void
         }
 
-        if ($this->Store->there_is_pointer_for_new_version( get_class($this), $index )) {
-            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index );
+        if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
+            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data =& $pointer['modified'];
