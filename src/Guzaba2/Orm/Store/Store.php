@@ -61,4 +61,21 @@ abstract class Store extends Base implements StoreInterface
     {
         return implode(self::KEY_SEPARATOR, $primary_index);
     }
+
+    public static function get_root_coroutine_id() : int
+    {
+        if (\Co::getCid() === -1) {
+            throw new \RuntimeException(sprintf('The %s must be used in Coroutine context.'));
+        }
+        do {
+            $cid = \Co::getCid();
+            $pcid = \Co::getPcid($cid);
+            if ($pcid === -1) {
+                break;
+            }
+            $cid = $pcid;
+        } while (true);
+
+        return $cid;
+    }
 }

@@ -13,6 +13,7 @@ use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Database\ConnectionFactory;
 use Guzaba2\Database\ConnectionProviders\Pool;
 
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Orm\Store\Nosql\Redis;
 use Guzaba2\Orm\Store\Sql\Mysql;
@@ -95,12 +96,15 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'class'                         => CoroutineLockManager::class,
             'args'                          => [
                 'Backend'                       => 'LockManagerBackend',
+                'Logger'                        => [Kernel::class, 'get_logger'],
             ],
             'initialize_immediately'        => TRUE,
         ],
         'LockManagerBackend'            => [
             'class'                         => SwooleTableBackend::class,
-            'args'                          => [],
+            'args'                          => [
+                'Logger'                        => [Kernel::class, 'get_logger'],
+            ],
         ],
     ];
 

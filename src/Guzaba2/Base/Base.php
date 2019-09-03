@@ -40,7 +40,7 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
     use SupportsObjectInternalId;
     use SupportsConfig;
     use UsesServices;
-    use StaticStore;
+    //use StaticStore;//this becomes too expensive to use
     use ContextAware;
 
     /**

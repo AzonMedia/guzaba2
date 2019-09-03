@@ -32,25 +32,21 @@ trait StaticStore
         return Coroutine::issetData($class, $key);
     }
 
-    /**
-     * Unsetting a static property is not possible but here we allow unsetting static data.
-     * @param string $key
-     */
     public static function unset_static(string $key) : void
     {
         $class = get_called_class();
         Coroutine::unsetData($class, $key);
     }
 
-    public static function has_static() : bool
-    {
-        $class = get_called_class();
-        return Coroutine::hasData($class);
-    }
-
-    public static function unset_all_static() : void
-    {
-        $class = get_called_class();
-        Coroutine::unsetAllData($class);
-    }
+//    public static function has_static() : bool
+//    {
+//        $class = get_called_class();
+//        return Coroutine::hasData($class);
+//    }
+//
+//    public static function unset_all_static() : void
+//    {
+//        $class = get_called_class();
+//        Coroutine::unsetAllData($class);
+//    }
 }

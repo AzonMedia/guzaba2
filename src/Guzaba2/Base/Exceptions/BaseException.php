@@ -44,7 +44,7 @@ use Throwable;
 abstract class BaseException extends \Exception
 {
     use SupportsObjectInternalId;
-    use StaticStore;
+    //use StaticStore;
     use ContextAware;
     use ExceptionPropertyModification;
 
@@ -52,7 +52,11 @@ abstract class BaseException extends \Exception
     /**
      * @var \Throwable
      */
-    //private static $CurrentException = NULL;
+    private static $CurrentException = NULL;
+
+//    public const STATIC_STORE = [
+//        'CurrentException'  => NULL,
+//    ];
 
     /**
      * @var \Guzaba2\Transactions\Transaction
@@ -165,11 +169,17 @@ abstract class BaseException extends \Exception
         //self::$CurrentException = $this->cloneException();//if this was a static method and $this is passed then $this does not get destroyed when expected!!! This does not seem to be related to the Reflection but to the fact that $this is passed (even if this was a dynamic method still fails)
         //print_r(StackTraceUtil::get_backtrace());
         //self::set_static('CurrentException', $this->cloneException());
+
+
         if (Coroutine::inCoroutine()) {
             $this->created_in_coroutine_id = Coroutine::getCid();
             //it is too late here to get the trace where was this coroutine created/started
             //this is done at the time the coroutine is started - the backtrace is saved in the Context
             //$this->setTrace(Coroutine::getFullBacktrace());
+            $Context = Coroutine::getContext();
+            $Context->CurrentException = $this->cloneException();
+        } else {
+            self::$CurrentException = $this->cloneException();
         }
 
         //    self::$is_in_clone_flag = FALSE;
@@ -243,14 +253,26 @@ abstract class BaseException extends \Exception
         //print 'EXC DESTR'.PHP_EOL;
         //self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
         if (!$this->context_changed_flag) {
-            self::set_static('CurrentException', NULL);
+            //self::set_static('CurrentException', NULL);
+            if (Coroutine::inCoroutine()) {
+                $Context = Coroutine::getContext();
+                $Context->CurrentException = NULL;
+            } else {
+                self::$CurrentException = NULL;
+            }
         }
     }
 
     public function rethrow() : void
     {
         $this->is_rethrown_flag = TRUE;
-        self::set_static('CurrentException', NULL);
+        //self::set_static('CurrentException', NULL);
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $Context->CurrentException = NULL;
+        } else {
+            self::$CurrentException = NULL;
+        }
     }
 
     public function is_rethrown() : bool
@@ -377,7 +399,13 @@ abstract class BaseException extends \Exception
     public static function getCurrentException() : ?\Throwable
     {
         //return self::$CurrentException;
-        return self::get_static('CurrentException');
+        //return self::get_static('CurrentException');
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $ret = $Context->CurrentException ?? self::$CurrentException;
+        } else {
+            $ret = self::$CurrentException;
+        }
     }
 
     /**

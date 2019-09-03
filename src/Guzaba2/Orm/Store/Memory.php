@@ -122,8 +122,11 @@ class Memory extends Store implements StoreInterface
         
         $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $this->FallbackStore->get_meta($class, $ActiveRecord->get_index()));
 
-        
-        unset($this->data[$class][$lookup_index][0]);
+
+        //unset($this->data[$class][$lookup_index][0]);
+
+        $rcid = self::get_root_coroutine_id();
+        unset($this->data[$class][$lookup_index]['cid_'.$rcid]);
     }
 
     /**
@@ -202,7 +205,14 @@ class Memory extends Store implements StoreInterface
         if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
             throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
         }
-        $this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
-        return $this->data[$class][$lookup_index][0];
+        //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+        //return $this->data[$class][$lookup_index][0];
+        //the above is wrong - if multiple coroutines at the same time create a new version of the same object they will be pointing to the same revision - 0
+        //$cid = \Co::getCid();
+        $rcid = self::get_root_coroutine_id();
+        //better use the root coroutine as it may happen an object to be passed between coroutines
+        $this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+        return $this->data[$class][$lookup_index]['cid_'.$rcid];
+
     }
 }

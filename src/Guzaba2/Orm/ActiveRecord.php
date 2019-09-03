@@ -7,6 +7,8 @@ use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Traits\StaticStore;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -31,8 +33,6 @@ use Guzaba2\Orm\Traits\ActiveRecordStructure;
 
 class ActiveRecord extends GenericObject implements ActiveRecordInterface
 {
-    const PROPERTIES_TO_LINK = ['is_new_flag', 'was_new_flag', 'data'];
-
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
@@ -44,11 +44,9 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     protected const CONFIG_RUNTIME = [];
 
+
     //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
     use ActiveRecordOverloading;
-    //use ActiveRecordSave;
-    //use ActiveRecordSave;
-    //use ActiveRecordLoad;
     use ActiveRecordStructure;
 
     const INDEX_NEW = 0;
@@ -62,11 +60,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      * @var bool
      */
     protected $is_new_flag = TRUE;
-
-    /**
-     * @var bool
-     */
-    protected $is_modified_flag = FALSE;
 
     /**
      * @var array
@@ -131,13 +124,14 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
      */
     protected static $primary_index_columns = [];
 
-    
-    
-    public static function _initialize_class() : void
-    {
-    }
-    
-    //public function __construct(StoreInterface $Store)
+    /**
+     * Should locking be used when creating (read lock) and saving (write lock) objects.
+     * It can be set to FALSE if the REST method used doesnt imply writing.
+     * This property is to be used only in NON-coroutine mode.
+     * In coroutine mode the Context is to be used
+     * @var bool
+     */
+    protected static $locking_enabled_flag = TRUE;
 
     /**
      * ActiveRecord constructor.
@@ -153,6 +147,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
+
+        //$this->locking_enabled_flag = self::is_locking_enabled();
         
         //if ($this->index == self::INDEX_NEW) { //checks is the index already set (as it may be set in _before_construct()) - if not set it
         //    $this->index = $index;
@@ -229,13 +225,55 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
-        $resource = MetaStore::get_key_by_object($this);
-        self::LockManager()->release_lock($resource);
+
+        if (self::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            self::LockManager()->release_lock($resource);
+        }
     }
 
     final public function __toString() : string
     {
         return MetaStore::get_key_by_object($this);
+    }
+
+    /**
+     * Based on the REST method type the locking may be disabled if the request is read only.
+     */
+    public static function enable_locking() : void
+    {
+        //cant use a local static var - this is shared between the coroutines
+        //self::set_static('locking_enabled_flag', TRUE);
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $Context->locking_enabled_flag = TRUE;
+        } else {
+            self::$locking_enabled_flag = TRUE;
+        }
+    }
+
+    public static function disable_locking() : void
+    {
+        //cant use a local static var - this is shared between the coroutines
+        //self::set_static('locking_enabled_flag', FALSE);
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $Context->locking_enabled_flag = FALSE;
+        } else {
+            self::$locking_enabled_flag = FALSE;
+        }
+    }
+
+    public static function is_locking_enabled() : bool
+    {
+        //return self::get_static('locking_enabled_flag');
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $ret = $Context->locking_enabled_flag ?? self::$locking_enabled_flag;
+        } else {
+            $ret = self::$locking_enabled_flag;
+        }
+        return $ret;
     }
 
     protected function load(/* mixed */ $index) : void
@@ -252,9 +290,12 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
         $this->record_data =& $pointer['data'];
         $this->meta_data =& $pointer['meta'];
 
-        $resource = MetaStore::get_key_by_object($this);
-        $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-        self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+        if (self::is_locking_enabled()) {
+        //if ($this->locking_enabled_flag) {
+            $resource = MetaStore::get_key_by_object($this);
+            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+            self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+        }
 
         $this->is_new_flag = FALSE;
 
@@ -361,16 +402,21 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
             call_user_func_array([$this,'_before_save'], $args);//must return void
         }
 
-        $resource = MetaStore::get_key_by_object($this);
-        self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        if (self::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        }
 
         self::OrmStore()->update_record($this);
 
-        self::LockManager()->release_lock('', $LR);
+        if (self::is_locking_enabled()) {
+            self::LockManager()->release_lock('', $LR);
+        }
+
 
         //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
         //instead the lock levle should be updated (lock reacquired)
-        if ($this->is_new()) {
+        if ($this->is_new() && self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
@@ -407,7 +453,7 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function is_modified() : bool
     {
-        return $this->is_modified_flag;
+        return count($this->record_modified_data) ? TRUE : FALSE;
     }
     
     public function disable_method_hooks() : void
