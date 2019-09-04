@@ -86,8 +86,8 @@ class Debugger extends Base
                     $response = $this->Debugger->handle($command, $this->get_prompt(), $set_prompt_to);
 
                     //Kernel::printk('Debugger response: '.$response.PHP_EOL);
-                    if ($response === NULL) {
-                        $response = sprintf(t::_('Unknown command provided. Try "help" or "quit".'));
+                    if ($response === NULL && $command) {
+                        $response = sprintf(t::_('Unknown command %s provided. Try "help" or "quit".'), $command);
                     }
                     if ($set_prompt_to !== NULL) {
                         if ($set_prompt_to === '{RESTORE}') {

@@ -169,7 +169,7 @@ WHERE
         return $data;
     }
 
-    public function update_meta(ActiveRecordInterface $ActiveRecord) : void
+    protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
@@ -179,6 +179,7 @@ WHERE
         $meta_table = self::get_meta_table();
 
         $object_last_update_microtime = microtime(TRUE) * 1000000;
+
 
         $q = "
 UPDATE
@@ -191,6 +192,7 @@ WHERE
         ";
 
         $params = [
+            //'class_name'                    => str_replace('\\','\\\\',get_class($ActiveRecord)),
             'class_name'                    => get_class($ActiveRecord),
             'object_id'                     => $ActiveRecord->get_index(),
             'object_last_update_microtime'  => $object_last_update_microtime,
@@ -198,9 +200,12 @@ WHERE
 
         $Statement = $Connection->prepare($q);
         $Statement->execute($params);
+
+
+
     }
 
-    public function create_meta(ActiveRecordInterface $ActiveRecord) : void
+    protected function create_meta(ActiveRecordInterface $ActiveRecord) : void
     {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
@@ -386,7 +391,7 @@ VALUES
                     unset($data_arr[$key]);
                 }
 
-                // suing REPLACE does not work because of the foreign keys
+                // using REPLACE does not work because of the foreign keys
                 // so UPDATE
                 $q = "
 INSERT INTO
@@ -402,7 +407,9 @@ ON DUPLICATE KEY UPDATE
 
                 try {
                     $Statement = $Connection->prepare($q);
+
                     $Statement->execute($data_arr);
+                    //print 'BB'.$Connection->get_affected_rows().'BB';
                 } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
                     throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
                 } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
@@ -411,18 +418,6 @@ ON DUPLICATE KEY UPDATE
             }
         }
 
-//        if ($this->is_new() /*&& !$already_in_save */) {
-//            if ($this->maintain_ownership_record) {
-//                $this->initialize_object();
-//            }
-//        } else {
-//            // update the object_last_change_time and object_last_change_role_id
-//            // but this should be done only for non versioned objects as the versioned in fact always are initialized
-//            // the versioned objects are always new so they will not get here
-//            if ($this->maintain_ownership_record) {
-//                $this->update_ownership();
-//            }
-//        }
 
         if ($ActiveRecord->is_new()) {
             $this->create_meta($ActiveRecord);
@@ -570,5 +565,26 @@ WHERE
 
         return $ret;
     }
-    //private function
+
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    {
+        $data = $this->get_data_pointer($class, $primary_index);
+        return $data;
+    }
+
+    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    {
+        //this store doesnt use pointers
+        return FALSE;
+    }
+
+    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    {
+        //does nothing
+    }
+
+    public function debug_get_data() : array
+    {
+        return [];
+    }
 }

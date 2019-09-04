@@ -22,14 +22,6 @@ class Redis extends Database
         $this->FallbackStore = $FallbackStore ?? new NullStore();
     }
 
-    /*
-    public function get_record_structure(string $class) : array
-    {
-        //NI
-        $ret = $this->FallbackStore->get_record_structure($class);
-        return $ret;
-    }
-    */
 
     public function get_unified_columns_data(string $class) : array
     {
@@ -50,11 +42,11 @@ class Redis extends Database
         $this->FallbackStore->update_record($ActiveRecord);
     }
 
-    public function &get_data_pointer(string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $index) : array
     {
         //not implemented
         //currently immediately refers to falblack store
-        return $this->FallbackStore->get_data_pointer($class, $lookup_index);
+        return $this->FallbackStore->get_data_pointer($class, $index);
     }
     
     public function get_meta(string $class_name, int $object_id) : array
@@ -62,5 +54,25 @@ class Redis extends Database
         //not implemented
         //currently immediately refers to falblack store
         return $this->FallbackStore->get_meta($class_name, $object_id);
+    }
+
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    {
+        return $this->get_data_pointer($class, $primary_index);
+    }
+
+    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    {
+        return FALSE;
+    }
+
+    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    {
+
+    }
+
+    public function debug_get_data() : array
+    {
+        return [];
     }
 }

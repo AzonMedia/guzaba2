@@ -120,8 +120,10 @@ class Memory extends Store implements StoreInterface
 
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $class = get_class($ActiveRecord);
-        
-        $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $this->FallbackStore->get_meta($class, $ActiveRecord->get_index()));
+
+        $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_index());
+
+        $this->update_meta_data($class, $ActiveRecord->get_primary_index(),  $new_meta);
 
 
         //cleanup
@@ -152,6 +154,11 @@ class Memory extends Store implements StoreInterface
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+
+                    if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+                        $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+                    }
+                    $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                     Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
@@ -176,6 +183,16 @@ class Memory extends Store implements StoreInterface
 
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
 
+        if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+            $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+        }
+        $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+        //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
+        foreach ($this->data[$class][$lookup_index] as $previous_update_time=>$data) {
+            if ($data['refcount'] === 0) {
+                unset($this->data[$class][$lookup_index][$previous_update_time]);
+            }
+        }
         return $this->data[$class][$lookup_index][$last_update_time];
     }
 
@@ -192,7 +209,8 @@ class Memory extends Store implements StoreInterface
     }
 
     /**
-     * Unlike get_data_pointer() which accepts any type of index there $primary_index is expected (as it is known - this method is to be invoked only by objects that are loaded)
+     * Unlike get_data_pointer() which accepts any type of index there $primary_index is expected (as it is known - this method is to be invoked only by objects that are loaded).
+     * When an object is being updated its pointer
      * @param string $class
      * @param array $primary_index
      * @return array
@@ -226,6 +244,11 @@ class Memory extends Store implements StoreInterface
             foreach ($this->data[$class][$lookup_index][$last_update_time] as $key=>$value) {
                 $new_arr[$key] = $value;
             }
+            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+            if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
+                unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
+            }
+            $new_arr['refcount'] = 1;
             $new_arr['modified'] = [];
             $this->data[$class][$lookup_index]['cid_'.$cid] = $new_arr;
             defer(function () use ($class, $lookup_index, $cid) {
@@ -244,11 +267,36 @@ class Memory extends Store implements StoreInterface
         return isset($this->data[$class][$lookup_index]['cid_'.$cid]);
     }
 
-    public function cleanup(ActiveRecord $activeRecord) : void
+    /**
+     * Removes an entry from the store if there are no more references and there is a newer version.
+     * If this is the last version then the object stays in the store with refcount = 0 for the purpose of caching.
+     * To be called by the ActiveRecord::__destruct()
+     * @param ActiveRecord $ActiveRecord
+     */
+    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
+
+        $class = get_class($ActiveRecord);
+        $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
+        $last_update_time = $ActiveRecord->get_meta_data()['object_last_update_microtime'];
+        $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
+            //if this is the latest version leave it in memory for the purpose of caching
+            $latest_update_time = 0;
+            foreach ($this->data[$class][$lookup_index] as $existing_last_update_time=>$data) {
+                $latest_update_time = max($existing_last_update_time, $latest_update_time);
+            }
+            if ($latest_update_time > $last_update_time) {
+                //then there is a more recent record and this one can be deleted (as it is refcount 0)
+                unset($this->data[$class][$lookup_index][$last_update_time]);
+            } else {
+                //leave the record in ormstore for the purpose of caching
+            }
+
+        }
     }
 
-    public function debug_get_data()
+    public function debug_get_data() : array
     {
         return $this->data;
     }

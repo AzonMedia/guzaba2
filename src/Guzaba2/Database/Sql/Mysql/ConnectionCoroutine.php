@@ -157,7 +157,7 @@ abstract class ConnectionCoroutine extends Connection
         return $ret;
     }
 
-    private static function convert_query_for_binding($named_params_query, array &$expected_parameters = []) : string
+    private static function convert_query_for_binding(string $named_params_query, array &$expected_parameters = []) : string
     {
         preg_match_all('/:([a-zA-Z0-9_]*)/', $named_params_query, $matches);
         if (isset($matches[1]) && count($matches[1])) {
@@ -190,5 +190,23 @@ abstract class ConnectionCoroutine extends Connection
     public function get_last_insert_id() : int
     {
         return $this->MysqlCo->insert_id;
+    }
+
+    /**
+     * @return int
+     */
+    public function get_affected_rows() : int
+    {
+        return $this->MysqlCo->affected_rows;
+    }
+
+    public function get_last_error() : string
+    {
+        return $this->MysqlCo->error;
+    }
+
+    public function get_last_error_number() : int
+    {
+        return $this->MysqlCo->errno;
     }
 }

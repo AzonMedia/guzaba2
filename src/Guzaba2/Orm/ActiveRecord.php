@@ -225,7 +225,8 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
-        $this->Store->cleanup($this);
+
+        $this->Store->free_pointer($this);
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);

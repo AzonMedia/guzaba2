@@ -65,6 +65,12 @@ class Request extends HandlerBase
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
+//        $start_time = time();
+//        \Co::sleep(10);
+//        $end_time = time();
+//        $SwooleResponse->end('ok '.($end_time - $start_time));
+
+//        return;
 
 
 
@@ -93,176 +99,9 @@ class Request extends HandlerBase
 
             \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
 
-            //$Execution =& RequestExecution::get_instance();
-            //print $Execution->get_object_internal_id().' '.spl_object_hash($Execution).PHP_EOL;
-
-
-//            //$c1 = new c1();
-//            \Guzaba2\Coroutine\Coroutine::create(function() use (&$c1) {
-//                $c1 = new c1();
-//                \co::sleep(1);
-//                $c1->v1 = 55;
-//            });
-//            \Guzaba2\Coroutine\Coroutine::create(function() use (&$c1) {
-//                print $c1->v1.PHP_EOL;
-//                \co::sleep(2);
-//                print $c1->v1.PHP_EOL;
-//            });
-
-
-//            \Guzaba2\Coroutine\Coroutine::create(function() {
-//                \co::sleep(1);
-//                c1::$ss = 55;
-//            });
-//            \Guzaba2\Coroutine\Coroutine::create(function() {
-//                print c1::$ss.PHP_EOL;
-//                \co::sleep(2);
-//                print c1::$ss.PHP_EOL;
-//            });
-
-//            \Guzaba2\Coroutine\Coroutine::create(function(){
-//
-//                $F = function () {
-//                    \Guzaba2\Coroutine\Coroutine::create(function () {
-//                        //print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-//                        //print_r(Coroutine::getFullBacktrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-//                        //print_r(\co::getBacktrace(\co::getcid(), DEBUG_BACKTRACE_IGNORE_ARGS));
-//                        //print_r(Coroutine::getParentCoroutines());
-//                        //\co::sleep(rand(0,2));
-//                        //print_r(Coroutine::$coroutines_ids);
-//                        //print_r(Coroutine::getParentCoroutines());
-//                        print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).PHP_EOL;
-//                    });
-//                };+
-//
-//                $F();
-//            });
-
-//            Coroutine::create(function(){
-//                //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-//                Coroutine::create(function(){
-//                    //print Coroutine::getTotalSubCoroutinesCount(Coroutine::getRootCoroutine()).'*'.PHP_EOL;
-//                    \co::sleep(4);
-//                    print 'ggg';
-//                });
-//            });
-
-//            Coroutine::create(function(){
-//                \co::sleep(3);
-//                print 'ggg';
-//            });
-
-//            Coroutine::create(function($a1) {
-//                print $a1;
-//            }, 555);
-
-//            static $debug_is_set = FALSE;
-//            if (!$debug_is_set) {
-//                print 'gggggg';
-//
-//                $worker_id = $this->HttpServer->get_worker_id();
-//                $function = function () use ($worker_id) {
-//
-//                    print 'start debug'.PHP_EOL;
-//
-            ////                    $socket = new \Co\Socket(AF_INET, SOCK_STREAM, 0);//SOL_TCP
-            ////                    $socket->bind('127.0.0.1', 1000 + (int) $worker_id);
-            ////                    $socket->listen(128);
-            ////
-            ////                    $client = $socket->accept();
-//
-//                    while(true) {
-            ////                        //echo "Client Recv: \n";
-            ////                        $data = $client->recv();
-            ////                        //if (empty($data)) {
-            ////                        //    $client->close();
-            ////                        //    break;
-            ////                        //}
-            ////                        //var_dump($client->getsockname());
-            ////                        //var_dump($client->getpeername());
-            ////                        //echo "Client Send: \n";
-            ////                        $data = print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
-            ////                        $client->send($data);
-//                        \Co::sleep(2);
-//                        //print print_r(\Guzaba2\Coroutine\Coroutine::$last_coroutine_id.PHP_EOL, TRUE);
-//                        print 'AAAA'.Coroutine::$last_coroutine_id.PHP_EOL;
-//                        //print_r(Coroutine::$coroutines_ids);
-//                    }
-//                };
-//                \Co::create($function);
-//
-//
-//                $debug_is_set = TRUE;
-//            }
-
-//            static $flag = FALSE;
-//            if (!$flag) {
-//                print 'DEBUG'.PHP_EOL;
-//                $function = function() {
-//                    while(true) {
-//                        //print_r(Coroutine::$coroutines_ids);
-//                        //print Coroutine::$last_coroutine_id.PHP_EOL;
-//                        //print 'count '.count(Coroutine::$co_id).PHP_EOL;
-//                        print 'parallel coroutines '.count(Coroutine::$coroutines_ids).PHP_EOL;
-//                        \Co::sleep(1);
-//                    }
-//
-//                };
-//                \Co::create($function);
-//                $flag = TRUE;
-//            }
-//
-            //\Co::sleep(1);
-            //for ($aa = 0; $aa < rand(100000, 1000000000); $aa++) {
-//            $function = function () {
-//                for ($aa = 0; $aa < 1000000000; $aa++) {
-//                    if (! ($aa % 100000000) ) {
-//                        print 'worker id '.$this->HttpServer->get_worker_id().' coid '.\Co::getcid().PHP_EOL;
-//                        //\Co::sleep(1);
-//                    }
-//                }
-//            };
-//            \Co::create($function);
-//            \Co::create($function);
-
-            //print_r(Coroutine::$coroutines_ids);
-
-
-
-            //print 'aaaaaaaaa';
-            //print print_r(\Guzaba2\Coroutine\Coroutine::$coroutines_ids, TRUE);
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->setServer($this->HttpServer);
-
-
-//            $o = new class () {
-//                public function __sleep() {
-//                    print 'SLEEP';
-//                }
-//            };
-
-//            if ($PsrRequest['action'] == 'set') {
-//                $this->HttpServer->table->set('0', ['id' => $this->HttpServer->get_worker_id(), 'data'=> 'asd'] );
-//            } elseif ($PsrRequest['action'] == 'get') {
-            //print_r($this->HttpServer->table->get('0'));
-//                $s = microtime(true);
-//                $Connection1 = self::ConnectionFactory()->get_connection(MysqlConnection::class);
-//                for ($aa=0; $aa<10000; $aa++) {
-//                    //$this->HttpServer->table->get('0');
-//
-//                    //print_r(Coroutine::getContext()->getConnections());
-//
-//                    $query = "SELECT * FROM some_table";
-//                    //\Co::sleep(3);
-//                    //$query = "SELECT SLEEP(1)";
-//                    $Statement = $Connection1->prepare($query);
-//                    $Statement->execute();
-//                    $data = $Statement->fetchAll();
-//                }
-//                $e = microtime(true);
-//                print 'total: '.($e-$s).PHP_EOL;
-//            }
 
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
@@ -271,6 +110,7 @@ class Request extends HandlerBase
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
+
 
 
             //very important to stay here!!!

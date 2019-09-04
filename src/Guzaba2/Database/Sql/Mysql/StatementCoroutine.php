@@ -23,12 +23,19 @@ class StatementCoroutine extends Statement implements StatementInterface
     protected $NativeStatement;
 
     /**
+     * The SQL query
      * @var string
      */
     protected $query;
 
     protected $rows = [];
 
+    /**
+     * Contains a list of the expected parameters in the expected order.
+     * These are the parameters found in the query and preserved in the order they were found.
+     * The order matters as the actual params/values provided to execute() need to be reordered to match the expected order.
+     * @var array
+     */
     protected $expected_parameters = [];
 
     /**
@@ -44,6 +51,7 @@ class StatementCoroutine extends Statement implements StatementInterface
         $this->query = $query;
 
         $this->expected_parameters = $expected_parameters;
+
     }
 
     public function execute(array $parameters = []) : self
@@ -71,11 +79,16 @@ class StatementCoroutine extends Statement implements StatementInterface
                 throw new ParameterException($provided_parameter, sprintf(t::_('An unexpected paramtere named %s is provided to the prepared statement.'), $provided_parameter), $this->query, $parameters);
             }
         }
-        $position_parameters = array_values($parameters);//execute() expects indexed array
+        //form the parameters in the right order
+        $position_parameters = [];
+        foreach ($this->expected_parameters as $expected_parameter) {
+            $position_parameters[] = $parameters[$expected_parameter];
+        }
 
-        $ret = $this->NativeStatement->execute($parameters);
+        $ret = $this->NativeStatement->execute($position_parameters);
 
         $error_code = $this->NativeStatement->errno ?? 0;
+
         if ($ret === FALSE) {
             if ($error_code=='40001') { //deadlock TODO need to check
                 throw new DeadlockException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
@@ -136,6 +149,11 @@ class StatementCoroutine extends Statement implements StatementInterface
         
         return $ret;
         //return $this->rows[0] ?? [];
+    }
+
+    public function getQuery() : string
+    {
+        return $this->get_query();
     }
 
     public function get_query() : string
