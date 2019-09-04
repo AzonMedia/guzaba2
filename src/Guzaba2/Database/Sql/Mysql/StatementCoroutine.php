@@ -51,7 +51,6 @@ class StatementCoroutine extends Statement implements StatementInterface
         $this->query = $query;
 
         $this->expected_parameters = $expected_parameters;
-
     }
 
     public function execute(array $parameters = []) : self

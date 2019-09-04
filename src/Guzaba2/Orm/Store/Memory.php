@@ -123,7 +123,7 @@ class Memory extends Store implements StoreInterface
 
         $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_index());
 
-        $this->update_meta_data($class, $ActiveRecord->get_primary_index(),  $new_meta);
+        $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
 
 
         //cleanup
@@ -154,7 +154,6 @@ class Memory extends Store implements StoreInterface
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
-
                     if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                         $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                     }
@@ -275,7 +274,6 @@ class Memory extends Store implements StoreInterface
      */
     public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
-
         $class = get_class($ActiveRecord);
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $last_update_time = $ActiveRecord->get_meta_data()['object_last_update_microtime'];
@@ -292,7 +290,6 @@ class Memory extends Store implements StoreInterface
             } else {
                 //leave the record in ormstore for the purpose of caching
             }
-
         }
     }
 

@@ -225,7 +225,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
 
     public function __destruct()
     {
-
         $this->Store->free_pointer($this);
 
         if (self::is_locking_enabled()) {

@@ -200,9 +200,6 @@ WHERE
 
         $Statement = $Connection->prepare($q);
         $Statement->execute($params);
-
-
-
     }
 
     protected function create_meta(ActiveRecordInterface $ActiveRecord) : void

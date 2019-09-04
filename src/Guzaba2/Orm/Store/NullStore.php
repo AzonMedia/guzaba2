@@ -75,7 +75,6 @@ class NullStore extends Store implements StoreInterface
 
     public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
-
     }
 
     public function debug_get_data() : array

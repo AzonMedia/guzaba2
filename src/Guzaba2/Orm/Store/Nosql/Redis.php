@@ -68,7 +68,6 @@ class Redis extends Database
 
     public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
-
     }
 
     public function debug_get_data() : array
