@@ -173,7 +173,7 @@ class Memory extends Store implements StoreInterface
                         $primary_index = $class::get_index_from_data($record['data']);
                         //there has to be a valid primary index now...
                         if (!$primary_index) {
-                            throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, TRUE) ));
+                            throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, TRUE)));
                         }
 
                         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
