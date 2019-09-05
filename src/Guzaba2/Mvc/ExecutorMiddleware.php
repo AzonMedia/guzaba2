@@ -173,7 +173,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $view_output = ob_get_contents();
                     ob_end_clean();
                     if (!strlen($view_output)) {
-                        throw new RunTimeException(sprintf(t::_('There is no content printed from view %s::%s().'), $view_class, $controller_callable[1] ));
+                        throw new RunTimeException(sprintf(t::_('There is no content printed from view %s::%s().'), $view_class, $controller_callable[1]));
                     }
                     $StreamBody = new Stream(NULL, $view_output);
                     $Response = $Response->
