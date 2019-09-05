@@ -29,9 +29,9 @@ class RestMiddleware extends Base implements MiddlewareInterface
         //Method::HTTP_CONNECT,
         Method::HTTP_DELETE,
         Method::HTTP_GET,
-        Method::HTTP_HEAD,
+        Method::HTTP_HEAD,//similar to GET but returns headers only (AKA is the resource available)
         Method::HTTP_OPTIONS,
-        //Method::HTTP_PATCH,
+        Method::HTTP_PATCH,//same like PUT
         Method::HTTP_POST,
         Method::HTTP_PUT,
         //Method::HTTP_TRACE,

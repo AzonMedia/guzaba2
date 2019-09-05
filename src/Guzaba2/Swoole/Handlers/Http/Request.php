@@ -65,33 +65,6 @@ class Request extends HandlerBase
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
-//        $start_time = time();
-//        \Co::sleep(10);
-//        $end_time = time();
-//        $SwooleResponse->end('ok '.($end_time - $start_time));
-
-//        return;
-
-
-
-
-//        \Guzaba2\Coroutine\Coroutine::create(function(){
-//            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-//        });
-
-//        \Guzaba2\Coroutine\Coroutine::create(function(){
-//            //\Co::sleep(2);
-//            //print 'AFTER SLEEP'.PHP_EOL;
-//            print '========='.PHP_EOL;
-//            print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-//            print '========='.PHP_EOL;
-//        });
-//        \Co::sleep(2);
-
-        //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-
-        //print_r(\Guzaba2\Coroutine\Coroutine::getParentCoroutines());
-        //print_r(\co::getBacktrace(0, DEBUG_BACKTRACE_IGNORE_ARGS));
 
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {

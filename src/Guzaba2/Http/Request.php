@@ -623,6 +623,28 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     }
 
     /**
+     * Check is the requested/accepted content JSON
+     * @return bool
+     */
+    public function isContentJson() : bool
+    {
+        $content_type = $this->getContentType();
+        return stripos($content_type, 'json') !== FALSE ? TRUE : FALSE;
+    }
+
+    public function isContentHtml() : bool
+    {
+        $content_type = $this->getContentType();
+        return stripos($content_type, 'html') !== FALSE ? TRUE : FALSE;
+    }
+
+    public function isContentXml() : bool
+    {
+        $content_type = $this->getContentType();
+        return stripos($content_type, 'xml') !== FALSE ? TRUE : FALSE;
+    }
+
+    /**
      * @param mixed $offset
      * @return bool
      */

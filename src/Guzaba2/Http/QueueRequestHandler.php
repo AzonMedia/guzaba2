@@ -44,6 +44,8 @@ class QueueRequestHandler extends Base implements RequestHandlerInterface
         }
 
         $Middleware = array_shift($this->middleware_arr);
-        return $Middleware->process($Request, $this);
+        $Response = $Middleware->process($Request, $this);
+
+        return $Response;
     }
 }

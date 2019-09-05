@@ -8,6 +8,9 @@ use Psr\Http\Message\ResponseInterface;
 
 class View extends Base
 {
+    /**
+     * @var ResponseInterface
+     */
     protected $Response;
 
     public function __construct(ResponseInterface $Response)
@@ -20,5 +23,10 @@ class View extends Base
     public function get_response() : ResponseInterface
     {
         return $this->Response;
+    }
+
+    public function get_structure() : array
+    {
+        return $this->get_response()->getBody()->getStructure();
     }
 }

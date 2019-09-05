@@ -122,7 +122,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             }
             return $Response;
         } else {
-            //proceed processing which will result in the default response
+            //pass the processing to the next handler - usually this will result in the default response
         }
 
         return $Handler->handle($Request);
@@ -158,7 +158,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         //html null and the rest...
         //if the callable is a class and this class is a controller then we can do a lookup for a corresponding view
         //the first element may be a class or an instance so is_a() should be used
-        if (is_array($controller_callable) && isset($controller_callable[0]) && is_a($controller_callable[0], Controller::class, TRUE)) {
+        if (
+            is_array($controller_callable)
+            &&
+            isset($controller_callable[0])
+            && is_a($controller_callable[0], Controller::class, TRUE)
+        ) {
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
             $view_class = str_replace('\\Controllers\\', '\\Views\\', $controller_class);
             if (class_exists($view_class)) {
@@ -167,6 +172,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     [new $view_class($Response), $controller_callable[1]]();
                     $view_output = ob_get_contents();
                     ob_end_clean();
+                    if (!strlen($view_output)) {
+                        throw new RunTimeException(sprintf(t::_('There is no content printed from view %s::%s().'), $view_class, $controller_callable[1] ));
+                    }
                     $StreamBody = new Stream(NULL, $view_output);
                     $Response = $Response->
                         withBody($StreamBody)->

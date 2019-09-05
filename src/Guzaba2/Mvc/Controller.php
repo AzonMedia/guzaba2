@@ -64,4 +64,12 @@ abstract class Controller extends Base
         $Response = new Response(StatusCode::HTTP_OK, [], new Str($content));
         return $Response;
     }
+
+
+
+    public static function get_structured_notfound_response(array $structure = []) : ResponseInterface
+    {
+        $Response = new Response(StatusCode::HTTP_NOT_FOUND, [], new Structured($structure));
+        return $Response;
+    }
 }
