@@ -163,8 +163,36 @@ class Memory extends Store implements StoreInterface
                     return $pointer;
                 }
             }
-        } else {
+        } elseif (array_key_exists($class, $this->data)) {
             //TODO - do a search in the available memory objects....
+            foreach ($this->data[$class] as $lookup_index=>$records) {
+                foreach ($records as $update_time=>$record) {
+                    if (array_intersect($index, $record['data']) === $index) {
+                        // $index is a subset of $record['data']
+                        //if found check is it current in MetaStore
+                        $primary_index = $class::get_index_from_data($record['data']);
+                        //there has to be a valid primary index now...
+                        if (!$primary_index) {
+                            throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, TRUE) ));
+                        }
+
+                        $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+
+                        if ($last_update_time && $last_update_time === $update_time) {
+                            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+                                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+                            }
+                            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                            $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                            Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                            return $pointer;
+                        }
+                    }
+                }
+            }
+        } else {
+            //no primary index provided and no local data for this class
+            //proceed to the fallback store
         }
 
         $pointer =& $this->FallbackStore->get_data_pointer($class, $index);

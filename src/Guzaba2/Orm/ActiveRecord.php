@@ -207,14 +207,14 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
                 $message = sprintf(t::_(' The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
                 throw new InvalidArgumentException($message);
             }
-        } elseif (is_array($this->index)) {
+        } elseif (is_array($index)) {
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
         } else {
             throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
-        if ($index[$primary_columns[0]] === self::INDEX_NEW) {
+        if (isset($index[$primary_columns[0]]) && $index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
         //the new records are not referencing the OrmStore
             //no locking here either

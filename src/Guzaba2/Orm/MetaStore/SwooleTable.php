@@ -102,7 +102,7 @@ class SwooleTable extends MetaStore
      * @param string $key
      * @return float|null
      */
-    public function get_last_update_time(string $class, array $primary_index) : ?float
+    public function get_last_update_time(string $class, array $primary_index) : ?int
     {
         $ret = NULL;
         $data = $this->get_meta_data($class, $primary_index);
@@ -116,7 +116,7 @@ class SwooleTable extends MetaStore
      * @param ActiveRecord $ActiveRecord
      * @return float|null
      */
-    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
+    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?int
     {
         return $this->get_last_update_time(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
     }

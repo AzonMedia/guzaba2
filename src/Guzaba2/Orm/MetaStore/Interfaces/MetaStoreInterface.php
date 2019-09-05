@@ -31,13 +31,13 @@ interface MetaStoreInterface
      * @param string $key
      * @return float|null
      */
-    public function get_last_update_time(string $class, array $primary_index) : ?float ;
+    public function get_last_update_time(string $class, array $primary_index) : ?int ;
 
     /**
      * @param ActiveRecord $ActiveRecord
      * @return float|null
      */
-    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float ;
+    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?int ;
 
 
     /**

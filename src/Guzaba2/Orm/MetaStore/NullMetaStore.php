@@ -52,7 +52,7 @@ class NullMetaStore extends MetaStore
      * @return float|null
      * @throws RecordNotFoundException
      */
-    public function get_last_update_time(string $class, array $primary_index) : ?float
+    public function get_last_update_time(string $class, array $primary_index) : ?int
     {
         $ret = NULL;
         $key = self::get_key($class, $primary_index);
@@ -68,7 +68,7 @@ class NullMetaStore extends MetaStore
      * @return float|null
      * @throws RecordNotFoundException
      */
-    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?float
+    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?int
     {
         $key = self::get_key_by_object($ActiveRecord);
         return $this->get_last_update_time($key);
