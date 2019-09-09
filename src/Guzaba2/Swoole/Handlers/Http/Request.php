@@ -113,7 +113,6 @@ class Request extends HandlerBase
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
-
         }
     }
 
