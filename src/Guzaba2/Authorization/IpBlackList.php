@@ -33,7 +33,7 @@ class IpBlackList
         $this->SwooleTable->create();
     }
 
-    public function ip_is_blacklisted (string $ip) : bool
+    public function ip_is_blacklisted(string $ip) : bool
     {
         // test with blacklisted ip
         // if (empty($this->SwooleTable->get($ip))) {
