@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole;
 
 //use Guzaba2\Base\Base as Base;
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Kernel\Kernel;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class Server
@@ -87,7 +90,19 @@ class Server extends \Guzaba2\Http\Server
         //\Swoole\Runtime::enableStrictMode();
         //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
 
-        printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port);
+        if (!empty($this->options['document_root']) && empty($this->options['enable_static_handler'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.')));
+        }
+
+        if (!empty($this->options['enable_static_handler']) && empty($this->options['document_root'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
+        }
+        //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
+
+        Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s').PHP_EOL, $this->host, $this->port) );
+        if (!empty($this->options['document_root'])) {
+            Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']) );
+        }
 
         //Kernel::printk(sprintf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port));
         $this->SwooleHttpServer->start();
