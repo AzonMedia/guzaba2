@@ -29,6 +29,7 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Connection;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Authorization\IpBlackList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -94,6 +95,11 @@ class Kernel
     protected static $Container;
 
     /**
+     * @var IpFilterInterface
+     */
+    public static $IpFilter;
+
+    /**
      * Is the kernel initialized
      * @var bool
      */
@@ -147,6 +153,14 @@ class Kernel
     public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
+    }
+
+    /**
+     * @param IpBlackList $ipFilter
+     */
+    public static function set_ip_filter(IpBlackList $ipFilter) : void
+    {
+        self::$IpFilter = $ipFilter;
     }
 
     /**
