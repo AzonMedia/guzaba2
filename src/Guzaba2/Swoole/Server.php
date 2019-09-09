@@ -99,9 +99,9 @@ class Server extends \Guzaba2\Http\Server
         }
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
-        Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s').PHP_EOL, $this->host, $this->port) );
+        Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s').PHP_EOL, $this->host, $this->port));
         if (!empty($this->options['document_root'])) {
-            Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']) );
+            Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
         }
 
         //Kernel::printk(sprintf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port));
