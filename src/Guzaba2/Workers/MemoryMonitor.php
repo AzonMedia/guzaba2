@@ -2,7 +2,7 @@
 
 namespace Guzaba2\Workers;
 
-use Guzaba2\Patterns\WorkerSingleton;
+use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Translator\Translator as t;
 
@@ -11,7 +11,7 @@ use Guzaba2\Translator\Translator as t;
  * This object lives for the duretion of the worker.
  * @package Guzaba2\Workers
  */
-class MemoryMonitor extends WorkerSingleton
+class MemoryMonitor extends Base
 {
 
     /**

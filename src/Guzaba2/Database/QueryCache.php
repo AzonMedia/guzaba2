@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace Guzaba2\Database;
 
 use Azonmedia\Utilities\ArrayUtil;
+use Guzaba2\Base\Base;
 use Guzaba2\Database\PdoStatement;
 use Guzaba2\Database\Transaction;
 use Guzaba2\Patterns\Singleton;
@@ -32,7 +33,7 @@ use Guzaba2\Transaction\TransactionManager;
  * @package org\guzaba\framework\database\classes
  * @todo refactor and re-implement
  */
-class QueryCache extends Singleton
+class QueryCache extends Base
 {
     protected const CACHE_TTL = 3600;
     protected const CACHE_QUERIES_CONTAINING_RAND = false;

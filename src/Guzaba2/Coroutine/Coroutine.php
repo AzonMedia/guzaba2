@@ -391,8 +391,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 ];
                 self::$coroutines_ids[$current_cid][] =& self::$coroutines_ids[$new_cid];
 
-                $CoroutineExecution = CoroutineExecution::get_instance();
-
                 //each coroutine must have its own global try/catch block as the exception handler is not supported
 
                 $chan = self::getParentCoroutineChannel($new_cid);
@@ -411,9 +409,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
                 //$chan = self::getRootCoroutineChannel($new_cid);
                 //$chan->push($new_cid);
-
-
-                $CoroutineExecution->destroy();
 
                 $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
             } catch (\Throwable $Exception) {

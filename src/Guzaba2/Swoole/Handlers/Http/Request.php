@@ -5,7 +5,6 @@ namespace Guzaba2\Swoole\Handlers\Http;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
-use Guzaba2\Execution\RequestExecution;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Response;
@@ -114,9 +113,8 @@ class Request extends HandlerBase
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
-            //$Execution->destroy();
+
         }
-        //print 'MASTER END'.PHP_EOL;
     }
 
     public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void

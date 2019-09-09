@@ -21,10 +21,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
+use Guzaba2\Base\Base;
 use Guzaba2\Patterns\Interfaces\Wrapper;
-use Guzaba2\Patterns\Singleton;
 
-class ActiveEnvironment extends Singleton implements Wrapper
+//NOT USED
+class ActiveEnvironment extends Base implements Wrapper
 {
     protected $env;
 
