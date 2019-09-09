@@ -63,15 +63,15 @@ FROM
     }
 
 
-    public function get_fallback_store() : ?StoreInterface 
+    public function get_fallback_store() : ?StoreInterface
     {
     }
 
-    public function &get_data_pointer(string $class, array $lookup_index) : array 
+    public function &get_data_pointer(string $class, array $lookup_index) : array
     {
     }
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : void 
+    public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
     }
 }
