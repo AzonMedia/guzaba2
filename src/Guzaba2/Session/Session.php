@@ -5,6 +5,7 @@ namespace Guzaba2\Session;
 
 use Guzaba2\Base\Base;
 
+
 class Session extends Base
 {
     protected function __construct()
