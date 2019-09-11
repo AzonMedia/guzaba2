@@ -105,7 +105,11 @@ class Kernel
      */
     protected static $is_initialized_flag = FALSE;
 
-
+    /**
+     * @var Watchdog
+     */
+    public static $Watchdog;
+    
     public const EXIT_SUCCESS = 0;
 
     public const EXIT_GENERAL_ERROR = 1;
@@ -296,7 +300,27 @@ class Kernel
         //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
     }
-
+    
+    /* DEBUG
+    public static function logtofile_backtrace(string $filename) : void
+    {
+        //self::raise_memory_limit(4096);
+        foreach(self::simplify_trace(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) as $key => $row){
+            self::logtofile($filename,array($key, $row));//NOVERIFY  
+        } 
+         
+        
+    }
+    
+     public static function simplify_trace($debug_trace) {
+        foreach($debug_trace as &$call) {
+            unset($call['object']);
+            unset($call['args']);
+        }
+        return $debug_trace;
+    }
+    */
+    
     public static function bt(array $context = []) : void
     {
         $bt = print_r(Coroutine::getSimpleBacktrace(), TRUE);
@@ -627,5 +651,13 @@ class Kernel
         $Logger = self::get_logger();
         $Logger->log($level, $message, $context);
         return TRUE;
+    }
+    
+    /**
+     * 
+     */
+    public static function set_watchdog($Watchdog) : void
+    {
+        self::$Watchdog = $Watchdog;
     }
 }

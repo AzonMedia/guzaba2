@@ -64,7 +64,6 @@ class Request extends HandlerBase
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
-
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
         try {
             $start_time = microtime(TRUE);

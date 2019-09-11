@@ -22,7 +22,7 @@ class Server extends \Guzaba2\Http\Server
 
     protected const SWOOLE_DEFAULTS = [
         'host'              => '0.0.0.0',
-        'port'              => 8081,
+        'port'              => 8082,
         'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_PROCESS or SWOOLE_BASE
     ];
 
@@ -86,9 +86,9 @@ class Server extends \Guzaba2\Http\Server
         //https://wiki.swoole.com/wiki/page/1006.html
         //\Swoole\Runtime::enableStrictMode();
         //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
-
         printf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port);
-
+        
+        
         //Kernel::printk(sprintf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port));
         $this->SwooleHttpServer->start();
     }

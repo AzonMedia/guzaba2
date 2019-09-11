@@ -290,7 +290,6 @@ VALUES
                 }, $field_names_arr));
                 $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
             }
-
             $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
             $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
