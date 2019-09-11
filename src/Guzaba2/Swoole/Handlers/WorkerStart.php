@@ -1,14 +1,10 @@
 <?php
 
-
 namespace Guzaba2\Swoole\Handlers;
 
 use Guzaba2\Swoole\Debug\Debugger;
-<<<<<<< Updated upstream
 use Guzaba2\Kernel\Kernel;
-=======
 use Guzaba2\Database\ConnectionMonitor;
->>>>>>> Stashed changes
 
 /**
  * Class WorkerStart
