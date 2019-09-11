@@ -306,12 +306,12 @@ class Kernel
     {
         //self::raise_memory_limit(4096);
         foreach(self::simplify_trace(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) as $key => $row){
-            self::logtofile($filename,array($key, $row));//NOVERIFY  
-        } 
-         
-        
+            self::logtofile($filename,array($key, $row));//NOVERIFY
+        }
+
+
     }
-    
+
      public static function simplify_trace($debug_trace) {
         foreach($debug_trace as &$call) {
             unset($call['object']);
@@ -654,7 +654,7 @@ class Kernel
     }
     
     /**
-     * 
+     *
      */
     public static function set_watchdog($Watchdog) : void
     {

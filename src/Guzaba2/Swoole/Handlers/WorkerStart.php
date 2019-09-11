@@ -35,7 +35,7 @@ class WorkerStart extends HandlerBase
         
 
         Kernel::$Watchdog->checkin($Server, $worker_id);
-        Kernel::$Watchdog->check($worker_id);            
+        Kernel::$Watchdog->check($worker_id);
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

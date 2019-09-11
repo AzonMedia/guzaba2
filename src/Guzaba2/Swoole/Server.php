@@ -88,7 +88,7 @@ class Server extends \Guzaba2\Http\Server
         //before entering in coroutine mode it is a good idea to disable the blocking functions:
         //https://wiki.swoole.com/wiki/page/1006.html
         //\Swoole\Runtime::enableStrictMode();
-        //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0    
+        //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
 
         if (!empty($this->options['document_root']) && empty($this->options['enable_static_handler'])) {
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.')));
