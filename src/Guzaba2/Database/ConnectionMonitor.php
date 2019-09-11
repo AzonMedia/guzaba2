@@ -11,7 +11,6 @@ use Azonmedia\Glog\Application\MysqlConnection;
 
 class ConnectionMonitor extends Base
 {
-
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'ConnectionFactory'
@@ -19,7 +18,7 @@ class ConnectionMonitor extends Base
         'ping_time' => 3, // sec
     ];
 
-    protected const CONFIG_RUNTIME = [];   
+    protected const CONFIG_RUNTIME = [];
 
     public function __construct()
     {
@@ -45,5 +44,4 @@ class ConnectionMonitor extends Base
         // recursion for forever running coroutine
         $this->monitor();
     }
-
 }
