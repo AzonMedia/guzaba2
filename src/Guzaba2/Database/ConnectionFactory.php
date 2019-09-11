@@ -46,4 +46,9 @@ class ConnectionFactory extends Base
     {
         return $this->ConnectionProvider->stats($connection_class);
     }
+
+    public function get_connections(string $connection_class = '') : array
+    {
+        return $this->ConnectionProvider->get_connections($connection_class);
+    }
 }

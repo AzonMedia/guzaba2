@@ -181,6 +181,11 @@ abstract class ConnectionCoroutine extends Connection
         }
     }
     
+    public function ping()
+    {
+        return $this->MysqlCo->query("SELECT 1");
+    }
+
     /**
      * Returns the ID of the last insert.
      * Must be executed immediately after the insert query

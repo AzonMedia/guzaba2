@@ -4,7 +4,11 @@
 namespace Guzaba2\Swoole\Handlers;
 
 use Guzaba2\Swoole\Debug\Debugger;
+<<<<<<< Updated upstream
 use Guzaba2\Kernel\Kernel;
+=======
+use Guzaba2\Database\ConnectionMonitor;
+>>>>>>> Stashed changes
 
 /**
  * Class WorkerStart
@@ -33,9 +37,13 @@ class WorkerStart extends HandlerBase
             //after the server is started print here will not print anything - it seems the output is redirected
         }
         
-
         Kernel::$Watchdog->checkin($Server, $worker_id);
         Kernel::$Watchdog->check($worker_id);
+
+        \co::create(function() {
+            $ConnectionMonitor = new ConnectionMonitor();
+            $ConnectionMonitor->monitor();
+        });
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

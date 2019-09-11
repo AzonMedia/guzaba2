@@ -224,14 +224,42 @@ class Pool extends Base implements ConnectionProviderInterface
         $ret = [];
         if ($connection_class) {
             $ret['available_connections'] = [];
-            foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
-                $ret['available_connections'][] = $AvaiableConnection->get_object_internal_id();
+            if (array_key_exists($connection_class, $this->available_connections)) {
+                foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
+                    $ret['available_connections'][] = $AvaiableConnection->get_object_internal_id();
+                }
             }
+
             $ret['busy_connections'] = [];
-            foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
-                $ret['busy_connections'][] = $BusyConnection->get_object_internal_id();
+            if (array_key_exists($connection_class, $this->busy_connections)) {
+                foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
+                    $ret['busy_connections'][] = $BusyConnection->get_object_internal_id();
+                }
             }
         }
+
+        return $ret;
+    }
+
+    public function get_connections(string $connection_class = '') : array
+    {
+        $ret = [];
+        if ($connection_class) {
+            $ret['available_connections'] = [];
+            if (array_key_exists($connection_class, $this->available_connections)) {
+                foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
+                    $ret['available_connections'][] = $AvaiableConnection;
+                }
+            }
+
+            $ret['busy_connections'] = [];
+            if (array_key_exists($connection_class, $this->busy_connections)) {
+                foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
+                    $ret['busy_connections'][] = $BusyConnection;
+                }
+            }
+        }
+
         return $ret;
     }
 }
