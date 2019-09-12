@@ -27,6 +27,7 @@ use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Connection;
+use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\IpBlackList;
@@ -100,6 +101,12 @@ class Kernel
     public static $IpFilter;
 
     /**
+     * @var Server
+     */
+    protected static $HttpServer;
+
+
+    /**
      * Is the kernel initialized
      * @var bool
      */
@@ -159,6 +166,24 @@ class Kernel
         self::$Container = $Container;
     }
 
+    public static function set_http_server(Server $HttpServer) : void
+    {
+        self::$HttpServer = $HttpServer;
+    }
+
+    public static function get_http_server() : ?Server
+    {
+        return self::$HttpServer;
+    }
+
+    public static function get_worker_id() : int
+    {
+        if (!isset(self::$HttpServer)) {
+            throw new RunTimeException(sprintf(t::_('No Http Server is set (Kernel::set_http_server()).')));
+        }
+        return self::$HttpServer->get_worker_id();
+    }
+
     /**
      * @param IpBlackList $ipFilter
      */
@@ -173,6 +198,9 @@ class Kernel
      */
     public static function get_service(string $id) : object
     {
+        if (!isset(self::$Container)) {
+            throw new RunTimeException(sprintf(t::_('There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.')));
+        }
         return self::$Container->get($id);
     }
 
@@ -182,6 +210,9 @@ class Kernel
      */
     public static function has_service(string $id) : bool
     {
+        if (!isset(self::$Container)) {
+            throw new RunTimeException(sprintf(t::_('There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.')));
+        }
         return self::$Container->has($id);
     }
 
@@ -591,48 +622,6 @@ class Kernel
     {
     }
 
-
-    /**
-     *
-     * @param string $filename
-     * @param string $string
-     * @param int $indent +1/0/-1
-     */
-    public static function logtofile_indent($filename, $string, $indent = 0)
-    {
-        static $current_indentation;
-        if ($current_indentation === null) {
-            $current_indentation = 0;
-        }
-
-        if ($indent >= 0) {
-            if ($current_indentation < 0) { //for safety
-                $current_indentation = 0;
-            }
-            $tabs = str_repeat("\t", $current_indentation);
-        }
-
-        $current_indentation += $indent;
-
-        if ($indent < 0) {
-            if ($current_indentation < 0) { //for safety
-                $current_indentation = 0;
-            }
-            $tabs = str_repeat("\t", $current_indentation);
-        }
-
-
-        if ($current_indentation < 0) {
-            //k::bt();
-            self::logtofile('logtofile_indent_errors', sprintf(t::_('Wrong indentation of %s provided and the current one got negative %s.'), $indent, $current_indentation));
-        }
-
-        $string = $tabs . $string . PHP_EOL;
-        //return self::logtofile($filename, $string);
-        // TODO log path bellow
-//        file_put_contents(p::$PATHS['logs'][p::CURDIR].$filename, $string,FILE_APPEND);
-    }
-
     /**
      * @return bool
      * @todo implement
@@ -653,6 +642,9 @@ class Kernel
     public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
     {
         $Logger = self::get_logger();
+        if (self::get_http_server()) {
+            $message = 'Worker #'.self::get_worker_id().': '.$message;
+        }
         $Logger->log($level, $message, $context);
         return TRUE;
     }

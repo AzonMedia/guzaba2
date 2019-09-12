@@ -192,15 +192,16 @@ class Server extends \Guzaba2\Http\Server
 //        return $this->worker_id;
 //    }
 
-    public function get_swoole_server() : \Swoole\Http\Server
-    {
-        return $this->SwooleHttpServer;
-    }
+//    public function get_swoole_server() : \Swoole\Http\Server
+//    {
+//        return $this->SwooleHttpServer;
+//    }
 
     public function get_worker_id() : int
     {
         return $this->SwooleHttpServer->worker_id;
     }
+
     
 
     /**
@@ -217,4 +218,16 @@ class Server extends \Guzaba2\Http\Server
             }
         }
     }
+
+
+    public function get_worker_pid() : int
+    {
+        return $this->SwooleHttpServer->worker_pid;
+    }
+
+//    public function get_master_pid() : int
+//    {
+//        return $this->SwooleHttpServer->master_pid;
+//    }
+
 }

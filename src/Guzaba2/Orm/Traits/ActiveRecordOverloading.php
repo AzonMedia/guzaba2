@@ -80,6 +80,11 @@ trait ActiveRecordOverloading
             $this->record_modified_data =& $pointer['modified'];
         }
 
+        if (!array_key_exists($property, $this->record_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+        }
+
+        $old_value = $this->record_data[$property];
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
@@ -87,28 +92,28 @@ trait ActiveRecordOverloading
         }
 
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
-            call_user_func_array([$this,'_after_set_'.$property], [$value]);
-        }
-
-        if (array_key_exists($property, $this->record_data)) {
-            if (is_float($this->record_data[$property]) && is_float($value)) {
-                if (abs($this->record_data[$property] - $value) > 0.00001) {
-                    $this->record_modified_data[] = $property;
-                    $this->record_modified_data[] = $property;
-                }
-            } else {
-                if ($this->record_data[$property]!=$value) {
-                    $this->record_modified_data[] = $property;
-                }
+        if (is_float($this->record_data[$property]) && is_float($value)) {
+            if (abs($this->record_data[$property] - $value) > 0.00001) {
+                //$this->record_modified_data[] = $property;
+                $is_modified = TRUE;
             }
-            //$this->record_data[$property] = $value;
-
-
-            $this->assign_property_value($property, $value);
         } else {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            if ($this->record_data[$property] !== $value) {
+                $is_modified = TRUE;
+                //$this->record_modified_data[] = $property;
+            }
         }
+
+        if (!empty($is_modified)) {
+            if (!array_key_exists($property, $this->record_modified_data)) {
+                $this->record_modified_data[$property] = [];
+            }
+            $this->record_modified_data[$property][] = $old_value;
+        }
+
+
+        $this->assign_property_value($property, $value);
+
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
             call_user_func_array([$this,'_after_set_'.$property], [$value]);

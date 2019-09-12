@@ -78,11 +78,6 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     /**
      * @var bool
      */
-    //protected $maintain_ownership_record = true;
-    
-    /**
-     * @var bool
-     */
     protected $disable_property_hooks_flag = FALSE;
     
     /**
@@ -650,10 +645,10 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     }
     
     /**
-     * Returns the field names from the main table and its shards.
+     * Returns the property names from the main table and its shards.
      * @return array
      */
-    public function get_field_names() : array
+    public function get_property_names() : array
     {
         $ret = [];
         foreach (static::get_columns_data() as $field_data) {
@@ -663,12 +658,48 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     }
     
     /**
-     * Returns the field names of the modified properties
+     * Returns the property names of the modified properties
+     * @return array Indexed array with property names
+     */
+    public function get_modified_properties_names() : array
+    {
+        //return $this->record_modified_data;
+        return array_keys($this->record_modified_data);
+    }
+
+    public function is_property_modified(string $property) : bool
+    {
+        if (!array_key_exists($property, $this->record_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to check a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+        }
+        return array_key_exists($property, $this->record_modified_data);
+    }
+
+    /**
+     * Returns all old values
+     * @param string $property
      * @return array
      */
-    public function get_modified_field_names()
+    public function get_property_old_values(string $property) : array
     {
-        return $this->record_modified_data;
+        if (!array_key_exists($property, $this->record_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to get old values for a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+        }
+        return $this->record_modified_data[$property] ?? [];
+    }
+
+    /**
+     * Returns
+     * @param string $property
+     * @throws RunTimeException
+     */
+    public function get_property_old_value(string $property) /* mixed */
+    {
+        $modified_data = $this->get_property_old_values($property);
+        if (!count($modified_data)) {
+            throw new RunTimeException(sprintf(t::_('The property "%s" on instnace of class "%s" (ORM class) is not modified and has no old value.'), $property, get_class($this) ));
+        }
+        return $modified_data[ count ($modified_data) - 1];
     }
 
     /**

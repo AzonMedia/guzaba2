@@ -271,9 +271,22 @@ class Memory extends Store implements StoreInterface
             foreach ($this->data[$class][$lookup_index][$last_update_time] as $key=>$value) {
                 $new_arr[$key] = $value;
             }
-            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+            if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
+                $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+            }
             if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
-                unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
+                //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
+                //the old version may actually remain the current one if the object gets modified but not saved
+                $latest_update_time = 0;
+                foreach ($this->data[$class][$lookup_index] as $existing_last_update_time=>$data) {
+                    $latest_update_time = max($existing_last_update_time, $latest_update_time);
+                }
+                if ($latest_update_time > $last_update_time) {
+                    //then there is a more recent record and this one can be deleted (as it is refcount 0)
+                    unset($this->data[$class][$lookup_index][$last_update_time]);
+                } else {
+                    //leave the record in ormstore for the purpose of caching
+                }
             }
             $new_arr['refcount'] = 1;
             $new_arr['modified'] = [];
@@ -305,7 +318,9 @@ class Memory extends Store implements StoreInterface
         $class = get_class($ActiveRecord);
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $last_update_time = $ActiveRecord->get_meta_data()['object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
+            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+        }
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
             //if this is the latest version leave it in memory for the purpose of caching
             $latest_update_time = 0;

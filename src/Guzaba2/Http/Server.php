@@ -30,4 +30,14 @@ abstract class Server extends Base
     abstract public function stop();
 
     abstract public function on(string $event_name, callable $callable);
+
+    abstract public function get_worker_id() : int ;
+
+    abstract public function get_worker_pid() : int ;
+
+    //abstract public function get_master_pid() : int ;
+
+    //abstract public function get_ports() : array ;
+
+    //abstract public function get_connections() : array ;
 }
