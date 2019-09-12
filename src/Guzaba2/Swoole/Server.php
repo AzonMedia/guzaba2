@@ -18,9 +18,65 @@ class Server extends \Guzaba2\Http\Server
 
     /**
      * @see https://www.swoole.co.uk/docs/modules/swoole-server/configuration
+     * @see https://wiki.swoole.com/wiki/page/274.html
      */
     protected const SUPPORTED_OPTIONS = [
-
+        'reactor_num',
+        'worker_num',
+        'max_request',
+        'max_conn',
+        'task_worker_num',
+        'task_ipc_mode',
+        'task_max_request',
+        'task_tmpdir',
+        'task_enable_coroutine',
+        'task_use_object',
+        'dispatch_mode',
+        'dispatch_func',
+        'message_queue_key',
+        'daemonize',
+        'backlog',
+        'log_file',
+        'log_level',
+        'heartbeat_check_interval',
+        'heartbeat_idle_time',
+        'open_eof_check',
+        'open_eof_split',
+        'package_eof',
+        'open_length_check',
+        'package_length_type',
+        'package_length_func',
+        'package_max_length',
+        'open_cpu_affinity',
+        'cpu_affinity_ignore',
+        'open_tcp_nodelay',
+        'tcp_defer_accept',
+        'ssl_cert_file',
+        'ssl_method',
+        'ssl_ciphers',
+        'user',
+        'group',
+        'chroot',
+        'pid_file',
+        'pipe_buffer_size',
+        'buffer_output_size',
+        'socket_buffer_size',
+        'enable_unsafe_event',
+        'discard_timeout_request',
+        'enable_reuse_port',
+        'enable_delay_receive',
+        'open_http_protocol',
+        'open_http2_protocol',
+        'open_websocket_protocol',
+        'open_mqtt_protocol',
+        'open_websocket_close_frame',
+        'reload_async',
+        'tcp_fastopen',
+        'request_slowlog_file',
+        'enable_coroutine',
+        'max_coroutine',
+        'ssl_verify_peer',
+        'max_wait_time' 
     ];
 
     protected const SWOOLE_DEFAULTS = [
@@ -60,16 +116,9 @@ class Server extends \Guzaba2\Http\Server
 
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
 
-
-
-
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode);
-
-//        foreach ($options as $option_name => $option_value) {
-//            //if (isset(self::SWOOLE_DEFAULTS[$option_name])) {
-//            //}
-//            $this->SwooleHttpServer->set($options);
-//        }
+        
+        $this->validate_server_configuration_options($options);
         $this->SwooleHttpServer->set($options);
     }
 
@@ -151,5 +200,14 @@ class Server extends \Guzaba2\Http\Server
     public function get_worker_id() : int
     {
         return $this->SwooleHttpServer->worker_id;
+    }
+    
+    public function validate_server_configuration_options (array $options) : void 
+    {
+        foreach($options as $option_name => $option_value){
+            if(!in_array($option_name, self::SUPPORTED_OPTIONS)){
+                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option %s provided to server configuration.'), $option_name));
+            }
+        }
     }
 }
