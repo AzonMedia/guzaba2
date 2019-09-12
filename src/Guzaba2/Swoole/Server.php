@@ -76,7 +76,7 @@ class Server extends \Guzaba2\Http\Server
         'enable_coroutine',
         'max_coroutine',
         'ssl_verify_peer',
-        'max_wait_time' 
+        'max_wait_time'
     ];
 
     protected const SWOOLE_DEFAULTS = [
@@ -202,10 +202,10 @@ class Server extends \Guzaba2\Http\Server
         return $this->SwooleHttpServer->worker_id;
     }
     
-    public function validate_server_configuration_options (array $options) : void 
+    public function validate_server_configuration_options(array $options) : void
     {
-        foreach($options as $option_name => $option_value){
-            if(!in_array($option_name, self::SUPPORTED_OPTIONS)){
+        foreach ($options as $option_name => $option_value) {
+            if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
                 throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option %s provided to server configuration.'), $option_name));
             }
         }
