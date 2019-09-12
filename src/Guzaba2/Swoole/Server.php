@@ -229,5 +229,4 @@ class Server extends \Guzaba2\Http\Server
 //    {
 //        return $this->SwooleHttpServer->master_pid;
 //    }
-
 }

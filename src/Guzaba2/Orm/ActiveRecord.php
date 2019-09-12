@@ -697,9 +697,9 @@ class ActiveRecord extends GenericObject implements ActiveRecordInterface
     {
         $modified_data = $this->get_property_old_values($property);
         if (!count($modified_data)) {
-            throw new RunTimeException(sprintf(t::_('The property "%s" on instnace of class "%s" (ORM class) is not modified and has no old value.'), $property, get_class($this) ));
+            throw new RunTimeException(sprintf(t::_('The property "%s" on instnace of class "%s" (ORM class) is not modified and has no old value.'), $property, get_class($this)));
         }
-        return $modified_data[ count ($modified_data) - 1];
+        return $modified_data[ count($modified_data) - 1];
     }
 
     /**
