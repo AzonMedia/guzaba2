@@ -458,6 +458,10 @@ class Kernel
         $ret = FALSE;
 
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
+            if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
+                continue;
+            }
+
             if (strpos($class_name, $namespace_base) === 0) {
                 $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
                 //$class_path = realpath($class_path);
