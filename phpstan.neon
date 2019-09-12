@@ -3,3 +3,5 @@ parameters:
         - vendor/autoload.php
     autoload_directories:
         - %rootDir%/../../../src/Guzaba2
+    ignoreErrors:
+        - '#Class Swoole\\Table not found#'

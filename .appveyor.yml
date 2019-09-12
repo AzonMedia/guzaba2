@@ -40,7 +40,7 @@ install:
   - echo extension=php_openssl.dll >> php.ini 
   - echo extension=php_mysqli.dll >> php.ini
   - echo extension=php_pdo.dll >> php.ini
-  - echo extension=swoole.so >> php.ini
+  #- echo extension=swoole.so >> php.ini
   #composer
   - IF %PHP%==0 echo @php %%~dp0composer.phar %%* > composer.bat
   - IF %PHP%==0 appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
