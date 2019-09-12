@@ -204,12 +204,12 @@ class Server extends \Guzaba2\Http\Server
     
 
     /**
-     * Validates swooole server configuration options 
+     * Validates swooole server configuration options
      * @param array $options this array will be passed to $SwooleHttpServer->set()
-     * 
+     *
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function validate_server_configuration_options (array $options) : void 
+    public function validate_server_configuration_options(array $options) : void
     {
         foreach ($options as $option_name => $option_value) {
             if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
