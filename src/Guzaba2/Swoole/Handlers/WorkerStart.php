@@ -4,7 +4,6 @@ namespace Guzaba2\Swoole\Handlers;
 
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
-use Guzaba2\Kernel\Kernel;
 use Guzaba2\Database\ConnectionMonitor;
 
 /**
