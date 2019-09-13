@@ -36,7 +36,7 @@ class WorkerStart extends HandlerBase
         Kernel::$Watchdog->checkin($Server, $worker_id);
         Kernel::$Watchdog->check($worker_id);
 
-        \co::create(function () {
+        \Swoole\Coroutine::create(function () {
             $ConnectionMonitor = new ConnectionMonitor();
             $ConnectionMonitor->monitor();
         });

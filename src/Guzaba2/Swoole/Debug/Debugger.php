@@ -110,7 +110,7 @@ class Debugger extends Base
     protected function substitute_prompt_vars(string $prompt) : string
     {
         $prompt = str_replace('{WORKER_ID}', $this->worker_id, $prompt);
-        $prompt = str_replace('{COROUTINE_ID}', \Co::getCid(), $prompt);
+        $prompt = str_replace('{COROUTINE_ID}', \Swoole\Coroutine::getCid(), $prompt);
         return $prompt;
     }
 

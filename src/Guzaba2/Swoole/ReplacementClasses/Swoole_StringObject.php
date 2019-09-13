@@ -32,27 +32,27 @@ class StringObject
     {
     }
 
-    public function lower() : \self
+    public function lower() : self
     {
     }
 
-    public function upper() : \self
+    public function upper() : self
     {
     }
 
-    public function trim() : \self
+    public function trim() : self
     {
     }
 
-    public function lrim() : \self
+    public function lrim() : self
     {
     }
 
-    public function rtrim() : \self
+    public function rtrim() : self
     {
     }
 
-    public function substr(int $offset, $length) : \self
+    public function substr(int $offset, $length) : self
     {
     }
 
@@ -60,7 +60,7 @@ class StringObject
     {
     }
 
-    public function replace(string $search, string $replace, &$count = NULL) : \self
+    public function replace(string $search, string $replace, &$count = NULL) : self
     {
     }
 
@@ -84,7 +84,7 @@ class StringObject
     {
     }
 
-    public function chunkSplit(int $chunkLength = 1, string $chunkEnd = '') : \self
+    public function chunkSplit(int $chunkLength = 1, string $chunkEnd = '') : self
     {
     }
 

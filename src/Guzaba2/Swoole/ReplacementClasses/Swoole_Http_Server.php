@@ -17,7 +17,7 @@ class Server extends \Swoole\Server
     public $worker_pid;
     private $onRequest;
     private $onHandshake;
-    public function __construct($host, $port, $mode, $sock_type)
+    public function __construct($host, $port, $mode, $sock_type = SWOOLE_SOCK_TCP)
     {
     }
 
@@ -153,7 +153,7 @@ class Server extends \Swoole\Server
     {
     }
 
-    public function addProcess(\swoole_process $process)
+    public function addProcess($process)
     {
     }
 

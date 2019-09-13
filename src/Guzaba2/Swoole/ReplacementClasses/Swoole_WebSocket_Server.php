@@ -171,7 +171,7 @@ class Server extends \Swoole\Http\Server
     {
     }
 
-    public function addProcess(\swoole_process $process)
+    public function addProcess($process)
     {
     }
 

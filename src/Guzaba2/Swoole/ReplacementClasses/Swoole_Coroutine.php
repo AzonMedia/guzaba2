@@ -3,7 +3,7 @@ namespace Swoole;
 
 class Coroutine
 {
-    public static function create(callable $func, $params)
+    public static function create($callable, ...$params)
     {
     }
 
@@ -43,7 +43,7 @@ class Coroutine
     {
     }
 
-    public static function getPcid($cid)
+    public static function getPcid()
     {
     }
 
@@ -51,7 +51,7 @@ class Coroutine
     {
     }
 
-    public static function getBackTrace($cid, $options, $limit)
+    public static function getBackTrace($cid, $options)
     {
     }
 

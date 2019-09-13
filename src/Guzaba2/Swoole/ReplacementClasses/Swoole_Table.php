@@ -6,7 +6,8 @@ class Table implements \Iterator, \ArrayAccess, \Countable
     public const TYPE_INT = 1;
     public const TYPE_STRING = 7;
     public const TYPE_FLOAT = 6;
-    public function __construct($table_size, $conflict_proportion)
+
+    public function __construct($table_size)
     {
     }
 

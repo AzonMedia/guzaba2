@@ -170,7 +170,7 @@ class Server extends \Swoole\Server
     {
     }
 
-    public function addProcess(\swoole_process $process)
+    public function addProcess($process)
     {
     }
 
