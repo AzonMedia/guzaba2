@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Http2;
+
 class Response
 {
     public $streamId;

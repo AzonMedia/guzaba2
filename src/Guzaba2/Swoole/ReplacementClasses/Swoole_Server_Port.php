@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Server;
+
 class Port
 {
     private $onConnect;
@@ -18,14 +19,23 @@ class Port
     public $sock = -1;
     public $setting;
     public $connections;
-    private function __construct( ) { }
+    private function __construct()
+    {
+    }
 
-    public function __destruct( ) { }
+    public function __destruct()
+    {
+    }
 
-    public function set( array $settings) { }
+    public function set(array $settings)
+    {
+    }
 
-    public function on( $event_name, callable $callback) { }
+    public function on($event_name, callable $callback)
+    {
+    }
 
-    public function getCallback( $event_name) { }
-
+    public function getCallback($event_name)
+    {
+    }
 }

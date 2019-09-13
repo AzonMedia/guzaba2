@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Coroutine\Http;
+
 class Client
 {
     public $errCode;
@@ -20,52 +21,99 @@ class Client
     public $set_cookie_headers;
     public $cookies;
     public $body;
-    public function __construct( $host, $port, $ssl) { }
+    public function __construct($host, $port, $ssl)
+    {
+    }
 
-    public function __destruct( ) { }
+    public function __destruct()
+    {
+    }
 
-    public function set( array $settings) { }
+    public function set(array $settings)
+    {
+    }
 
-    public function getDefer( ) { }
+    public function getDefer()
+    {
+    }
 
-    public function setDefer( $defer) { }
+    public function setDefer($defer)
+    {
+    }
 
-    public function setMethod( $method) { }
+    public function setMethod($method)
+    {
+    }
 
-    public function setHeaders( array $headers) { }
+    public function setHeaders(array $headers)
+    {
+    }
 
-    public function setBasicAuth( $username, $password) { }
+    public function setBasicAuth($username, $password)
+    {
+    }
 
-    public function setCookies( array $cookies) { }
+    public function setCookies(array $cookies)
+    {
+    }
 
-    public function setData( $data) { }
+    public function setData($data)
+    {
+    }
 
-    public function addFile( $path, $name, $type, $filename, $offset, $length) { }
+    public function addFile($path, $name, $type, $filename, $offset, $length)
+    {
+    }
 
-    public function addData( $path, $name, $type, $filename) { }
+    public function addData($path, $name, $type, $filename)
+    {
+    }
 
-    public function execute( $path) { }
+    public function execute($path)
+    {
+    }
 
-    public function get( $path) { }
+    public function get($path)
+    {
+    }
 
-    public function post( $path, $data) { }
+    public function post($path, $data)
+    {
+    }
 
-    public function download( $path, $file, $offset) { }
+    public function download($path, $file, $offset)
+    {
+    }
 
-    public function getBody( ) { }
+    public function getBody()
+    {
+    }
 
-    public function getHeaders( ) { }
+    public function getHeaders()
+    {
+    }
 
-    public function getCookies( ) { }
+    public function getCookies()
+    {
+    }
 
-    public function getStatusCode( ) { }
+    public function getStatusCode()
+    {
+    }
 
-    public function upgrade( $path) { }
+    public function upgrade($path)
+    {
+    }
 
-    public function push( $data, $opcode, $finish) { }
+    public function push($data, $opcode, $finish)
+    {
+    }
 
-    public function recv( $timeout) { }
+    public function recv($timeout)
+    {
+    }
 
-    public function close( ) { }
-
+    public function close()
+    {
+    }
 }

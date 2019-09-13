@@ -1,8 +1,9 @@
 <?php
 namespace Swoole\Http;
+
 abstract class StatusCode
 {
-    protected static $reasonPhrases = array (
+    protected static $reasonPhrases = [
   100 => 'Continue',
   101 => 'Switching Protocols',
   102 => 'Processing',
@@ -64,7 +65,7 @@ abstract class StatusCode
   508 => 'Loop Detected',
   510 => 'Not Extended',
   511 => 'Network Authentication Required',
-);
+];
     public const CONTINUE = 100;
     public const SWITCHING_PROTOCOLS = 101;
     public const PROCESSING = 102;
@@ -126,6 +127,7 @@ abstract class StatusCode
     public const LOOP_DETECTED = 508;
     public const NOT_EXTENDED = 510;
     public const NETWORK_AUTHENTICATION_REQUIRED = 511;
-    public static function getReasonPhrase( int $value) : string { }
-
+    public static function getReasonPhrase(int $value) : string
+    {
+    }
 }

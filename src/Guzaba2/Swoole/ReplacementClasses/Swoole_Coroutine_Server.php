@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Coroutine;
+
 class Server
 {
     public $host;
@@ -11,14 +12,23 @@ class Server
     protected $running;
     protected $fn;
     protected $socket;
-    public function __construct( string $host, int $port = 0, bool $ssl = false, bool $reuse_port = false) { }
+    public function __construct(string $host, int $port = 0, bool $ssl = false, bool $reuse_port = false)
+    {
+    }
 
-    public function set( array $setting) : void { }
+    public function set(array $setting) : void
+    {
+    }
 
-    public function handle( callable $fn) : void { }
+    public function handle(callable $fn) : void
+    {
+    }
 
-    public function shutdown( ) : bool { }
+    public function shutdown() : bool
+    {
+    }
 
-    public function start( ) : bool { }
-
+    public function start() : bool
+    {
+    }
 }

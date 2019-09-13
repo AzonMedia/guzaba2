@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Http;
+
 class Request
 {
     public $fd;
@@ -11,10 +12,15 @@ class Request
     public $files;
     public $post;
     public $tmpfiles;
-    public function rawContent( ) { }
+    public function rawContent()
+    {
+    }
 
-    public function getData( ) { }
+    public function getData()
+    {
+    }
 
-    public function __destruct( ) { }
-
+    public function __destruct()
+    {
+    }
 }

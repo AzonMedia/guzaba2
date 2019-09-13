@@ -1,5 +1,6 @@
 <?php
 namespace Swoole\Coroutine;
+
 class MySQL
 {
     public $serverInfo;
@@ -11,34 +12,63 @@ class MySQL
     public $insert_id;
     public $error;
     public $errno;
-    public function __construct( ) { }
+    public function __construct()
+    {
+    }
 
-    public function __destruct( ) { }
+    public function __destruct()
+    {
+    }
 
-    public function getDefer( ) { }
+    public function getDefer()
+    {
+    }
 
-    public function setDefer( $defer) { }
+    public function setDefer($defer)
+    {
+    }
 
-    public function connect( array $server_config) { }
+    public function connect(array $server_config)
+    {
+    }
 
-    public function query( $sql, $timeout) { }
+    public function query($sql, $timeout)
+    {
+    }
 
-    public function fetch( ) { }
+    public function fetch()
+    {
+    }
 
-    public function fetchAll( ) { }
+    public function fetchAll()
+    {
+    }
 
-    public function nextResult( ) { }
+    public function nextResult()
+    {
+    }
 
-    public function prepare( $query, $timeout) { }
+    public function prepare($query, $timeout)
+    {
+    }
 
-    public function recv( ) { }
+    public function recv()
+    {
+    }
 
-    public function begin( $timeout) { }
+    public function begin($timeout)
+    {
+    }
 
-    public function commit( $timeout) { }
+    public function commit($timeout)
+    {
+    }
 
-    public function rollback( $timeout) { }
+    public function rollback($timeout)
+    {
+    }
 
-    public function close( ) { }
-
+    public function close()
+    {
+    }
 }

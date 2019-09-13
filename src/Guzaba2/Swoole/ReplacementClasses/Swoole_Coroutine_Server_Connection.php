@@ -1,14 +1,22 @@
 <?php
 namespace Swoole\Coroutine\Server;
+
 class Connection
 {
     public $socket;
-    public function __construct( \Swoole\Coroutine\Socket $conn) { }
+    public function __construct(\Swoole\Coroutine\Socket $conn)
+    {
+    }
 
-    public function recv( $timeout = 0) { }
+    public function recv($timeout = 0)
+    {
+    }
 
-    public function send( $data) { }
+    public function send($data)
+    {
+    }
 
-    public function close( ) { }
-
+    public function close()
+    {
+    }
 }

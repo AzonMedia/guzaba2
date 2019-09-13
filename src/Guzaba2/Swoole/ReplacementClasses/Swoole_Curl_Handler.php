@@ -1,9 +1,10 @@
 <?php
 namespace Swoole\Curl;
+
 class Handler
 {
     private $client;
-    private $info = array (
+    private $info = [
   'url' => '',
   'content_type' => '',
   'http_code' => 0,
@@ -26,9 +27,9 @@ class Handler
   'redirect_time' => 0.0,
   'redirect_url' => '',
   'primary_ip' => '',
-  'certinfo' => 
-  array (
-  ),
+  'certinfo' =>
+  [
+  ],
   'primary_port' => 0,
   'local_ip' => '',
   'local_port' => 0,
@@ -36,7 +37,7 @@ class Handler
   'protocol' => 0,
   'ssl_verifyresult' => 0,
   'scheme' => '',
-);
+];
     private $urlInfo;
     private $postData;
     private $outputStream;
@@ -54,29 +55,50 @@ class Handler
     public $headers;
     public $errCode;
     public $errMsg;
-    private const ERRORS = array (
+    private const ERRORS = [
   3 => 'No URL set!',
-);
-    public function __construct( $url = NULL) { }
+];
+    public function __construct($url = NULL)
+    {
+    }
 
-    private function create( string $url) : void { }
+    private function create(string $url) : void
+    {
+    }
 
-    public function execute( ) { }
+    public function execute()
+    {
+    }
 
-    public function close( ) : void { }
+    public function close() : void
+    {
+    }
 
-    private function setError( $code, $msg = '') : void { }
+    private function setError($code, $msg = '') : void
+    {
+    }
 
-    private function getUrl( ) : string { }
+    private function getUrl() : string
+    {
+    }
 
-    public function setOption( int $opt, $value) : bool { }
+    public function setOption(int $opt, $value) : bool
+    {
+    }
 
-    public function reset( ) : void { }
+    public function reset() : void
+    {
+    }
 
-    public function getInfo( ) { }
+    public function getInfo()
+    {
+    }
 
-    private function unparseUrl( array $parsedUrl) : string { }
+    private function unparseUrl(array $parsedUrl) : string
+    {
+    }
 
-    private function getRedirectUrl( string $location) : array { }
-
+    private function getRedirectUrl(string $location) : array
+    {
+    }
 }

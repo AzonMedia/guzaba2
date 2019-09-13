@@ -1,5 +1,6 @@
 <?php
 namespace Swoole;
+
 class Constant
 {
     public const EVENT_RECEIVE = 'receive';
