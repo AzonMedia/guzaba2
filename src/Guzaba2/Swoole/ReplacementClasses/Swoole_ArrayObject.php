@@ -1,11 +1,12 @@
 <?php
 namespace Swoole;
 
-class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator, \Traversable
+class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
 {
     protected $array;
     public function __construct(array $array = [])
     {
+        $this->array = $array;
     }
 
     public function isEmpty() : bool

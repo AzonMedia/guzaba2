@@ -23,6 +23,9 @@ class Client
     public $body;
     public function __construct($host, $port, $ssl)
     {
+        $new_host = $host;
+        $new_port = $port;
+        $new_ssl = $ssl;
     }
 
     public function __destruct()

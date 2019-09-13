@@ -1,12 +1,15 @@
 <?php
 namespace Swoole\Coroutine;
 
-class Context extends \ArrayObject implements \Countable, \Serializable, \ArrayAccess, \Traversable, \IteratorAggregate
+class Context
 {
     public const STD_PROP_LIST = 1;
     public const ARRAY_AS_PROPS = 2;
     public function __construct($input, $flags, $iterator_class)
     {
+        $new_input = $input;
+        $new_flags = $flags;
+        $new_iterator_class = $iterator_class;
     }
 
     public function offsetExists($index)

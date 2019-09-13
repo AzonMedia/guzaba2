@@ -9,6 +9,7 @@ class Table implements \Iterator, \ArrayAccess, \Countable
 
     public function __construct($table_size)
     {
+        $new_table_size = $table_size;
     }
 
     public function column($name, $type, $size)

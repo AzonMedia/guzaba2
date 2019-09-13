@@ -6,6 +6,7 @@ class Connection
     public $socket;
     public function __construct(\Swoole\Coroutine\Socket $conn)
     {
+        $new_conn = $conn;
     }
 
     public function recv($timeout = 0)

@@ -1,7 +1,7 @@
 <?php
 namespace Swoole;
 
-class Error extends \Error implements \Throwable
+class Error
 {
     protected $message;
     protected $code;
@@ -10,6 +10,9 @@ class Error extends \Error implements \Throwable
 
     public function __construct($message, $code, $previous)
     {
+        $new_message = $message;
+        $new_code = $code;
+        $new_previous = $previous;
     }
 
     public function __wakeup()

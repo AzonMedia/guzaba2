@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\Coroutine\Http2\Client;
 
-class Exception extends \Swoole\Exception implements \Throwable
+class Exception
 {
     protected $message;
     protected $code;
@@ -10,6 +10,9 @@ class Exception extends \Swoole\Exception implements \Throwable
 
     public function __construct($message, $code, $previous)
     {
+        $new_message = $message;
+        $new_code = $code;
+        $new_previous = $previous;
     }
 
     public function __wakeup()

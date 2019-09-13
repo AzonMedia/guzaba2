@@ -90,22 +90,22 @@ trait ExceptionPropertyModification
         self::setPropertyStatic($Exception, 'trace', $backtrace);
     }
 
-    public static function setFileStatic(string $file) : void
+    public static function setFileStatic(\Throwable $Exception, string $file) : void
     {
         self::setPropertyStatic($Exception, 'file', $file);
     }
 
-    public static function setLineStatic(int $line) : void
+    public static function setLineStatic(\Throwable $Exception, int $line) : void
     {
         self::setPropertyStatic($Exception, 'line', $line);
     }
 
-    public static function setCodeStatic(int $code) : void
+    public static function setCodeStatic(\Throwable $Exception, int $code) : void
     {
         self::setPropertyStatic($Exception, 'code', $code);
     }
 
-    public static function setMessageStatic(string $message) : void
+    public static function setMessageStatic(\Throwable $Exception, string $message) : void
     {
         self::setPropertyStatic($Exception, 'message', $message);
     }

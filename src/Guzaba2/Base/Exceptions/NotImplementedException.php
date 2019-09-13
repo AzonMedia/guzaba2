@@ -8,7 +8,8 @@ class NotImplementedException extends BaseException
     {
         if (!$message) {
             $trace = $this->getTrace();
-            $message = sprintf(t::_('%s::%s() is not implemented.'), $trace[0]['class'], $trace[0]['function']);
+            $message = sprintf('%s::%s() is not implemented.', $trace[0]['class'], $trace[0]['function']);
+            // $message = sprintf(t::_('%s::%s() is not implemented.'), $trace[0]['class'], $trace[0]['function']);
         }
 
         parent::__construct($message, $code, $exception);

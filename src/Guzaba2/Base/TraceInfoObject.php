@@ -17,5 +17,6 @@ class TraceInfoObject
     public function __construct($string = '')
     {
         // TODO implement
+        $new_string = $string;
     }
 }

@@ -8,7 +8,7 @@ class IpFilter
     /**
      * @var \Swoole\Table
      */
-    private $Swoole_table = '';
+    private $SwooleTable;
 
     /**
      * @var \Swoole\Table rows

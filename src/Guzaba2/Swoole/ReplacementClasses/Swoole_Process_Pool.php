@@ -5,8 +5,13 @@ class Pool
 {
     public $master_pid = -1;
     public $workers;
+    
     public function __construct($worker_num, $ipc_type, $msgqueue_key, $enable_coroutine)
     {
+        $new_worker_num = $worker_num;
+        $new_ipc_type = $ipc_type;
+        $new_msgqueue_key = $msgqueue_key;
+        $new_enable_coroutine = $enable_coroutine;
     }
 
     public function __destruct()

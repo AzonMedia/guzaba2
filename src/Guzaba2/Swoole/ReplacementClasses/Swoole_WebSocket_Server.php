@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\WebSocket;
 
-class Server extends \Swoole\Http\Server
+class Server
 {
     public $setting;
     public $connections;
@@ -15,6 +15,15 @@ class Server extends \Swoole\Http\Server
     public $worker_id = -1;
     public $taskworker;
     public $worker_pid;
+
+    public function __construct($host, $port, $mode, $sock_type)
+    {
+        $new_host = $host;
+        $new_port = $port;
+        $new_mode = $mode;
+        $new_sock_type = $sock_type;
+    }
+
     public function push($fd, $data, $opcode, $finish)
     {
     }
@@ -32,10 +41,6 @@ class Server extends \Swoole\Http\Server
     }
 
     public static function unpack($data)
-    {
-    }
-
-    public function __construct($host, $port, $mode, $sock_type)
     {
     }
 

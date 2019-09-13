@@ -4,8 +4,10 @@ namespace Swoole;
 class StringObject
 {
     protected $string;
+
     public function __construct(string $string = '')
     {
+        $new_string = $string;
     }
 
     public function length() : int

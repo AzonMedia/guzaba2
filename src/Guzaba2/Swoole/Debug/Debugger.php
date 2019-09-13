@@ -148,7 +148,7 @@ class Debugger extends Base
             //$json = json_decode($data, true);
             //Assert::eq(is_array($json), $json['data'], 'hello');
             $response .= PHP_EOL;
-            $conn->send($response);
+            // $conn->send($response);
         }
     }
 

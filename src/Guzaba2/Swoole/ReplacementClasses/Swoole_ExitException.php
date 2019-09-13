@@ -1,7 +1,7 @@
 <?php
 namespace Swoole;
 
-class ExitException extends \Swoole\Exception implements \Throwable
+class ExitException
 {
     protected $message;
     protected $code;
@@ -9,6 +9,7 @@ class ExitException extends \Swoole\Exception implements \Throwable
     protected $line;
     private $flags;
     private $status;
+    
     public function getFlags()
     {
     }
@@ -19,6 +20,9 @@ class ExitException extends \Swoole\Exception implements \Throwable
 
     public function __construct($message, $code, $previous)
     {
+        $new_message = $message;
+        $new_code = $code;
+        $new_previous = $previous;
     }
 
     public function __wakeup()

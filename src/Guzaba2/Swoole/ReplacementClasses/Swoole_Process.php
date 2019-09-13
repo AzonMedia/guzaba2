@@ -9,13 +9,20 @@ class Process
     public $msgQueueKey;
     public $pid;
     public $id;
+
     public const IPC_NOWAIT = 256;
+
     public const PIPE_MASTER = 1;
     public const PIPE_WORKER = 2;
     public const PIPE_READ = 3;
     public const PIPE_WRITE = 4;
+
     public function __construct(callable $callback, $redirect_stdin_and_stdout, $pipe_type, $enable_coroutine)
     {
+        $new_callback = $callback;
+        $new_redirect_stdin_and_stdout = $redirect_stdin_and_stdout;
+        $new_pipe_type = $pipe_type;
+        $new_enable_coroutine = $enable_coroutine;
     }
 
     public function __destruct()

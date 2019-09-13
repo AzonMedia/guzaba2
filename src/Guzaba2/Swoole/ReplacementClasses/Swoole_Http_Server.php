@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\Http;
 
-class Server extends \Swoole\Server
+class Server
 {
     public $setting;
     public $connections;
@@ -17,8 +17,13 @@ class Server extends \Swoole\Server
     public $worker_pid;
     private $onRequest;
     private $onHandshake;
+
     public function __construct($host, $port, $mode, $sock_type = SWOOLE_SOCK_TCP)
-    {
+    {        
+        $new_host = $host;
+        $new_port = $port;
+        $new_mode = $mode;
+        $new_sock_type = $sock_type;
     }
 
     public function __destruct()

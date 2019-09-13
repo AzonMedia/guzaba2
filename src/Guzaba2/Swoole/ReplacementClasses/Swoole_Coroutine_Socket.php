@@ -7,7 +7,10 @@ class Socket
     public $errCode;
     public $errMsg;
     public function __construct($domain, $type, $protocol)
-    {
+    {        
+        $new_domain = $domain;
+        $new_type = $type;
+        $new_protocol = $protocol;
     }
 
     public function bind($address, $port)

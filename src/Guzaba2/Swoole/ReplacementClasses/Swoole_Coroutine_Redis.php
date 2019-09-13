@@ -13,6 +13,7 @@ class Redis
     public $errMsg;
     public function __construct($config)
     {
+        $new_config = $config;
     }
 
     public function __destruct()

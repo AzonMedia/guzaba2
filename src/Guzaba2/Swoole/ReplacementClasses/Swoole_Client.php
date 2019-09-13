@@ -25,6 +25,8 @@ class Client
     public const SHUT_WR = 1;
     public function __construct($type, $async)
     {
+        $new_type = $type;
+        $new_async = $async;
     }
 
     public function __destruct()

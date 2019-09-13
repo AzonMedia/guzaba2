@@ -7,6 +7,7 @@ class Buffer
     public $length;
     public function __construct($size)
     {
+        $new_size = $size;
     }
 
     public function __destruct()

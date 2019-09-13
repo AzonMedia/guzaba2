@@ -1,12 +1,15 @@
 <?php
 namespace Swoole\Timer;
 
-class Iterator extends \ArrayIterator implements \Countable, \Serializable, \SeekableIterator, \ArrayAccess, \Traversable, \Iterator
+class Iterator
 {
     public const STD_PROP_LIST = 1;
     public const ARRAY_AS_PROPS = 2;
+
     public function __construct($array, $ar_flags)
     {
+        $new_array = $array;
+        $new_ar_flags = $ar_flags;
     }
 
     public function offsetExists($index)

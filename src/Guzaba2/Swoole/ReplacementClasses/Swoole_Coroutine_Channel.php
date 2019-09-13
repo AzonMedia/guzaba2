@@ -7,6 +7,7 @@ class Channel
     public $errCode;
     public function __construct($size)
     {
+        $new_size = $size;
     }
 
     public function push($data, $timeout)

@@ -5,6 +5,7 @@ class Long
 {
     public function __construct($value)
     {
+        $new_value = $value;
     }
 
     public function add($add_value)

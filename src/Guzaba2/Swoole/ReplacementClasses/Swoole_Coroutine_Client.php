@@ -16,6 +16,7 @@ class Client
     public const MSG_WAITALL = 256;
     public function __construct($type)
     {
+        $new_type = $type;
     }
 
     public function __destruct()

@@ -227,7 +227,7 @@ abstract class BaseException extends \Exception
     public function _before_change_context() : void
     {
         $this->context_changed_flag = TRUE;
-        self::unset_all_static();
+        // self::unset_all_static();
     }
 
     public function getDebugData()
@@ -235,15 +235,16 @@ abstract class BaseException extends \Exception
         $ret =
             time().' '.date('Y-m-d H:i:s').PHP_EOL.
             $this->getMessage().':'.$this->getCode().PHP_EOL.
-            $this->getFile().':'.$this->getLine().PHP_EOL.
-            print_r(k::simplify_trace($this->getTrace()), TRUE);//NOVERIFY
+            $this->getFile().':'.$this->getLine().PHP_EOL;
+            //.
+            // print_r(k::simplify_trace($this->getTrace()), TRUE);//NOVERIFY
         return $ret;
     }
 
     /**
      * @return \Guzaba2\Transactions\Transaction|null
      */
-    public function getInterruptedTransaction() : ?\Guzaba2\Transactions\Transaction
+    public function getInterruptedTransaction() : ?\Guzaba2\Transaction\Transaction
     {
         return $this->InterruptedTransaction;
     }
@@ -336,7 +337,7 @@ abstract class BaseException extends \Exception
         return $this->execution_id;
     }
 
-    public function getExecutionContext() : ?framework\kernel\classes\executionContext
+    public function getExecutionContext() //: ?framework\kernel\classes\executionContext
     {
         return $this->executionContext;
     }
@@ -348,7 +349,7 @@ abstract class BaseException extends \Exception
 
 
 
-    public function setAllData(framework\base\exceptions\traceInfoObject $traceInfoObject)
+    public function setAllData(/*framework\base\exceptions\traceInfoObject*/ $traceInfoObject)
     {
     }
 
@@ -431,7 +432,8 @@ abstract class BaseException extends \Exception
      */
     public function getAllMessagesAsString() : string
     {
-        $message = implode(' ', $this->getAllMessagesAsArray());
+        // $message = implode(' ', $this->getAllMessagesAsArray());
+        $message = ' ';
         return $message;
     }
 
@@ -458,7 +460,7 @@ abstract class BaseException extends \Exception
         $caller_arr = $trace_arr[$level+1];
         if (!isset($caller_arr['class'])) {
             $trace = debug_backtrace();
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_class() can not be used.'), $trace[1]['class'], $trace[1]['function']));
+            // throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_class() can not be used.'), $trace[1]['class'], $trace[1]['function']));
         }
         return $caller_arr['class'];
     }
@@ -475,7 +477,7 @@ abstract class BaseException extends \Exception
         $caller_arr = $trace_arr[$level+1];
         if (!isset($caller_arr['function'])) {
             $trace = debug_backtrace();
-            throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_method() can not be used.'), $trace[1]['class'], $trace[1]['function']));
+            // throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_method() can not be used.'), $trace[1]['class'], $trace[1]['function']));
         }
         return $caller_arr['function'];
     }
@@ -485,9 +487,9 @@ abstract class BaseException extends \Exception
 
     public static function setPreviousExceptionStatic(\Throwable $exception, \Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
     {
-        if ($previous instanceof framework\base\interfaces\traceInfo) {
-            $previous = $previous->getAsException();
-        }
+        // if ($previous instanceof framework\base\interfaces\traceInfo) {
+        //     $previous = $previous->getAsException();
+        // }
 
 
         self::setPropertyStatic($exception, 'previous', $previous);
@@ -515,9 +517,9 @@ abstract class BaseException extends \Exception
         $prop->setValue($this, $previous);
         $prop->setAccessible(false);
         */
-        if ($previous instanceof framework\base\interfaces\traceInfo) {
-            $previous = $previous->getAsException();
-        }
+        // if ($previous instanceof framework\base\interfaces\traceInfo) {
+        //     $previous = $previous->getAsException();
+        // }
 
 
         $this->setProperty('previous', $previous);

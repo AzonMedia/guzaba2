@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\Coroutine\MySQL;
 
-class Exception extends \Swoole\Exception implements \Throwable
+class Exception
 {
     protected $message;
     protected $code;
@@ -9,7 +9,10 @@ class Exception extends \Swoole\Exception implements \Throwable
     protected $line;
 
     public function __construct($message, $code, $previous)
-    {
+    {        
+        $new_message = $message;
+        $new_code = $code;
+        $new_previous = $previous;
     }
 
     public function __wakeup()

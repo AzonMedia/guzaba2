@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\Redis;
 
-class Server extends \Swoole\Server
+class Server
 {
     public $setting;
     public $connections;
@@ -15,13 +15,23 @@ class Server extends \Swoole\Server
     public $worker_id = -1;
     public $taskworker;
     public $worker_pid;
-    public const NIL = 1;
+
     public const ERROR = 0;
+    public const NIL = 1;
     public const STATUS = 2;
     public const INT = 3;
     public const STRING = 4;
     public const SET = 5;
     public const MAP = 6;
+
+    public function __construct($host, $port, $mode, $sock_type)
+    {        
+        $new_host = $host;
+        $new_port = $port;
+        $new_mode = $mode;
+        $new_sock_type = $sock_type;
+    }
+
     public function start()
     {
     }
@@ -35,10 +45,6 @@ class Server extends \Swoole\Server
     }
 
     public static function format($type, $value)
-    {
-    }
-
-    public function __construct($host, $port, $mode, $sock_type)
     {
     }
 
