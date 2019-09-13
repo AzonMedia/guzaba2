@@ -268,7 +268,7 @@ abstract class Transaction extends Base
 
     /**
      * Transaction constructor.
-     * @param ScopeReferenceTracker|NULL $scope_reference
+     * @param-out ScopeReferenceTracker|NULL $scope_reference
      * @param callable|NULL $code
      * @param callable|NULL $commit_callback
      * @param callable|NULL $rollback_callback

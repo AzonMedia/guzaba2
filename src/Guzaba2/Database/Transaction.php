@@ -72,7 +72,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
 
     /**
      * Transaction constructor.
-     * @param ScopeReferenceTracker|null $scope_reference
+     * @param-out ScopeReferenceTracker|null $scope_reference
      * @param string $connection_class
      * @param callable|null $code
      * @param callable|null $commit_callback

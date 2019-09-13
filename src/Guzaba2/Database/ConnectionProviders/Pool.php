@@ -134,6 +134,7 @@ class Pool extends Base implements ConnectionProviderInterface
      * It will reuse a connection from this coroutine if such is found.
      * If a new connection (second, third) for this coroutine is needed self::get_new_connection() is to be used
      * @param string $connection_class
+     * @param-out $ScopeReference
      * @return ConnectionInterface
      */
     //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface

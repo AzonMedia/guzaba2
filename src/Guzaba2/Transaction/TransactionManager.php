@@ -92,7 +92,7 @@ class TransactionManager extends Base
      * Begins transaction of the provided type.
      * The provided type must be the full class name of a transaction class that inherits \Guzaba2\Transaction\Transaction
      * @param string $transaction_type The class of the transaction of which a new transaction is to be started
-     * @param ScopeReferenceTracker|null $scope_reference
+     * @param-out ScopeReferenceTracker|null $scope_reference
      * @param CallbackContainer|null $callbackContainer
      * @param array $options
      * @param TransactionContext|null $transactionContext Not used currently. Reserved for future use.
@@ -148,7 +148,7 @@ class TransactionManager extends Base
      * Commits (or saves if nested) the transaction that the scope reference points to.
      * This commit() is to be used for all type of transactions.
      *
-     * @param scopeReferenceTracker $scope_reference
+     * @param-out scopeReferenceTracker $scope_reference
      * @return void
      * @throws TransactionException
      * @throws InvalidArgumentException
@@ -208,7 +208,7 @@ class TransactionManager extends Base
      * Rollbacks the transaction that the scope reference points to.
      * This rollback() is to be used for all type of transactions.
      *
-     * @param ScopeReferenceTracker $scope_reference
+     * @param-out ScopeReferenceTracker $scope_reference
      * @return void
      * @throws InvalidArgumentException
      * @throws TransactionException
@@ -265,7 +265,7 @@ class TransactionManager extends Base
     /**
      * Validates the scope reference as provided to self::commit() and self::rollback() methods.
      * Throws an exception if it is wrong.
-     * @param scopeReferenceTracker $scope_reference
+     * @param-out scopeReferenceTracker $scope_reference
      * @return void
      * @throws TransactionException
      * @author vesko@azonmedia.com
