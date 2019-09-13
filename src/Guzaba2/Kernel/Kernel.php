@@ -476,7 +476,7 @@ class Kernel
 
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
-            // if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && strpos($class_name, 'ReplacementClasses')) {
+                // if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && strpos($class_name, 'ReplacementClasses')) {
                 continue;
             }
 

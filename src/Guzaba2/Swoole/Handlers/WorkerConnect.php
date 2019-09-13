@@ -14,7 +14,7 @@ use Guzaba2\Kernel\Kernel;
 class WorkerConnect extends HandlerBase
 {
     /**
-     * 
+     *
      */
     public $IpFilter;
 
