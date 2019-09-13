@@ -236,8 +236,8 @@ abstract class BaseException extends \Exception
             time().' '.date('Y-m-d H:i:s').PHP_EOL.
             $this->getMessage().':'.$this->getCode().PHP_EOL.
             $this->getFile().':'.$this->getLine().PHP_EOL;
-            //.
-            // print_r(k::simplify_trace($this->getTrace()), TRUE);//NOVERIFY
+        //.
+        // print_r(k::simplify_trace($this->getTrace()), TRUE);//NOVERIFY
         return $ret;
     }
 

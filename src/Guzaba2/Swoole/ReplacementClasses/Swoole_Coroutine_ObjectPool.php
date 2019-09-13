@@ -8,7 +8,7 @@ abstract class ObjectPool
     protected $busy_pool;
     protected $type;
     public function __construct($type, $pool_size = 10, $concurrency = 10)
-    {        
+    {
         $new_type = $type;
         $new_pool_size = $pool_size;
         $new_concurrency = $concurrency;

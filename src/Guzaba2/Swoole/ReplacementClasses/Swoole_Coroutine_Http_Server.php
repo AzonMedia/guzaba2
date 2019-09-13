@@ -11,7 +11,7 @@ final class Server
     public $errCode;
     public $errMsg;
     public function __construct($host, $port, $ssl, $reuse_port)
-    {        
+    {
         $new_host = $host;
         $new_port = $port;
         $new_ssl = $ssl;

@@ -19,7 +19,7 @@ class Server
     private $onHandshake;
 
     public function __construct($host, $port, $mode, $sock_type = SWOOLE_SOCK_TCP)
-    {        
+    {
         $new_host = $host;
         $new_port = $port;
         $new_mode = $mode;

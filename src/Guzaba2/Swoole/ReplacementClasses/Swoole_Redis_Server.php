@@ -25,7 +25,7 @@ class Server
     public const MAP = 6;
 
     public function __construct($host, $port, $mode, $sock_type)
-    {        
+    {
         $new_host = $host;
         $new_port = $port;
         $new_mode = $mode;

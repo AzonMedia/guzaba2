@@ -9,7 +9,7 @@ class Exception
     protected $line;
 
     public function __construct($message, $code, $previous)
-    {        
+    {
         $new_message = $message;
         $new_code = $code;
         $new_previous = $previous;
