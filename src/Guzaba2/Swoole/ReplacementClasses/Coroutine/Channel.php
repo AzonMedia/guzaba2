@@ -5,11 +5,11 @@ namespace Swoole\Coroutine;
 
 class Channel
 {
-	public static function push(){
+    public static function push()
+    {
+    }
 
-	}
-
-	public static function pull(){
-		
-	}
+    public static function pull()
+    {
+    }
 }
