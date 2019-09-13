@@ -96,15 +96,9 @@ class Kernel
     protected static $Container;
 
     /**
-     * @var IpFilterInterface
-     */
-    public static $IpFilter;
-
-    /**
      * @var Server
      */
     protected static $HttpServer;
-
 
     /**
      * Is the kernel initialized
@@ -182,14 +176,6 @@ class Kernel
             throw new RunTimeException(sprintf(t::_('No Http Server is set (Kernel::set_http_server()).')));
         }
         return self::$HttpServer->get_worker_id();
-    }
-
-    /**
-     * @param IpBlackList $ipFilter
-     */
-    public static function set_ip_filter(IpBlackList $ipFilter) : void
-    {
-        self::$IpFilter = $ipFilter;
     }
 
     /**
@@ -490,6 +476,7 @@ class Kernel
 
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
+            // if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && strpos($class_name, 'ReplacementClasses')) {
                 continue;
             }
 

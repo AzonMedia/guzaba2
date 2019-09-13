@@ -22,9 +22,9 @@ declare(strict_types=1);
 namespace Guzaba2\Database;
 
 use Guzaba2\Database\Interfaces\StatementInterface;
-use Guzaba2\Object\GenericObject;
+use Guzaba2\Base\Base;
 
-abstract class Statement extends GenericObject implements StatementInterface
+abstract class Statement extends Base implements StatementInterface
 {
     /**
      * @var string

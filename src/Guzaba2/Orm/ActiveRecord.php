@@ -10,7 +10,6 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
-use Guzaba2\Object\GenericObject;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -31,7 +30,7 @@ use Guzaba2\Orm\Traits\ActiveRecordStructure;
 //use Guzaba2\Orm\Traits\ActiveRecordDelete;
 
 
-class ActiveRecord extends GenericObject implements ActiveRecordInterface
+class ActiveRecord extends Base implements ActiveRecordInterface
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
