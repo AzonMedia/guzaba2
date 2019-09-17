@@ -1,5 +1,5 @@
 <?php
-namespace Swoole\Coroutine\MySQL;
+namespace Swoole\Coroutine\Mysql;
 
 class Exception
 {

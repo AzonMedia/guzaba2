@@ -51,7 +51,7 @@ class Coroutine
     {
     }
 
-    public static function getBackTrace($cid, $options)
+    public static function getBackTrace($cid, $options, $limit=0)
     {
     }
 

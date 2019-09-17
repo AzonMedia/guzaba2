@@ -1,7 +1,7 @@
 <?php
 namespace Swoole\Coroutine;
 
-class MySQL
+class Mysql
 {
     public $serverInfo;
     public $sock = -1;
