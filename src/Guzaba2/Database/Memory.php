@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Database;
 
-
 class Memory implements TargetInterface
 {
 

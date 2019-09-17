@@ -418,7 +418,6 @@ abstract class Transaction extends Base
      */
     public function get_transaction_target(): TransactionTargetInterface
     {
-
     }
 
     /**

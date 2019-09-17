@@ -6,8 +6,7 @@ namespace Guzaba2\Object;
 use Guzaba2\Base\Base;
 use Guzaba2\Transaction\Interfaces\TransactionTargetInterface;
 
-abstract class GenericObject extends Base
-implements TransactionTargetInterface
+abstract class GenericObject extends Base implements TransactionTargetInterface
 {
     /**
      * Returns all properties of the object irregardless of their visibility.

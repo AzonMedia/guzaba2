@@ -1,8 +1,6 @@
 <?php
 
 
-class Filesystem
-implements TransactionTargetInterface
+class Filesystem implements TransactionTargetInterface
 {
-
 }
