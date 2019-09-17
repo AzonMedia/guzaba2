@@ -142,9 +142,9 @@ class Transaction extends \Guzaba2\Transaction\Transaction
     }
 
     /**
-     * @return Connection
+     * @return ConnectionInterface
      */
-    public function getConnection(): Connection
+    public function getConnection(): ConnectionInterface
     {
         return $this->connection;
     }

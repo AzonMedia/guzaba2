@@ -9,7 +9,7 @@ use Guzaba2\Database\Interfaces\StatementInterface;
  * A class containing a mysqli connection
  * @package Guzaba2\Database\Sql\Mysql
  */
-abstract class ConnectionMysqli extends \Guzaba2\Database\Connection
+abstract class ConnectionMysqli extends \Guzaba2\Database\ConnectionTransactional
 {
     protected const CONFIG_DEFAULTS = [
         'host'      => 'localhost',

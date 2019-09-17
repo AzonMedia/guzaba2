@@ -55,6 +55,7 @@ use Guzaba2\Transaction\TransactionManager as TXM;
  * Rolling back to a specific savepoint would be a very durty trick as this may/will rollback saved transactions inadvertently (unknown to the developer).
  * Transactions should be never manually managed / rolled back/ but only by scope or a loop!!! Doing otherwise may produce unexpected results!
  * @method CallbackContainer callback_container($transaction, int $mode) Invokes the property callback_container
+ * @method TransactionManager TransactionManager()
  */
 abstract class Transaction extends Base
 {
@@ -313,8 +314,7 @@ abstract class Transaction extends Base
         $scope_reference = new ScopeReferenceTracker($this);
 
 
-        //$parent_transaction = TXM::getCurrentTransaction(self::get_config_key('transaction_type'));
-        $parent_transaction = TXM::getCurrentTransaction(get_class($this));
+        $parent_transaction = self::TransactionManager()->getCurrentTransaction(get_class($this));
 
         if ($parent_transaction) {
             //check the options of this and the parent transaction
@@ -411,6 +411,14 @@ abstract class Transaction extends Base
         if (!$do_not_begin) {
             $this->begin();
         }
+    }
+
+    /**
+     * @return string
+     */
+    public function get_transaction_target(): TransactionTargetInterface
+    {
+
     }
 
     /**
@@ -1028,7 +1036,7 @@ abstract class Transaction extends Base
                 $this->set_status(self::STATUS_ROLLED_BACK);//this transaction is rolled back but the savepoint is on the parent transaction
 
                 //here - BEFORE the callbacks are executed - we need to update the current_transaction in PDO
-                TXM::setCurrentTransaction($this->get_parent());//we know there is a parent transaction - in this case we  dont need to provide the transaction type
+                self::TransactionManager()->setCurrentTransaction($this->get_parent());//we know there is a parent transaction - in this case we  dont need to provide the transaction type
 
                 if (self::get_config_key('enable_transactions_tracing')) {
                     Kernel::logtofile_indent(self::get_config_key('transactions_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' rollback to save point executed', 0);
@@ -1077,7 +1085,7 @@ abstract class Transaction extends Base
                 //here - BEFORE the callbacks are executed - we need to update the current_transaction in PDO
                 $parent_transaction = NULL;//there is no parent transaction - we already checked in the IF
                 //TXM::setCurrentTransaction($parent_transaction , self::get_config_key('transaction_type'));
-                TXM::setCurrentTransaction($parent_transaction, get_class($this));
+                self::TransactionManager()->setCurrentTransaction($parent_transaction, get_class($this));
 
                 if (self::get_config_key('enable_transactions_tracing')) {
                     Kernel::logtofile_indent(self::get_config_key('transactions_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' rollback executed', 0);
@@ -1158,7 +1166,7 @@ abstract class Transaction extends Base
 
 
                 //here - BEFORE the callbacks are executed - we need to update the current_transaction in PDO
-                TXM::setCurrentTransaction($this->get_parent());//we know there is a parent transaction - in this case we  dont need to provide the transaction type
+                self::TransactionManager()->setCurrentTransaction($this->get_parent());//we know there is a parent transaction - in this case we  dont need to provide the transaction type
 
                 $this->execute_after_save_callbacks();
 
@@ -1212,7 +1220,7 @@ abstract class Transaction extends Base
                 //here - BEFORE the callbacks are executed - we need to update the current_transaction in PDO
                 $parent_transaction = NULL;//there is no parent transaction - we already checked in the IF
                 //TXM::setCurrentTransaction($parent_transaction , self::get_config_key('transaction_type'));
-                TXM::setCurrentTransaction($parent_transaction, get_class($this));
+                self::TransactionManager()->setCurrentTransaction($parent_transaction, get_class($this));
 
                 if (self::get_config_key('enable_transactions_tracing')) {
                     Kernel::logtofile_indent(self::get_config_key('transactions_tracing_store'), get_class($this) . ' ' . $this->get_object_internal_id() . ' commit executed', -1);
@@ -1460,7 +1468,7 @@ abstract class Transaction extends Base
     protected function begin(): void
     {
         //then update the current transaction in the transactionManager
-        TXM::setCurrentTransaction($this);
+        self::TransactionManager()->setCurrentTransaction($this);
 
 
         if ($this->is_cloned()) {

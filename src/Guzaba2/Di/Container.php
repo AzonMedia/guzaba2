@@ -6,6 +6,7 @@ namespace Guzaba2\Di;
 use Azonmedia\Lock\Backends\SwooleTableBackend;
 use Azonmedia\Lock\CoroutineLockManager;
 use Azonmedia\Lock\Backends\NullBackend;
+use Azonmedia\Di\SampleClass;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
@@ -23,6 +24,8 @@ use Guzaba2\Orm\MetaStore\SwooleTable;
 use Guzaba2\Orm\MetaStore\NullMetaStore;
 
 //use org\guzaba\framework\database\classes\QueryCache;
+use Guzaba2\Transaction\TransactionManager;
+use org\guzaba\framework\database\classes\QueryCache;
 
 class Container extends \Azonmedia\Di\Container implements ConfigInterface, ObjectInternalIdInterface
 {
@@ -106,6 +109,20 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
                 'Logger'                        => [Kernel::class, 'get_logger'],
             ],
         ],
+//        'TransactionManager' => [
+//            'class' => TransactionManager::class,
+//            'args' => [
+//
+//            ],
+//        ],
+//
+//        SampleClass::class => [
+//            'class' => SampleClass::class,
+//            'args' => [
+//                'sampleString' => 'string',
+//                'sampleInt' => 17
+//            ]
+//        ],
     ];
 
     protected const CONFIG_RUNTIME = [];

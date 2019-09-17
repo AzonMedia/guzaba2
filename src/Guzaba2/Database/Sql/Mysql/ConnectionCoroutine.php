@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Connection;
 use Guzaba2\Database\ConnectionFactory;
+use Guzaba2\Database\ConnectionTransactional;
 use Guzaba2\Database\Exceptions\ConnectionException;
 use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
@@ -20,7 +21,7 @@ use Guzaba2\Translator\Translator as t;
  * Because Swoole\Corotuine\Mysql\Statement does not support binding parameters by name, but only by position this class addresses this.
  * @package Guzaba2\Database\Sql\Mysql
  */
-abstract class ConnectionCoroutine extends Connection
+abstract class ConnectionCoroutine extends ConnectionTransactional
 {
     protected const CONFIG_DEFAULTS = [
         'host'      => 'localhost',

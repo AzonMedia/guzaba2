@@ -24,7 +24,9 @@ namespace Guzaba2\Transaction;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Database\Exceptions\TransactionException;
+use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Transaction\Interfaces\TransactionTargetInterface;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -32,47 +34,40 @@ use Guzaba2\Translator\Translator as t;
  */
 class TransactionManager extends Base
 {
-
     /**
      * There are different type of transactions - these will be per class - this includes the distributedTransaction and globalDistributedTransaction
      * @var array
      */
     protected $currentTransactions = [];
 
-
     /**
      * Sets the current transaction for the provided transaction class.
      * There can be multiple current transactions (but of different types)
      *
      * @param Transaction $transaction
-     * @param string $transaction_type This is needed because there can be NULL provided to $transaction and then we need to know which type has no master transaction.
+     * @param ConnectionInterface|null $connection
      * @throws InvalidArgumentException
      */
-    public function setCurrentTransaction(?Transaction $transaction, string $transaction_type = '')
+    public function setCurrentTransaction(?Transaction $transaction, ConnectionInterface $connection = null)
     {
-        //self::$currentTransactions[$transaction->getOptionValue('transaction_type')] =& $transaction;
-        if ($transaction) {
-            $transaction_type = get_class($transaction);
-        } else {
-            if (!$transaction_type) {
-                throw new InvalidArgumentException(sprintf(t::_('When there is no current transaction set (===NULL) then the $transaction_type must be provided as second argument to %s().'), __METHOD__));
-            }
+        if (!$connection) {
+            throw new InvalidArgumentException(sprintf(t::_('When there is no current transaction set (===NULL) then the $transaction_type must be provided as second argument to %s().'), __METHOD__));
         }
 
-        $this->currentTransactions[$transaction_type] = $transaction;
+        $this->currentTransactions[get_class($connection)] = $transaction;
     }
 
     /**
      * Retrieves the current transaction based on the provided class name
      *
-     * @param string $transaction_type
+     * @param ConnectionInterface $connection
      * @return Transaction|NULL
      */
-    public function getCurrentTransaction(string $transaction_type): ?Transaction
+    public function getCurrentTransaction(ConnectionInterface $connection): ?Transaction
     {
         $ret = NULL;
-        if (!empty($this->currentTransactions[$transaction_type])) {
-            $ret = $this->currentTransactions[$transaction_type];
+        if (!empty($this->currentTransactions[get_class($connection)])) {
+            $ret = $this->currentTransactions[get_class($connection)];
         }
         return $ret;
     }
@@ -91,8 +86,8 @@ class TransactionManager extends Base
     /**
      * Begins transaction of the provided type.
      * The provided type must be the full class name of a transaction class that inherits \Guzaba2\Transaction\Transaction
-     * @param string $transaction_type The class of the transaction of which a new transaction is to be started
-     * @param-out ScopeReferenceTracker|null $scope_reference
+     * @param TransactionTargetInterface $transaction_target
+     * @param ScopeReferenceTracker|null $scope_reference
      * @param CallbackContainer|null $callbackContainer
      * @param array $options
      * @param TransactionContext|null $transactionContext Not used currently. Reserved for future use.
@@ -101,16 +96,16 @@ class TransactionManager extends Base
      * @example
      * TXM::beginTransaction(ORMDBTransaction::class)
      */
-    public static function beginTransaction(string $transaction_type, ?ScopeReferenceTracker &$scope_reference, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?transactionContext $transactionContext = null): Transaction
+    public static function beginTransaction(TransactionTargetInterface $transaction_target, ?ScopeReferenceTracker &$scope_reference, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?transactionContext $transactionContext = null): Transaction
     {
-        if (!$transaction_type) {
+        if (!$transaction_target) {
             throw new InvalidArgumentException(sprintf(t::_('No transaction type/class provided.')));
-        } elseif (!class_exists($transaction_type)) {
+        } elseif (!class_exists($transaction_target)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided transaction type/class does not exist (no such class).')));
-        } elseif (!is_subclass_of($transaction_type, Transaction::class)) {
+        } elseif (!is_subclass_of($transaction_target, Transaction::class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided transaction type/class does not extend framework\transactions\classes\transaction.')));
         }
-        $transaction = new $transaction_type($scope_reference, null, $callbackContainer, $callbackContainer, $options, $transactionContext);
+        $transaction = new $transaction_target($scope_reference, null, $callbackContainer, $callbackContainer, $options, $transactionContext);
         return $transaction;
     }
 
@@ -121,23 +116,23 @@ class TransactionManager extends Base
      * Depending of the options set in transaction_config.xml.php the transaction may be retried if it fails (will try to begin a new transaction and execute the code again).
      *
      * @param callable $callable The callable to be executed
-     * @param string $transaction_type The class of the transaction of which a new transaction is to be started
+     * @param TransactionTargetInterface $transaction_target The class of the transaction of which a new transaction is to be started
      * @param CallbackContainer|null $callbackContainer
      * @param array $options
      * @param TransactionContext|null $transactionContext Not used currently. Reserved for future use.
      * @return mixed The returned value from the execution of the $callable
      * @throws InvalidArgumentException
      */
-    public static function executeInTransaction(callable $callable, string $transaction_type, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?TransactionContext $transactionContext = null) /* mixed */
+    public static function executeInTransaction(callable $callable, TransactionTargetInterface $transaction_target, ?CallbackContainer &$callbackContainer = NULL, array $options = [], ?TransactionContext $transactionContext = null) /* mixed */
     {
-        if (!$transaction_type) {
+        if (!$transaction_target) {
             throw new InvalidArgumentException(sprintf(t::_('No transaction type/class provided.')));
-        } elseif (!class_exists($transaction_type)) {
+        } elseif (!class_exists($transaction_target)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided transaction type/class does not exist (no such class).')));
-        } elseif (!is_subclass_of($transaction_type, Transaction::class)) {
+        } elseif (!is_subclass_of($transaction_target, Transaction::class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided transaction type/class does not extend framework\transactions\classes\transaction.')));
         }
-        $transaction = new $transaction_type($TR, $callable, $callbackContainer, $callbackContainer, $options, $transactionContext);
+        $transaction = new $transaction_target($TR, $callable, $callbackContainer, $callbackContainer, $options, $transactionContext);
         $ret = $transaction();
 
         $TR->detachTransaction();//must be done as otherwise it will roll it back
@@ -153,13 +148,13 @@ class TransactionManager extends Base
      * @throws TransactionException
      * @throws InvalidArgumentException
      */
-    public static function commit(scopeReferenceTracker &$scope_reference): void
+    public function commit(scopeReferenceTracker &$scope_reference): void
     {
         self::validateScopeReference($scope_reference);
         //do some crossh-check
         $transaction = $scope_reference->getTransaction();
         //$current_transaction = self::getCurrentTransaction($transaction->getOptionValue('transaction_type'));
-        $current_transaction = self::getCurrentTransaction(get_class($transaction));
+        $current_transaction = $this->getCurrentTransaction(get_class($transaction));
         //this should be the same object/instance
         //When using the identity operator (===), object variables are identical if and only if they refer to the same instance of the same class.
 
@@ -201,7 +196,7 @@ class TransactionManager extends Base
         $transaction->commit();
 
         $scope_reference->rollback_on_destroy = false;//everything is OK with the transaction... do not roll it back
-        //$scope_reference = NULL;//lets leave the instance alive so that we can throw better errors if reused
+        //$scope_reference = NULL;//lets leave the instance arlive so that we can throw better errors if reused
     }
 
     /**
@@ -214,12 +209,12 @@ class TransactionManager extends Base
      * @throws TransactionException
      * @throws \Guzaba2\Base\Exceptions\LogicException
      */
-    public static function rollback(ScopeReferenceTracker &$scope_reference): void
+    public function rollback(ScopeReferenceTracker &$scope_reference): void
     {
         self::validateScopeReference($scope_reference);
         $transaction = $scope_reference->getTransaction();
         //$current_transaction = self::getCurrentTransaction($transaction->getOptionValue('transaction_type'));
-        $current_transaction = self::getCurrentTransaction(get_class($transaction));
+        $current_transaction = $this->getCurrentTransaction(get_class($transaction));
 
         if ($transaction !== $current_transaction) {
 
