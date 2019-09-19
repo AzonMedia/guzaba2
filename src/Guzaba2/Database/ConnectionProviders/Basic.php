@@ -15,7 +15,6 @@ use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
  */
 class Basic extends Base implements ConnectionProviderInterface
 {
-
     public function __construct()
     {
         parent::__construct();

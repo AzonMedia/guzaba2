@@ -43,7 +43,6 @@ class Pool extends Base implements ConnectionProviderInterface
     public function __construct()
     {
         parent::__construct();
-
     }
 
     /**
@@ -60,7 +59,7 @@ class Pool extends Base implements ConnectionProviderInterface
         }
 
         if (!class_exists($connection_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided connection class %s does not exist.'), $connection_class ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided connection class %s does not exist.'), $connection_class));
         }
         if (!array_key_exists($connection_class, $this->available_connections)) {
             $this->initialize_connections($connection_class);
@@ -83,7 +82,6 @@ class Pool extends Base implements ConnectionProviderInterface
     //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
     public function get_connection(string $connection_class, &$ScopeReference = '&') : ConnectionInterface
     {
-
         if (!Coroutine::inCoroutine()) {
             throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
         }
@@ -122,7 +120,7 @@ class Pool extends Base implements ConnectionProviderInterface
 
         $connection_class = get_class($Connection);
         if (!array_key_exists($connection_class, $this->available_connections)) {
-            throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), $connection_class ));
+            throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), $connection_class));
         }
         $Connection->unassign_from_coroutine();
         $this->available_connections[$connection_class]->push($Connection);
