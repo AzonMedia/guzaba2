@@ -12,6 +12,7 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Database\ConnectionFactory;
+use Guzaba2\Database\ConnectionProviders\Basic;
 use Guzaba2\Database\ConnectionProviders\Pool;
 
 use Guzaba2\Kernel\Kernel;
@@ -38,10 +39,15 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'class'                         => ConnectionFactory::class,
             'args'                          => [
                 'ConnectionProvider'            => 'ConnectionProviderPool',
+                //'ConnectionProvider'            => 'ConnectionProviderBasic',
             ],
         ],
-        'ConnectionProviderPool'       => [
+        'ConnectionProviderPool'        => [
             'class'                         => Pool::class,
+            'args'                          => [],
+        ],
+        'ConnectionProviderBasic'       => [
+            'class'                         => Basic::class,
             'args'                          => [],
         ],
 //        'SomeExample'                   => [

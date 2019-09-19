@@ -448,7 +448,7 @@ class Kernel
                                 } else {
                                     //look for $key_name as part of a var name
                                     //assuming _ as separator between the array
-                                    if (strpos($reg_key_name, $key_name) === 0) { //begins with
+                                    if (strpos($reg_key_name, $key_name) === 0) {
                                         $runtime_config[$key_name][str_replace($key_name . '_', '', $reg_key_name)] = $reg_key_value;
                                     }
                                 }

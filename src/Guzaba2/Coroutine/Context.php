@@ -101,12 +101,38 @@ class Context extends Base implements ObjectInternalIdInterface
     /**
      * @return array Array of ConnectionInterface
      */
-    public function getConnections() : array
+    public function getConnections(?string $connection_class = NULL) : array
     {
         $ret = [];
         if (isset($this->Context->connections) && is_array($this->Context->connections)) {
-            $ret = $this->Context->connections;
+            $all_connections = $this->Context->connections;
+            $ret = $all_connections;
         }
+
+        if ($connection_class && !empty($all_connections)) {
+            $ret = [];
+            if (!class_exists($connection_class)) {
+                throw new InvalidArgumentException(sprintf(t::_('The provided connection_class %s does not exist.')));
+            }
+            foreach ($all_connections as $Connection) {
+                if (get_class($Connection) === $connection_class) {
+                    $ret[] = $Connection;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    /**
+     * Usually acoroutine has only one connection of certain class.
+     * This class returns this connection if the coroutine has assigned one
+     * @param string $connection_class
+     * @return ConnectionInterface|NULL
+     */
+    public function getConnection(string $connection_class) : ?ConnectionInterface
+    {
+        $connections = $this->getConnections($connection_class);
+        $ret = $connections[0] ?? NULL;
         return $ret;
     }
 

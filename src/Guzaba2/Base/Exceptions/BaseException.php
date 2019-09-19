@@ -176,8 +176,14 @@ abstract class BaseException extends \Exception
             //it is too late here to get the trace where was this coroutine created/started
             //this is done at the time the coroutine is started - the backtrace is saved in the Context
             //$this->setTrace(Coroutine::getFullBacktrace());
-            $Context = Coroutine::getContext();
-            $Context->CurrentException = $this->cloneException();
+
+            //it is possible the current coroutine not to have been initialized in the Azonmedia\Coroutine\Coroutine (for example the coroutines in WorkerConnect)
+            //this will create a recursion
+            //TODO - rework Coroutine not to use a separate Context class
+            if (Coroutine::hasContext()) {
+                $Context = Coroutine::getContext();
+                $Context->CurrentException = $this->cloneException();
+            }
         } else {
             self::$CurrentException = $this->cloneException();
         }

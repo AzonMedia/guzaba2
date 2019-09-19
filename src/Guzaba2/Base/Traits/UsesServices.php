@@ -52,7 +52,7 @@ trait UsesServices
      * @return object
      * @throws RunTimeException
      */
-    public static function __callStatic(string $service_name, array $args): object
+    public static function __callStatic(string $service_name, array $args) : object
     {
         $called_class = get_called_class();
         if (strpos($service_name, '_')!==FALSE) {

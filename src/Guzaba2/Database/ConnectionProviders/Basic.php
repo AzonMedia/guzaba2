@@ -4,6 +4,7 @@
 namespace Guzaba2\Database\ConnectionProviders;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 
@@ -14,16 +15,24 @@ use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
  */
 class Basic extends Base implements ConnectionProviderInterface
 {
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
     public function get_connection(string $class_name) : ConnectionInterface
     {
         $Connection = new $class_name();
         $Connection->set_created_from_factory(TRUE);
+        $Connection->assign_to_coroutine(Coroutine::getCid());
         return $Connection;
     }
 
     public function free_connection(ConnectionInterface $Connection) : void
     {
         $Connection->close();
+        $Connection->unassign_from_coroutine();
         $Connection = NULL;
     }
 
