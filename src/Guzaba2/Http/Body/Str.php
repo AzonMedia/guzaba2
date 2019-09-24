@@ -204,7 +204,7 @@ class Str extends Base implements StreamInterface
     public function write(/* string */ $string) /* int */
         //public function write(string $string) : int
     {
-        //there is no need to use co::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
+        //there is no need to use Swoole\Coroutine\System::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
         //if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
         if (!$this->isWritable()) { // Swoole\Coroutine::fwrite(): cannot represent a stream of type MEMORY as a select()able descriptor
             throw new RuntimeException('Can not write to this stream.');

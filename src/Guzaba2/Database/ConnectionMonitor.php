@@ -39,7 +39,7 @@ class ConnectionMonitor extends Base
             }
         }
 
-        \co::sleep(self::CONFIG_RUNTIME['ping_time']);
+        \Swoole\Coroutine\System::sleep(self::CONFIG_RUNTIME['ping_time']);
 
         // recursion for forever running coroutine
         $this->monitor();

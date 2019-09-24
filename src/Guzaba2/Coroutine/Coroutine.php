@@ -332,7 +332,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
     /**
      * A wrapper for creating coroutines.
-     * This wrapper should be always used instead of calling directly \co::create() as this wrapper keeps track of the coroutines hierarchy.
+     * This wrapper should be always used instead of calling directly \Swoole\Coroutine::create() as this wrapper keeps track of the coroutines hierarchy.
      * @override
      * @param $callable
      * @param mixed ...$params Any additional arguments will be passed to the coroutine.
