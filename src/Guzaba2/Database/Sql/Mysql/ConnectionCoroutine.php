@@ -91,7 +91,6 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
 
         $NativeStatement = $this->MysqlCo->prepare($query);
         if (!$NativeStatement) {
-
             $error_code = $this->MysqlCo->errno ?? 0;
 
             // With Swoole 4.4.0 and next if the connection is lost, prepare will NOT throw an exception, but errno will be set
