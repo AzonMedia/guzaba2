@@ -11,39 +11,39 @@ class System
     {
     }
 
-    public function exec($command, $get_error_stream)
+    public static function exec($command, $get_error_stream)
     {
     }
 
-    public function sleep($seconds)
+    public static function sleep($seconds)
     {
     }
 
-    public function fread($handle, $length)
+    public static function fread($handle, $length)
     {
     }
 
-    public function fwrite($handle, $string, $length)
+    public static function fwrite($handle, $string, $length)
     {
     }
 
-    public function fgets($handle)
+    public static function fgets($handle)
     {
     }
 
-    public function getaddrinfo($hostname, $family, $socktype, $protocol, $service, $timeout)
+    public static function getaddrinfo($hostname, $family, $socktype, $protocol, $service, $timeout)
     {
     }
 
-    public function readFile($filename)
+    public static function readFile($filename)
     {
     }
 
-    public function writeFile($filename, $data, $flags)
+    public static function writeFile($filename, $data, $flags)
     {
     }
 
-    public function statvfs($path)
+    public static function statvfs($path)
     {
     }
 }

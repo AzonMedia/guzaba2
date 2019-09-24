@@ -441,7 +441,7 @@ class Kernel
                     }
                     //check also if there any any prefix in the var name that matches a prefix in the config array
                     if (is_array($key_value)) {
-                        $WalkArrays = function ($registry_config) use (&$WalkArrays) {
+                        $WalkArrays = function ($registry_config) use (&$WalkArrays, $key_name) {
                             foreach ($registry_config as $reg_key_name => $reg_key_value) {
                                 if (is_array($reg_key_value)) {
                                     $WalkArrays($reg_key_value);

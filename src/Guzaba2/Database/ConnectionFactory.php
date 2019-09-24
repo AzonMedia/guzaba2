@@ -30,6 +30,8 @@ class ConnectionFactory extends Base
      */
     //public function get_connection(string $class_name, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
     /**
+     * @param string $class_name
+     * @param $ScopeReference
      * @param-out $ScopeReference
      */
     public function get_connection(string $class_name, &$ScopeReference = '') : ConnectionInterface

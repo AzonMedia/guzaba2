@@ -380,7 +380,7 @@ abstract class Transaction extends Base
             if (!($commit_callback instanceof Callback)) {
                 $commit_callback = new Callback($commit_callback, TRUE);
             }
-            $this->callback_container->add($commit_callback, callbackContainer::DEFAULT_COMMIT_MODE);
+            $this->callback_container->add($commit_callback, CallbackContainer::DEFAULT_COMMIT_MODE);
         //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
         } else {
             $type = is_object($commit_callback) ? get_class($commit_callback) : gettype($commit_callback);
@@ -395,7 +395,7 @@ abstract class Transaction extends Base
             if (!($rollback_callback instanceof Callback)) {
                 $rollback_callback = new Callback($rollback_callback, TRUE);
             }
-            $this->callback_container->add($rollback_callback, callbackContainer::DEFAULT_ROLLBACK_MODE);
+            $this->callback_container->add($rollback_callback, CallbackContainer::DEFAULT_ROLLBACK_MODE);
         //then do not replace $commit_callback with callback_container (but we do replace it with patterns\classes\callback) - this is OK because this is what in fact was added to the container
         } else {
             $type = is_object($rollback_callback) ? get_class($rollback_callback) : gettype($rollback_callback);
@@ -1586,7 +1586,7 @@ abstract class Transaction extends Base
     private function execute_pre_callbacks(): void
     {
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE);
         }
     }
 
@@ -1602,7 +1602,7 @@ abstract class Transaction extends Base
     private function execute_after_callbacks(): void
     {
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER);
         }
     }
 
@@ -1610,7 +1610,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_rollback_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_ROLLBACK);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_ROLLBACK);
         }
         $this->is_in_rollback_callback_flag = false;
     }
@@ -1619,7 +1619,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_rollback_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER_ROLLBACK);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_ROLLBACK);
         }
         $this->is_in_rollback_callback_flag = false;
     }
@@ -1631,7 +1631,7 @@ abstract class Transaction extends Base
         }
         $this->is_in_rollback_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_MASTER_ROLLBACK);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_MASTER_ROLLBACK);
         }
         $this->is_in_rollback_callback_flag = false;
     }
@@ -1643,7 +1643,7 @@ abstract class Transaction extends Base
         }
         $this->is_in_rollback_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_ROLLBACK);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER_ROLLBACK);
         }
         $this->is_in_rollback_callback_flag = false;
     }
@@ -1652,7 +1652,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_save_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_SAVE);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_SAVE);
         }
         $this->is_in_save_callback_flag = false;
     }
@@ -1661,7 +1661,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_save_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER_SAVE);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_SAVE);
         }
         $this->is_in_save_callback_flag = false;
     }
@@ -1670,7 +1670,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_commit_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_COMMIT);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_COMMIT);
         }
         $this->is_in_commit_callback_flag = false;
     }
@@ -1679,7 +1679,7 @@ abstract class Transaction extends Base
     {
         $this->is_in_commit_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER_COMMIT);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_COMMIT);
         }
         $this->is_in_commit_callback_flag = false;
     }
@@ -1691,7 +1691,7 @@ abstract class Transaction extends Base
         }
         $this->is_in_commit_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_MASTER_COMMIT);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_MASTER_COMMIT);
         }
         $this->is_in_commit_callback_flag = false;
     }
@@ -1703,7 +1703,7 @@ abstract class Transaction extends Base
         }
         $this->is_in_commit_callback_flag = true;
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_COMMIT);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER_COMMIT);
         }
         $this->is_in_commit_callback_flag = false;
     }
@@ -1715,22 +1715,22 @@ abstract class Transaction extends Base
             $transaction->execute_before_master_callbacks();
         }
         if ($this->callback_container) {
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_MASTER);
-            $this->callback_container($this, callbackContainer::MODE_BEFORE_MASTER_IN_WORKER);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_MASTER);
+            $this->callback_container($this, CallbackContainer::MODE_BEFORE_MASTER_IN_WORKER);
 
 
             $this->is_in_rollback_callback_flag = true;
             if ($this->is_rolled_back()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_BEFORE_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_BEFORE_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_BEFORE_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_BEFORE_MASTER_IN_WORKER);
             }
             $this->is_in_rollback_callback_flag = false;
 
 
             $this->is_in_save_callback_flag = true;
             if ($this->is_saved()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_BEFORE_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_BEFORE_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_BEFORE_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_BEFORE_MASTER_IN_WORKER);
             }
             $this->is_in_save_callback_flag = false;
 
@@ -1738,8 +1738,8 @@ abstract class Transaction extends Base
             $this->is_in_commit_callback_flag = true;
             //if ($this->is_commited()) { //a nested transaction can not be committed but saved only
             if ($this->is_saved()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_BEFORE_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_BEFORE_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_BEFORE_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_BEFORE_MASTER_IN_WORKER);
             }
         }
         $this->is_in_commit_callback_flag = false;
@@ -1758,35 +1758,35 @@ abstract class Transaction extends Base
             $this->is_in_save_callback_flag = true;
             //if ($this->is_saved()) { // this cant happen - at this stage if it was saved it is now committed
             if ($this->is_commited()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_AFTER_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_AFTER_MASTER_IN_WORKER);
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_AFTER_MASTER_AFTER_CONTROLLER);
-                $this->callback_container($this, callbackContainer::MODE_ON_SAVE_AFTER_MASTER_IN_SHUTDOWN);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_AFTER_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_AFTER_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_AFTER_MASTER_AFTER_CONTROLLER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_SAVE_AFTER_MASTER_IN_SHUTDOWN);
             }
             $this->is_in_save_callback_flag = false;
 
             $this->is_in_commit_callback_flag = true;
             if ($this->is_commited()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_AFTER_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER);
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER);
-                $this->callback_container($this, callbackContainer::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_AFTER_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_AFTER_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_AFTER_MASTER_AFTER_CONTROLLER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_COMMIT_AFTER_MASTER_IN_SHUTDOWN);
             }
             $this->is_in_commit_callback_flag = false;
 
             $this->is_in_rollback_callback_flag = true;
             if ($this->is_rolled_back()) {
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER);
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER);
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER);
-                $this->callback_container($this, callbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_IN_WORKER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_AFTER_CONTROLLER);
+                $this->callback_container($this, CallbackContainer::MODE_ON_ROLLBACK_AFTER_MASTER_IN_SHUTDOWN);
             }
             $this->is_in_rollback_callback_flag = false;
 
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER);
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_IN_WORKER);
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_AFTER_CONTROLLER);
-            $this->callback_container($this, callbackContainer::MODE_AFTER_MASTER_IN_SHUTDOWN);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER_IN_WORKER);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER_AFTER_CONTROLLER);
+            $this->callback_container($this, CallbackContainer::MODE_AFTER_MASTER_IN_SHUTDOWN);
         }
     }
 
@@ -1829,7 +1829,7 @@ abstract class Transaction extends Base
 
     /**
      * Returns the exisitng callback or if there is no such creates and sets a new one
-     * @return callbackContainer
+     * @return CallbackContainer
      * @throws InvalidArgumentException
      * @throws RunTimeException
      */

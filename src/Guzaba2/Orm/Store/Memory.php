@@ -13,7 +13,7 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
-use Guzaba2\Orm\MetaStore\Interfaces\metaStoreInterface;
+use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 use Psr\Log\LogLevel;
 
 class Memory extends Store implements StoreInterface
@@ -129,7 +129,7 @@ class Memory extends Store implements StoreInterface
         //cleanup
         //unset($this->data[$class][$lookup_index][0]);
         //$cid = self::get_root_coroutine_id();
-        $cid = \Co::getCid();
+        $cid = \Swoole\Coroutine::getCid();
         unset($this->data[$class][$lookup_index]['cid_'.$cid]);
     }
 
@@ -258,7 +258,7 @@ class Memory extends Store implements StoreInterface
         //$cid = \Co::getCid();
         //$cid = self::get_root_coroutine_id();
         //it is correct to have different data for the separate subcoroutines
-        $cid = \Co::getCid();
+        $cid = \Swoole\Coroutine::getCid();
         //better use the root coroutine as it may happen an object to be passed between coroutines
 
         //this also allows to use defer() for cleanup
@@ -302,7 +302,7 @@ class Memory extends Store implements StoreInterface
     public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
     {
         //$rcid = self::get_root_coroutine_id();
-        $cid = \Co::getCid();
+        $cid = \Swoole\Coroutine::getCid();
         $lookup_index = self::form_lookup_index($primary_index);
         return isset($this->data[$class][$lookup_index]['cid_'.$cid]);
     }

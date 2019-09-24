@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 use Guzaba2\Base\Base;
-use Guzaba2\Base\Exceptions\RuntimeException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -146,13 +146,13 @@ class UploadedFile implements UploadedFileInterface
      * an exception.
      *
      * @return StreamInterface Stream representation of the uploaded file.
-     * @throws RuntimeException in cases when no stream is available or can be
+     * @throws RunTimeException in cases when no stream is available or can be
      *     created.
      */
     public function getStream()
     {
         if ($this->moved) {
-            throw new RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
+            throw new RunTimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
         }
         if ($this->stream === null) {
             $this->stream = new Stream(fopen($this->file, 'r'));
@@ -189,13 +189,13 @@ class UploadedFile implements UploadedFileInterface
      * @param string $targetPath Path to which to move the uploaded file.
      *
      * @throws InvalidArgumentException if the $path specified is invalid.
-     * @throws RuntimeException on any error during the move operation, or on
+     * @throws RunTimeException on any error during the move operation, or on
      *     the second or subsequent call to the method.
      */
     public function moveTo($targetPath)
     {
         if ($this->moved) {
-            throw new RuntimeException('Uploaded file already moved');
+            throw new RunTimeException('Uploaded file already moved');
         }
 
         $targetIsStream = strpos($targetPath, '://') > 0;
@@ -205,22 +205,22 @@ class UploadedFile implements UploadedFileInterface
 
         if ($targetIsStream) {
             if (!copy($this->file, $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+                throw new RunTimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
             }
             if (!unlink($this->file)) {
-                throw new RuntimeException(sprintf('Error removing uploaded file %1s', $this->name));
+                throw new RunTimeException(sprintf('Error removing uploaded file %1s', $this->name));
             }
         } elseif ($this->sapi) {
             if (!is_uploaded_file($this->file)) {
-                throw new RuntimeException(sprintf('%1s is not a valid uploaded file', $this->file));
+                throw new RunTimeException(sprintf('%1s is not a valid uploaded file', $this->file));
             }
 
             if (!move_uploaded_file($this->file, $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+                throw new RunTimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
             }
         } else {
             if (!rename($this->file, $targetPath)) {
-                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+                throw new RunTimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
             }
         }
 

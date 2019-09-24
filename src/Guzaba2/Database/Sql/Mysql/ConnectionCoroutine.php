@@ -91,6 +91,9 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
 
         $NativeStatement = $this->MysqlCo->prepare($query);
         if (!$NativeStatement) {
+
+            $error_code = $this->MysqlCo->errno ?? 0;
+
             // With Swoole 4.4.0 and next if the connection is lost, prepare will NOT throw an exception, but errno will be set
             if ($this->MysqlCo->errno === 2006 || $this->MysqlCo->errno === 2013) {
                 // If connection is lost, try to reconnect and prepare the query again
@@ -98,7 +101,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
                 $this->initialize();
                 return $this->prepare($query);
             } else {
-                throw new QueryException(sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error));
+                throw new QueryException($this, '', $error_code, sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error), $query, $expected_parameters);
             }
         }
         $Statement = new StatementCoroutine($NativeStatement, $query, $expected_parameters);
@@ -128,7 +131,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
 
         $current_coroutine_query_data = array_pop($queries_data);
 
-        $Function = function (string $query, array $params = []) use ($channel) {
+        $Function = function (string $query, array $params = []) {
             print 'substart'.PHP_EOL;
             $Connection = self::ConnectionFactory()->get_connection(get_class($this), $CR);
             $Statement = $Connection->prepare($query);

@@ -101,7 +101,7 @@ final class ScopeReferenceTracker extends ScopeReference
             //BUT a transaction in status SAVED can be rolled back but only by a parent transaction that gets rolled back
 
             //if ($this->transaction->get_status() == transaction::STATUS_STARTED) {
-            if (($this->transaction->get_status() == transaction::STATUS_STARTED || $this->transaction->get_status() == transaction::STATUS_SAVED) && $this->rollback_on_destroy) {
+            if (($this->transaction->get_status() == Transaction::STATUS_STARTED || $this->transaction->get_status() == Transaction::STATUS_SAVED) && $this->rollback_on_destroy) {
                 Kernel::logtofile_backtrace('DB_bt');
 
                 if (Pdo::DBG_USE_STACK_BASED_ROLLBACK) {
@@ -109,7 +109,7 @@ final class ScopeReferenceTracker extends ScopeReference
                     //this must be enabled is we want to silently rollback the current transaction and not trhow the exception
                     //$connection = $this->transaction->get_connection();
                     //$connection->setCurrentTransaction($this->transaction->get_parent());//this must be done AFTER the transaction is rolled back (because in the rolblack callback we still need to to have the current transaction in case we want to commit it)
-                    if ($this->transaction->get_status() == transaction::STATUS_STARTED || $this->transaction->get_status() == transaction::STATUS_SAVED) {
+                    if ($this->transaction->get_status() == Transaction::STATUS_STARTED || $this->transaction->get_status() == Transaction::STATUS_SAVED) {
                         if ($this->transaction->getOptionValue('enable_transactions_tracing')) {
                             Kernel::logtofile_indent($this->transaction->getOptionValue('transactions_tracing_store'), $this->transaction->get_id() . ' rollback-by-reference', 0);
                         }

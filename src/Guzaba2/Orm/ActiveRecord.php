@@ -205,7 +205,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
         } else {
-            throw new \Guzaba2\Base\Exceptions\runTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
+            throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
         if (isset($index[$primary_columns[0]]) && $index[$primary_columns[0]] === self::INDEX_NEW) {
