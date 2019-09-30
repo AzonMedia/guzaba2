@@ -170,7 +170,6 @@ class Pool extends Base implements ConnectionProviderInterface
                 }
 
                 $this->available_connections[$connection_class]->push($Conn);
-
             }
             //the last $Conn will stay alive => unset it
             unset($Conn);
