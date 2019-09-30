@@ -12,6 +12,7 @@ use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Database\ScopeReference;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Kernel\Kernel;
 
 //TODO - refactor to use channels and make it compatible with the preemptive scheduler
 //currently if the coroutine is switched just after the if (count($this->available_connections[$connection_class])) { this can produce error
@@ -131,44 +132,49 @@ class Pool extends Base implements ConnectionProviderInterface
     {
         $ret = [];
         if ($connection_class) {
-            $ret['available_connections'] = [];
-            if (array_key_exists($connection_class, $this->available_connections)) {
-                foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
-                    $ret['available_connections'][] = $AvaiableConnection->get_object_internal_id();
-                }
-            }
+            // $ret['available_connections'] = [];
+            // if (array_key_exists($connection_class, $this->available_connections)) {
+            //     foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
+            //         $ret['available_connections'][] = $AvaiableConnection->get_object_internal_id();
+            //     }
+            // }
 
-            $ret['busy_connections'] = [];
-            if (array_key_exists($connection_class, $this->busy_connections)) {
-                foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
-                    $ret['busy_connections'][] = $BusyConnection->get_object_internal_id();
-                }
-            }
+            // $ret['busy_connections'] = [];
+            // if (array_key_exists($connection_class, $this->busy_connections)) {
+            //     foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
+            //         $ret['busy_connections'][] = $BusyConnection->get_object_internal_id();
+            //     }
+            // }
         }
 
         return $ret;
     }
 
-    public function get_connections(string $connection_class = '') : array
+    /**
+     * ping all available connections more often than the connection timeout
+     * to be sure that they will stay alive forever
+     */
+    public function ping_connections(string $connection_class = '') : void
     {
-        $ret = [];
-        if ($connection_class) {
-            $ret['available_connections'] = [];
-            if (array_key_exists($connection_class, $this->available_connections)) {
-                foreach ($this->available_connections[$connection_class] as $AvaiableConnection) {
-                    $ret['available_connections'][] = $AvaiableConnection;
-                }
-            }
+        if ($connection_class && array_key_exists($connection_class, $this->available_connections)) {
+            $length = $this->available_connections[$connection_class]->length();
 
-            $ret['busy_connections'] = [];
-            if (array_key_exists($connection_class, $this->busy_connections)) {
-                foreach ($this->busy_connections[$connection_class] as $BusyConnection) {
-                    $ret['busy_connections'][] = $BusyConnection;
+            for ($i = 0; $i < $length; $i ++) {
+                $Conn = $this->available_connections[$connection_class]->pop();
+
+                try {
+                    // print Kernel::get_worker_id().' ping'.PHP_EOL;
+                    $Conn->ping();
+                } catch (\Exception $exception) {
+                    $Conn->initialize();
                 }
+
+                $this->available_connections[$connection_class]->push($Conn);
+
             }
+            //the last $Conn will stay alive => unset it
+            unset($Conn);
         }
-
-        return $ret;
     }
 
     private function initialize_connections(string $connection_class) : void

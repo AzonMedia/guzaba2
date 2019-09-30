@@ -15,7 +15,7 @@ class ConnectionMonitor extends Base
         'services'      => [
             'ConnectionFactory'
         ],
-        'ping_time' => 3, // sec
+        'ping_time' => 30, // sec
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -27,21 +27,10 @@ class ConnectionMonitor extends Base
 
     public function monitor()
     {
-        $stats = self::ConnectionFactory()->get_connections(MysqlConnection::class);
-
-        if (!empty($stats['available_connections'])) {
-            foreach ($stats['available_connections'] as $conn) {
-                try {
-                    $conn->ping();
-                } catch (\Exception $exception) {
-                    $conn->initialize();
-                }
-            }
+        $ConnectionFactory = self::ConnectionFactory();
+        while (TRUE) {
+            $ConnectionFactory->ping_connections(MysqlConnection::class);
+            \Swoole\Coroutine\System::sleep(self::CONFIG_RUNTIME['ping_time']);
         }
-
-        \Swoole\Coroutine\System::sleep(self::CONFIG_RUNTIME['ping_time']);
-
-        // recursion for forever running coroutine
-        $this->monitor();
     }
 }
