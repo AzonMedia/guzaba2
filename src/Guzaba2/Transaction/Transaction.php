@@ -72,7 +72,7 @@ abstract class Transaction extends Base
         'increment_wait_time_between_attempts' => true,
     ];
 
-    protected const $CONFIG_RUNTIME = [];
+    protected const CONFIG_RUNTIME = [];
 
     protected $status = self::STATUS_STARTED;
 
