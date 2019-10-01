@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole;
 
 //use Guzaba2\Base\Base as Base;
+use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
@@ -113,6 +114,7 @@ class Server extends \Guzaba2\Http\Server
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
         $this->options = $options;
 
+        \Swoole\Runtime::enableCoroutine(TRUE);//we will be running everything in coroutine context and makes sense to enable all hooks
 
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
 
@@ -152,8 +154,7 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['document_root'])) {
             Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
         }
-
-
+        
         //Kernel::printk(sprintf('Starting Swoole HTTP server on %s:%s'.PHP_EOL, $this->host, $this->port));
         $this->SwooleHttpServer->start();
     }

@@ -116,6 +116,11 @@ class Kernel
     public const EXIT_GENERAL_ERROR = 1;
 
 
+    /**
+     * ['class_name'] => 'parent' => X, 'children' => [Z, Y]
+     * @var array
+     */
+    protected static $class_structure = [];
 
 
     private function __construct()
@@ -465,6 +470,68 @@ class Kernel
         return $runtime_config;
     }
 
+    public static function get_class_structure() : array
+    {
+        return self::$class_structure;
+    }
+
+    public static function get_class_all_children(string $class_name) : array
+    {
+        $children = [];
+        $Function = function ($class_name) use (&$Function, &$children) {
+            $class_children = self::$class_structure[$class_name]['children'];
+            foreach ($class_children as $class_child) {
+                $children[] = $class_child['name'];
+                $Function($class_child['name']);
+            }
+        };
+        $Function($class_name);
+        return $children;
+    }
+
+    public static function get_class_children(string $class) : array
+    {
+        $children = [];
+        foreach (self::$class_structure[$class]['children'] as $class_child) {
+            $children[] = $class_child['name'];
+        }
+        return $children;
+    }
+
+    public static function get_class_parent(string $class) : ?string
+    {
+        return isset(self::$class_structure[$class]['parent']) ? self::$class_structure[$class]['parent']['name'] : NULL;
+    }
+
+    /**
+     * Loads all classes found under the registered autoload paths.
+     * @see self::$autoloader_lookup_paths
+     * @see self::register_autoloader_path()
+     * @return void
+     */
+    public static function load_all_classes() : void
+    {
+        foreach (self::$autoloader_lookup_paths as $namespace_base=>$autoload_lookup_path) {
+            $Directory = new \RecursiveDirectoryIterator($autoload_lookup_path);
+            $Iterator = new \RecursiveIteratorIterator($Directory);
+            $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
+            foreach ($Regex as $path=>$match) {
+                $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
+                if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
+                    $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
+                    //we also need to check again already included files
+                    //as including a certain file may trigger the autoload and load other classes that will be included a little later
+                    $included_files = get_included_files();
+                    if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
+                        //skip this file - it is already included
+                        continue;
+                    }
+                    self::autoloader($class);
+                }
+            }
+        }
+    }
+
     /////////////////////////
     /// PROTECTED METHODS ///
     /////////////////////////
@@ -505,37 +572,20 @@ class Kernel
             }
         }
 
+        $parent_class = get_parent_class($class_name);
+        if (!$parent_class) {
+            $parent_class = NULL;
+            self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => $parent_class, 'children' => [] ];
+        } else {
+            self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => &self::$class_structure[$parent_class], 'children' => [] ];
+        }
+
+
+        self::$class_structure[$parent_class]['children'][] =& self::$class_structure[$class_name];
+
         return $ret;
     }
 
-    /**
-     * Loads all classes found under the registered autoload paths.
-     * @see self::$autoloader_lookup_paths
-     * @see self::register_autoloader_path()
-     * @return void
-     */
-    public static function load_all_classes() : void
-    {
-        foreach (self::$autoloader_lookup_paths as $namespace_base=>$autoload_lookup_path) {
-            $Directory = new \RecursiveDirectoryIterator($autoload_lookup_path);
-            $Iterator = new \RecursiveIteratorIterator($Directory);
-            $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
-            foreach ($Regex as $path=>$match) {
-                $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
-                if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
-                    $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
-                    //we also need to check again already included files
-                    //as including a certain file may trigger the autoload and load other classes that will be included a little later
-                    $included_files = get_included_files();
-                    if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
-                        //skip this file - it is already included
-                        continue;
-                    }
-                    self::autoloader($class);
-                }
-            }
-        }
-    }
 
     /**
      * @param string $class_path
