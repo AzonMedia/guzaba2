@@ -65,7 +65,7 @@ abstract class Store extends Base implements StoreInterface
     public static function get_root_coroutine_id() : int
     {
         if (\Swoole\Coroutine::getCid() === -1) {
-            throw new \RuntimeException(sprintf('The %s must be used in Coroutine context.'), __METHOD__ );
+            throw new \RuntimeException(sprintf('The %s must be used in Coroutine context.'), __METHOD__);
         }
         do {
             $cid = \Swoole\Coroutine::getCid();
