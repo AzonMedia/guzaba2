@@ -478,7 +478,7 @@ ON DUPLICATE KEY UPDATE
 
             //TODO IVO add owners_table, meta table
 
-            $j[$table_name] = $Connection::get_tprefix().$table_name;//if it gets assigned multiple times it will overwrite it
+            $j[$table_name] = $Connection::get_tprefix().$table_name;
             //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
             //$b[$field_name] = $field_value;
             if (is_null($field_value)) {

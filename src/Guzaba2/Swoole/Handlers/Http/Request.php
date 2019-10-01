@@ -68,11 +68,14 @@ class Request extends HandlerBase
         try {
             $start_time = microtime(TRUE);
 
-            \Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
-
-
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->setServer($this->HttpServer);
+
+            //\Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
+            \Guzaba2\Coroutine\Coroutine::init($PsrRequest);
+
+
+
 
 
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404

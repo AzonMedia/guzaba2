@@ -9,6 +9,7 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Translator\Translator as t;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * Class Context
@@ -32,7 +33,7 @@ class Context extends Base implements ObjectInternalIdInterface
      * @param int $cid
      * @throws InvalidArgumentException
      */
-    public function __construct(\Swoole\Coroutine\Context $Context, int $cid)
+    public function __construct(\Swoole\Coroutine\Context $Context, int $cid, ?RequestInterface $Request = NULL)
     {
         if (!$cid) {
             throw new InvalidArgumentException(sprintf(t::_('Coroutine ID must be provided when creating a %s object.'), __CLASS__));
@@ -43,6 +44,8 @@ class Context extends Base implements ObjectInternalIdInterface
         $this->Context->settings = [];
         $this->Context->static_store = [];//to be used by StaticStore trait
         $this->set_object_internal_id();
+
+        $this->Context->Request = $Request;
 
         if (Coroutine::completeBacktraceEnabled()) {
             $this->Context->created_backtrace = [];
@@ -67,6 +70,11 @@ class Context extends Base implements ObjectInternalIdInterface
     public function getCid() : int
     {
         return $this->Context->cid;
+    }
+
+    public function getRequest() : ?RequestInterface
+    {
+        return $this->Context->Request;
     }
 
     /**
@@ -176,5 +184,10 @@ class Context extends Base implements ObjectInternalIdInterface
     public function __staticCall(string $method, array $args) /* mixed */
     {
         return call_user_func_array([self::class, $method], $args);
+    }
+
+    public function __destruct() {
+        $this->freeAllConnections();
+        $this->Context = NULL;
     }
 }

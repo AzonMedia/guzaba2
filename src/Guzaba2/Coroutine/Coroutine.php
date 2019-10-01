@@ -2,6 +2,7 @@
 
 namespace Guzaba2\Coroutine;
 
+use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -9,10 +10,11 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
-use Guzaba2\Database\Interfaces\ConnectionInterface;
-use Guzaba2\Kernel\Kernel;
+//use Guzaba2\Database\Interfaces\ConnectionInterface;
+//use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * Class Coroutine
@@ -54,7 +56,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * @var int
      */
-    protected static $worker_id = 0;
+    //protected static $worker_id = 0;
 
 
     /**
@@ -77,15 +79,15 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
-     * @param int $worker_id
      * @param string $context_class
      * @throws InvalidArgumentException
      */
-    public static function init(int $worker_id, string $context_class = \Guzaba2\Coroutine\Context::class) : void
+    //public static function init(int $worker_id, RequestInterface $Request, string $context_class = \Guzaba2\Coroutine\Context::class) : void
+    public static function init(RequestInterface $Request, string $context_class = \Guzaba2\Coroutine\Context::class) : void
     {
         self::$context_class = $context_class;
 
-        self::$worker_id = $worker_id;
+        //self::$worker_id = $worker_id;
 
         $current_cid = self::getcid();
         self::$last_coroutine_id = $current_cid;
@@ -111,8 +113,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
 
             $Context = self::createContextWrapper($current_cid, $context_class);
+            $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
+            $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
             //parent::defer(function () use ($Context) {
             defer(function () use ($Context) {
+                $Context->Apm->store_data();
                 $Context->freeAllConnections();
                 $Context->end_microtime = microtime(TRUE);
             });
@@ -331,6 +336,66 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     }
 
     /**
+     * Executes multiple callables in parallel and blocks until all of them are executed.
+     * Returns an indexed array with the return values of the provided callables in the order whcih the callables were provided.
+     * The callables are executed in the current Worker, they are not pushed to a TaskWorker.
+     * @param callable ...$callables
+     * @return array
+     * @throws RunTimeException
+     */
+    public static function executeMulti(callable ...$callables) : array
+    {
+
+        if (!count($callables)) {
+            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__ ));
+        }
+
+        /*
+        $channel = new \Swoole\Coroutine\Channel(count($callables));
+
+        $Function = function (callable $callable) use ($channel) : void
+        {
+            $hash = GeneralUtil::get_callable_hash($callable);
+            $ret = $callable();
+            $channel->push(['hash' => $hash, 'ret' => $ret]);
+        };
+        foreach ($callables as $callable) {
+            self::create($Function, $callable);
+        }
+        $all_results = [];
+        for ($aa = 0; $aa < $channel->capacity; $aa++) {
+            $all_results[] = $channel->pop();
+        }
+
+        //the results need to be sorted in the order the queries were pushed
+        $ret = [];
+        foreach ($callables as $callable) {
+            foreach ($all_results as $result) {
+                if (GeneralUtil::get_callable_hash($callable) === $result['hash']) {
+                    $ret[] = $result['ret'];
+                }
+            }
+        }
+        */
+        foreach ($callables as $callable) {
+            self::create($callable);
+        }
+        $callables_ret = self::awaitSubCoroutines();
+
+        //the return values must be put in the right order
+        $ret = [];
+        foreach ($callables as $callable) {
+            foreach ($callables_ret as $callable_hash => $callable_ret) {
+                if (GeneralUtil::get_callable_hash($callable) === $callable_hash) {
+                    $ret[] = $callable_ret;
+                }
+            }
+        }
+
+        return $ret;
+    }
+
+    /**
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \Swoole\Coroutine::create() as this wrapper keeps track of the coroutines hierarchy.
      * @override
@@ -374,6 +439,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
         $WrapperFunction = function (...$params) use ($callable, &$new_cid, $current_cid) : void {
+
+            $hash = GeneralUtil::get_callable_hash($callable);
+
             try {
                 $new_cid = parent::getcid();
                 //$Context = parent::getContext();
@@ -396,7 +464,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $chan = self::getParentCoroutineChannel($new_cid);
 
 
-                $callable(...$params);
+                $ret = $callable(...$params);
 
 
                 $Context->end_microtime = microtime(TRUE);//here is the actual end time of the nested function execution, not the time when this coroutine will be over
@@ -410,7 +478,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 //$chan = self::getRootCoroutineChannel($new_cid);
                 //$chan->push($new_cid);
 
-                $chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
+                //$chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
+                //$chan->push($ret);
+
+                $chan->push(['hash' => $hash, 'ret' => $ret]);
             } catch (\Throwable $Exception) {
                 //Kernel::exception_handler($Exception, NULL);//do not handle it here - it will be pushed to the channel and be retrhown from the Await method
                 //pushing the exception will actially delay the invokation of kernel::exception_handler() as this will be called after the await is over (meaning all subcoroutines are over and the master coroutine is over)
@@ -431,7 +502,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 if (!empty($chan)) {
                     //$chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
                     //before the exception is pushed between coroutines (basically this is pulling the exception outside its context) it needs to be either cloned or the current exception from the current static context cleaned
-                    $chan->push($Exception);
+                    //$chan->push($Exception);
+                    $chan->push(['hash' => $hash, 'exception' => $Exception]);
                 }
             }
         };
@@ -644,7 +716,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @param int $timeout
      *
      */
-    public static function awaitSubCoroutines(?int $timeout = NULL) : void
+    public static function awaitSubCoroutines(?int $timeout = NULL) : array
     {
         //print 'Await'.self::getCid().PHP_EOL;
         if ($timeout === NULL) {
@@ -656,7 +728,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         }
         if (isset(self::$coroutines_ids[$cid]['sub_awaited'])) {
             //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
-            return;
+            return [];
         }
         $chan = self::getCoroutineChannel($cid);
 
@@ -672,12 +744,13 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     $backtrace_str = print_r(parent::getBacktrace($unfinished_cid, DEBUG_BACKTRACE_IGNORE_ARGS), TRUE);
                     $unfinished_message_arr[] = sprintf(t::_('subcoroutine ID %s : %s'), $unfinished_cid, $backtrace_str);
                 }
-                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL.implode(PHP_EOL, $unfinished_message_arr));
+                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL . implode(PHP_EOL, $unfinished_message_arr));
                 throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
-            } elseif ($ret instanceof \Throwable) {
+                //} elseif ($ret instanceof \Throwable) {
+            } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
-                print 'rethrow'.PHP_EOL;
-                throw $ret;
+                //print 'rethrow'.PHP_EOL;
+                throw $ret['exception'];
             //$ret->rethrow();
                 //throw $ret;//the master coroutine needs to abort too
                 //$new_ex = $ret->cloneException();
@@ -687,15 +760,17 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             } else {
                 //the coroutine finished successfully
             }
-            $subcoroutines_completed_arr[] = $ret;//the pop returns the subcoroutine ID
+            $subcoroutines_completed_arr[$ret['hash']] = $ret['ret'];//the pop returns the subcoroutine ID
         }
         self::$coroutines_ids[$cid]['sub_awaited'] = TRUE;
+
+        return $subcoroutines_completed_arr;
     }
 
-    public static function getWorkerId() : int
-    {
-        return self::$worker_id;
-    }
+//    public static function getWorkerId() : int
+//    {
+//        return self::$worker_id;
+//    }
 
     /**
      * Executes the provided callables in coroutines, blocks and waits for the result.

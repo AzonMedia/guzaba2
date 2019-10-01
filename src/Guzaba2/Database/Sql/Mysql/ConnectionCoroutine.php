@@ -122,6 +122,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
      * @param array $queries Twodimensional indexed array containing 'query' and 'params' keys in the second dimension
      * @return array
      */
+    /*
     public function execute_multiple_queries(array $queries_data) : array
     {
         $queries_count = count($queries_data);
@@ -157,6 +158,34 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
         }
 
 
+        return $ret;
+    }
+    */
+
+    //TODO implement timeout parameter - on timeout this will interrupt the connection so the connection will need to be reestablished
+    /**
+     * Executes the provided queries in parallel
+     * @param array $queries_data
+     * @return array
+     * @throws RunTimeException
+     */
+    public static function execute_parallel_queries(array $queries_data) : array
+    {
+        $callables = [];
+        foreach ($queries_data as $query_data) {
+            $query = $query_data['query'];
+            $params = $query_data['params'];
+            $called_class = get_called_class();
+            $callables[] = static function() use ($query, $params, $called_class) : iterable
+            {
+                $Connection = self::ConnectionFactory()->get_connection($called_class, $CR);
+                $Statement = $Connection->prepare($query);
+                $Statement->execute($params);
+                $data = $Statement->fetchAll();
+                return $data;
+            };
+        }
+        $ret = Coroutine::executeMulti(...$callables);
         return $ret;
     }
 
