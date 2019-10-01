@@ -5,10 +5,10 @@ namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
-use http\Exception\InvalidArgumentException;
 
 /**
  * Class NullStore

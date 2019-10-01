@@ -195,10 +195,10 @@ class Structured extends Base implements StreamInterface
         //public function write(string $string) : int
     {
         if (!$this->isWritable()) {
-            throw new RuntimeException('Can not write to this stream.');
+            throw new RuntimeException(t::_('Can not write to this stream.'));
         }
-        throw new RunTimeException('Please use the Structured::getStructure() method.');
-        return $size;
+        throw new RunTimeException(t::_('Please use the Structured::getStructure() method.'));
+        // return $size;
     }
 
     /**
@@ -227,8 +227,8 @@ class Structured extends Base implements StreamInterface
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
         }
-        throw new RunTimeException('Please use the Structured::getStructure() method.');
-        return $str;
+        throw new RunTimeException(t::_('Please use the Structured::getStructure() method.'));
+        // return $str;
     }
 
     /**

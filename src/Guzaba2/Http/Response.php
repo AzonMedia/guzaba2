@@ -16,8 +16,10 @@ namespace Guzaba2\Http;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
-
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Translator\Translator as t;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -115,7 +117,7 @@ class Response extends Message implements ResponseInterface
     private function checkStatus(int $status) : void
     {
         if (!isset(StatusCode::MESSAGES_MAP[$status])) {
-            throw new Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid HTTP status code %s provided.'), $status));
+            throw new InvalidArgumentException(sprintf(t::_('Invalid HTTP status code %s provided.'), $status));
         }
     }
 

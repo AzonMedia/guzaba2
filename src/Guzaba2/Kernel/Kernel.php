@@ -619,7 +619,7 @@ class Kernel
     }
 
     /**
-     * Logs a a message using the default logger
+     * Logs a message using the default logger
      *
      * @param string $message
      * @param string $level

@@ -56,7 +56,7 @@ class NullMetaStore extends MetaStore
     {
         $ret = NULL;
         $key = self::get_key($class, $primary_index);
-        $data = $this->get_meta_data($key);
+        $data = $this->get_meta_data($key, $primary_index);
         if (isset($data['object_last_update_microtime'])) {
             $ret = $data['object_last_update_microtime'];
         }

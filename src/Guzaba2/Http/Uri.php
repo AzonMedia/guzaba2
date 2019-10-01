@@ -5,6 +5,7 @@ namespace Guzaba2\Http;
 
 use Guzaba2\Base\Base;
 use Psr\Http\Message\UriInterface;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 
 /**
  * Class Uri

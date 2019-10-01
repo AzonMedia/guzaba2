@@ -81,7 +81,7 @@ class Server extends \Guzaba2\Http\Server
 
     protected const SWOOLE_DEFAULTS = [
         'host'              => '0.0.0.0',
-        'port'              => 8082,
+        'port'              => 8081,
         'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_PROCESS or SWOOLE_BASE
     ];
 

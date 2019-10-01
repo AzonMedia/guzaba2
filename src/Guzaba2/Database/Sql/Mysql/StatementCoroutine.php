@@ -9,6 +9,7 @@ use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Exceptions\DeadlockException;
 use Guzaba2\Database\Exceptions\DuplicateKeyException;
 use Guzaba2\Database\Exceptions\ForeignKeyConstraintException;
+use Guzaba2\Database\Exceptions\ResultException;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Translator\Translator as t;
@@ -133,7 +134,7 @@ class StatementCoroutine extends Statement implements StatementInterface
                 if (array_key_exists($column_name, $row)) {
                     $ret = $row[$column_name];
                 } else {
-                    throw new framework\database\exceptions\resultException(sprintf(t::_('The column named "%s" does not exist in the fetched data.'), $column_name));
+                    throw new ResultException(sprintf(t::_('The column named "%s" does not exist in the fetched data.'), $column_name));
                 }
             } else {
                 $ret = $row;

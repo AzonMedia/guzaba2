@@ -5,6 +5,7 @@ namespace Guzaba2\Kernel;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Base\Exceptions\NotImplementedException;
 use Guzaba2\Kernel\Exceptions\AutoloadException;
 use Guzaba2\Translator\Translator as t;
 
@@ -102,7 +103,7 @@ class SourceStream extends Base
                 $this->write_enabled = true;
                 break;
             default:
-                throw new framework\base\exceptions\runTimeException(sprintf(t::_('An unsupported mode "%s" is provided.'), $this->mode));
+                throw new RunTimeException(sprintf(t::_('An unsupported mode "%s" is provided.'), $this->mode));
         }
 
         return true;
@@ -195,7 +196,7 @@ class SourceStream extends Base
 
     public function stream_lock()
     {
-        throw new notImplementedException(sprintf(t::_('Locking of a %s stream is not implemented yet.'), self::PROTOCOL));
+        throw new NotImplementedException(sprintf(t::_('Locking of a %s stream is not implemented yet.'), self::PROTOCOL));
         //return false;
     }
 

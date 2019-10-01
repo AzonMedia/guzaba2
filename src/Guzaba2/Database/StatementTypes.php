@@ -324,7 +324,7 @@ final class StatementTypes extends Base
      */
     public static function isReplaceStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_REPLCE;
+        return self::getStatementType($sql) == self::STATEMENT_TYPE_REPLACE;
     }
 
     /**
