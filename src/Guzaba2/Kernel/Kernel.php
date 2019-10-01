@@ -478,7 +478,7 @@ class Kernel
     public static function get_class_all_children(string $class_name) : array
     {
         $children = [];
-        $Function = function($class_name) use (&$Function, &$children) {
+        $Function = function ($class_name) use (&$Function, &$children) {
             $class_children = self::$class_structure[$class_name]['children'];
             foreach ($class_children as $class_child) {
                 $children[] = $class_child['name'];

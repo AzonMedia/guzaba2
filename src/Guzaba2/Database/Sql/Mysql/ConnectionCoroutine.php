@@ -176,8 +176,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
             $query = $query_data['query'];
             $params = $query_data['params'];
             $called_class = get_called_class();
-            $callables[] = static function() use ($query, $params, $called_class) : iterable
-            {
+            $callables[] = static function () use ($query, $params, $called_class) : iterable {
                 $Connection = self::ConnectionFactory()->get_connection($called_class, $CR);
                 $Statement = $Connection->prepare($query);
                 $Statement->execute($params);

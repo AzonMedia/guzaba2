@@ -186,7 +186,8 @@ class Context extends Base implements ObjectInternalIdInterface
         return call_user_func_array([self::class, $method], $args);
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         $this->freeAllConnections();
         $this->Context = NULL;
     }

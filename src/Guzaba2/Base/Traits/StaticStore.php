@@ -15,7 +15,6 @@ use Guzaba2\Kernel\Kernel;
  */
 trait StaticStore
 {
-
     private $static_store = [];
 
     public static function set_static(string $key, /* mixed */ $value) : void
@@ -38,10 +37,8 @@ trait StaticStore
                     $Context->static_store[$child_class][$key] =& $Context->static_store[$class][$key];
                     //but using a reference will create an issue if the var is being set on a child class - the reference must be broken and only then the var set
                 }
-
             }
         } else {
-
         }
     }
 
@@ -55,7 +52,6 @@ trait StaticStore
             }
             $ret = $Context->static_store[$class][$key];
         } else {
-
         }
         //$class = get_called_class();
         //return Coroutine::getData($class, $key);

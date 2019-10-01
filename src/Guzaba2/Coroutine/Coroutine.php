@@ -345,9 +345,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function executeMulti(callable ...$callables) : array
     {
-
         if (!count($callables)) {
-            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__));
         }
 
         /*
@@ -439,7 +438,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
         $WrapperFunction = function (...$params) use ($callable, &$new_cid, $current_cid) : void {
-
             $hash = GeneralUtil::get_callable_hash($callable);
 
             try {
@@ -746,7 +744,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 }
                 $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL . implode(PHP_EOL, $unfinished_message_arr));
                 throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
-                //} elseif ($ret instanceof \Throwable) {
+            //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
                 //print 'rethrow'.PHP_EOL;
