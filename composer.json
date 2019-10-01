@@ -30,6 +30,7 @@
         "jbzoo/utils": "^2.3",
         "eaglewu/swoole-ide-helper": "dev-master",
         "azonmedia/utilities": "dev-master",
+        "azonmedia/apm": "dev-master",
         "ext-pdo": "*",
         "ext-mysqli": "*"
     },
