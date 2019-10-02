@@ -54,7 +54,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
-
             if (is_array($controller_callable)) {
                 $controller_arguments = $Request->getAttribute('controller_arguments');
 
@@ -133,9 +132,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $Response = $controller_callable($Request);
                 return $Response;
             } else {
-                throw new LogicException(sprintf(t::_('An unsupported type "%s" for controller_callable encountered.'), gettype($controller_callable) ));
+                throw new LogicException(sprintf(t::_('An unsupported type "%s" for controller_callable encountered.'), gettype($controller_callable)));
             }
-
         } else {
             //pass the processing to the next handler - usually this will result in the default response
         }

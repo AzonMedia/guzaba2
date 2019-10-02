@@ -57,7 +57,6 @@ class Context extends Base implements ObjectInternalIdInterface
                 $this->Context->created_backtrace = \Swoole\Coroutine::getBackTrace($pcid, \DEBUG_BACKTRACE_IGNORE_ARGS);
             }
         }
-
     }
 
     public function getBacktrace() : array
