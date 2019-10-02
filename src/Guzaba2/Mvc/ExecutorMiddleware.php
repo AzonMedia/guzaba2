@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Mvc;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Response;
@@ -53,21 +54,48 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
-            $controller_arguments = $Request->getAttribute('controller_arguments');
 
-            if ($body_params = $Request->getParsedBody()) {
-                $controller_arguments = $body_params;//overwrite any previous uri arguments if exsist
-            }
-            //TODO - execute the _init() method too
+            if (is_array($controller_callable)) {
+                $controller_arguments = $Request->getAttribute('controller_arguments');
 
-            //check if controller has init method
-            $init_method_exist = \method_exists($controller_callable[0], '_init');
+                if ($body_params = $Request->getParsedBody()) {
+                    $controller_arguments = $body_params;//overwrite any previous uri arguments if exsist
+                }
 
-            if ($init_method_exist) {
-                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
+                //check if controller has init method
+                $init_method_exists = \method_exists($controller_callable[0], '_init');
+
+                if ($init_method_exists) {
+                    $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
+                    $parameters = $RMethod->getParameters();
+
+                    $ordered_parameters = [];
+
+                    foreach ($parameters as $key => $parameter) {
+                        $argType = $parameter->getType();
+
+                        if (isset($controller_arguments[$parameter->getName()])) {
+                            $value = $controller_arguments[$parameter->getName()];
+                        } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                            $value = $parameter->getDefaultValue();
+                        }
+
+                        if (isset($value)) {
+                            $value = $controller_arguments[$parameter->getName()];
+                            //will throw exception if type missing
+                            settype($value, (string) $argType);
+                            $ordered_parameters[] = $value;
+                            unset($value);
+                        }
+                    }
+
+                    //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
+                    [$controller_callable[0], '_init'](...$ordered_parameters);
+                }
+
+                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
                 $parameters = $RMethod->getParameters();
-
-                $parameters_order = [];
+                $ordered_parameters = [];
 
                 foreach ($parameters as $key => $parameter) {
                     $argType = $parameter->getType();
@@ -82,45 +110,32 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                         $value = $controller_arguments[$parameter->getName()];
                         //will throw exception if type missing
                         settype($value, (string) $argType);
-                        $parameters_order[] = $value;
+                        $ordered_parameters[] = $value;
                         unset($value);
                     }
                 }
 
-                \call_user_func_array([$controller_callable[0], '_init'], $parameters_order);
-            }
-            $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
-            $parameters = $RMethod->getParameters();
-            $parameters_order = [];
-
-            foreach ($parameters as $key => $parameter) {
-                $argType = $parameter->getType();
-
-                if (isset($controller_arguments[$parameter->getName()])) {
-                    $value = $controller_arguments[$parameter->getName()];
-                } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                    $value = $parameter->getDefaultValue();
+                $Response = $controller_callable(...$ordered_parameters);
+                $Body = $Response->getBody();
+                if ($Body instanceof Structured) {
+                    $requested_content_type = $Request->getContentType();
+                    $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+                    $Response = [$this, $type_handler]($Request, $Response);
+                } else {
+                    //return the response as it is - it is already a stream and should contain all the needed headers
                 }
-
-                if (isset($value)) {
-                    $value = $controller_arguments[$parameter->getName()];
-                    //will throw exception if type missing
-                    settype($value, (string) $argType);
-                    $parameters_order[] = $value;
-                    unset($value);
-                }
-            }
-
-            $Response = $controller_callable(...$parameters_order);
-            $Body = $Response->getBody();
-            if ($Body instanceof Structured) {
-                $requested_content_type = $Request->getContentType();
-                $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
-                $Response = [$this, $type_handler]($Request, $Response);
+                return $Response;
+            } elseif (is_object($controller_callable)) {
+                //Closure or class with __invoke
+                $Response = $controller_callable($Request);
+                return $Response;
+            } elseif (is_string($controller_callable)) {
+                $Response = $controller_callable($Request);
+                return $Response;
             } else {
-                //return the response as it is - it is already a stream and should contain all the needed headers
+                throw new LogicException(sprintf(t::_('An unsupported type "%s" for controller_callable encountered.'), gettype($controller_callable) ));
             }
-            return $Response;
+
         } else {
             //pass the processing to the next handler - usually this will result in the default response
         }
@@ -141,6 +156,31 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         return $Response;
     }
 
+
+    /**
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     * @throws RunTimeException
+     */
+    protected function default_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    {
+        return $this->html_handler($Request, $Response);
+    }
+
+    protected function html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    {
+        $controller_callable = $Request->getAttribute('controller_callable');
+        if ($controller_callable instanceof PerActionPhpViewInterface) {
+            $Response = $this->per_action_php_view_handler($Request, $Response);
+        } elseif ($controller_callable instanceof PerControllerPhpViewInterface) {
+            $Response = $this->per_controller_php_view_handler($Request, $Response);
+        } else {
+            $Response = $this->per_action_php_view_handler($Request, $Response);
+        }
+        return $Response;
+    }
+
     /**
      * Default html_handler
      * Calls View object for parsing the response
@@ -151,7 +191,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @return ResponseInterface
      * @throws RunTimeException
      */
-    protected function html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    protected function per_controller_php_view_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         $content_type = $Request->getContentType();
@@ -203,16 +243,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         }
     }
 
-    /**
-     * @param RequestInterface $Request
-     * @param ResponseInterface $Response
-     * @return ResponseInterface
-     * @throws RunTimeException
-     */
-    protected function default_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
-    {
-        return $this->html_handler($Request, $Response);
-    }
 
     /**
      * Alternative html_handler
@@ -226,7 +256,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @throws RunTimeException
      * @throws \ReflectionException
      */
-    protected function plain_views_html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    protected function per_action_php_view_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         $content_type = $Request->getContentType();

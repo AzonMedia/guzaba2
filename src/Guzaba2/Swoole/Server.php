@@ -21,7 +21,9 @@ class Server extends \Guzaba2\Http\Server
      * @see https://www.swoole.co.uk/docs/modules/swoole-server/configuration
      * @see https://wiki.swoole.com/wiki/page/274.html
      */
-    protected const SUPPORTED_OPTIONS = [
+    public const SUPPORTED_OPTIONS = [
+        //Server options
+        //https://wiki.swoole.com/wiki/page/274.html
         'reactor_num',
         'worker_num',
         'max_request',
@@ -77,7 +79,18 @@ class Server extends \Guzaba2\Http\Server
         'enable_coroutine',
         'max_coroutine',
         'ssl_verify_peer',
-        'max_wait_time'
+        'max_wait_time',
+
+        //Http Server options
+        //https://wiki.swoole.com/wiki/page/620.html
+        'upload_tmp_dir',
+        'http_parse_post',
+        'http_parse_cookie',
+        'http_compression',
+        'document_root',
+        'enable_static_handler',
+        'static_handler_locations',
+
     ];
 
     protected const SWOOLE_DEFAULTS = [
@@ -122,6 +135,8 @@ class Server extends \Guzaba2\Http\Server
         
         $this->validate_server_configuration_options($options);
         $this->SwooleHttpServer->set($options);
+
+        Kernel::set_http_server($this);
     }
 
     public function get_host() : string
@@ -215,7 +230,7 @@ class Server extends \Guzaba2\Http\Server
     {
         foreach ($options as $option_name => $option_value) {
             if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
-                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option %s provided to server configuration.'), $option_name));
+                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option "%s" provided to server configuration.'), $option_name));
             }
         }
     }

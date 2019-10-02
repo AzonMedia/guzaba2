@@ -39,6 +39,7 @@ class Context extends Base implements ObjectInternalIdInterface
             throw new InvalidArgumentException(sprintf(t::_('Coroutine ID must be provided when creating a %s object.'), __CLASS__));
         }
         $this->Context = $Context;
+
         $this->Context->cid = $cid;
         $this->Context->connections = [];
         $this->Context->settings = [];
@@ -56,6 +57,7 @@ class Context extends Base implements ObjectInternalIdInterface
                 $this->Context->created_backtrace = \Swoole\Coroutine::getBackTrace($pcid, \DEBUG_BACKTRACE_IGNORE_ARGS);
             }
         }
+
     }
 
     public function getBacktrace() : array
