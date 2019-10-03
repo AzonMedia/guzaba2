@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Coroutine;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
@@ -41,7 +40,6 @@ class Resources extends Base
      */
     public function __construct()
     {
-
         $this->cid = Coroutine::getCid();
 
         if (Coroutine::completeBacktraceEnabled()) {
@@ -111,7 +109,7 @@ class Resources extends Base
 
         if ($resource_class && !empty($all_resources)) {
             if (!class_exists($resource_class)) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided resource_class %s to %s() does not exist.'), $resource_class, __METHOD__ ));
+                throw new InvalidArgumentException(sprintf(t::_('The provided resource_class %s to %s() does not exist.'), $resource_class, __METHOD__));
             }
             $ret = [];
             foreach ($all_resources as $Resource) {
@@ -147,5 +145,4 @@ class Resources extends Base
             $Resource->force_release();
         }
     }
-
 }

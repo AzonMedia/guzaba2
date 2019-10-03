@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Resources;
 
-
 use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -15,7 +14,6 @@ use Guzaba2\Base\Exceptions\BadMethodCallException;
 
 class Resource extends Base
 {
-
     protected $scope_counter = 0;
 
     /**
@@ -46,7 +44,7 @@ class Resource extends Base
      */
     public function force_release() : void
     {
-        if (!StackTraceUtil::validate_caller(Resources::class,'')) {
+        if (!StackTraceUtil::validate_caller(Resources::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, Resources::class));
         }
         $this->scope_counter = 0;
@@ -65,7 +63,7 @@ class Resource extends Base
      */
     public function increment_scope_counter() : void
     {
-        if (!StackTraceUtil::validate_caller(ResourceFactoryInterface::class,'')) {
+        if (!StackTraceUtil::validate_caller(ResourceFactoryInterface::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, ResourceFactoryInterface::class));
         }
         $this->scope_counter++;
@@ -73,7 +71,7 @@ class Resource extends Base
 
     public function decrement_scope_counter() : void
     {
-        if (!StackTraceUtil::validate_caller(ScopeReference::class,'')) {
+        if (!StackTraceUtil::validate_caller(ScopeReference::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s. To explicitly free a resource please unset the corresponding ScopeReference.'), __METHOD__, ScopeReference::class));
         }
         $this->scope_counter--;
@@ -109,7 +107,6 @@ class Resource extends Base
 
     public function unassign_from_coroutine() : void
     {
-
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
         }

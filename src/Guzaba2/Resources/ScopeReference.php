@@ -26,5 +26,4 @@ class ScopeReference extends \Guzaba2\Patterns\ScopeReference
     {
         return $this->Resource;
     }
-
 }

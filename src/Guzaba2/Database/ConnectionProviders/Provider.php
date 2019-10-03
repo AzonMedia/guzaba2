@@ -3,14 +3,12 @@
 
 namespace Guzaba2\Database\ConnectionProviders;
 
-
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Resources\ScopeReference;
 
-abstract class Provider extends Base
-implements ConnectionProviderInterface
+abstract class Provider extends Base implements ConnectionProviderInterface
 {
     public function get_resource(string $class_name, ?ScopeReference &$ScopeReference) : ResourceInterface
     {

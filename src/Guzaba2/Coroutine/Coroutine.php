@@ -69,7 +69,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function init(?RequestInterface $Request) : void
     {
-
         $Context = self::getContext();//this will properly initialize the context
         $Context->Request = $Request;
 
@@ -107,7 +106,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             if ($Context->parent_coroutine_id >= 1) {
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
             }
-
         }
         return $Context;
     }
@@ -155,7 +153,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function create($callable, ...$params)
     {
-
         if (self::getTotalSubCoroutinesCount(self::getRootCoroutineId()) === self::CONFIG_RUNTIME['max_allowed_subcoroutines']) {
             throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
         }
@@ -180,7 +177,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
                 $ParentChannel->push(['hash' => $hash, 'ret' => $ret]);
             } catch (\Throwable $Exception) {
-
                 if (self::completeBacktraceEnabled()) {
                     //$Exception->prependTrace($Context->getBacktrace());
                     BaseException::prependTraceStatic($Exception, $Context->getBacktrace());
@@ -267,7 +263,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getParentCoroutines(?int $cid = NULL) : array
     {
         if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
         }
         $ret = [];
 
@@ -296,7 +292,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getRootCoroutineId(?int $cid = NULL) : int
     {
         if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
         }
         $cid = $cid ?? self::getcid();
 
@@ -316,8 +312,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getTotalSubCoroutinesCount(?int $cid = NULL) : int
     {
         $cid = $cid ?? parent::getcid();
-        $Function = function (int $cid) use (&$Function) : int
-        {
+        $Function = function (int $cid) use (&$Function) : int {
             $ret = self::getSubCoroutinesCount($cid);
             foreach (self::getSubCoroutines($cid) as $sub_coroutine_id) {
                 $ret += $Function($sub_coroutine_id);
@@ -335,7 +330,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getSubCoroutinesCount(?int $cid = NULL) : int
     {
         if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
         }
         $cid = $cid ?? self::getcid();
         $ret = count(self::getContext($cid)->sub_coroutine_ids);
@@ -350,7 +345,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getSubCoroutines(?int $cid = NULL) : array
     {
         if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
         }
 
         $cid = $cid ?? self::getcid();
@@ -417,5 +412,4 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
         return $subcoroutines_completed_arr;
     }
-
 }

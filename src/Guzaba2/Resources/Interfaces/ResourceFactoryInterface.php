@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Resources\Interfaces;
 
-
 use Guzaba2\Resources\ScopeReference;
 
 interface ResourceFactoryInterface

@@ -120,7 +120,7 @@ class Pool extends Provider
 //            $ScopeReference = new \Guzaba2\Resources\ScopeReference($Connection);
 //        }
         if ($ScopeReference) {
-            throw new InvalidArgumentException(sprintf(t::_('An existing ScopeReference containing resource of class %s was provided to %s().'), get_class($ScopeReference->get_resource()), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('An existing ScopeReference containing resource of class %s was provided to %s().'), get_class($ScopeReference->get_resource()), __METHOD__));
         }
         $ScopeReference = new \Guzaba2\Resources\ScopeReference($Connection);
 
