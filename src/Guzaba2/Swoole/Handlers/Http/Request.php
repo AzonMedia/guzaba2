@@ -74,18 +74,12 @@ class Request extends HandlerBase
             //\Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
             \Guzaba2\Coroutine\Coroutine::init($PsrRequest);
 
-
-
-
-
             $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
             $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message
             foreach ($this->middlewares as $Middleware) {
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
-
-
 
             //very important to stay here!!!
             Coroutine::awaitSubCoroutines();//await before the response is converted as the response uses end() which pushes the output

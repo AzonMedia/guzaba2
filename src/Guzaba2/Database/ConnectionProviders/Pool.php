@@ -65,7 +65,20 @@ class Pool extends Base implements ConnectionProviderInterface
         if (!array_key_exists($connection_class, $this->available_connections)) {
             $this->initialize_connections($connection_class);
         }
+
+        // increment the time for waiting for free connection
+        $Context_Apm = Coroutine::getContext()->Apm;
+        $time_start_waiting = (double) microtime(TRUE);
+
         $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
+
+        $time_end_waiting = (double) microtime(TRUE);
+        $eps = 0.0001;
+        $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
+
+        if (abs($time_waiting_for_connection) > $eps) {
+            $Context_Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
+        }
 
         $Connection->assign_to_coroutine(Coroutine::getCid());
 
@@ -157,6 +170,14 @@ class Pool extends Base implements ConnectionProviderInterface
     public function ping_connections(string $connection_class = '') : void
     {
         if ($connection_class && array_key_exists($connection_class, $this->available_connections)) {
+            $connection_classes = [$connection_class];
+        } elseif (empty($connection_class)) {
+            $connection_classes = array_keys($this->available_connections);
+        } else {
+            $connection_classes = [];
+        }
+
+        foreach ($connection_classes as $connection_class) {
             $length = $this->available_connections[$connection_class]->length();
 
             for ($i = 0; $i < $length; $i ++) {

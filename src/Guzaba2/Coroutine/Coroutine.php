@@ -506,6 +506,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             }
         };
 
+        //increment parent coroutine apm values
+        $Parent_apm = self::getRootCoroutineContext($current_cid)->Apm;
+        $Parent_apm->increment_value('cnt_subcoroutines', 1);
+
         parent::create($WrapperFunction, ...$params);
 
         //cant have await here as this will block

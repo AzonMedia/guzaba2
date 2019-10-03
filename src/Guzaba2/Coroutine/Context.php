@@ -44,6 +44,7 @@ class Context extends Base implements ObjectInternalIdInterface
         $this->Context->connections = [];
         $this->Context->settings = [];
         $this->Context->static_store = [];//to be used by StaticStore trait
+        $this->Context->connections_freed_flag = FALSE;
         $this->set_object_internal_id();
 
         $this->Context->Request = $Request;
@@ -151,10 +152,14 @@ class Context extends Base implements ObjectInternalIdInterface
      */
     public function freeAllConnections() : void
     {
+        if ($this->Context->connections_freed_flag) {
+            return;
+        }
         $connections = $this->getConnections();
         foreach ($connections as $Connection) {
             $Connection->free();
         }
+        $this->Context->connections_freed_flag = TRUE;
     }
 
     public function __set(string $property, /* mixed */ $value) : void
