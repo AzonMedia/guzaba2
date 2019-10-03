@@ -503,6 +503,19 @@ class Kernel
         return isset(self::$class_structure[$class]['parent']) ? self::$class_structure[$class]['parent']['name'] : NULL;
     }
 
+    public static function get_class_all_parents(string $class) : array
+    {
+        $ret = [];
+        do {
+            $parent_class = self::$class_structure[$class]['parent'];
+            if (!$parent_class) {
+                break;
+            }
+            $ret[] = $parent_class;
+        } while (TRUE);
+        return $ret;
+    }
+
     /**
      * Loads all classes found under the registered autoload paths.
      * @see self::$autoloader_lookup_paths

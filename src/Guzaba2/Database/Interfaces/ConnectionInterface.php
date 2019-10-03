@@ -3,11 +3,13 @@
 
 namespace Guzaba2\Database\Interfaces;
 
-interface ConnectionInterface
+use Guzaba2\Resources\Interfaces\ResourceInterface;
+
+interface ConnectionInterface extends ResourceInterface
 {
     public function close() : void;
 
-    public function free() : void;
+    //public function free() : void;
 
     /*
     public function begin_transaction();

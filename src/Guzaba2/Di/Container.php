@@ -115,6 +115,7 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
                 'Logger'                        => [Kernel::class, 'get_logger'],
             ],
         ],
+        
 //        'TransactionManager' => [
 //            'class' => TransactionManager::class,
 //            'args' => [

@@ -2,14 +2,17 @@
 
 namespace Guzaba2\Database\Interfaces;
 
-interface ConnectionProviderInterface
+use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
+use Guzaba2\Resources\ScopeReference;
+
+interface ConnectionProviderInterface extends ResourceFactoryInterface
 {
     /**
      * @param string $connection_class
      * @todo check if scope reference parameter is required
      * @return ConnectionInterface
      */
-    public function get_connection(string $connection_class) : ConnectionInterface ;
+    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface ;
 
     public function free_connection(ConnectionInterface $Connection);
 

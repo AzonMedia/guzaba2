@@ -6,10 +6,12 @@ namespace Guzaba2\Database;
 use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
+use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
+use Guzaba2\Resources\Interfaces\ResourceInterface;
 
 //use Guzaba2\Patterns\WorkerSingleton;
 
-class ConnectionFactory extends Base
+class ConnectionFactory extends Base implements ResourceFactoryInterface
 {
     /**
      * @var ConnectionProviderInterface
@@ -52,5 +54,15 @@ class ConnectionFactory extends Base
     public function ping_connections(string $connection_class = '') : void
     {
         $this->ConnectionProvider->ping_connections($connection_class);
+    }
+
+    public function get_resource(string $class_name, &$ScopeReference = '') : ResourceInterface
+    {
+        return $this->get_connection($class_name, $ScopeReference);
+    }
+
+    public function free_resource(ResourceInterface $Resource) : void
+    {
+        $this->free_connection($Resource);
     }
 }

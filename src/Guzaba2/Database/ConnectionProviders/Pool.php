@@ -10,7 +10,8 @@ use Guzaba2\Coroutine\Channel;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
-use Guzaba2\Database\ScopeReference;
+use Guzaba2\Resources\ScopeReference;
+use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Kernel\Kernel;
 
@@ -23,7 +24,7 @@ use Guzaba2\Kernel\Kernel;
  * Provides a pool of connections (coroutine based connections) to be used with coroutines.
  * @package Guzaba2\Database
  */
-class Pool extends Base implements ConnectionProviderInterface
+class Pool extends Provider
 {
     protected const CONFIG_DEFAULTS = [
         'max_connections'   => 20,
@@ -94,8 +95,8 @@ class Pool extends Base implements ConnectionProviderInterface
      * @param-out $ScopeReference
      * @return ConnectionInterface
      */
-    //public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
-    public function get_connection(string $connection_class, &$ScopeReference = '&') : ConnectionInterface
+    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
+    //public function get_connection(string $connection_class, &$ScopeReference = '&') : ConnectionInterface
     {
         if (!Coroutine::inCoroutine()) {
             throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
@@ -107,7 +108,7 @@ class Pool extends Base implements ConnectionProviderInterface
 
         //check the current scope does it has a connection
         $Context = Coroutine::getContext();
-        $Connection = $Context->getConnection($connection_class);//may return NULL
+        $Connection = $Context->Resources->get_resource($connection_class);//may return NULL
 
         //no connection assigned to the current coroutine was found - assign a new one
         if (empty($Connection)) {
@@ -115,9 +116,14 @@ class Pool extends Base implements ConnectionProviderInterface
         }
 
         $Connection->increment_scope_counter();
-        if (!$ScopeReference) {
-            $ScopeReference = new ScopeReference($Connection);
+//        if (!$ScopeReference) {
+//            $ScopeReference = new \Guzaba2\Resources\ScopeReference($Connection);
+//        }
+        if ($ScopeReference) {
+            throw new InvalidArgumentException(sprintf(t::_('An existing ScopeReference containing resource of class %s was provided to %s().'), get_class($ScopeReference->get_resource()), __METHOD__ ));
         }
+        $ScopeReference = new \Guzaba2\Resources\ScopeReference($Connection);
+
         return $Connection;
     }
 
@@ -202,7 +208,7 @@ class Pool extends Base implements ConnectionProviderInterface
         $this->available_connections[$connection_class] = new Channel(self::CONFIG_RUNTIME['max_connections']);
         for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections'] ; $aa++) {
             $Connection = new $connection_class();
-            $Connection->set_created_from_factory(TRUE);
+            //$Connection->set_created_from_factory(TRUE);
             $this->available_connections[$connection_class]->push($Connection);
         }
     }

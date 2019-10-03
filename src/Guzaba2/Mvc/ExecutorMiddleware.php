@@ -174,7 +174,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } elseif ($controller_callable instanceof PerControllerPhpViewInterface) {
             $Response = $this->per_controller_php_view_handler($Request, $Response);
         } else {
-            $Response = $this->per_action_php_view_handler($Request, $Response);
+            $Response = $this->per_controller_php_view_handler($Request, $Response);
         }
         return $Response;
     }
