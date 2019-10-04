@@ -28,7 +28,7 @@ class ConnectionMonitor extends Base
     {
         $ConnectionFactory = self::ConnectionFactory();
 
-        \Swoole\Timer::tick(self::CONFIG_RUNTIME['ping_time'], function () {
+        \Swoole\Timer::tick(self::CONFIG_RUNTIME['ping_time'], function () use ($ConnectionFactory) {
             $ConnectionFactory->ping_connections();
         });
     }
