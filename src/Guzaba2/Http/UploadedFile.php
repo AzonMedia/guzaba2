@@ -14,7 +14,8 @@ use Psr\Http\Message\UploadedFileInterface;
  *
  * It manages and normalizes uploaded files according to the PSR-7 standard.
  */
-class UploadedFile implements UploadedFileInterface
+class UploadedFile extends Base
+    implements UploadedFileInterface
 {
     /**
      * The client-provided full path to the file
@@ -125,6 +126,7 @@ class UploadedFile implements UploadedFileInterface
      */
     public function __construct($file, $name = null, $type = null, $size = null, $error = UPLOAD_ERR_OK, $sapi = false)
     {
+        parent::__construct();
         $this->file = $file;
         $this->name = $name;
         $this->type = $type;

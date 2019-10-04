@@ -14,30 +14,17 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Class RewritingMiddleware
  * @package Guzaba2\Http
  */
-class RewritingMiddleware extends Base implements MiddlewareInterface
+class CorsMiddleware extends Base implements MiddlewareInterface
 {
-
-    /**
-     * @var Server
-     */
-    protected $HttpServer;
-
-    /**
-     * @var Rewriter
-     */
-    protected $Rewriter;
 
     /**
      * RewritingMiddleware constructor.
      * @param Server $Server
      * @param Rewriter $Rewriter
      */
-    public function __construct(Server $Server, Rewriter $Rewriter)
+    public function __construct()
     {
         parent::__construct();
-        $this->HttpServer = $Server;
-
-        $this->Rewriter = $Rewriter;
     }
 
     /**
@@ -49,9 +36,9 @@ class RewritingMiddleware extends Base implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
-        $Request = $this->Rewriter->rewrite_request($Request);
         $Response = $Handler->handle($Request);
-
+        //TODO - improve
+        $Response = $Response->withAddedHeader('Access-Control-Allow-Origin', '*');
         return $Response;
     }
 }

@@ -41,6 +41,7 @@ class Response extends Message implements ResponseInterface
 
     public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $Body = NULL)
     {
+        parent::__construct();
         $this->checkStatus($status);
         $this->status = $status;
         $this->headers = array_change_key_case($headers, CASE_LOWER);

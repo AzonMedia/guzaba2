@@ -42,6 +42,8 @@ class Str extends Base implements StreamInterface
      */
     public function __construct(string $string = '')
     {
+        parent::__construct();
+        
         if ($string) {
             $this->write($string);
         }

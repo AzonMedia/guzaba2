@@ -21,6 +21,7 @@ class RequestHandler extends Base implements RequestHandlerInterface
 
     public function __construct(?ResponseInterface $ResponsePrototype = NULL)
     {
+        parent::__construct();
         $this->Response = $ResponsePrototype;
     }
 

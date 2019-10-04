@@ -20,6 +20,7 @@ abstract class Server extends Base
 
     public function __construct(string $host, int $port, array $options = [])
     {
+        parent::__construct();
         $this->host = $host;
         $this->port = $port;
         $this->options = $options;

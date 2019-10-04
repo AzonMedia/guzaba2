@@ -90,6 +90,7 @@ class Uri extends Base implements UriInterface
         $user = '',
         $password = ''
     ) {
+        parent::__construct();
         $this->scheme = $scheme ? $this->filterScheme($scheme) : '';
         $this->host = $host;
         $this->port = $port ? $this->filterPort($port) : NULL;

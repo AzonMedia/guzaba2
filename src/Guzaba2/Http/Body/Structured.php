@@ -35,6 +35,8 @@ class Structured extends Base implements StreamInterface
 
     public function __construct(array $structure = [])
     {
+        parent::__construct();
+
         $this->structure = $structure;
 
         //$this->write(self::DEFAULT_DOCTYPE . Response::EOL);

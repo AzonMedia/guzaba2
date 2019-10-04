@@ -36,6 +36,8 @@ class Stream extends Base implements StreamInterface
      */
     public function __construct(/* resource */ $stream = NULL, string $content = '')
     {
+        parent::__construct();
+        
         $this->stream = $stream ?? fopen('php://memory', 'r+');
         //$this->stream = $stream ?? tmpfile();//use this if co::fwrite() is needed but memory and \fwrite() is twice faster
 

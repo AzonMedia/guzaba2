@@ -59,6 +59,8 @@ class Cookies extends Base implements CookiesInterface
      */
     public function __construct(?array $cookies = [])
     {
+        parent::__construct();
+        
         $this->requestCookies = $cookies;
     }
 

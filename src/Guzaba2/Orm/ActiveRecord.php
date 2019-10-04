@@ -502,7 +502,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             if (array_key_exists($key, $this->record_data)) {
                 $type = $this->get_column_type($key, $nullable);
                 if (!isset($type)) {
-                    throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('There is date for column %s from object %s but there is no such column in table %s.'), $key, $this->get_internal_name(), $this->main_table));
+                    throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('There is date for column %s from object %s but there is no such column in table %s.'), $key, get_class($this), $this->main_table));
                 }
 
                 if (in_array($key, self::$primary_index_columns)) {

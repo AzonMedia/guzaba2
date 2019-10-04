@@ -43,7 +43,7 @@ class NullMetaStore extends MetaStore
     public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
         $key = self::get_key_by_object($ActiveRecord);
-        $data = $this->get_update_data($key);
+        $data = $this->get_meta_data($key);
         return $data;
     }
 
@@ -71,7 +71,8 @@ class NullMetaStore extends MetaStore
     public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?int
     {
         $key = self::get_key_by_object($ActiveRecord);
-        return $this->get_last_update_time($key);
+        $data = $this->get_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+        return $data;
     }
 
 
