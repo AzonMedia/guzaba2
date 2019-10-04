@@ -7,11 +7,11 @@ class Timer
     {
     }
 
-    public static function tick($ms, callable $callback, $params)
+    public static function tick($ms, callable $callback, ...$params)
     {
     }
 
-    public static function after($ms, callable $callback, $params)
+    public static function after($ms, callable $callback, ...$params)
     {
     }
 
