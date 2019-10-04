@@ -26,6 +26,9 @@ class Resource extends Base
      */
     protected $ResourceFactory;
 
+    private $conn_start_time = 0;
+    private $conn_end_time = 0;
+
     public function __construct(?ResourceFactoryInterface $ResourceFactory)
     {
         parent::__construct();
@@ -101,7 +104,12 @@ class Resource extends Base
         }
         $this->coroutine_id = $cid;
         if (Coroutine::getcid()) { //if we are in coroutine context
-            Coroutine::getContext()->Resources->assign_resource($this);
+            $Context = Coroutine::getContext();
+            $Context->Resources->assign_resource($this);
+            // increment the number of used connection in the current coroutine (APM)
+            $Context->Apm->increment_value('cnt_used_connections', 1);
+            // this is for incrementing the time_used_connections in unassign_from_coroutine()
+            $this->conn_start_time = microtime(TRUE);
         }
     }
 
@@ -118,7 +126,11 @@ class Resource extends Base
 
         $this->coroutine_id = 0;
         if (Coroutine::getcid()) { //if we are in coroutine context
-            Coroutine::getContext()->Resources->unassign_resource($this);
+            $this->conn_end_time = microtime(TRUE);
+            $Context = Coroutine::getContext();
+            // increment the used connection time (APM)
+            $Context->Apm->increment_value('time_used_connections', ($this->conn_end_time - $this->conn_start_time));
+            $Context->Resources->unassign_resource($this);
         }
     }
 }

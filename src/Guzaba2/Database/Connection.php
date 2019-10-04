@@ -21,9 +21,6 @@ abstract class Connection extends Resource implements ConnectionInterface
 
 //    protected $is_created_from_factory_flag = FALSE;
 
-    private $conn_start_time = 0;
-    private $conn_end_time = 0;
-
     public function __construct()
     {
         $ConnectionFactory = self::ConnectionFactory();
