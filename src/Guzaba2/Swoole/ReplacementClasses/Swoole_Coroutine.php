@@ -43,7 +43,7 @@ class Coroutine
     {
     }
 
-    public static function getPcid()
+    public static function getPcid($cid)
     {
     }
 

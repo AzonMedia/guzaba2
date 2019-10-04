@@ -6,6 +6,7 @@ namespace Guzaba2\Http;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Http\Body\Stream;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
 

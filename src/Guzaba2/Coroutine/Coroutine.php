@@ -158,12 +158,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
         }
 
-        $current_cid = parent::getcid();
+        // $current_cid = parent::getcid();
 
         //cant use $new_cid = parent::create() because $new_id is obtained at a too later stage
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
-        $WrapperFunction = function (...$params) use ($callable, &$new_cid, $current_cid) : void {
+        $WrapperFunction = function (...$params) use ($callable, &$new_cid) : void {
             $hash = GeneralUtil::get_callable_hash($callable);
 
             $new_cid = self::getcid();

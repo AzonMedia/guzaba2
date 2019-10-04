@@ -17,6 +17,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
+use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
 
 /**
  * Class ExecutorMiddleware
