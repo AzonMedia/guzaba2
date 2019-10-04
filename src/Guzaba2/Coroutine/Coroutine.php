@@ -93,11 +93,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
         $cid = $cid ?? self::getcid();
 
-
         $Context = parent::getContext($cid);
         if (empty($Context->is_initialized_flag)) {
-            $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
-            $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
             $Context->Resources = new Resources();
             $Context->Channel = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
             $Context->is_initialized_flag = TRUE;
@@ -105,6 +102,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $Context->parent_coroutine_id = self::getPcid();
             if ($Context->parent_coroutine_id >= 1) {
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
+                $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
+            } else {
+                $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
+                $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
             }
         }
         return $Context;
@@ -165,22 +166,21 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $WrapperFunction = function (...$params) use ($callable, &$new_cid, $current_cid) : void {
             $hash = GeneralUtil::get_callable_hash($callable);
 
+            $new_cid = self::getcid();
+
+            $ParentContext = self::getContext(self::getPcid($new_cid));
+            $ParentContext->sub_coroutine_ids[] = $new_cid;
+            $ParentChannel = $ParentContext->Channel;
+
+            //each coroutine must have its own global try/catch block as the exception handler is not supported
             try {
-                $new_cid = self::getcid();
-
-                //each coroutine must have its own global try/catch block as the exception handler is not supported
-                $ParentContext = self::getContext(self::getPcid($new_cid));
-                $ParentContext->sub_coroutine_ids[] = $new_cid;
-                $ParentChannel = $ParentContext->Channel;
-
                 $ret = $callable(...$params);
-
                 $ParentChannel->push(['hash' => $hash, 'ret' => $ret]);
             } catch (\Throwable $Exception) {
-                if (self::completeBacktraceEnabled()) {
-                    //$Exception->prependTrace($Context->getBacktrace());
-                    BaseException::prependTraceStatic($Exception, $Context->getBacktrace());
-                }
+                // if (self::completeBacktraceEnabled()) {
+                //     //$Exception->prependTrace($Context->getBacktrace());
+                //     BaseException::prependTraceStatic($Exception, $ParentContext->getBacktrace());
+                // }
                 if (!empty($ParentChannel)) {
                     //$chan->push($new_cid);//when the coroutine is over it pushes its ID to the channel of the parent coroutine
                     //before the exception is pushed between coroutines (basically this is pulling the exception outside its context) it needs to be either cloned or the current exception from the current static context cleaned
@@ -191,8 +191,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         };
 
         //increment parent coroutine apm values
-        $Parent_apm = self::getRootCoroutineContext($current_cid)->Apm;
-        $Parent_apm->increment_value('cnt_subcoroutines', 1);
+        // print "current cid: " . $current_cid . PHP_EOL;
+        // print "parent cid: " . self::getPcid($current_cid) . PHP_EOL;
+        $Apm = self::getContext()->Apm;
+        $Apm->increment_value('cnt_subcoroutines', 1);
 
         parent::create($WrapperFunction, ...$params);
 
