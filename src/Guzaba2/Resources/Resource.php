@@ -42,7 +42,7 @@ class Resource extends Base
     /**
      * No matter what is the scope_counter release the resources.
      */
-    public function force_release() : void
+    public function force_release(): void
     {
         if (!StackTraceUtil::validate_caller(Resources::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, Resources::class));
@@ -51,7 +51,7 @@ class Resource extends Base
         $this->release();
     }
 
-    protected function release() : void
+    protected function release(): void
     {
         if ($this->ResourceFactory) {
             $this->ResourceFactory->free_resource($this);
@@ -61,7 +61,7 @@ class Resource extends Base
     /**
      * To be called by the Pool when the connection is obtained
      */
-    public function increment_scope_counter() : void
+    public function increment_scope_counter(): void
     {
         if (!StackTraceUtil::validate_caller(ResourceFactoryInterface::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, ResourceFactoryInterface::class));
@@ -69,7 +69,7 @@ class Resource extends Base
         $this->scope_counter++;
     }
 
-    public function decrement_scope_counter() : void
+    public function decrement_scope_counter(): void
     {
         if (!StackTraceUtil::validate_caller(ScopeReference::class, '')) {
             throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s. To explicitly free a resource please unset the corresponding ScopeReference.'), __METHOD__, ScopeReference::class));
@@ -85,7 +85,7 @@ class Resource extends Base
      * If not assigned returns 0.
      * @return int
      */
-    public function get_coroutine_id() : int
+    public function get_coroutine_id(): int
     {
         return $this->coroutine_id;
     }
@@ -94,7 +94,7 @@ class Resource extends Base
      * To be invoked when a connection is obtained.
      * @param int $cid
      */
-    public function assign_to_coroutine(int $cid) : void
+    public function assign_to_coroutine(int $cid): void
     {
         if ($this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is already assigned to another coroutine.')));
@@ -105,7 +105,10 @@ class Resource extends Base
         }
     }
 
-    public function unassign_from_coroutine() : void
+    /**
+     * @throws RunTimeException
+     */
+    public function unassign_from_coroutine(): void
     {
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
@@ -119,21 +122,4 @@ class Resource extends Base
         }
     }
 
-    /**
-     * Frees this connection.
-     * To be used if the connection is no longer used.
-     * It is also used by the Guzaba\Coroutine\Coroutine at the end of coroutine execution to automatically free all connection that may have not be freed up by then (forgotten/hanging connections).
-     * By having scope reference there is no longer need to explicitly release the connection with $Connection->free()
-     */
-//    public function free(ScopeReference $ScopeReference) : void
-//    {
-//        //print 'deprecated';
-//        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-//        //return;
-//        list($class, $method) = StackTraceUtil::get_caller();
-//        if ($class !== ScopeReference::class) {
-//            throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s. To explicitly free a resource please unset the corresponding ScopeReference.'), __METHOD__, ScopeReference::class));
-//        }
-//        $this->decrement_scope_counter();
-//    }
 }
