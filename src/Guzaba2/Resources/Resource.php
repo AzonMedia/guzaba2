@@ -121,5 +121,4 @@ class Resource extends Base
             Coroutine::getContext()->Resources->unassign_resource($this);
         }
     }
-
 }

@@ -14,8 +14,7 @@ use Psr\Http\Message\UploadedFileInterface;
  *
  * It manages and normalizes uploaded files according to the PSR-7 standard.
  */
-class UploadedFile extends Base
-    implements UploadedFileInterface
+class UploadedFile extends Base implements UploadedFileInterface
 {
     /**
      * The client-provided full path to the file
