@@ -12,6 +12,11 @@ use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 
+/**
+ * Class Resource
+ * Represents a resource (for example a DB connection) that can be passed between coroutines.
+ * @package Guzaba2\Resources
+ */
 class Resource extends Base
 {
     protected $scope_counter = 0;
@@ -47,9 +52,7 @@ class Resource extends Base
      */
     public function force_release(): void
     {
-        if (!StackTraceUtil::validate_caller(Resources::class, '')) {
-            throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, Resources::class));
-        }
+        StackTraceUtil::validate_caller(Resources::class, '');
         $this->scope_counter = 0;
         $this->release();
     }
@@ -66,17 +69,13 @@ class Resource extends Base
      */
     public function increment_scope_counter(): void
     {
-        if (!StackTraceUtil::validate_caller(ResourceFactoryInterface::class, '')) {
-            throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s.'), __METHOD__, ResourceFactoryInterface::class));
-        }
+        StackTraceUtil::validate_caller(ResourceFactoryInterface::class, '');
         $this->scope_counter++;
     }
 
     public function decrement_scope_counter(): void
     {
-        if (!StackTraceUtil::validate_caller(ScopeReference::class, '')) {
-            throw new BadMethodCallException(sprintf(t::_('%s() can be called only from %s. To explicitly free a resource please unset the corresponding ScopeReference.'), __METHOD__, ScopeReference::class));
-        }
+        StackTraceUtil::validate_caller(ScopeReference::class, '');
         $this->scope_counter--;
         if ($this->scope_counter === 0) {
             $this->release();

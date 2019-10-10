@@ -219,7 +219,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public function __destruct()
     {
-        $this->Store->free_pointer($this);
+        if (!$this->is_new()) {
+            $this->Store->free_pointer($this);
+        }
+
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
@@ -407,6 +410,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public function save() : ActiveRecord
     {
+
+        if (!count($this->get_modified_properties_names())) {
+            return $this;
+        }
 
         //BEGIN ORMTransaction (==ORMDBTransaction)
 

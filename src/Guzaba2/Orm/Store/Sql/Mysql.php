@@ -268,7 +268,7 @@ VALUES
                     $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
                     $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
                 } else {
-                    $field_names_arr = $ActiveRecord->get_field_names();//this includes the full index
+                    $field_names_arr = $ActiveRecord->get_property_names();//this includes the full index
 
 //                    if (array_key_exists($main_index[0], $record_data_to_save)) {
 //                        unset($record_data_to_save[$main_index[0]]);
@@ -283,7 +283,7 @@ VALUES
                 }
             } else {
                 // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
-                $field_names_arr = array_unique(array_merge($ActiveRecord->get_field_names(), $main_index));
+                $field_names_arr = array_unique(array_merge($ActiveRecord->get_property_names(), $main_index));
                 $field_names_str = implode(', ', $field_names_arr);
                 $placeholder_str = implode(', ', array_map(function ($value) {
                     return ':'.$value;
@@ -330,7 +330,7 @@ VALUES
             }
         } else {
             $record_data_to_save = [];
-            $field_names = $modified_field_names = $ActiveRecord->get_field_names();
+            $field_names = $modified_field_names = $ActiveRecord->get_property_names();
 
 //            if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
 //                $modified_field_names = $ActiveRecord->get_modified_field_names();
@@ -399,12 +399,11 @@ ON DUPLICATE KEY UPDATE
 {$update_str}
                 ";
 
-
-
                 try {
                     $Statement = $Connection->prepare($q);
 
-                    $Statement->execute($data_arr);
+                    $ret = $Statement->execute($data_arr);
+                    
                     //print 'BB'.$Connection->get_affected_rows().'BB';
                 } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
                     throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
