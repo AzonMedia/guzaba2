@@ -410,7 +410,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public function save() : ActiveRecord
     {
-
         if (!count($this->get_modified_properties_names())) {
             return $this;
         }
