@@ -53,7 +53,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     }
 
     /**
-     * 
+     *
      *
      * @param ServerRequestInterface $Request
      * @param RequestHandlerInterface $Handler
@@ -74,7 +74,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
 
                     $controller_arguments += $body_params;
-
                 }
 
                 //check if controller has init method

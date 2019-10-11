@@ -357,7 +357,7 @@ abstract class Message extends Base implements MessageInterface
      * {@inheritDoc}
      * @return string|null
      */
-    function sendfile($filename)
+    public function sendfile($filename)
     {
         $fp = fopen($filename, "r");
 
@@ -366,5 +366,4 @@ abstract class Message extends Base implements MessageInterface
 
         $this->Body->write($r);
     }
-
 }
