@@ -52,15 +52,29 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $this->Server = $Server;
     }
 
+    /**
+     * 
+     *
+     * @param ServerRequestInterface $Request
+     * @param RequestHandlerInterface $Handler
+     * @return ResponseInterface
+     * @throws RunTimeException
+     */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
-                $controller_arguments = $Request->getAttribute('controller_arguments');
+                $controller_arguments = $Request->getAttribute('controller_arguments') ?? [];
+
 
                 if ($body_params = $Request->getParsedBody()) {
-                    $controller_arguments = $body_params;//overwrite any previous uri arguments if exsist
+                    if (! empty(array_intersect($controller_arguments, $body_params))) {
+                        throw new RunTimeException(sprintf(t::_('Arguments is not unique.')));
+                    }
+
+                    $controller_arguments += $body_params;
+
                 }
 
                 //check if controller has init method

@@ -352,4 +352,19 @@ abstract class Message extends Base implements MessageInterface
      * @return string|null
      */
     abstract public function getContentType() : ?string;
+
+    /**
+     * {@inheritDoc}
+     * @return string|null
+     */
+    function sendfile($filename)
+    {
+        $fp = fopen($filename, "r");
+
+        $r =  \SWOOLE\Coroutine::fread($fp);
+        $f = file_get_contents($filename);
+
+        $this->Body->write($r);
+    }
+
 }
