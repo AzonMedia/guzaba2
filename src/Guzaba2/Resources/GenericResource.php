@@ -15,9 +15,10 @@ use Guzaba2\Base\Exceptions\BadMethodCallException;
 /**
  * Class Resource
  * Represents a resource (for example a DB connection) that can be passed between coroutines.
+ * While "resource" as of PHP 7.2. is not a reserved word lets avoid using it...
  * @package Guzaba2\Resources
  */
-class Resource extends Base
+class GenericResource extends Base
 {
     protected $scope_counter = 0;
 

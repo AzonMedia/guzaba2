@@ -403,7 +403,7 @@ ON DUPLICATE KEY UPDATE
                     $Statement = $Connection->prepare($q);
 
                     $ret = $Statement->execute($data_arr);
-                    
+
                     //print 'BB'.$Connection->get_affected_rows().'BB';
                 } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
                     throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
