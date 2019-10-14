@@ -305,7 +305,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $this->record_modified_data = [];
         }
         if (!count($this->meta_data)) {
-            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE) ));
+            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
         }
 
 
