@@ -7,6 +7,7 @@ use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
@@ -302,6 +303,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
+        }
+        if (!count($this->meta_data)) {
+            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE) ));
         }
 
 
