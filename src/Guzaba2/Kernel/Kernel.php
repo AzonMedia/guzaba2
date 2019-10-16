@@ -550,6 +550,16 @@ class Kernel
         }
     }
 
+    public static function get_loaded_classes() : array
+    {
+        return self::$loaded_classes;
+    }
+
+    public static function get_loaded_paths() : array
+    {
+        return self::$loaded_paths;
+    }
+
     /////////////////////////
     /// PROTECTED METHODS ///
     /////////////////////////

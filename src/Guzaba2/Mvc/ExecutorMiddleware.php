@@ -104,32 +104,35 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
 
                     //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
-                    [$controller_callable[0], '_init'](...$ordered_parameters);
+                    $Response = [$controller_callable[0], '_init'](...$ordered_parameters);
                 }
 
-                $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
-                $parameters = $RMethod->getParameters();
-                $ordered_parameters = [];
+                if (empty($Response)) { //if the _init function hasnt returned any response... it may return response due an error, in the normal case the actual action should be invoked
+                    $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
+                    $parameters = $RMethod->getParameters();
+                    $ordered_parameters = [];
 
-                foreach ($parameters as $key => $parameter) {
-                    $argType = $parameter->getType();
+                    foreach ($parameters as $key => $parameter) {
+                        $argType = $parameter->getType();
 
-                    if (isset($controller_arguments[$parameter->getName()])) {
-                        $value = $controller_arguments[$parameter->getName()];
-                    } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                        $value = $parameter->getDefaultValue();
+                        if (isset($controller_arguments[$parameter->getName()])) {
+                            $value = $controller_arguments[$parameter->getName()];
+                        } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                            $value = $parameter->getDefaultValue();
+                        }
+
+                        if (isset($value)) {
+                            $value = $controller_arguments[$parameter->getName()];
+                            //will throw exception if type missing
+                            settype($value, (string) $argType);
+                            $ordered_parameters[] = $value;
+                            unset($value);
+                        }
                     }
 
-                    if (isset($value)) {
-                        $value = $controller_arguments[$parameter->getName()];
-                        //will throw exception if type missing
-                        settype($value, (string) $argType);
-                        $ordered_parameters[] = $value;
-                        unset($value);
-                    }
+                    $Response = $controller_callable(...$ordered_parameters);
                 }
 
-                $Response = $controller_callable(...$ordered_parameters);
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
                     $requested_content_type = $Request->getContentType();
@@ -138,6 +141,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
                 }
+
+
+
+                //TODO add cleanup code that unsets all properties set on the child controller
+
+
                 return $Response;
             } elseif (is_object($controller_callable)) {
                 //Closure or class with __invoke

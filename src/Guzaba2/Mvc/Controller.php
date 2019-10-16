@@ -20,6 +20,8 @@ use Psr\Http\Message\ResponseInterface;
 abstract class Controller extends Base
 {
 
+
+
     /**
      * @var RequestInterface
      */
@@ -70,6 +72,18 @@ abstract class Controller extends Base
     public static function get_structured_notfound_response(array $structure = []) : ResponseInterface
     {
         $Response = new Response(StatusCode::HTTP_NOT_FOUND, [], new Structured($structure));
+        return $Response;
+    }
+
+    public static function get_structured_badrequest_response(array $structure = []) : ResponseInterface
+    {
+        $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], new Structured($structure));
+        return $Response;
+    }
+
+    public static function get_structured_unauthorized_response(array $structure = []) : ResponseInterface
+    {
+        $Response = new Response(StatusCode::HTTP_UNAUTHORIZED, [], new Structured($structure));
         return $Response;
     }
 }

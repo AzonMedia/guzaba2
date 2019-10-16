@@ -10,6 +10,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
@@ -406,6 +407,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     {
         return static::CONFIG_RUNTIME['main_table'];
     }
+
+    public static function get_default_route() : ?string
+    {
+        return static::CONFIG_RUNTIME['default_route'] ?? NULL;
+    }
     
     //public static function get_meta_table() : string
     //{
@@ -728,5 +734,39 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     public function debug_get_data()
     {
         return $this->Store->debug_get_data();
+    }
+
+    /**
+     * Returns a routing table in a format as expected by Azonmedia\Routing\RoutingMapArray.
+     * Obtains the default routes for the objects under the provided $ns_prefixes.
+     * The default route for an ActiveRecord object needs to be set in the RUNTIME_CONFIG['default_route'] and must be without the UUID section.
+     * @example CONFIG_DEFAULTS = ['default_route' => '/log-entry'];
+     * @param array $ns_prefixes
+     * @return array Twodimensional array $routing_map['route']['method'] => controller
+     */
+    public static function get_default_routes(array $ns_prefixes) : array
+    {
+        $routes = [];
+
+        $loaded_classes = Kernel::get_loaded_classes();
+
+        foreach ($ns_prefixes as $ns_prefix) {
+            //get all activeRecord classes in the given ns prefix
+            foreach ($loaded_classes as $loaded_class) {
+
+                if (is_a($loaded_class, ActiveRecord::class, TRUE) && $loaded_class !== ActiveRecord::class && strpos($loaded_class, $ns_prefix) === 0) {
+                    $default_route = $loaded_class::get_default_route();
+                    if ($default_route !== NULL) {
+                        $default_route_with_id = $default_route.'/{uuid}';
+                        $routes[$default_route_with_id][Method::HTTP_GET] = [ActiveRecordDefaultController::class, 'get'];
+                        $routes[$default_route_with_id][Method::HTTP_PUT | Method::HTTP_PATCH] = [ActiveRecordDefaultController::class, 'update'];
+                        $routes[$default_route_with_id][Method::HTTP_DELETE] = [ActiveRecordDefaultController::class, 'delete'];
+                        $routes[$default_route][Method::HTTP_POST] = [ActiveRecordDefaultController::class, 'create'];
+                    }
+                }
+            }
+        }
+
+        return $routes;
     }
 }
