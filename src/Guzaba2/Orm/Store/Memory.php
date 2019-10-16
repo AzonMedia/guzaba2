@@ -65,6 +65,9 @@ class Memory extends Store implements StoreInterface
         */
     ];
 
+    // TODO UUID
+    //protected $uuid_data = [];
+
     public function __construct(StoreInterface $FallbackStore, ?MetaStoreInterface $MetaStore = NULL)
     {
         parent::__construct();
