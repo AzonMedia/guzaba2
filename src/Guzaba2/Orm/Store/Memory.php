@@ -160,7 +160,7 @@ class Memory extends Store implements StoreInterface
                     return $pointer;
                 }
             }
-// TODO UUID
+            // TODO UUID
 //        } elseif ($uuid = $class::get_uuid_from_data($index)) {
 //            if (isset($this->uuid_data[$uuid])) {
 //                $lookup_index = $this->uuid_data[$uuid]['lookup_index'];
@@ -183,7 +183,6 @@ class Memory extends Store implements StoreInterface
 //                    }
 //                }
 //            }
-
         } elseif (array_key_exists($class, $this->data)) {
             //do a search in the available memory objects....
             foreach ($this->data[$class] as $lookup_index=>$records) {
