@@ -64,6 +64,11 @@ class Kernel
     public const FRAMEWORK_NAME = 'Guzaba2';
 
     /**
+     *
+     */
+    public const FRAMEWORK_VERSION = '2-dev';
+
+    /**
      * @var array
      */
     protected static $loaded_classes = [];

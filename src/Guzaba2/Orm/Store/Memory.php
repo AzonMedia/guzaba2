@@ -141,13 +141,10 @@ class Memory extends Store implements StoreInterface
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
-        //$index = implode(':', array_values($lookup_index));
-        //check local storage at $data
-        //$lookup_index = self::form_lookup_index($index);
         //the provided index is array
         //check is the provided array matching the primary index
-        $primary_index = $class::get_index_from_data($index);
-        if ($primary_index) {
+
+        if ($primary_index = $class::get_index_from_data($index)) {
             $lookup_index = self::form_lookup_index($primary_index);
             if (isset($this->data[$class][$lookup_index])) {
                 //if found check is it current in MetaStore
@@ -163,8 +160,32 @@ class Memory extends Store implements StoreInterface
                     return $pointer;
                 }
             }
+// TODO UUID
+//        } elseif ($uuid = $class::get_uuid_from_data($index)) {
+//            if (isset($this->uuid_data[$uuid])) {
+//                $lookup_index = $this->uuid_data[$uuid]['lookup_index'];
+//                $class_by_uuid = $this->uuid_data[$uuid]['class'];
+//                if ($class_by_uuid !== $class) {
+//                    throw new LogicException(sprintf(t::_('The requested object is of class %s while the the provided UUID %s is of class %s.'), $class, $uuid, $class_by_uuid));
+//                }
+//                if (isset($this->data[$class][$lookup_index])) {
+//                    //if found check is it current in MetaStore
+//                    $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+//                    //print $last_update_time.'AAA'.PHP_EOL;
+//                    if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+//                        if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+//                            $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+//                        }
+//                        $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+//                        $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+//                        Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+//                        return $pointer;
+//                    }
+//                }
+//            }
+
         } elseif (array_key_exists($class, $this->data)) {
-            //TODO - do a search in the available memory objects....
+            //do a search in the available memory objects....
             foreach ($this->data[$class] as $lookup_index=>$records) {
                 foreach ($records as $update_time=>$record) {
                     if (array_intersect($index, $record['data']) === $index) {
@@ -206,6 +227,14 @@ class Memory extends Store implements StoreInterface
         $last_update_time = $pointer['meta']['object_last_update_microtime'];
         //print $last_update_time.'BBB'.PHP_EOL;
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+
+        //v1
+        //$uuid = $pointer['meta']['uuid'];
+        //$this->data[$class][$uuid] =& $this->data[$class][$lookup_index];
+        //v2 - use a separate UUID index that corresponds to the ID
+        // TODO UUID
+        //$this->uuid_data[$uuid] = ['class' => $class, 'id' => $primary_index, 'lookup_index' => $lookup_index];
+
         //there can be other versions for the same class & lookup_index
 
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
