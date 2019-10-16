@@ -753,7 +753,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         foreach ($ns_prefixes as $ns_prefix) {
             //get all activeRecord classes in the given ns prefix
             foreach ($loaded_classes as $loaded_class) {
-
                 if (is_a($loaded_class, ActiveRecord::class, TRUE) && $loaded_class !== ActiveRecord::class && strpos($loaded_class, $ns_prefix) === 0) {
                     $default_route = $loaded_class::get_default_route();
                     if ($default_route !== NULL) {

@@ -73,7 +73,6 @@ class ActiveRecordDefaultController extends Controller
      */
     public function create() : ResponseInterface
     {
-
     }
 
     /**
@@ -83,7 +82,6 @@ class ActiveRecordDefaultController extends Controller
      */
     public function update(string $uuid) : ResponseInterface
     {
-
     }
 
     /**
