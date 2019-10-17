@@ -3,7 +3,6 @@
 
 namespace Guzaba2\Event;
 
-
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -11,7 +10,6 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 
 class Events extends Base
 {
-
     private $callbacks = [];
 
     public function __construct()
@@ -33,7 +31,6 @@ class Events extends Base
         }
         $this->callbacks[$subject_unique_id][$event_name][$callback_hash] = $callback;
         return TRUE;
-
     }
 
     public function remove_callback(ObjectInternalIdInterface $Subject, string $event_name = '', ?callable $callback) : void
@@ -62,5 +59,4 @@ class Events extends Base
     {
         return new Event($this, $Subject, $event_name);
     }
-
 }

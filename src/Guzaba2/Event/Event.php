@@ -11,7 +11,6 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
  */
 class Event
 {
-
     private $Subject;
 
     protected $event_name;
@@ -46,5 +45,4 @@ class Event
         }
         return count($callbacks);
     }
-
 }
