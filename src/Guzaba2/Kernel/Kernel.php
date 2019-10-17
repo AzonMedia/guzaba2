@@ -191,6 +191,7 @@ class Kernel
     /**
      * @param string $id
      * @return object
+     * @throws RunTimeException
      */
     public static function get_service(string $id) : object
     {
@@ -203,6 +204,7 @@ class Kernel
     /**
      * @param string $id
      * @return bool
+     * @throws RunTimeException
      */
     public static function has_service(string $id) : bool
     {

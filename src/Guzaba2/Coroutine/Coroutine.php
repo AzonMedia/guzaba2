@@ -13,6 +13,7 @@ use Guzaba2\Base\Traits\SupportsObjectInternalId;
 //use Guzaba2\Database\Interfaces\ConnectionInterface;
 //use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Traits\UsesServices;
+use Guzaba2\Event\Events;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
@@ -106,6 +107,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             } else {
                 $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
+                $Context->Events = new Events();
             }
         }
         return $Context;

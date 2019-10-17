@@ -131,10 +131,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     /**
      * ActiveRecord constructor.
-     * @param $index
+     * @param int $index
      * @param StoreInterface|null $Store
-     * @throws \ReflectionException
+     * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
     public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     {
@@ -165,14 +166,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
                 self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
             }
         }
-//        } else {
-//            foreach (self::$columns_data as $column_datum) {
-//                if ($column_datum['autoincrement'] === TRUE) {
-//                    //may be autoincrement_index should be static prop
-//                    self::$autoincrement_index = TRUE;
-//                }
-//            }
-//        }
 
         if (empty(self::$primary_index_columns[$called_class])) {
             foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
@@ -200,7 +193,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             if (count($primary_columns) === 1) {
                 $index = [$primary_columns[0] => $index];
             } else {
-                $message = sprintf(t::_(' The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
+                $message = sprintf(t::_('The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
                 throw new InvalidArgumentException($message);
             }
         } elseif (is_array($index)) {
@@ -332,6 +325,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * Works only for classes that have a single primary index.
      * If the class has a compound index throws a RunTimeException.
      * @return int
+     * @throws RunTimeException
      */
     public function get_index() /* scalar */
     {
