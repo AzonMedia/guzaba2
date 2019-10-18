@@ -101,6 +101,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $Context->is_initialized_flag = TRUE;
             $Context->sub_coroutine_ids = [];
             $Context->parent_coroutine_id = self::getPcid();
+            $Context->current_user_id = 0;
             if ($Context->parent_coroutine_id >= 1) {
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
                 $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
