@@ -197,7 +197,12 @@ class SourceStream extends Base
     public function stream_lock()
     {
         throw new NotImplementedException(sprintf(t::_('Locking of a %s stream is not implemented yet.'), self::PROTOCOL));
-        //return false;
+    }
+
+    public function stream_set_option(int $option, int $arg1, int $arg2)
+    {
+        //throw new NotImplementedException(sprintf(t::_('Setting options of a %s stream is not implemented yet.'), self::PROTOCOL));
+        //just ignore this for now
     }
 
     public function stream_seek($offset, $whence  = SEEK_SET)

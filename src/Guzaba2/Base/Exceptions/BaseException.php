@@ -171,13 +171,14 @@ abstract class BaseException extends \Exception
         //self::set_static('CurrentException', $this->cloneException());
 
 
-        if (Coroutine::inCoroutine()) {
-            $this->created_in_coroutine_id = Coroutine::getCid();
+        //if (Coroutine::inCoroutine()) {
+        if (\Swoole\Coroutine::getCid() > 0) {
+            $this->created_in_coroutine_id = \Swoole\Coroutine::getCid();
             //it is too late here to get the trace where was this coroutine created/started
             //this is done at the time the coroutine is started - the backtrace is saved in the Context
             //$this->setTrace(Coroutine::getFullBacktrace());
             
-            $Context = Coroutine::getContext();
+            $Context = \Swoole\Coroutine::getContext();
             $Context->CurrentException = $this->cloneException();
         } else {
             self::$CurrentException = $this->cloneException();
