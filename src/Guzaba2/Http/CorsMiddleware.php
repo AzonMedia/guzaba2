@@ -16,7 +16,6 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class CorsMiddleware extends Base implements MiddlewareInterface
 {
-
     private $headers;
 
     /**
