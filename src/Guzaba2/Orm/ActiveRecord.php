@@ -19,6 +19,7 @@ use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Event\Event;
 
 
 
@@ -285,6 +286,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $args = func_get_args();
             call_user_func_array([$this,'_before_load'], $args);//must return void
         }
+        
+        new Event($this, '_before_load');
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
@@ -313,6 +316,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
 
         $this->is_new_flag = FALSE;
+
+        new Event($this, '_after_load');
 
         //_after_load() event
         if (method_exists($this, '_after_load') && !$this->method_hooks_are_disabled()) {
@@ -426,6 +431,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             call_user_func_array([$this,'_before_save'], $args);//must return void
         }
 
+        new Event($this, '_before_save');
+
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
@@ -445,6 +452,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
         }
+
+        new Event($this, '_after_save');
 
         //_after_save() event
         if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {

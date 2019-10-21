@@ -3,6 +3,7 @@
 namespace Guzaba2\Event;
 
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
+use Guzaba2\Coroutine\Coroutine;
 
 /**
  * Class Event
@@ -15,12 +16,15 @@ class Event
 
     protected $event_name;
 
-    public function __construct(Events $Events, ObjectInternalIdInterface $Subject, string $event_name)
+    public function __construct(ObjectInternalIdInterface $Subject, string $event_name)
     {
         $this->Subject = $Subject;
         $this->event_name = $event_name;
-        $callbacks = $Events->get_callbacks($Subject, $event_name);
-        $this->execute_callbacks($callbacks);
+        $Events = Coroutine::getContext()->Events;
+        $class_callbacks = $Events->get_class_callbacks(get_class($Subject), $event_name);
+        $this->execute_callbacks($class_callbacks);
+        $object_callbacks = $Events->get_object_callbacks($Subject, $event_name);
+        $this->execute_callbacks($object_callbacks);
     }
 
     public function get_subject() : ObjectInternalIdInterface
