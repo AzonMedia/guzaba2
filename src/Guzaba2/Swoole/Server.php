@@ -170,7 +170,7 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['enable_static_handler']) && empty($this->options['document_root'])) {
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
         }
-        if (!empty($this->options['open_http2_protocol']) && ( empty($this->options['ssl_cert_file']) || empty($this->options['ssl_key_file']) )) {
+        if (!empty($this->options['open_http2_protocol']) && (empty($this->options['ssl_cert_file']) || empty($this->options['ssl_key_file']))) {
             throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
         }
 
