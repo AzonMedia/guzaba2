@@ -41,8 +41,6 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
      */
     protected $original_query = '';
 
-
-
     //public function __construct(array $options)
     public function __construct()
     {
@@ -98,7 +96,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
                 // If connection is lost, try to reconnect and prepare the query again
                 print(sprintf(t::_("MySQL Connection is Lost with Error No %s. Trying to reconnect ...\n"), $this->MysqlCo->errno));
                 $this->initialize();
-                return $this->prepare($query);
+                return $this->prepare($this->original_query);
             } else {
                 throw new QueryException($this, '', $error_code, sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error), $query, $expected_parameters);
             }
