@@ -154,6 +154,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @param $callable
      * @param mixed ...$params Any additional arguments will be passed to the coroutine.
      * @return int
+     * @throws RunTimeException
      */
     public static function create($callable, ...$params)
     {

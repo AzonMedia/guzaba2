@@ -90,6 +90,9 @@ class Server extends \Guzaba2\Http\Server
         'document_root',
         'enable_static_handler',
         'static_handler_locations',
+        
+
+        'ssl_key_file',
 
     ];
 
@@ -131,7 +134,11 @@ class Server extends \Guzaba2\Http\Server
 
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
 
-        $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode);
+        $sock_type = SWOOLE_SOCK_TCP;
+        if (!empty($options['ssl_cert_file'])) {
+            $sock_type |= SWOOLE_SSL;
+        }
+        $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);
         
         $this->validate_server_configuration_options($options);
         $this->SwooleHttpServer->set($options);
@@ -163,12 +170,22 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['enable_static_handler']) && empty($this->options['document_root'])) {
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
         }
+        if (!empty($this->options['open_http2_protocol']) && ( empty($this->options['ssl_cert_file']) || empty($this->options['ssl_key_file']) )) {
+            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
+        }
+
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
         Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
         Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s').PHP_EOL, $this->host, $this->port));
         if (!empty($this->options['document_root'])) {
             Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
+        }
+        if (!empty($this->options['open_http2_protocol'])) {
+            Kernel::printk(sprintf(t::_('HTTP2 enabled')).PHP_EOL);
+        }
+        if (!empty($this->options['ssl_cert_file'])) {
+            Kernel::printk(sprintf(t::_('HTTPS enabled')).PHP_EOL);
         }
 
         $this->SwooleHttpServer->start();
