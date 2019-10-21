@@ -97,5 +97,4 @@ class Events extends Base
 
         return $this->class_callbacks[$class] ?? [];
     }
-
 }
