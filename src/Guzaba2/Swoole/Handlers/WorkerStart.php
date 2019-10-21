@@ -25,6 +25,11 @@ class WorkerStart extends HandlerBase
     {
         //$this->HttpServer->set_worker_id($worker_id);
         
+        \Swoole\Coroutine::create(function () {
+            $ConnectionMonitor = new ConnectionMonitor();
+            $ConnectionMonitor->monitor();
+        });
+
         if (Debugger::is_enabled()) {
             $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic();
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
@@ -35,13 +40,6 @@ class WorkerStart extends HandlerBase
         
         Kernel::$Watchdog->checkin($Server, $worker_id);
         Kernel::$Watchdog->check($worker_id);
-
-        // \Swoole\Coroutine::create(function () use ($worker_id) {
-        //     print $worker_id.' start'.PHP_EOL;
-        \Swoole\Coroutine::create(function () {
-            $ConnectionMonitor = new ConnectionMonitor();
-            $ConnectionMonitor->monitor();
-        });
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void
