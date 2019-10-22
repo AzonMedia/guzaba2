@@ -14,7 +14,6 @@ use Guzaba2\Orm\Store\Store;
  */
 class MultiStore extends Store
 {
-
     protected $stores = [];
 
     public function __construct(StoreInterface $Store)
@@ -58,7 +57,7 @@ class MultiStore extends Store
     {
         $callables = [];
         foreach ($this->stores as $Store) {
-            $callables[] = static function() use ($Store, $ActiveRecord) {
+            $callables[] = static function () use ($Store, $ActiveRecord) {
                 $Store->update_record($ActiveRecord);
             };
         }
