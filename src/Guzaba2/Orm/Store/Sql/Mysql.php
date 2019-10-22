@@ -35,7 +35,7 @@ class Mysql extends Database
 
     const SAVE_MODE = self::SAVE_MODE_ALL;
 
-    public function __construct(StoreInterface $FallbackStore, ?string $connection_class = NULL)
+    public function __construct(StoreInterface $FallbackStore, string $connection_class)
     {
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
