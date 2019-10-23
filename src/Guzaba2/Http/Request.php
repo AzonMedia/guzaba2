@@ -63,7 +63,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     /**
      * @var Server
      */
-    protected $Server;
+    protected ServerInterface $Server;
 
     /**
     * @var null|array|object

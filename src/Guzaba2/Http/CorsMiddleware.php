@@ -32,7 +32,7 @@ class CorsMiddleware extends Base implements MiddlewareInterface
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      * Will replace the Request provided to the next middleware with a one with a different Uri
      * @param ServerRequestInterface $Request
      * @param RequestHandlerInterface $Handler

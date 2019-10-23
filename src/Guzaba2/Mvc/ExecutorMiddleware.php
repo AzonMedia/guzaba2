@@ -31,7 +31,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     /**
      * @var Server
      */
-    protected $Server;
+    protected Server $Server;
 
     /**
      * To be used when the Body of the Response is of type Structured

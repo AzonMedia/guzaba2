@@ -42,22 +42,6 @@ use Psr\Log\LogLevel;
 class Kernel
 {
 
-
-    /**
-     * @var string
-     */
-    protected static $cwd;
-
-    /**
-     * @var string
-     */
-    protected static $kernel_dir;
-
-    /**
-     * @var string
-     */
-    protected static $framework_root_dir;
-
     /**
      *
      */
@@ -68,58 +52,49 @@ class Kernel
      */
     public const FRAMEWORK_VERSION = '2-dev';
 
+
+    public const EXIT_SUCCESS = 0;
+
+    public const EXIT_GENERAL_ERROR = 1;
+
     /**
-     * @var array
+     * @var string
      */
-    protected static $loaded_classes = [];
+    protected static string $cwd;
+
+    /**
+     * @var string
+     */
+    protected static string $kernel_dir;
+
+    /**
+     * @var string
+     */
+    protected static string $framework_root_dir;
 
     /**
      * @var array
      */
-    protected static $loaded_paths = [];
+    protected static array $loaded_classes = [];
+
+    /**
+     * @var array
+     */
+    protected static array $loaded_paths = [];
 
     /**
      * Additional places where the autoloader should look.
      * An associative array containing namespace prefix as key and lookup path as value.
      * @var array
      */
-    protected static $autoloader_lookup_paths = [];
+    protected static array $autoloader_lookup_paths = [];
 
-    /**
-     * @var LoggerInterface
-     */
-    protected static $Logger;
-
-    /**
-     * @var RegistryInterface
-     */
-    protected static $Registry;
-
-    /**
-     * @var ContainerInterface
-     */
-    protected static $Container;
-
-    /**
-     * @var Server
-     */
-    protected static $HttpServer;
 
     /**
      * Is the kernel initialized
      * @var bool
      */
-    protected static $is_initialized_flag = FALSE;
-
-    /**
-     * @var Watchdog
-     */
-    public static $Watchdog;
-    
-    public const EXIT_SUCCESS = 0;
-
-    public const EXIT_GENERAL_ERROR = 1;
-
+    protected static bool $is_initialized_flag = FALSE;
 
     /**
      * ['class_name'] => 'parent' => X, 'children' => [Z, Y]
@@ -127,6 +102,30 @@ class Kernel
      */
     protected static $class_structure = [];
 
+    /**
+     * @var LoggerInterface
+     */
+    protected static LoggerInterface $Logger;
+
+    /**
+     * @var RegistryInterface
+     */
+    protected static RegistryInterface $Registry;
+
+    /**
+     * @var ContainerInterface
+     */
+    protected static ContainerInterface $Container;
+
+    /**
+     * @var Server
+     */
+    protected static ?Server $HttpServer = NULL;
+
+    /**
+     * @var Watchdog
+     */
+    public static Watchdog $Watchdog;
 
     private function __construct()
     {
