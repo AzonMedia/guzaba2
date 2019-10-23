@@ -5,7 +5,7 @@ clone_folder: C:\projects\guzaba2
 
 environment:
   matrix:
-    - php_ver: 7.2
+    - php_ver: 7.4
   access_token:
     secure: ynSTW1v2P4HXivcBH75Hc0mMgh1AFhLzTFfU/kWcXvQPmrb21M4N+DN/yMlyv6EC
   broken_files: ""
