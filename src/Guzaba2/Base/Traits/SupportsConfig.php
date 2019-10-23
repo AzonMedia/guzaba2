@@ -8,7 +8,7 @@ use Guzaba2\Translator\Translator as t;
 
 trait SupportsConfig
 {
-    private static $is_configured_flag = FALSE;
+    private static bool $is_configured_flag = FALSE;
 
     /**
      * To be invoked only by the Kernel

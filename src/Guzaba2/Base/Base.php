@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base;
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Interfaces\UsesServicesInterface;
@@ -47,7 +48,7 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
      * Base constructor.
      * All children must invoke the parent constructor
      */
-    protected function __construct()
+    public function __construct()
     {
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
@@ -67,6 +68,23 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
      */
     public function __set(string $property, /* mixed */ $value): void
     {
-        throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is now allowed to set new object properties at run time.'), get_class($this), __CLASS__));
+        //throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time. The other case is to access a non initialized typed property.'), get_class($this), __CLASS__));
+        //when typed properties are used this can be triggered not only on undefined property but also when setting a typed property that was not initialized
+        //for example public string $dir;//not initialized - setting it with $obj->dir will trigger __set()
+        //the correct is public string $dir = '';
+        $class = get_class($this);
+        if (property_exists($class, $property)) {
+            //throw new RunTimeException(sprintf(t::_('Attempting to set a dynamic uninitialized typed property $%s on an instance of class %s. All typed properties must be initialized'), $property, $class));
+            //can not throw an exception here as the object properties can not be initializen on declaration and will go thorugh the overloading
+            if (is_object($value)) {
+                $this->{$property} = $value;
+            } else {
+                throw new RunTimeException(sprintf(t::_('Attempting to set a dynamic uninitialized typed property $%s on an instance of class %s. All typed properties must be initialized'), $property, $class));
+            }
+
+        } else {
+            throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time.'), get_class($this), __CLASS__));
+        }
+
     }
 }

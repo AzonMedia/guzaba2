@@ -24,23 +24,20 @@ namespace Guzaba2\Base\Traits;
 trait SupportsObjectInternalId
 {
 
-    //traits do not support constants
-    private static $DEFAULT_CHARACTERS_LIST = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-    private static $UNIQUE_ID_LENGTH = 4;
 
     /**
      * Unique ID
      * @var string
      */
-    protected $object_internal_id;
+    protected string $object_internal_id = '';
 
     /**
      * Sets the object internal ID. To be called from the base class constructor.
      */
     protected function set_object_internal_id() : void
     {
-        $this->object_internal_id = self::generate_unique_id(self::$UNIQUE_ID_LENGTH);
+        $this->object_internal_id = self::generate_unique_id(self::UNIQUE_ID_LENGTH);
     }
 
     /**
@@ -72,10 +69,10 @@ trait SupportsObjectInternalId
         $str = '';
         static $list_length;
         if ($list_length === NULL) {
-            $list_length = strlen(self::$DEFAULT_CHARACTERS_LIST);
+            $list_length = strlen(self::DEFAULT_CHARACTERS_LIST);
         }
         for ($aa = 0; $aa < $length; $aa++) {
-            $str .= self::$DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
+            $str .= self::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
         }
 
         return $str;
