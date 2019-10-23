@@ -1,5 +1,5 @@
 <?php
-namespace Azonmedia\Glog\Store;
+namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
