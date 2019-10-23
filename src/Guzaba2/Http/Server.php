@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 use Guzaba2\Base\Base as Base;
+use Guzaba2\Http\Interfaces\ServerInterface;
 
 /**
  * Class Server
@@ -11,12 +12,13 @@ use Guzaba2\Base\Base as Base;
  * @package Guzaba2\Http
  */
 abstract class Server extends Base
+implements ServerInterface
 {
-    protected $host;
+    protected string $host = '';
 
-    protected $port;
+    protected int $port = 0;
 
-    protected $options = [];
+    protected array $options = [];
 
     public function __construct(string $host, int $port, array $options = [])
     {
@@ -25,16 +27,6 @@ abstract class Server extends Base
         $this->port = $port;
         $this->options = $options;
     }
-
-    abstract public function start();
-
-    abstract public function stop();
-
-    abstract public function on(string $event_name, callable $callable);
-
-    abstract public function get_worker_id() : int ;
-
-    abstract public function get_worker_pid() : int ;
 
     //abstract public function get_master_pid() : int ;
 

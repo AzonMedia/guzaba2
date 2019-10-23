@@ -105,22 +105,20 @@ class Server extends \Guzaba2\Http\Server
     /**
      * @var \Swoole\Http\Server
      */
-    protected $SwooleHttpServer;
+    protected \Swoole\Http\Server $SwooleHttpServer;
 
-    protected $host = self::SWOOLE_DEFAULTS['host'];
+    protected string $host = self::SWOOLE_DEFAULTS['host'];
 
-    protected $port = self::SWOOLE_DEFAULTS['port'];
+    protected int $port = self::SWOOLE_DEFAULTS['port'];
 
-    protected $dispatch_mode = self::SWOOLE_DEFAULTS['dispatch_mode'];
+    protected int $dispatch_mode = self::SWOOLE_DEFAULTS['dispatch_mode'];
 
-    protected $options = [];
-
-    public $table;
+    protected array $options = [];
 
     /**
      * @var int
      */
-    protected $worker_id;
+    protected int $worker_id = -1;//0 is a valid worker id
 
 
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
@@ -253,6 +251,23 @@ class Server extends \Guzaba2\Http\Server
         }
     }
 
+    public function option_is_set(string $option) : bool
+    {
+        return array_key_exists($option, $this->options);
+    }
+
+    public function get_option(string $option) /* mixed */
+    {
+        if (!$this->option_is_set($option)) {
+            throw new RunTimeException(sprintf(t::_('The option %s is not set.'), $option));
+        }
+        return $this->options[$option];
+    }
+
+    public function get_document_root() : ?string
+    {
+        return $this->option_is_set('document_root') ? $this->get_option('document_root') : NULL;
+    }
 
     public function get_worker_pid() : int
     {

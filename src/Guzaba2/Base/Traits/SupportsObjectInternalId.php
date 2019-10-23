@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
+use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
+
 /**
  * Trait SupportsObjectInternalId
  *
@@ -37,7 +39,7 @@ trait SupportsObjectInternalId
      */
     protected function set_object_internal_id() : void
     {
-        $this->object_internal_id = self::generate_unique_id(self::UNIQUE_ID_LENGTH);
+        $this->object_internal_id = self::generate_unique_id(ObjectInternalIdInterface::UNIQUE_ID_LENGTH);
     }
 
     /**
@@ -69,10 +71,10 @@ trait SupportsObjectInternalId
         $str = '';
         static $list_length;
         if ($list_length === NULL) {
-            $list_length = strlen(self::DEFAULT_CHARACTERS_LIST);
+            $list_length = strlen(ObjectInternalIdInterface::DEFAULT_CHARACTERS_LIST);
         }
         for ($aa = 0; $aa < $length; $aa++) {
-            $str .= self::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
+            $str .= ObjectInternalIdInterface::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
         }
 
         return $str;
