@@ -3,6 +3,7 @@
 
 namespace Guzaba2\Di;
 
+use Azonmedia\Glog\Application\RedisConnection;
 use Azonmedia\Lock\Backends\SwooleTableBackend;
 use Azonmedia\Lock\CoroutineLockManager;
 use Azonmedia\Lock\Backends\NullBackend;
@@ -67,6 +68,11 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'class'                         => Redis::class,
             'args'                          => [
                 'FallbackStore'                 => 'MysqlOrmStore',
+            ],
+        ],
+        'RedisCo'                       => [
+            'class'                         => RedisConnection::class,
+            'args'                          => [
             ],
         ],
         'MysqlOrmStore'                 => [
