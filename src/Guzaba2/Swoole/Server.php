@@ -92,7 +92,7 @@ class Server extends \Guzaba2\Http\Server
         'static_handler_locations',
         
 
-        'ssl_key_file',
+        'ssl_key_file',//this is mandatory if ssl_cert_file is used
 
     ];
 
@@ -130,12 +130,13 @@ class Server extends \Guzaba2\Http\Server
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
         $this->options = $options;
 
+
         \Swoole\Runtime::enableCoroutine(TRUE);//we will be running everything in coroutine context and makes sense to enable all hooks
 
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
 
         $sock_type = SWOOLE_SOCK_TCP;
-        if (!empty($options['ssl_cert_file'])) {
+        if (!empty($this->options['ssl_cert_file'])) {
             $sock_type |= SWOOLE_SSL;
         }
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);

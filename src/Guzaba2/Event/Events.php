@@ -40,7 +40,7 @@ class Events extends Base
         return TRUE;
     }
 
-    public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name = '', ?callable $callback) : void
+    public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name, ?callable $callback) : void
     {
         $subject_unique_id = $Subject->get_object_internal_id();
         if ($callback) { //unset only this callback
@@ -57,7 +57,9 @@ class Events extends Base
     {
         $subject_unique_id = $Subject->get_object_internal_id();
         if ($event_name) {
-            return $this->object_callbacks[$subject_unique_id][$event_name] ?? [];
+            $event_callbacks = $this->object_callbacks[$subject_unique_id][$event_name] ?? [];
+            $all_events_callbacks = $this->object_callbacks[$subject_unique_id]['*'] ?? [];
+            return array_merge($event_callbacks, $all_events_callbacks);
         }
         return $this->objectcallbacks[$subject_unique_id] ?? [];
     }
@@ -77,7 +79,7 @@ class Events extends Base
         return TRUE;
     }
 
-    public function remove_class_callback(string $class, string $event_name = '', ?callable $callback) : void
+    public function remove_class_callback(string $class, string $event_name, ?callable $callback) : void
     {
         if ($callback) { //unset only this callback
             $callback_hash = GeneralUtil::get_callable_hash($callback);
@@ -92,7 +94,9 @@ class Events extends Base
     public function get_class_callbacks(string $class, string $event_name = '') : array
     {
         if ($event_name) {
-            return $this->class_callbacks[$class][$event_name] ?? [];
+            $event_callbacks = $this->class_callbacks[$class][$event_name] ?? [];
+            $all_events_callbacks = $this->class_callbacks[$class]['*'] ?? [];
+            return array_merge($event_callbacks, $all_events_callbacks);
         }
 
         return $this->class_callbacks[$class] ?? [];
