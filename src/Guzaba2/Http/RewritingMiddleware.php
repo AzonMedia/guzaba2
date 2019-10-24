@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
-use Azonmedia\UrlRewriting\Rewriter;
+use Azonmedia\UrlRewriting\Interfaces\RewriterInterface;
 use Guzaba2\Base\Base;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -23,16 +23,16 @@ class RewritingMiddleware extends Base implements MiddlewareInterface
     protected $HttpServer;
 
     /**
-     * @var Rewriter
+     * @var RewriterInterface
      */
     protected $Rewriter;
 
     /**
      * RewritingMiddleware constructor.
      * @param Server $Server
-     * @param Rewriter $Rewriter
+     * @param RewriterInterface $Rewriter
      */
-    public function __construct(Server $Server, Rewriter $Rewriter)
+    public function __construct(Server $Server, RewriterInterface $Rewriter)
     {
         parent::__construct();
         $this->HttpServer = $Server;

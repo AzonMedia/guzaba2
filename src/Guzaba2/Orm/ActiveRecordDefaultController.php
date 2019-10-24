@@ -21,7 +21,7 @@ class ActiveRecordDefaultController extends Controller
     /**
      * @var ActiveRecord
      */
-    protected $ActiveRecord;
+    protected ActiveRecord $ActiveRecord;
 
     /**
      * Instantiates the ActiveRecord object.

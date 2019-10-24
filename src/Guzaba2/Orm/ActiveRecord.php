@@ -661,6 +661,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         
         return $data_arr;
     }
+
+    /**
+     * Can be overriden to provide editable default routing.
+     * @return iterable|null
+     */
+    public static function get_routes() : ?iterable
+    {
+        $ret = NULL;
+        if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+            $default_route = static::CONFIG_RUNTIME['route'];
+            $ret = [
+                $default_route                            => [
+                    Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'create'],
+                ],
+                $default_route.'/{uuid}'                       => [
+                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'view'],
+                    Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'update'],
+                    Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'delete'],
+                ],
+            ];
+        }
+        return $ret;
+    }
     
     /**
      * Returns the property names from the main table and its shards.
@@ -747,28 +770,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @param array $ns_prefixes
      * @return array Twodimensional array $routing_map['route']['method'] => controller
      */
-    public static function get_default_routes(array $ns_prefixes) : array
-    {
-        $routes = [];
+//    public static function get_default_routes(array $ns_prefixes) : array
+//    {
+//        $routes = [];
+//
+//        $loaded_classes = Kernel::get_loaded_classes();
+//
+//        foreach ($ns_prefixes as $ns_prefix) {
+//            //get all activeRecord classes in the given ns prefix
+//            foreach ($loaded_classes as $loaded_class) {
+//                if (is_a($loaded_class, ActiveRecord::class, TRUE) && $loaded_class !== ActiveRecord::class && strpos($loaded_class, $ns_prefix) === 0) {
+//                    $default_route = $loaded_class::get_default_route();
+//                    if ($default_route !== NULL) {
+//                        $default_route_with_id = $default_route.'/{uuid}';
+//                        $routes[$default_route_with_id][Method::HTTP_GET] = [ActiveRecordDefaultController::class, 'get'];
+//                        $routes[$default_route_with_id][Method::HTTP_PUT | Method::HTTP_PATCH] = [ActiveRecordDefaultController::class, 'update'];
+//                        $routes[$default_route_with_id][Method::HTTP_DELETE] = [ActiveRecordDefaultController::class, 'delete'];
+//                        $routes[$default_route][Method::HTTP_POST] = [ActiveRecordDefaultController::class, 'create'];
+//                    }
+//                }
+//            }
+//        }
+//
+//        return $routes;
+//    }
 
-        $loaded_classes = Kernel::get_loaded_classes();
-
-        foreach ($ns_prefixes as $ns_prefix) {
-            //get all activeRecord classes in the given ns prefix
-            foreach ($loaded_classes as $loaded_class) {
-                if (is_a($loaded_class, ActiveRecord::class, TRUE) && $loaded_class !== ActiveRecord::class && strpos($loaded_class, $ns_prefix) === 0) {
-                    $default_route = $loaded_class::get_default_route();
-                    if ($default_route !== NULL) {
-                        $default_route_with_id = $default_route.'/{uuid}';
-                        $routes[$default_route_with_id][Method::HTTP_GET] = [ActiveRecordDefaultController::class, 'get'];
-                        $routes[$default_route_with_id][Method::HTTP_PUT | Method::HTTP_PATCH] = [ActiveRecordDefaultController::class, 'update'];
-                        $routes[$default_route_with_id][Method::HTTP_DELETE] = [ActiveRecordDefaultController::class, 'delete'];
-                        $routes[$default_route][Method::HTTP_POST] = [ActiveRecordDefaultController::class, 'create'];
-                    }
-                }
-            }
-        }
-
-        return $routes;
-    }
 }

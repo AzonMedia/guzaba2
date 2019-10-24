@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
+use Guzaba2\Http\Interfaces\ServerInterface;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -63,7 +64,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     /**
      * @var Server
      */
-    protected ServerInterface $Server;
+    protected ?ServerInterface $Server = NULL;
 
     /**
     * @var null|array|object
@@ -97,22 +98,22 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
         parent::__construct();
     }
 
-    public function setServer(Server $Server) : void
+    public function setServer(ServerInterface $Server) : void
     {
         $this->Server = $Server;
     }
 
-    public function set_server(Server $Server) : void
+    public function set_server(ServerInterface $Server) : void
     {
         $this->setServer($Server);
     }
 
-    public function getServer() : ?Server
+    public function getServer() : ?ServerInterface
     {
         return $this->Server;
     }
 
-    public function get_server(): ?Server
+    public function get_server(): ?ServerInterface
     {
         return $this->getServer();
     }

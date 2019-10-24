@@ -172,6 +172,9 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['open_http2_protocol']) && (empty($this->options['ssl_cert_file']) || empty($this->options['ssl_key_file']))) {
             throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
         }
+        if (!empty($this->options['open_http2_protocol']) && !empty($this->options['enable_static_handler'])) {
+            throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
+        }
 
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
