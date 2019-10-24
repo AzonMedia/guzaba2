@@ -60,17 +60,17 @@ class Kernel
     /**
      * @var string
      */
-    protected static string $cwd;
+    protected static string $cwd = '';
 
     /**
      * @var string
      */
-    protected static string $kernel_dir;
+    protected static string $kernel_dir = '';
 
     /**
      * @var string
      */
-    protected static string $framework_root_dir;
+    protected static string $framework_root_dir = '';
 
     /**
      * @var array

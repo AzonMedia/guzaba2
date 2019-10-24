@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Guzaba2\Mvc;
+namespace Guzaba2\Routing;
 
 use Azonmedia\Routing\Interfaces\RouterInterface;
 use Guzaba2\Base\Base;
