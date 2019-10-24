@@ -124,7 +124,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                         if (isset($value)) {
                             $value = $controller_arguments[$parameter->getName()];
                             //will throw exception if type missing
-                            settype($value, (string) $argType);
+                            settype($value, $argType->getName());
                             $ordered_parameters[] = $value;
                             unset($value);
                         }

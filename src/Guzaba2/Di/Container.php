@@ -79,7 +79,7 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'class'                         => Mysql::class,
             'args'                          => [
                 'FallbackStore'                 => 'NullOrmStore',
-                'connection_class'              => \Azonmedia\Glog\Application\MysqlConnection::class,
+                'connection_class'              => \GuzabaPlatform\Platform\Application\MysqlConnection::class,
             ]
         ],
         'NullOrmStore'                  => [
