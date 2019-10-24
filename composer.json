@@ -14,7 +14,7 @@
         }
     ],
     "require": {
-        "php": ">=7.2.0",
+        "php": ">=7.4.0",
         "psr/http-message": "^1.0",
         "psr/http-server-middleware": "^1.0",
         "azonmedia/psr-to-swoole": "dev-master",
@@ -32,7 +32,8 @@
         "azonmedia/utilities": "dev-master",
         "azonmedia/apm": "dev-master",
         "ext-pdo": "*",
-        "ext-mysqli": "*"
+        "ext-mysqli": "*",
+        "azonmedia/watchdog": "dev-master"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]

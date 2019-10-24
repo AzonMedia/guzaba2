@@ -34,6 +34,7 @@ use Guzaba2\Authorization\IpBlackList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Azonmedia\Watchdog\Watchdog;
 
 /**
  * Class Kernel
