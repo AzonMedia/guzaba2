@@ -70,6 +70,7 @@ class Request extends HandlerBase
 
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->setServer($this->HttpServer);
+            $request_raw_content_length = $PsrRequest->getBody()->getSize();
 
             //\Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
             \Guzaba2\Coroutine\Coroutine::init($PsrRequest);
@@ -88,17 +89,21 @@ class Request extends HandlerBase
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
 
             //debug
-            $request_raw_content_length = $PsrRequest->getBody()->getSize();
+
             //$memory_usage = $Exception->get_memory_usage();
 
 
 
             $end_time = microtime(TRUE);
             //print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
-            $message = 'Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
-            Kernel::log($message, LogLevel::INFO);
+            $message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //Kernel::log($message, LogLevel::INFO);
+            Kernel::printk($message);
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
         } catch (Throwable $Exception) {
+            $message = 'Error occurred while handling request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().PHP_EOL;
+            //Kernel::log($message);
+            Kernel::printk($message);
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
 
 

@@ -15,15 +15,36 @@ abstract class ContentType
     public const TYPE_JSON  = 'json';
     public const TYPE_XML   = 'xml';
     public const TYPE_SOAP  = 'soap';
-    public const TYPE_YML   = 'yaml';
+    public const TYPE_YAML   = 'yaml';
 
     public const TYPES_MAP = [
-        self::TYPE_TEXT     => ['mime' => 'text/plain'],
-        self::TYPE_HTML     => ['mime' => 'text/html'],
-        self::TYPE_JSON     => ['mime' => 'application/json'],
-        self::TYPE_XML      => ['mime' => 'text/xml'],
-        self::TYPE_SOAP     => ['mime' => 'application/soap+xml'],
-        self::TYPE_YML      => ['mime' => ['text/yaml', 'application/x-yaml'] ],
+        self::TYPE_TEXT     => [
+            //'name'  => 'text',
+            'mime'  => 'text/plain'
+        ],
+        self::TYPE_HTML     => [
+            //'name'  => 'html',
+            'mime'  => 'text/html'
+        ],
+        self::TYPE_JSON     => [
+            //'name'  => 'json',
+            'mime'  => 'application/json'
+        ],
+        self::TYPE_XML      => [
+            //'name'  => 'xml',
+            'mime'  => 'text/xml'
+        ],
+        self::TYPE_SOAP     => [
+            //'name'  => 'soap',
+            'mime'  => 'application/soap+xml'
+        ],
+        self::TYPE_YAML      => [
+            //'name'  => 'yaml',
+            'mime'  => [
+                'text/yaml',
+                'application/x-yaml'
+            ]
+        ],
 
     ];
 
@@ -41,6 +62,18 @@ abstract class ContentType
                     $ret = $content_constant;
                     break;
                 }
+            }
+        }
+        return $ret;
+    }
+
+    public static function is_valid_content_type(string $content_type) : bool
+    {
+        $ret = FALSE;
+        foreach (self::TYPES_MAP as $type_const=>$type_data) {
+            if ($content_type === $type_const) {
+                $ret = TRUE;
+                break;
             }
         }
         return $ret;

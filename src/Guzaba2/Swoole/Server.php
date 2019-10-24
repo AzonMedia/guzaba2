@@ -140,6 +140,11 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);
         
         $this->validate_server_configuration_options($options);
+
+        if ($options['worker_num'] === NULL) {
+            $options['worker_num'] = swoole_cpu_num() * 2;
+        }
+
         $this->SwooleHttpServer->set($options);
 
         Kernel::set_http_server($this);

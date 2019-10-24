@@ -67,11 +67,11 @@ implements ControllerInterface
      * Factory for creating HTTP
      * @return ResponseInterface
      */
-    public static function get_structured_ok_response(array $structure) : ResponseInterface
+    public static function get_structured_ok_response(array $structure = []) : ResponseInterface
     {
-        if (!$structure) {
-            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
-        }
+//        if (!$structure) {
+//            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
+//        }
         $Response = new Response(StatusCode::HTTP_OK, [], new Structured($structure));
         return $Response;
     }
@@ -99,11 +99,11 @@ implements ControllerInterface
         return $Response;
     }
 
-    public static function get_structured_badrequest_response(array $structure) : ResponseInterface
+    public static function get_structured_badrequest_response(array $structure = []) : ResponseInterface
     {
-        if (!$structure) {
-            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
-        }
+//        if (!$structure) {
+//            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
+//        }
         $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], new Structured($structure));
         return $Response;
     }

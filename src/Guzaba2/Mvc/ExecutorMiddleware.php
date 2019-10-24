@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Mvc;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
@@ -28,10 +29,6 @@ use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
  */
 class ExecutorMiddleware extends Base implements MiddlewareInterface
 {
-    /**
-     * @var Server
-     */
-    protected Server $Server;
 
     /**
      * To be used when the Body of the Response is of type Structured
@@ -45,11 +42,25 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
     protected const DEFAULT_TYPE_HANDLER = 'default_handler';
 
-    public function __construct(Server $Server)
+    /**
+     * @var Server
+     */
+    protected Server $Server;
+
+    protected string $override_html_content_type = '';
+
+    public function __construct(Server $Server, string $override_html_content_type = '')
     {
+        
+        if ($override_html_content_type && !ContentType::is_valid_content_type($override_html_content_type)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided $override_html_content_type argument to %s() is not a valid content type.'), __METHOD__));
+        }
+        
         parent::__construct();
 
         $this->Server = $Server;
+
+        $this->override_html_content_type = $override_html_content_type;
     }
 
     /**
@@ -124,7 +135,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                         if (isset($value)) {
                             $value = $controller_arguments[$parameter->getName()];
                             //will throw exception if type missing
-                            settype($value, $argType->getName());
+                            //settype($value, (string) $argType);
+                            settype($value, $argType->getName() );
+
                             $ordered_parameters[] = $value;
                             unset($value);
                         }
@@ -136,7 +149,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
                     $requested_content_type = $Request->getContentType();
+                    if ($requested_content_type === ContentType::TYPE_HTML && $this->override_html_content_type) {
+                        print 'AAAA';
+                        $requested_content_type = $this->override_html_content_type;
+                    }
                     $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+
                     $Response = [$this, $type_handler]($Request, $Response);
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
