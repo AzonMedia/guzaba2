@@ -10,14 +10,16 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\NullStore;
+use Guzaba2\Kernel\Kernel as Kernel;
 
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 use Guzaba2\Translator\Translator as t;
 
+
 class Mysql extends Database
 {
     protected const CONFIG_DEFAULTS = [
-        'meta_table'    => 'object_meta',
+        'meta_table'    => 'object_meta_test'
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -164,9 +166,35 @@ WHERE
     AND object_id = :object_id
         ";
         $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
-        unset($data['class_name']);
-        unset($data['object_id']);
         return $data;
+    }
+
+    /**
+     * Returns class and id of object by uuid
+     * @param  string $uuid
+     * @return array - class and id
+     */
+    public function get_meta_by_uuid(string $uuid) : array
+    {   
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        
+        $q = "
+SELECT 
+    *
+FROM
+    {$Connection::get_tprefix()}{$this::get_meta_table()}
+WHERE
+    object_uuid_binary = UUID_TO_BIN(:object_uuid)";
+ 
+        $data = $Connection->prepare($q)->execute([ 'object_uuid' => $uuid])->fetchRow();
+
+        if (!count($data)) {
+            throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
+        }
+        $ret['object_id'] = $data['object_id'];
+        $ret['class'] = $data['class_name'];
+        
+        return $ret;
     }
 
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
@@ -194,7 +222,7 @@ WHERE
         $params = [
             //'class_name'                    => str_replace('\\','\\\\',get_class($ActiveRecord)),
             'class_name'                    => get_class($ActiveRecord),
-            'object_id'                     => $ActiveRecord->get_index(),
+            'object_id'                     => $ActiveRecord->get_id(),
             'object_last_update_microtime'  => $object_last_update_microtime,
         ];
 
@@ -213,14 +241,14 @@ WHERE
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (class_name, object_id, object_create_microtime, object_last_update_microtime)
+    (object_uuid_binary, class_name, object_id, object_create_microtime, object_last_update_microtime)
 VALUES
-    (:class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
+    (UUID_TO_BIN(UUID()), :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
         ";
 
         $params = [
             'class_name'                    => get_class($ActiveRecord),
-            'object_id'                     => $ActiveRecord->get_index(),
+            'object_id'                     => $ActiveRecord->get_id(),
             'object_create_microtime'       => $object_create_microtime,
             'object_last_update_microtime'  => $object_create_microtime,
         ];
@@ -252,14 +280,18 @@ VALUES
         $columns_data = $ActiveRecord::get_columns_data();
         $record_data = $ActiveRecord->get_record_data();
         $main_index = $ActiveRecord->get_primary_index_columns();
-        $index = $ActiveRecord->get_index();
+        $index = $ActiveRecord->get_id();
         if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
             }
 
-            if (!$index[$main_index[0]]) {
+            //TO DO - find more intelligent solution
+            // if (!$index[$main_index[0]]) {
+            //temporary fix
+            if (true) { 
+            //temporary fix end
                 if (!$ActiveRecord::uses_autoincrement()) {
                     //TODO IVO
                     $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
@@ -319,7 +351,7 @@ VALUES
             }
 
             //if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->index[$main_index[0]]) {
-            if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_index()) {
+            if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_id()) {
                 // the index is autoincrement and it is not yet set
                 $last_insert_id = $Connection->get_last_insert_id();
 //                $ActiveRecord->index[$main_index[0]] = $last_insert_id;
@@ -427,10 +459,10 @@ ON DUPLICATE KEY UPDATE
     }
 
     public function &get_data_pointer(string $class, array $index) : array
-    {
+    {   
+
         //initialization
         $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
-        
         //lookup in DB
 
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
@@ -465,29 +497,48 @@ ON DUPLICATE KEY UPDATE
         $main_index = $class::get_primary_index_columns();
         //$index = [$main_index[0] => $index];
 
-        foreach ($index as $field_name=>$field_value) {
-            if (!is_string($field_name)) {
-                //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
-                throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
-            }
 
-            if (!array_key_exists($field_name, $record_data)) {
-                throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
-            }
+        /**
+         * If UUID is provided the meta data is searched to find the primary key in order
+         * to perform the SELECT operation
+         */
+        if (array_key_exists('object_uuid', $index)) {
 
-            //TODO IVO add owners_table, meta table
+            $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
+            $object_id = $meta_data['object_id'];
+           
+            $w[] = $main_index[0] . ' = :object_id';
+            $b['object_id'] = $object_id;
 
-            $j[$table_name] = $Connection::get_tprefix().$table_name;
-            //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
-            //$b[$field_name] = $field_value;
-            if (is_null($field_value)) {
-                $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} NULL";
-            } else {
-                $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} :{$field_name}";
-                $b[$field_name] = $field_value;
-            }
-        } //end foreach
+        } else {
 
+            
+            foreach ($index as $field_name=>$field_value) {
+                if (!is_string($field_name)) {
+                    //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
+                    throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
+                }
+
+                if ($field_name !== 'object_uuid') {
+                    if (!array_key_exists($field_name, $record_data)) {
+                        throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
+                    }
+                }
+
+                //TODO IVO add owners_table, meta table
+
+                $j[$table_name] = $Connection::get_tprefix().$table_name;
+                //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
+                //$b[$field_name] = $field_value;
+                if (is_null($field_value)) {
+                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} NULL";
+                } else {
+                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} :{$field_name}";
+                    $b[$field_name] = $field_value;
+                }
+            } //end foreach
+
+        }
         //here we join the tables and load only the data from the joined tables
         //this means that some tables / properties will not be loaded - these will be loaded on request
         //$j_str = implode(" INNER JOIN ", $j);//cant do this way as now we use keys
@@ -557,7 +608,8 @@ WHERE
             //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
-
+       
+        
         return $ret;
     }
 

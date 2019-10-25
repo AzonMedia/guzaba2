@@ -185,18 +185,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
         
         if (is_scalar($index)) {
-            if (ctype_digit($index)) {
+            if (ctype_digit((string)$index)) {
                 $index = (int) $index;
+                // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
+                // providing only one component for the primary index is still supported but needs to be provided as array
+                if (count($primary_columns) === 1) {
+                    $index = [$primary_columns[0] => $index];
+                } else {
+                    $message = sprintf(t::_('The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
+                    throw new InvalidArgumentException($message);
+                }
+            } elseif (strlen((string)$index) === 36) {
+                //this is UUID
+                $index = ['object_uuid' => $index];
+            } else {
+                throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
             }
 
-            // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
-            // providing only one component for the primary index is still supported but needs to be provided as array
-            if (count($primary_columns) === 1) {
-                $index = [$primary_columns[0] => $index];
-            } else {
-                $message = sprintf(t::_('The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
-                throw new InvalidArgumentException($message);
-            }
+
         } elseif (is_array($index)) {
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
@@ -334,6 +340,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public function get_index() /* scalar */
     {
+        throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('"get_index()" is deprecated, use get_id() or get_uuid() instead ')));
         $primary_index_columns = static::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
             throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
@@ -341,6 +348,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         
         $ret = $this->record_data[$primary_index_columns[0]];
         
+        return $ret;
+    }
+
+
+    public function get_id() 
+    {
+        $primary_index_columns = static::get_primary_index_columns();
+        if (count($primary_index_columns) > 1) {
+            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
+        }
+        
+        $ret = $this->record_data[$primary_index_columns[0]];
+        
+        return $ret;
+    }
+
+    public function get_uuid() 
+    {
+        $ret = $this->meta_data['object_uuid'];
         return $ret;
     }
 
@@ -362,9 +388,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     /**
      * @param array $data
-     * @return int|null
+     * @return array|null
      */
-    public static function get_index_from_data(array $data) /* mixed */
+    public static function get_index_from_data(array $data): ?array
     {
         $called_class = get_called_class();
         $ret = NULL;
@@ -374,6 +400,22 @@ class ActiveRecord extends Base implements ActiveRecordInterface
                 break;//not enough data to construct the primary index
             }
             $ret[$primary_column] = $data[$primary_column];
+        }
+
+        return $ret;
+    }
+
+
+    /**
+     * @param array $data
+     * @return string|null
+     */
+    public static function get_uuid_from_data(array $data) : ?string
+    {
+        $called_class = get_called_class();
+        $ret = NULL;
+        if (isset($data['object_uuid'])) {
+            $ret = $data['object_uuid'];
         }
         return $ret;
     }
@@ -794,5 +836,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 //
 //        return $routes;
 //    }
+
+
+    public static function get_by_uuid(string $uuid) : ActiveRecord
+    {
+        $Store = static::OrmStore();
+        $meta_data = $Store->get_meta_by_uuid($uuid);
+            
+        return new $meta_data['class']($meta_data['object_id']);
+
+    }
 
 }
