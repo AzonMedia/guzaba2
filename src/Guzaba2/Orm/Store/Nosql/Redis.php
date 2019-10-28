@@ -74,4 +74,11 @@ class Redis extends Database
     {
         return [];
     }
+
+    public function get_meta_by_uuid(string $uuid) : array
+    {
+        //not implemented
+        //currently immediately refers to fallback store
+        return $this->FallbackStore->get_meta_by_uuid($uuid);
+    }
 }

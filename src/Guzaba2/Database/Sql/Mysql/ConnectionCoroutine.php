@@ -98,7 +98,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
                 $this->initialize();
                 return $this->prepare($this->original_query);
             } else {
-                throw new QueryException($this, '', $error_code, sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error), $query, $expected_parameters);
+                throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query "%s" failed with error: [%s] %s .'), $query, $this->MysqlCo->errno, $this->MysqlCo->error), $query, $expected_parameters);
             }
         }
         $Statement = new StatementCoroutine($NativeStatement, $query, $expected_parameters);
