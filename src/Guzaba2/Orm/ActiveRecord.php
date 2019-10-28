@@ -139,7 +139,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @throws RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
+    public final function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
@@ -184,7 +184,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         if (!count($primary_columns)) {
             throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The class %s has no primary index defined.'), $called_class));
         }
-        
+
+
+
         if (is_scalar($index)) {
             if (ctype_digit((string)$index)) {
                 $index = (int) $index;
@@ -216,6 +218,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //the new records are not referencing the OrmStore
             //no locking here either
         } else {
+
             $this->load($index);
         }
     }
@@ -236,6 +239,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     final public function __toString() : string
     {
         return MetaStore::get_key_by_object($this);
+    }
+
+    /**
+     * Returns an instance by the provided UUID.
+     * @param string $uuid
+     * @return ActiveRecord
+     * @throws RecordNotFoundException
+     */
+    public static final function get_by_uuid(string $uuid) : ActiveRecord
+    {
+        $Store = static::OrmStore();
+        $meta_data = $Store->get_meta_by_uuid($uuid);
+        $id = $meta_data['object_id'];
+        return new $meta_data['class']($id);
+
     }
 
     public function _before_change_context() : void
@@ -275,8 +293,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public static function is_locking_enabled() : bool
     {
+        //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
         //return self::get_static('locking_enabled_flag');
         if (Coroutine::inCoroutine()) {
+
             $Context = Coroutine::getContext();
             $ret = $Context->locking_enabled_flag ?? self::$locking_enabled_flag;
         } else {
@@ -308,10 +328,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
         }
+
         if (!count($this->meta_data)) {
             throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
         }
-
 
         //do a check is there a modified data
 
@@ -646,7 +666,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public function get_meta_data() : array
     {
-        return $this->meta_data;
+        $ret = $this->meta_data;
+        unset($ret['object_uuid_binary']);
+        return $ret;
     }
         
     /**
@@ -735,7 +757,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'create'],
                 ],
                 $default_route.'/{uuid}'                       => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'view'],
+                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'get'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'delete'],
                 ],
@@ -819,21 +841,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     public function debug_get_data()
     {
         return $this->Store->debug_get_data();
-    }
-
-    /**
-     * Returns an instance by the provided UUID.
-     * @param string $uuid
-     * @return ActiveRecord
-     * @throws RecordNotFoundException
-     */
-    public static function get_by_uuid(string $uuid) : ActiveRecord
-    {
-        $Store = static::OrmStore();
-        $meta_data = $Store->get_meta_by_uuid($uuid);
-            
-        return new $meta_data['class']($meta_data['object_id']);
-
     }
 
 }

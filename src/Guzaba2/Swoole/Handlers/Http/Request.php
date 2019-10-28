@@ -94,26 +94,31 @@ class Request extends HandlerBase
 
 
 
-            $end_time = microtime(TRUE);
+            //$end_time = microtime(TRUE);
             //print microtime(TRUE).' Request of '.$request_raw_content_length.' bytes served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
-            $message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //Kernel::log($message, LogLevel::INFO);
-            Kernel::printk($message);
+            //Kernel::printk($message);
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
         } catch (Throwable $Exception) {
-            $message = 'Error occurred while handling request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().PHP_EOL;
-            //Kernel::log($message);
-            Kernel::printk($message);
+
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
-
-
 
             $DefaultResponseBody = new Stream();
             $DefaultResponseBody->write('Internal server/application error occurred.');
             $PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
+
+            //$end_time = microtime(TRUE);
+
+            //$message = 'Error occurred while handling request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            //Kernel::log($message);
+            //Kernel::printk($message);
         } finally {
             //\Guzaba2\Coroutine\Coroutine::end();//no need
+            $end_time = microtime(TRUE);
+            $message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            Kernel::printk($message);
         }
     }
 

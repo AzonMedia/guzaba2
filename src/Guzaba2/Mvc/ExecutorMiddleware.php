@@ -7,11 +7,14 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Http\Body\Str;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Method;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\Server;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\ContentType;
+use Guzaba2\Http\StatusCode;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -20,6 +23,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
 use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
+use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 
 /**
  * Class ExecutorMiddleware
@@ -73,6 +77,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
+
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
@@ -80,77 +85,103 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
 
                 if ($body_params = $Request->getParsedBody()) {
-                    if (! empty(array_intersect($controller_arguments, $body_params))) {
-                        throw new RunTimeException(sprintf(t::_('Arguments is not unique.')));
+                    if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
+                        if ($repeating_arguments = array_intersect($controller_arguments, $body_params)) {
+                            //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
+                            $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) );
+                            $Body = new Structured( [ 'message' => $message ] );
+                            $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
+
+                            return $Response;
+                        }
+
+                        $controller_arguments += $body_params;
+                    } else {
+                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received.'), $Request->getMethod() );
+                        $Body = new Structured( [ 'message' => $message ] );
+                        $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
+
+                        return $Response;
                     }
 
-                    $controller_arguments += $body_params;
                 }
 
                 //check if controller has init method
                 $init_method_exists = \method_exists($controller_callable[0], '_init');
 
                 if ($init_method_exists) {
-                    $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
-                    $parameters = $RMethod->getParameters();
+                    
+                    try {
+                        $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
+                        $parameters = $RMethod->getParameters();
 
-                    $ordered_parameters = [];
+                        $ordered_parameters = [];
 
-                    foreach ($parameters as $key => $parameter) {
-                        $argType = $parameter->getType();
+                        foreach ($parameters as $key => $parameter) {
+                            $argType = $parameter->getType();
 
-                        if (isset($controller_arguments[$parameter->getName()])) {
-                            $value = $controller_arguments[$parameter->getName()];
-                        } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                            $value = $parameter->getDefaultValue();
+                            if (isset($controller_arguments[$parameter->getName()])) {
+                                $value = $controller_arguments[$parameter->getName()];
+                            } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                                $value = $parameter->getDefaultValue();
+                            }
+
+                            if (isset($value)) {
+                                $value = $controller_arguments[$parameter->getName()];
+                                //will throw exception if type missing
+                                //settype($value, (string) $argType);
+                                settype($value, $argType->getName() );
+                                $ordered_parameters[] = $value;
+                                unset($value);
+                            }
                         }
 
-                        if (isset($value)) {
-                            $value = $controller_arguments[$parameter->getName()];
-                            //will throw exception if type missing
-                            settype($value, (string) $argType);
-                            $ordered_parameters[] = $value;
-                            unset($value);
-                        }
+                        //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
+                        $Response = [$controller_callable[0], '_init'](...$ordered_parameters);
+                    } catch (InterruptControllerException $Exception) {
+                        $Response = $Exception->getResponse();
                     }
 
-                    //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
-                    $Response = [$controller_callable[0], '_init'](...$ordered_parameters);
                 }
 
                 if (empty($Response)) { //if the _init function hasnt returned any response... it may return response due an error, in the normal case the actual action should be invoked
-                    $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
-                    $parameters = $RMethod->getParameters();
-                    $ordered_parameters = [];
 
-                    foreach ($parameters as $key => $parameter) {
-                        $argType = $parameter->getType();
+                    try {
+                        $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
+                        $parameters = $RMethod->getParameters();
+                        $ordered_parameters = [];
 
-                        if (isset($controller_arguments[$parameter->getName()])) {
-                            $value = $controller_arguments[$parameter->getName()];
-                        } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                            $value = $parameter->getDefaultValue();
+                        foreach ($parameters as $key => $parameter) {
+                            $argType = $parameter->getType();
+
+                            if (isset($controller_arguments[$parameter->getName()])) {
+                                $value = $controller_arguments[$parameter->getName()];
+                            } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
+                                $value = $parameter->getDefaultValue();
+                            }
+
+                            if (isset($value)) {
+                                $value = $controller_arguments[$parameter->getName()];
+                                //will throw exception if type missing
+                                //settype($value, (string) $argType);
+                                settype($value, $argType->getName() );
+
+                                $ordered_parameters[] = $value;
+                                unset($value);
+                            }
                         }
 
-                        if (isset($value)) {
-                            $value = $controller_arguments[$parameter->getName()];
-                            //will throw exception if type missing
-                            //settype($value, (string) $argType);
-                            settype($value, $argType->getName() );
-
-                            $ordered_parameters[] = $value;
-                            unset($value);
-                        }
+                        $Response = $controller_callable(...$ordered_parameters);
+                    } catch (InterruptControllerException $Exception) {
+                        $Response = $Exception->getResponse();
                     }
 
-                    $Response = $controller_callable(...$ordered_parameters);
                 }
 
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
                     $requested_content_type = $Request->getContentType();
                     if ($requested_content_type === ContentType::TYPE_HTML && $this->override_html_content_type) {
-                        print 'AAAA';
                         $requested_content_type = $this->override_html_content_type;
                     }
                     $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;

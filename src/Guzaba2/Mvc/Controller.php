@@ -11,8 +11,10 @@ use Guzaba2\Http\Body\Str;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
+use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+
 
 /**
  * Class Controller
@@ -60,8 +62,11 @@ implements ControllerInterface
         return $ret;
     }
 
-    //throws
-    //public function redirect() {}
+    public function exit_with_badrequest(array $structure = [])
+    {
+        $Request = self::get_structured_badrequest_response($structure);
+        throw new InterruptControllerException($Request);
+    }
 
     /**
      * Factory for creating HTTP

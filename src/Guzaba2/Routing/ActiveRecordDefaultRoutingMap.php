@@ -42,6 +42,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
         $this->api_route_prefix = $api_route_prefix;
         $loaded_classes = Kernel::get_loaded_classes();
         $routing_map = [];
+        $routing_meta_data = [];
         foreach ($this->ns_prefixes as $ns_prefix) {
             foreach ($loaded_classes as $loaded_class) {
                 if (
@@ -59,12 +60,13 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                             $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
                         }
                         $routing_map = array_merge($routing_map, $routing);
+                        $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
                     }
 
                 }
             }
         }
-        parent::__construct($routing_map);
+        parent::__construct($routing_map, $routing_meta_data);
     }
 
     public function get_processed_models() : array
