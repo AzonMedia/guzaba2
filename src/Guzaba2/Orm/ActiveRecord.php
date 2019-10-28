@@ -695,19 +695,20 @@ class ActiveRecord extends Base implements ActiveRecordInterface
                 // there is no value - lets see what it has to be
                 // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
                 // look for the field
-                for ($aa = 0; $aa < count($columns_data); $aa++) {
-                    if ($columns_data[$aa]['name'] == $field_name) {
-                        if ($columns_data[$aa]['php_type'] == 'string') {
+                //for ($aa = 0; $aa < count($columns_data); $aa++) {
+                foreach ($columns_data as $column_name => $columns_datum) {
+                    if ($columns_datum['name'] == $field_name) {
+                        if ($columns_datum['php_type'] == 'string') {
                             // this is OK - a string can be empty
-                        } elseif ($columns_data[$aa]['php_type'] == 'int' || $columns_data[$aa]['php_type'] == 'float') {
+                        } elseif ($columns_datum['php_type'] == 'int' || $columns_datum['php_type'] == 'float') {
                             // check the default value - the default value may be set to NULL in the table cache but if the column is not NULL-able this means that there is no default value
                             // in this case we need to set it to 0
                             // even if the column is NULLable but threre is default value we must use the default value
 
-                            if ($columns_data[$aa]['default_value']!==null) {
+                            if ($columns_datum['default_value']!==null) {
                                 //we have a default value and we must use it
-                                $data_arr[$field_name] = $columns_data[$aa]['default_value'];
-                            } elseif ($columns_data[$aa]['nullable']) {
+                                $data_arr[$field_name] = $columns_datum['default_value'];
+                            } elseif ($columns_datum['nullable']) {
                                 $data_arr[$field_name] = null;
                             } else {
                                 $data_arr[$field_name] = 0;
