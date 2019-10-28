@@ -3,6 +3,9 @@
 
 namespace Guzaba2\Orm;
 
+use Guzaba2\Http\Body\Structured;
+use Guzaba2\Http\Response;
+use Guzaba2\Http\StatusCode;
 use Guzaba2\Mvc\Controller;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
@@ -14,7 +17,7 @@ use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class ActiveRecordDefaultController
- * Provides actions for performing the basic tasks on objects.
+ * Provides CRUD actions for performing the basic tasks on objects.
  * The objects are retrived by their UUID.
  * The routes are set by the @see ActiveRecord::get_default_routes() and these are to be provided to the Router (merged with the application specific routes).
  * @package Guzaba2\Orm
@@ -77,7 +80,7 @@ class ActiveRecordDefaultController extends Controller
      * @param string $uuid
      * @return ResponseInterface
      */
-    public function get(string $uuid) : ResponseInterface
+    public function read(string $uuid) : ResponseInterface
     {
 
         $struct = [];
@@ -113,7 +116,8 @@ class ActiveRecordDefaultController extends Controller
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
         $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid ];
-        $Response = self::get_structured_ok_response( $struct );
+        //$Response = self::get_structured_ok_response( $struct );
+        $Response = new Response(StatusCode::HTTP_CREATED, [], new Structured($struct));
         return $Response;
     }
 

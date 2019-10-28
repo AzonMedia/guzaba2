@@ -752,13 +752,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     {
         $ret = NULL;
         if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+            if (static::CONFIG_RUNTIME['route'][0] !== '/') {
+                throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class() ));
+            }
             $default_route = static::CONFIG_RUNTIME['route'];
             $ret = [
                 $default_route                            => [
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'create'],
                 ],
                 $default_route.'/{uuid}'                       => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'get'],
+                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'read'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'delete'],
                 ],
