@@ -101,7 +101,7 @@ class Kernel
      * ['class_name'] => 'parent' => X, 'children' => [Z, Y]
      * @var array
      */
-    protected static $class_structure = [];
+    protected static array $class_structure = [];
 
     /**
      * @var LoggerInterface
@@ -445,7 +445,8 @@ class Kernel
 
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
-                $registry_config = self::$Registry->get_class_config_values($class_name);
+                $real_class_name = str_replace('_without_config', '', $class_name);
+                $registry_config = self::$Registry->get_class_config_values($real_class_name);
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
