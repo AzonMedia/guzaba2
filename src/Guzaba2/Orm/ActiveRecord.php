@@ -12,6 +12,7 @@ use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -115,7 +116,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     protected static $meta_columns_data = [];
 
     /**
-     * Contains an indexed array with the name of the primary key columns. usually it is one but can be more.
+     * Contains an indexed array with the name of the primary key columns. Usually it is one but can be more.
      * @var array
      */
     protected static $primary_index_columns = [];
@@ -340,7 +341,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public function get_index() /* scalar */
     {
-        throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('"get_index()" is deprecated, use get_id() or get_uuid() instead ')));
+        throw new \Guzaba2\Base\Exceptions\DeprecatedException(sprintf(t::_('"get_index()" is deprecated, please use get_id() or get_uuid() instead.')));
+
         $primary_index_columns = static::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
             throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
@@ -351,8 +353,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
-
-    public function get_id() 
+    /**
+     * Returns the primary index (a scalar) of the record.
+     * If the record has multiple columms please use @see self::get_primary_index() which will return an associative array.
+     * @return mixed
+     * @throws RunTimeException
+     */
+    public function get_id()  /* scalar */
     {
         $primary_index_columns = static::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
@@ -364,7 +371,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
-    public function get_uuid() 
+    /**
+     * Get the object UUID.
+     * Only objects with a single scalar primary index have UUIDs.
+     * @return mixed
+     */
+    public function get_uuid() : string
     {
         $ret = $this->meta_data['object_uuid'];
         return $ret;
@@ -387,6 +399,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
 
     /**
+     * Returns the primary index (associative array) from the provided $data array.
      * @param array $data
      * @return array|null
      */
@@ -407,12 +420,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
 
     /**
+     * Returns the UUID of the object if it is present in the provided $data.
      * @param array $data
      * @return string|null
      */
     public static function get_uuid_from_data(array $data) : ?string
     {
-        $called_class = get_called_class();
         $ret = NULL;
         if (isset($data['object_uuid'])) {
             $ret = $data['object_uuid'];
@@ -420,6 +433,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
+    /**
+     * Returns an indexed array with the name of the primary columns.
+     * @return array
+     */
     public static function get_primary_index_columns() : array
     {
         $called_class = get_called_class();
@@ -805,39 +822,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     }
 
     /**
-     * Returns a routing table in a format as expected by Azonmedia\Routing\RoutingMapArray.
-     * Obtains the default routes for the objects under the provided $ns_prefixes.
-     * The default route for an ActiveRecord object needs to be set in the RUNTIME_CONFIG['default_route'] and must be without the UUID section.
-     * @example CONFIG_DEFAULTS = ['default_route' => '/log-entry'];
-     * @param array $ns_prefixes
-     * @return array Twodimensional array $routing_map['route']['method'] => controller
+     * Returns an instance by the provided UUID.
+     * @param string $uuid
+     * @return ActiveRecord
+     * @throws RecordNotFoundException
      */
-//    public static function get_default_routes(array $ns_prefixes) : array
-//    {
-//        $routes = [];
-//
-//        $loaded_classes = Kernel::get_loaded_classes();
-//
-//        foreach ($ns_prefixes as $ns_prefix) {
-//            //get all activeRecord classes in the given ns prefix
-//            foreach ($loaded_classes as $loaded_class) {
-//                if (is_a($loaded_class, ActiveRecord::class, TRUE) && $loaded_class !== ActiveRecord::class && strpos($loaded_class, $ns_prefix) === 0) {
-//                    $default_route = $loaded_class::get_default_route();
-//                    if ($default_route !== NULL) {
-//                        $default_route_with_id = $default_route.'/{uuid}';
-//                        $routes[$default_route_with_id][Method::HTTP_GET] = [ActiveRecordDefaultController::class, 'get'];
-//                        $routes[$default_route_with_id][Method::HTTP_PUT | Method::HTTP_PATCH] = [ActiveRecordDefaultController::class, 'update'];
-//                        $routes[$default_route_with_id][Method::HTTP_DELETE] = [ActiveRecordDefaultController::class, 'delete'];
-//                        $routes[$default_route][Method::HTTP_POST] = [ActiveRecordDefaultController::class, 'create'];
-//                    }
-//                }
-//            }
-//        }
-//
-//        return $routes;
-//    }
-
-
     public static function get_by_uuid(string $uuid) : ActiveRecord
     {
         $Store = static::OrmStore();
