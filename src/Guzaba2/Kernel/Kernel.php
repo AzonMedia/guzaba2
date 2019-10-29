@@ -450,7 +450,11 @@ class Kernel
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
-                        $runtime_config[$key_name] = $registry_config[$key_name];
+                        if (is_array($key_value)) {
+                            $runtime_config[$key_name] = array_replace_recursive($key_value, $registry_config[$key_name]);
+                        } else {
+                            $runtime_config[$key_name] = $registry_config[$key_name];
+                        }
                     }
                     //check also if there any any prefix in the var name that matches a prefix in the config array
                     if (is_array($key_value)) {
