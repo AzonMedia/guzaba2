@@ -168,7 +168,7 @@ class Server extends \Guzaba2\Http\Server
         //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
 
         if (!empty($this->options['document_root']) && empty($this->options['enable_static_handler'])) {
-            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.')));
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $this->options['document_root']));
         }
 
         if (!empty($this->options['enable_static_handler']) && empty($this->options['document_root'])) {
