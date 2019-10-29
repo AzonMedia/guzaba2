@@ -112,13 +112,17 @@ class Memory extends Store implements StoreInterface
     /**
      * @param ActiveRecordInterface $ActiveRecord
      * @return string
+     * @throws RunTimeException
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : void
     {
         //$class = get_class($ActiveRecord);
         //$lookup_index = $ActiveRecord->get_lookup_index();
         //$this->data[$class][$lookup_index] = $this->process_instance();
-        $this->FallbackStore->update_record($ActiveRecord);
+        if ($this->FallbackStore) {
+            $this->FallbackStore->update_record($ActiveRecord);
+        }
+
         //the meta data needs to be updated
 
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());

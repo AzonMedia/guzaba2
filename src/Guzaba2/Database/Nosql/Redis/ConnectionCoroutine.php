@@ -29,7 +29,7 @@ use Guzaba2\Translator\Translator as t;
  * @method setDefer($defer)
  * @method recv()
  * @method request(array $params)
- * @method set($key, $value, $timeout, $opt)
+ * @method set($key, $value, $timeout = null, $opt = null)
  * @method setBit($key, $offset, $value)
  * @method setEx($key, $expire, $value)
  * @method psetEx($key, $expire, $value)
@@ -190,7 +190,12 @@ abstract class ConnectionCoroutine extends Connection
         'port' => '6379',
         'timeout' => 1.5,
         'password' => '',
-        'database' => 0
+        'database' => 0,
+        'options' => [
+            // returns saved arrays properly
+            'compatibility_mode' => true
+        ],
+        'expiry_time' => null
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -209,6 +214,7 @@ abstract class ConnectionCoroutine extends Connection
         parent::__construct();
 
         $this->RedisCo = new \Swoole\Coroutine\Redis(static::CONFIG_RUNTIME);
+        $this->RedisCo->setOptions(static::CONFIG_RUNTIME['options']);
         $this->RedisCo->connect(static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port']);
 
         if (static::CONFIG_RUNTIME['password']) {
@@ -242,5 +248,15 @@ abstract class ConnectionCoroutine extends Connection
     public function close() : void
     {
         $this->RedisCo->close();
+    }
+
+    /**
+     * Fetches the default expiry time in seconds of newly created keys
+     *
+     * @return int|null
+     */
+    public function getExpiryTime()
+    {
+        return static::CONFIG_RUNTIME['expiry_time'];
     }
 }

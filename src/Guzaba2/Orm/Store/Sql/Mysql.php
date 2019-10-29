@@ -9,6 +9,7 @@ use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Interfaces\StructuredStore;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
@@ -16,7 +17,7 @@ use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 use Guzaba2\Translator\Translator as t;
 
 
-class Mysql extends Database
+class Mysql extends Database implements StructuredStore
 {
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta_test'
@@ -31,6 +32,8 @@ class Mysql extends Database
 
     protected $connection_class;
 
+    protected $meta_exists = false;
+
     const SAVE_MODE_ALL = 1;//overwrites all properties
 
     const SAVE_MODE_MODIFIED = 2;//saves only the modified ones
@@ -42,6 +45,7 @@ class Mysql extends Database
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         $this->connection_class = $connection_class;
+        $this->create_meta_if_does_not_exist();
     }
 
     /**
@@ -110,7 +114,7 @@ ORDER BY
 
         if (!count($ret)) {
             //look for the next storage
-            $ret = $this->FallbackStore->get_record_structure($class);
+            $ret = $this->FallbackStore->get_record_structure($this->get_unified_columns_data($class));
             //needs to update the local storage...meaning creating a table...
             //TODO - either cache the structure or create...
             //not implemented
@@ -175,9 +179,9 @@ WHERE
      * @return array - class and id
      */
     public function get_meta_by_uuid(string $uuid) : array
-    {   
+    {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-        
+
         $q = "
 SELECT 
     *
@@ -185,7 +189,7 @@ FROM
     {$Connection::get_tprefix()}{$this::get_meta_table()}
 WHERE
     object_uuid_binary = UUID_TO_BIN(:object_uuid)";
- 
+
         $data = $Connection->prepare($q)->execute([ 'object_uuid' => $uuid])->fetchRow();
 
         if (!count($data)) {
@@ -193,7 +197,7 @@ WHERE
         }
         $ret['object_id'] = $data['object_id'];
         $ret['class'] = $data['class_name'];
-        
+
         return $ret;
     }
 
@@ -452,6 +456,8 @@ ON DUPLICATE KEY UPDATE
             $this->update_meta($ActiveRecord);
         }
 
+        // TODO set uuid to $ActiveRecord
+
         //COMMIT DB TRANSACTION
 
         //$this->is_new = FALSE;
@@ -459,7 +465,7 @@ ON DUPLICATE KEY UPDATE
     }
 
     public function &get_data_pointer(string $class, array $index) : array
-    {   
+    {
 
         //initialization
         $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
@@ -506,13 +512,13 @@ ON DUPLICATE KEY UPDATE
 
             $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
             $object_id = $meta_data['object_id'];
-           
+
             $w[] = $main_index[0] . ' = :object_id';
             $b['object_id'] = $object_id;
 
         } else {
 
-            
+
             foreach ($index as $field_name=>$field_value) {
                 if (!is_string($field_name)) {
                     //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
@@ -608,8 +614,8 @@ WHERE
             //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
-       
-        
+
+
         return $ret;
     }
 
@@ -633,5 +639,55 @@ WHERE
     public function debug_get_data() : array
     {
         return [];
+    }
+
+    protected function create_meta_if_does_not_exist()
+    {
+        if ($this->meta_exists) {
+            return true;
+        }
+
+        // TODO can use create table if not exists
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $q = "
+SELECT
+    *
+FROM
+    information_schema.tables
+WHERE
+    table_schema = :table_schema
+    AND table_name = :table_name
+LIMIT 1
+        ";
+        $s = $Connection->prepare($q);
+        $s->table_schema = $Connection::get_database();
+        $s->table_name = $Connection::get_tprefix() . static::CONFIG_RUNTIME['meta_table'];
+
+        $ret = $s->execute()->fetchAll();
+
+        if (!empty($ret)) {
+            $this->meta_exists = true;
+            return true;
+        }
+
+        $q = "
+        CREATE TABLE `{$s->table_name}` (
+  `object_uuid_binary` binary(16) NOT NULL,
+  `object_uuid` char(36) GENERATED ALWAYS AS (bin_to_uuid(`object_uuid_binary`)) VIRTUAL NOT NULL,
+  `class_name` varchar(255) NOT NULL,
+  `object_id` bigint(20) UNSIGNED NOT NULL,
+  `object_create_microtime` bigint(16) UNSIGNED NOT NULL,
+  `object_last_update_microtime` bigint(16) UNSIGNED NOT NULL,
+  `object_create_transaction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+  `object_last_update_transction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+  PRIMARY KEY (`object_uuid_binary`),
+  CONSTRAINT `class_name` UNIQUE (`class_name`,`object_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+        ";
+        $s = $Connection->prepare($q);
+        $s->execute();
+
+        $this->meta_exists = true;
     }
 }

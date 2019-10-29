@@ -68,6 +68,7 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
             'class'                         => Redis::class,
             'args'                          => [
                 'FallbackStore'                 => 'MysqlOrmStore',
+                'connection_class'              => RedisConnection::class,
             ],
         ],
         'RedisCo'                       => [

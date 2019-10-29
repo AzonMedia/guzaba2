@@ -33,7 +33,9 @@
         "azonmedia/apm": "dev-master",
         "ext-pdo": "*",
         "ext-mysqli": "*",
-        "azonmedia/watchdog": "dev-master"
+        "azonmedia/watchdog": "dev-master",
+        "ext-json": "*",
+        "ramsey/uuid": "^3.8"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]

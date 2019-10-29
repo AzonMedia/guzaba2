@@ -41,7 +41,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //'ConnectionFactory',
             'OrmStore',
             'LockManager',
-        ]
+        ],
+        //only for non-sql stores
+        'structure' => [
+
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -223,6 +227,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
     }
 
+    public static function get_structure() : array
+    {
+        if (!isset(static::CONFIG_RUNTIME['structure'])) {
+            throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
+        }
+        return static::CONFIG_RUNTIME['structure'];
+    }
+
     public function __destruct()
     {
         if (!$this->is_new()) {
@@ -358,6 +370,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * If the class has a compound index throws a RunTimeException.
      * @return int
      * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\DeprecatedException
      */
     public function get_index() /* scalar */
     {
