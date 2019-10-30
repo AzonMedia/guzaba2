@@ -479,30 +479,35 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     {
         if (!$this->parsedBody) {
             $body_contents = $this->getBody()->getContents();
-            $this->getBody()->rewind();
-            $request_type = $this->getContentType();
-            switch ($request_type) {
+            if ($body_contents) {
+                $this->getBody()->rewind();
+                $request_type = $this->getContentType();
+                switch ($request_type) {
 
-                case ContentType::TYPE_HTML:
-                    throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
-                    break;
-                case ContentType::TYPE_JSON:
-                    $this->parsedBody = json_decode($body_contents, TRUE);
-                    break;
-                case ContentType::TYPE_SOAP:
-                    throw new NotImplementedException(sprintf('Parsing a SOAP request body is not implemented.'));
-                    break;
-                case ContentType::TYPE_XML:
-                    throw new NotImplementedException(sprintf('Parsing a XML request body is not implemented.'));
-                    break;
-                case ContentType::TYPE_YAML:
-                    throw new NotImplementedException(sprintf('Parsing a YAML request body is not implemented.'));
-                    break;
+                    case ContentType::TYPE_HTML:
+                        throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
+                        break;
+                    case ContentType::TYPE_JSON:
+                        $this->parsedBody = json_decode($body_contents, TRUE);
+                        break;
+                    case ContentType::TYPE_SOAP:
+                        throw new NotImplementedException(sprintf('Parsing a SOAP request body is not implemented.'));
+                        break;
+                    case ContentType::TYPE_XML:
+                        throw new NotImplementedException(sprintf('Parsing a XML request body is not implemented.'));
+                        break;
+                    case ContentType::TYPE_YAML:
+                        throw new NotImplementedException(sprintf('Parsing a YAML request body is not implemented.'));
+                        break;
 
-                case ContentType::TYPE_TEXT:
-                default:
-                    throw new NotImplementedException(sprintf('Parsing a TEXT request body is not implemented.'));
+                    case ContentType::TYPE_TEXT:
+                    default:
+                        throw new NotImplementedException(sprintf('Parsing a TEXT request body is not implemented.'));
+                }
+            } else {
+                $this->parsedBody = [];
             }
+
         }
         return $this->parsedBody ?? NULL;
     }
