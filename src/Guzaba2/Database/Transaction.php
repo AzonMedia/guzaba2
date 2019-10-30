@@ -36,7 +36,7 @@ use Psr\Log\LogLevel;
  * @method static ConnectionFactory ConnectionFactory()
  * @method static QueryCache QueryCache()
  */
-class Transaction extends \Guzaba2\Transaction\Transaction
+class Transaction extends \Azonmedia\Transaction\Transaction
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
