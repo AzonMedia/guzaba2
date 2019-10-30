@@ -35,108 +35,14 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
 
     use SupportsConfig;
 
+    /**
+     * Dependencies are stored in the registry
+     * @see app/registry/dev.php
+     */
     protected const CONFIG_DEFAULTS = [
-        'ConnectionFactory'             => [
-            'class'                         => ConnectionFactory::class,
-            'args'                          => [
-                'ConnectionProvider'            => 'ConnectionProviderPool',
-                //'ConnectionProvider'            => 'ConnectionProviderBasic',
-            ],
-        ],
-        'ConnectionProviderPool'        => [
-            'class'                         => Pool::class,
-            'args'                          => [],
-        ],
-        'ConnectionProviderBasic'       => [
-            'class'                         => Basic::class,
-            'args'                          => [],
-        ],
-//        'SomeExample'                   => [
-//            'class'                         => SomeClass::class,
-//            'args'                          => [
-//                'arg1'                      => 20,
-//                'arg2'                      => 'something'
-//            ],
-//        ]
-        'OrmStore'                      => [
-            'class'                         => Memory::class,//the Memory store is the first to be looked into
-            'args'                          => [
-                'FallbackStore'                 => 'RedisOrmStore',
-            ],
-        ],
-        'RedisOrmStore'                 => [
-            'class'                         => Redis::class,
-            'args'                          => [
-                'FallbackStore'                 => 'MysqlOrmStore',
-                'connection_class'              => RedisConnection::class,
-            ],
-        ],
-        'RedisCo'                       => [
-            'class'                         => RedisConnection::class,
-            'args'                          => [
-            ],
-        ],
-        'MysqlOrmStore'                 => [
-            'class'                         => Mysql::class,
-            'args'                          => [
-                'FallbackStore'                 => 'NullOrmStore',
-                'connection_class'              => \GuzabaPlatform\Platform\Application\MysqlConnection::class,
-            ]
-        ],
-        'NullOrmStore'                  => [
-            'class'                         => NullStore::class,
-            'args'                          => [
-                'FallbackStore'                 => NULL,
-            ],
-        ],
-        'OrmMetaStore'                  => [
-            'class'                         => SwooleTable::class,
-            'args'                          => [
-                'FallbackMetaStore'             => 'NullOrmMetaStore',
-            ],
-            'initialize_immediately'        => TRUE,
-        ],
-        'NullOrmMetaStore'              => [
-            'class'                         => NullMetaStore::class,
-            'args'                          => [
-                'FallbackStore'                 => NULL,
-            ],
-        ],
-        'QueryCache' => [
-            'class'                         => QueryCache::class,
-            'args'                          => [
-                // TODO add required params
-            ],
-        ],
-        'LockManager'                   => [
-            'class'                         => CoroutineLockManager::class,
-            'args'                          => [
-                'Backend'                       => 'LockManagerBackend',
-                'Logger'                        => [Kernel::class, 'get_logger'],
-            ],
-            'initialize_immediately'        => TRUE,
-        ],
-        'LockManagerBackend'            => [
-            'class'                         => SwooleTableBackend::class,
-            'args'                          => [
-                'Logger'                        => [Kernel::class, 'get_logger'],
-            ],
-        ],
-        
-//        'TransactionManager' => [
-//            'class' => TransactionManager::class,
-//            'args' => [
-//
-//            ],
-//        ],
-//
-//        SampleClass::class => [
-//            'class' => SampleClass::class,
-//            'args' => [
-//                'sampleString' => 'string',
-//                'sampleInt' => 17
-//            ]
-//        ],
+        'dependencies' => [
+
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -146,6 +52,6 @@ class Container extends \Azonmedia\Di\Container implements ConfigInterface, Obje
         if (!$config) {
             $config = self::CONFIG_RUNTIME;
         }
-        parent::__construct($config);
+        parent::__construct($config['dependencies']);
     }
 }
