@@ -105,10 +105,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             if ($Context->parent_coroutine_id >= 1) {
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
                 $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
+                $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
             } else {
                 $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
                 $Context->Events = new Events();
+                
             }
         }
         return $Context;

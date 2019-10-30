@@ -26,6 +26,8 @@
         "azonmedia/debug": "dev-master",
         "azonmedia/di": "dev-master",
         "azonmedia/lock": "dev-master",
+        "azonmedia/patterns": "dev-master",
+        "azonmedia/transaction": "dev-master",
         "psr/log": "^1.1",
         "jbzoo/utils": "^2.3",
         "eaglewu/swoole-ide-helper": "dev-master",
