@@ -6,6 +6,7 @@ namespace Guzaba2\Orm\Store\Sql;
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
+use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -15,12 +16,13 @@ use Guzaba2\Kernel\Kernel as Kernel;
 
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 use Guzaba2\Translator\Translator as t;
+use Ramsey\Uuid\Uuid;
 
 
 class Mysql extends Database implements StructuredStore
 {
     protected const CONFIG_DEFAULTS = [
-        'meta_table'    => 'object_meta_test'
+        'meta_table'    => 'object_meta'
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -234,20 +236,23 @@ WHERE
         $Statement->execute($params);
     }
 
-    protected function create_meta(ActiveRecordInterface $ActiveRecord) : void
+    protected function create_meta(ActiveRecordInterface $ActiveRecord) : string
     {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
 
         $object_create_microtime = microtime(TRUE) * 1000000;
 
+        $uuid = Uuid::uuid4();
+        $uuid_binary = $uuid->getBytes(); 
+            
         $q = "
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (object_uuid_binary, class_name, object_id, object_create_microtime, object_last_update_microtime)
+    (object_uuid_binary, object_uuid, class_name, object_id, object_create_microtime, object_last_update_microtime)
 VALUES
-    (UUID_TO_BIN(UUID()), :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
+    (:object_uuid_binary, :object_uuid, :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
         ";
 
         $params = [
@@ -255,13 +260,24 @@ VALUES
             'object_id'                     => $ActiveRecord->get_id(),
             'object_create_microtime'       => $object_create_microtime,
             'object_last_update_microtime'  => $object_create_microtime,
+            'object_uuid_binary'            => $uuid_binary,
+            'object_uuid'                   => $uuid,
         ];
 
         $Statement = $Connection->prepare($q);
         $Statement->execute($params);
+
+        return (string) $uuid;
     }
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : void
+    /**
+     * @param ActiveRecordInterface $ActiveRecord
+     * @return string UUID
+     * @throws RunTimeException
+     * @throws \Guzaba2\Database\Exceptions\DuplicateKeyException
+     * @throws \Guzaba2\Database\Exceptions\ForeignKeyConstraintException
+     */
+    public function update_record(ActiveRecordInterface $ActiveRecord) : string
     {
 
         //BEGIN DB TRANSACTION
@@ -451,9 +467,10 @@ ON DUPLICATE KEY UPDATE
 
 
         if ($ActiveRecord->is_new()) {
-            $this->create_meta($ActiveRecord);
+            $uuid = $this->create_meta($ActiveRecord);
         } else {
             $this->update_meta($ActiveRecord);
+            $uuid = $ActiveRecord->get_uuid();
         }
 
         // TODO set uuid to $ActiveRecord
@@ -462,6 +479,7 @@ ON DUPLICATE KEY UPDATE
 
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
+        return $uuid;
     }
 
     public function &get_data_pointer(string $class, array $index) : array

@@ -86,16 +86,16 @@ class Redis extends Database
 
     /**
      * @param ActiveRecordInterface $ActiveRecord
+     * @return string
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : void
+    public function update_record(ActiveRecordInterface $ActiveRecord) : string
     {
         /** @var ActiveRecord $ActiveRecord */
         if ($this->FallbackStore instanceof StructuredStore) {
             // Saves record in fallback and gets uuid
-            $this->FallbackStore->update_record($ActiveRecord);
-            $uuid = $ActiveRecord->get_uuid();
+            $uuid = $this->FallbackStore->update_record($ActiveRecord);
         } elseif ($ActiveRecord->is_new()) {
             $uuid = $this->create_uuid();
         } else {
@@ -132,6 +132,7 @@ class Redis extends Database
         if (!$Connection->exists($metakey)) {
             $Connection->hSet($metakey, 'class_name', get_class($ActiveRecord));
             $Connection->hSet($metakey, 'object_create_microtime', $time);
+            $Connection->hSet($metakey, 'object_uuid', $uuid);
             if ($this->FallbackStore instanceof StructuredStore) {
                 $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
             }
@@ -141,6 +142,7 @@ class Redis extends Database
             $Connection->expire($metakey, $Connection->getExpiryTime());
         }
 
+        return $uuid;
     }
 
     /**
@@ -187,6 +189,13 @@ class Redis extends Database
         }
 
         $result = $Connection->hGetAll($metakey);
+
+        foreach ($result as $key => $value) {
+            if (is_numeric($value)) {
+                $result[$key] = (int) $value;
+            }
+        }
+
         return $result;
     }
 

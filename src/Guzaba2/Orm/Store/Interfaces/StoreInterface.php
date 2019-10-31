@@ -25,7 +25,7 @@ interface StoreInterface
 
     public function get_unified_columns_data(string $class) : array ;
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : void ;
+    public function update_record(ActiveRecordInterface $ActiveRecord) : string ;
 
     public function &get_data_pointer(string $class, array $index) : array ;
 
