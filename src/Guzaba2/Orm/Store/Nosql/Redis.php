@@ -158,6 +158,13 @@ class Redis extends Database
     {
         /** @var RedisConnection $Connection */
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+
+        $primary_index_columns = $class::get_primary_index_columns();
+        $id_column = reset($primary_index_columns);
+        if (!isset($index['object_uuid']) && !isset($index[$id_column])) {
+            return $this->FallbackStore->get_data_pointer($class, $index);
+        }
+
         if (isset($index['object_uuid'])) {
             $uuid = $index['object_uuid'];
         } else {
@@ -170,8 +177,11 @@ class Redis extends Database
         }
 
         $result = $Connection->hGetAll($uuid);
-        $id = reset($index);
-        $meta = $this->get_meta($class, $id);
+        if (empty($result)) {
+            return $this->FallbackStore->get_data_pointer($class, $index);
+        }
+
+        $meta = $this->get_meta($class, $index[$id_column]);
         $return = ['data' => $result, 'meta' => $meta];
 
         return $return;
