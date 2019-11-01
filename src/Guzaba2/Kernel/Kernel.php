@@ -446,6 +446,9 @@ class Kernel
                 //get configuration from the registry
                 //only variables defined in CONFIG_DEFAULTS will be imported from the Registry
                 $real_class_name = str_replace('_without_config', '', $class_name);
+
+                self::$Registry->add_to_runtime_config_file($real_class_name, "\n==============================\nClass: {$real_class_name}\n");
+
                 $registry_config = self::$Registry->get_class_config_values($real_class_name);
 
                 foreach ($default_config as $key_name=>$key_value) {
@@ -473,6 +476,11 @@ class Kernel
                         };
                     }
                 }
+
+                self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, TRUE));
+                // the word FINAL is required here as it announces for final write in the file, when "return" is added
+                self::$Registry->add_to_runtime_files($real_class_name, $runtime_config, "FINAL CONFIG_RUNTIME");
+
             } else {
                 //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
