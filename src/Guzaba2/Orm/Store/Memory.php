@@ -393,4 +393,17 @@ class Memory extends Store implements StoreInterface
 
         return $ret;
     }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        $this->FallbackStore->remove_record($ActiveRecord);
+        $class = get_class($ActiveRecord);
+        $primary_index = $ActiveRecord->get_primary_index();
+        $this->MetaStore->remove_meta_data($class, $primary_index);
+    }
 }

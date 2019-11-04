@@ -89,13 +89,33 @@ class NullMetaStore extends MetaStore
     }
 
     /**
-     * @param ActiveRecord $activeRecord
+     * @param ActiveRecord $ActiveRecord
      * @param array $data
-     * @throws InvalidArgumentException
      */
     public function set_meta_data_by_object(ActiveRecord $ActiveRecord, array $data) : void
     {
         $key = self::get_key_by_object($ActiveRecord);
         $this->set_update_data($key, $data);
+    }
+
+    /**
+     * Used when deleting a record
+     *
+     * @param string $class
+     * @param array $primary_index
+     */
+    public function remove_meta_data(string $class, array $primary_index): void
+    {
+        // TODO: Implement remove_meta_data() method.
+    }
+
+    /**
+     * Used when deleting a record
+     *
+     * @param ActiveRecord $ActiveRecord
+     */
+    public function remove_meta_data_by_object(ActiveRecord $ActiveRecord): void
+    {
+        // TODO: Implement remove_meta_data_by_object() method.
     }
 }

@@ -33,7 +33,12 @@ use Guzaba2\Orm\Traits\ActiveRecordStructure;
 //use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
 //use Guzaba2\Orm\Traits\ActiveRecordDelete;
 
-
+/**
+ * Class ActiveRecord
+ * @package Guzaba2\Orm
+ * @method \Guzaba2\Orm\Store\Store OrmStore()
+ * @method \Azonmedia\Lock\Interfaces\LockManagerInterface LockManager()
+ */
 class ActiveRecord extends Base implements ActiveRecordInterface
 {
     protected const CONFIG_DEFAULTS = [
@@ -566,6 +571,38 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         $this->is_new_flag = FALSE;
 
         return $this;
+    }
+
+    /**
+     * Deletes active record
+     */
+    public function delete(): void
+    {
+        if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_before_delete'], $args);//must return void
+        }
+
+        new Event($this, '_before_delete');
+
+        if (self::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        }
+
+        self::OrmStore()->remove_record($this);
+
+        if (self::is_locking_enabled()) {
+            self::LockManager()->release_lock('', $LR);
+        }
+
+        new Event($this, '_after_remove');
+        if (method_exists($this, '_after_remove') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_after_remove'], $args);//must return void
+        }
+
+        parent::__destruct();
     }
 
     /**

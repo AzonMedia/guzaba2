@@ -154,4 +154,28 @@ class SwooleTable extends MetaStore
     {
         $this->set_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index(), $data);
     }
+
+    /**
+     * Used when deleting a record
+     *
+     * @param string $class
+     * @param array $primary_index
+     */
+    public function remove_meta_data(string $class, array $primary_index): void
+    {
+        $this->FallbackMetaStore->remove_meta_data($class, $primary_index);
+
+        $key = self::get_key($class, $primary_index);
+        $this->SwooleTable->del($key);
+    }
+
+    /**
+     * Used when deleting a record
+     *
+     * @param ActiveRecord $ActiveRecord
+     */
+    public function remove_meta_data_by_object(ActiveRecord $ActiveRecord): void
+    {
+        $this->remove_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+    }
 }

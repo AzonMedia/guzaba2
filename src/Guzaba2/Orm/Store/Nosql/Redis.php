@@ -156,7 +156,7 @@ class Redis extends Database
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
-        /** @var RedisConnection $Connection */
+        /** @var ConnectionCoroutine $Connection */
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
         $primary_index_columns = $class::get_primary_index_columns();
@@ -285,7 +285,7 @@ class Redis extends Database
         $uuid = Uuid::uuid4();
 
         // Checks if the uuid exists in the db; such occurences are rare
-        /** @var RedisConnection $Connection */
+        /** @var ConnectionCoroutine $Connection */
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CRR);
         if ($Connection->exists($uuid)) {
             if ($tries > 7) {
@@ -295,5 +295,23 @@ class Redis extends Database
         }
 
         return $uuid;
+    }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        $this->FallbackStore->remove_record($ActiveRecord);
+        $uuid = $ActiveRecord->get_uuid();
+        $id = $ActiveRecord->get_id();
+        $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);
+        /** @var ConnectionCoroutine $Connection */
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $TCR);
+        $Connection->del($uuid);
+        $Connection->del($uuid . ':meta');
+        $Connection->del($class_id);
     }
 }

@@ -81,4 +81,14 @@ class NullStore extends Store implements StoreInterface
     {
         return [];
     }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        throw new RunTimeException(sprintf(t::_('ORM Store %s does not support deleting records.'), __CLASS__));
+    }
 }

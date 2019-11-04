@@ -59,4 +59,10 @@ interface StoreInterface
      * @return array
      */
     public function debug_get_data() : array ;
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void ;
 }

@@ -36,7 +36,7 @@ use Guzaba2\Translator\Translator as t;
  * @method lSet($key, $index, $value)
  * @method get($key)
  * @method mGet($keys)
- * @method del($key, $other_keys)
+ * @method del($key, $other_keys = null)
  * @method hDel($key, $member, $other_members)
  * @method hSet($key, $member, $value)
  * @method hMSet($key, $pairs)

@@ -708,4 +708,37 @@ LIMIT 1
 
         $this->meta_exists = true;
     }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $primary_index = $ActiveRecord->get_primary_index();
+        $w_arr = [];
+        foreach ($primary_index as $key => $value) {
+            $w_arr[] = "$key = '$value'";
+        }
+        $w_str = implode(' AND ', $w_arr);
+
+        // Remove record data
+        $q = "
+DELETE FROM {$Connection::get_tprefix()}{$ActiveRecord::get_main_table()} 
+WHERE {$w_str}
+";
+        $s = $Connection->prepare($q);
+        $s->execute();
+
+        // Remove meta data
+        $meta_table = self::get_meta_table();
+        $uuid = $ActiveRecord->get_uuid();
+        $q = "
+DELETE FROM {$Connection::get_tprefix()}{$meta_table} 
+WHERE `object_uuid` = '{$uuid}'
+";
+        $s = $Connection->prepare($q);
+        $s->execute();
+    }
 }

@@ -112,4 +112,13 @@ class MultiStore extends Store
     {
         $this->get_fallback_store()->debug_get_data();
     }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        $this->get_fallback_store()->remove_record($ActiveRecord);
+    }
 }

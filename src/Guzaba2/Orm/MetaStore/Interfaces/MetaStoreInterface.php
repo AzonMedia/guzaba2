@@ -54,4 +54,19 @@ interface MetaStoreInterface
      * @throws InvalidArgumentException
      */
     public function set_meta_data_by_object(ActiveRecord $activeRecord, array $data) : void ;
+
+    /**
+     * Used when deleting a record
+     *
+     * @param string $class
+     * @param array $primary_index
+     */
+    public function remove_meta_data(string $class, array $primary_index) : void;
+
+    /**
+     * Used when deleting a record
+     *
+     * @param ActiveRecord $ActiveRecord
+     */
+    public function remove_meta_data_by_object(ActiveRecord $ActiveRecord) : void;
 }
