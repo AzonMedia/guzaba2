@@ -48,45 +48,6 @@ class Pool extends Provider
     }
 
     /**
-     * Returns a new connection no matter if there is already a connection provided to the current coroutine.
-     * @param string $connection_class
-     * @return ConnectionInterface
-     * @throws RunTimeException
-     * @throws InvalidArgumentException
-     */
-    public function get_new_connection(string $connection_class) : ConnectionInterface
-    {
-        if (\Swoole\Coroutine::getCid() === -1) {
-            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
-        }
-
-        if (!class_exists($connection_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided connection class %s does not exist.'), $connection_class));
-        }
-        if (!array_key_exists($connection_class, $this->available_connections)) {
-            $this->initialize_connections($connection_class);
-        }
-
-        // increment the time for waiting for free connection
-        $Context_Apm = Coroutine::getContext()->Apm;
-        $time_start_waiting = (double) microtime(TRUE);
-
-        $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
-
-        $time_end_waiting = (double) microtime(TRUE);
-        $eps = 0.0001;
-        $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
-
-        if (abs($time_waiting_for_connection) > $eps) {
-            $Context_Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
-        }
-
-        $Connection->assign_to_coroutine(Coroutine::getCid());
-
-        return $Connection;
-    }
-
-    /**
      * Obtains a connection (and marks it as busy).
      * It will reuse a connection from this coroutine if such is found.
      * If a new connection (second, third) for this coroutine is needed self::get_new_connection() is to be used
@@ -96,14 +57,9 @@ class Pool extends Provider
      * @return ConnectionInterface
      */
     public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
-    //public function get_connection(string $connection_class, &$ScopeReference = '&') : ConnectionInterface
     {
         if (!Coroutine::inCoroutine()) {
             throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
-        }
-
-        if (is_string($ScopeReference)) {
-            throw new InvalidArgumentException(sprintf(t::_('There is no provided ScopeReference variable to %s.'), __METHOD__));
         }
 
         //check the current scope does it has a connection
@@ -211,5 +167,44 @@ class Pool extends Provider
             //$Connection->set_created_from_factory(TRUE);
             $this->available_connections[$connection_class]->push($Connection);
         }
+    }
+
+    /**
+     * Returns a new connection. To be used when the current coroutine has no connection of this type already asigned (check in Coroutine\Context)
+     * @param string $connection_class
+     * @return ConnectionInterface
+     * @throws RunTimeException
+     * @throws InvalidArgumentException
+     */
+    private function get_new_connection(string $connection_class) : ConnectionInterface
+    {
+        if (\Swoole\Coroutine::getCid() === -1) {
+            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
+        }
+
+        if (!class_exists($connection_class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided connection class %s does not exist.'), $connection_class));
+        }
+        if (!array_key_exists($connection_class, $this->available_connections)) {
+            $this->initialize_connections($connection_class);
+        }
+
+        // increment the time for waiting for free connection
+        $Context_Apm = Coroutine::getContext()->Apm;
+        $time_start_waiting = (double) microtime(TRUE);
+
+        $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
+
+        $time_end_waiting = (double) microtime(TRUE);
+        $eps = 0.0001;
+        $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
+
+        if (abs($time_waiting_for_connection) > $eps) {
+            $Context_Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
+        }
+
+        $Connection->assign_to_coroutine(Coroutine::getCid());
+
+        return $Connection;
     }
 }

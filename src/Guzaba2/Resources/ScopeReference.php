@@ -5,7 +5,7 @@ namespace Guzaba2\Resources;
 
 use Guzaba2\Resources\Interfaces\ResourceInterface;
 
-class ScopeReference extends \Guzaba2\Patterns\ScopeReference
+class ScopeReference extends \Azonmedia\Patterns\ScopeReference
 {
     /**
      * @var ResourceInterface

@@ -110,7 +110,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
                 $Context->Events = new Events();
-                
+                $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
             }
         }
         return $Context;

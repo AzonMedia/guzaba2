@@ -36,7 +36,7 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
      * @param $ScopeReference
      * @param-out $ScopeReference
      */
-    public function get_connection(string $class_name, &$ScopeReference = '') : ConnectionInterface
+    public function get_connection(string $class_name, &$ScopeReference) : ConnectionInterface
     {
         return $this->ConnectionProvider->get_connection($class_name, $ScopeReference);
     }

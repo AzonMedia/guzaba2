@@ -60,7 +60,7 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
                 ) {
                     $routing = $loaded_class::get_routes();
                     if ($routing === NULL) { //empty array is acceptable though - this may be intentional (for example to skip/disable the controller)
-                        throw new RunTimeException(sprintf(t::_('The controller %s has no routing set.'), $loaded_class));
+                        throw new RunTimeException(sprintf(t::_('The controller %s has no routing set. Please set the %s::ROUTES constant.'), $loaded_class, $loaded_class));
                     }
                     $routing_map = array_merge($routing_map, $routing);
                 }
