@@ -156,6 +156,27 @@ abstract class ConnectionCoroutine extends Connection
         }
     }
 
+    /**
+     * delete row from MongoDB
+     * @param array $filter
+     * @param string $collection
+     * @param bool $limit (0 = no limit)
+     *
+     * @return void
+     */
+    public function delete(array $filter, string $collection, bool $limit = true) : void
+    {
+        $bulk = new BulkWrite();
+
+        $bulk->delete(
+            $filter,
+            ['limit' => $limit]
+        );
+
+        $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
+        $r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+    }
+
     public function ping() : bool
     {
         $ret = FALSE;

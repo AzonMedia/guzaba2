@@ -101,11 +101,12 @@ class MongoDB extends Database
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
         $filter = [
-        	'class_name' => $class_name,
-        	'object_id' => $object_id
+            'class_name' => $class_name,
+            'object_id' => $object_id
         ];
 
-    	$result = $Connection->query($coll, $filter);
+        $result = $Connection->query($coll, $filter);
+
         return $result[0];
     }
 
@@ -116,9 +117,9 @@ class MongoDB extends Database
         $coll = $Connection::get_tprefix() . self::get_meta_table();
         $filter = ['object_uuid' => $uuid];
 
-    	$data = $Connection->query($coll, $filter);
+        $data = $Connection->query($coll, $filter);
 
-		if (!count($data)) {
+        if (!count($data)) {
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
@@ -138,12 +139,12 @@ class MongoDB extends Database
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
         $filter = [
-        	'class_name'	=> get_class($ActiveRecord),
-        	'object_id'	 	=> $ActiveRecord->get_id()
+            'class_name'	=> get_class($ActiveRecord),
+            'object_id'	 	=> $ActiveRecord->get_id()
         ];
 
         $data = [
-            'object_last_update_microtime'  => microtime(TRUE) * 1000000
+            'object_last_update_microtime'  => (int) microtime(TRUE) * 1000000
         ];
 
         $Connection->update($filter, $Connection::get_tprefix() . self::get_meta_table(), $data);
@@ -163,7 +164,7 @@ class MongoDB extends Database
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
 
-        $object_create_microtime = microtime(TRUE) * 1000000;
+        $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
         if (!$uuid) {
         	$uuid = Uuid::uuid4();
@@ -297,4 +298,15 @@ class MongoDB extends Database
         return [];
     }
 
+	public function remove_record(ActiveRecordInterface $ActiveRecord): void
+	{
+		$this->FallbackStore->remove_record($ActiveRecord);
+
+		$Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+		$primary_index = $ActiveRecord->get_primary_index();
+        $uuid = $ActiveRecord->get_uuid();
+
+		$Connection->delete($primary_index, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
+		$Connection->delete(['object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
+	}
 }
