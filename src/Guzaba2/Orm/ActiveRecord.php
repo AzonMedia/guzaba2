@@ -270,7 +270,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         $meta_data = $Store->get_meta_by_uuid($uuid);
         $id = $meta_data['object_id'];
         return new $meta_data['class']($id);
-
     }
 
     public function _before_change_context() : void

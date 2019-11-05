@@ -146,7 +146,6 @@ class Pool extends Provider
                 $Conn = $this->available_connections[$connection_class]->pop();
 
                 try {
-                    // print Kernel::get_worker_id().' ping'.PHP_EOL;
                     $Conn->ping();
                 } catch (\Exception $exception) {
                     $Conn->initialize();

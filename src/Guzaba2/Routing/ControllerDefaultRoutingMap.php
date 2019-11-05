@@ -20,7 +20,6 @@ use Guzaba2\Translator\Translator as t;
  */
 class ControllerDefaultRoutingMap extends RoutingMapArray
 {
-
     /**
      * Indexed array of namespace prefixes
      * @var array
