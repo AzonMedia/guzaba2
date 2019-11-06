@@ -33,6 +33,7 @@ abstract class ConnectionCoroutine extends Connection
         'username'  => 'swoole_user',
         'password'  => 'swoole_password',
         'tprefix'   => 'guzaba_',
+        'AI_table'  => 'guzaba_autoincrement_counters',
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -180,10 +181,10 @@ abstract class ConnectionCoroutine extends Connection
     public function ping() : bool
     {
         $ret = FALSE;
-        $command = new MongoDB\Driver\Command(['ping' => 1]);
+        $command = new Command(['ping' => 1]);
 
         try {
-            $cursor = $this->Manager->executeCommand('admin', $command);
+            $cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
             $ret = TRUE;
         } catch (MongoDB\Driver\Exception $e) {
             throw new RunTimeException($e->getMessage());
@@ -195,6 +196,36 @@ abstract class ConnectionCoroutine extends Connection
     public function close() : void
     {
         // cannot close MongoDB Connection
+    }
+
+    public function get_autoincrement_value($collection_name) : int
+    {
+        $command = new Command([
+            'findandmodify' => self::CONFIG_RUNTIME['AI_table'],
+            'query' => ['_id' => $collection_name],
+            'update' => ['$inc' => ['AI' => 1]],
+            'new' => TRUE,
+            'upsert' => TRUE,
+            'fields' => ['AI' => 1]
+        ]);
+
+        $cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
+        $cursor->setTypeMap(['root' => 'array', 'document' => 'array']);
+        $result = $cursor->toArray()[0];
+
+        $next_id = $result['value']['AI'];
+
+        return $next_id;
+    }
+
+    public function set_autoincrement_value($collection_name, $object_id) : void
+    {
+        $this->update(
+            ['_id' => $collection_name],
+            self::CONFIG_RUNTIME['AI_table'],
+            ['AI' => $object_id],
+            TRUE
+        );
     }
 
     /**

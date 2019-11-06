@@ -166,10 +166,10 @@ class MongoDB extends Database
 
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
-        if (!$uuid) {
-        	$uuid = Uuid::uuid4();
+        if ($uuid === NULL) {
+            $uuid = Uuid::uuid4()->toString();
         }
-        // $uuid_binary = $uuid->getBytes(); 
+        // $uuid_binary = $uuid->getBytes();
             
         $data = [
             'object_uuid'                   => $uuid,
@@ -196,7 +196,9 @@ class MongoDB extends Database
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : string
     {
-    	$uuid = NULL;
+        $uuid = NULL;
+
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
         /** @var ActiveRecord $ActiveRecord */
         if ($this->FallbackStore instanceof StructuredStore) {
@@ -204,34 +206,44 @@ class MongoDB extends Database
             $uuid = $this->FallbackStore->update_record($ActiveRecord);
         }
 
+        if ($ActiveRecord->is_new() && $ActiveRecord::uses_autoincrement()) {
+            $object_id = $ActiveRecord->get_id();
+
+            if (!$object_id) {
+                // if there isn't FallBackStore, the index is autoincrement and it is not yet set
+                $next_id = $Connection->get_autoincrement_value($ActiveRecord::get_main_table());
+                // this will set $ActiveRecord->record_data[$main_index[0]]
+                $ActiveRecord->update_primary_index($next_id);
+            } else {
+                $Connection->set_autoincrement_value($ActiveRecord::get_main_table(), $object_id);
+            }
+        }
+
+        $record_data = $ActiveRecord->get_record_data();
+        $main_index = $ActiveRecord->get_primary_index_columns();
+        $field_names_arr = $ActiveRecord->get_property_names();
+
+        $filter = [];
+        foreach ($main_index as $field_name) {
+            $filter[$field_name] = $record_data[$field_name];
+        }
+
+        $record_data_to_save = [];
+        foreach ($field_names_arr as $field) {
+            if (!isset($filter[$field])) {
+                $record_data_to_save[$field] = $record_data[$field];
+            }
+        }
+
+        // insert or update record
+        $Connection->update($filter, $Connection::get_tprefix().$ActiveRecord::get_main_table(), $record_data_to_save, TRUE);
+
         if ($ActiveRecord->is_new()) {
             $uuid = $this->create_meta($ActiveRecord, $uuid);
         } else {
             $this->update_meta($ActiveRecord);
             $uuid = $ActiveRecord->get_uuid();
         }
-
-        $columns_data = self::get_unified_columns_data(get_class($ActiveRecord)); 
-        $record_data = $ActiveRecord->get_record_data();
-        $main_index = $ActiveRecord->get_primary_index_columns();
-
-        $filter = [];
-        foreach ($main_index as $field_name) {
-        	$filter[$field_name] = $record_data[$field_name];
-        }
-
-        $record_data_to_save = [];
-        foreach ($columns_data as $field_data) {
-        	if (!in_array($field_data['name'], $filter)) {
-            	$record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
-        	}
-        }
-
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-
-        // insert or update record
-        $Connection->update($filter, $Connection::get_tprefix().$ActiveRecord::get_main_table(), $record_data_to_save, TRUE);
-
 
         return $uuid;
     }
@@ -259,9 +271,9 @@ class MongoDB extends Database
         $data = $Connection->query($coll, $index);
 
         if (count($data)) {
-        	$primary_index = $class::get_index_from_data($data[0]);
+            $primary_index = $class::get_index_from_data($data[0]);
 
-			if (is_null($primary_index)) {
+            if (is_null($primary_index)) {
                 throw new RunTimeException(sprintf(t::_('The primary index for class %s is not found in the retreived data.'), $class));
             }
             if (count($primary_index) > 1) {
@@ -298,15 +310,18 @@ class MongoDB extends Database
         return [];
     }
 
-	public function remove_record(ActiveRecordInterface $ActiveRecord): void
-	{
-		$this->FallbackStore->remove_record($ActiveRecord);
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $this->FallbackStore->remove_record($ActiveRecord);
+        }
 
-		$Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-		$primary_index = $ActiveRecord->get_primary_index();
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $primary_index = $ActiveRecord->get_primary_index();
         $uuid = $ActiveRecord->get_uuid();
 
-		$Connection->delete($primary_index, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
-		$Connection->delete(['object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
-	}
+        $Connection->delete($primary_index, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
+        $Connection->delete(['object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
+    }
+
 }
