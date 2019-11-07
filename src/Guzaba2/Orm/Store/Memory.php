@@ -183,7 +183,7 @@ class Memory extends Store implements StoreInterface
                     $primary_index = [$meta_data['object_id']];
                     //if found check is it current in MetaStore
                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-                    //print $last_update_time.'AAA'.PHP_EOL;
+                    
                     if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
                         if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;

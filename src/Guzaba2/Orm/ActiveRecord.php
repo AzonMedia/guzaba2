@@ -558,7 +558,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
         
 
-        //COMMIT
+        //COMMIT ORMTransaction
 
         //reattach the pointer
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
@@ -896,4 +896,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $this->Store->debug_get_data();
     }
 
+//    public static function get_by(array $index) : iterable
+//    {
+//
+//    }
 }

@@ -73,7 +73,9 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
         //for example public string $dir;//not initialized - setting it with $obj->dir will trigger __set()
         //the correct is public string $dir = '';
         $class = get_class($this);
-        if (property_exists($class, $property)) {
+        //if (property_exists($class, $property)) {
+        //Bug https://bugs.php.net/bug.php?id=78226 is now fixed and there is no longer need of this check
+        if (false) {
             //throw new RunTimeException(sprintf(t::_('Attempting to set a dynamic uninitialized typed property $%s on an instance of class %s. All typed properties must be initialized'), $property, $class));
             //can not throw an exception here as the object properties can not be initializen on declaration and will go thorugh the overloading
             if (is_object($value)) {
