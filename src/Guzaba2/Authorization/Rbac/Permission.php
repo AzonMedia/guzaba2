@@ -17,12 +17,14 @@ class Permission extends ActiveRecord
         'main_table'            => 'rbac_operations',
     ];
 
-    public static function create(string $permission_name) /* scalar */
+    protected const CONFIG_RUNTIME = [];
+
+    public static function create(string $permission_name) : ActiveRecord
     {
         $Permission = new self();
         $Permission->permission_name = $permission_name;
         $Permission->save();
-        return $Permission->get_id();
+        return $Permission;
     }
 
     public function _before_save()

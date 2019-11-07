@@ -15,12 +15,19 @@ use Guzaba2\Orm\ActiveRecord;
  */
 class PermissionOperation extends ActiveRecord
 {
-    public static function create(Permission $Permission, Operation $Operation) /* scalar */
+
+    protected const CONFIG_DEFAULTS = [
+        'main_table'            => 'rbac_permissions_operations',
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+    public static function create(Permission $Permission, Operation $Operation) : ActiveRecord
     {
         $PermissionOperation = new self();
         $PermissionOperation->permission_id = $Permission->get_id();
         $PermissionOperation->operation_id = $Operation->get_id();
         $PermissionOperation->save();
-        return $PermissionOperation->get_id();
+        return $PermissionOperation;
     }
 }

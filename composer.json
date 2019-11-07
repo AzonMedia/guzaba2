@@ -15,8 +15,16 @@
     ],
     "require": {
         "php": ">=7.4.0",
+        "ext-pdo": "*",
+        "ext-mysqli": "*",
+        "ext-swoole": ">=4.4.8",
+        "ext-json": "*",
+
         "psr/http-message": "^1.0",
         "psr/http-server-middleware": "^1.0",
+        "psr/cache": "^1.0",
+        "psr/log": "^1.1",
+
         "azonmedia/psr-to-swoole": "dev-master",
         "azonmedia/swoole-to-psr": "dev-master",
         "azonmedia/reflection": "dev-master",
@@ -28,22 +36,20 @@
         "azonmedia/lock": "dev-master",
         "azonmedia/patterns": "dev-master",
         "azonmedia/transaction": "dev-master",
-        "psr/log": "^1.1",
-        "jbzoo/utils": "^2.3",
-        "eaglewu/swoole-ide-helper": "dev-master",
         "azonmedia/utilities": "dev-master",
         "azonmedia/apm": "dev-master",
-        "ext-pdo": "*",
-        "ext-mysqli": "*",
         "azonmedia/watchdog": "dev-master",
-        "ext-json": "*",
-        "ramsey/uuid": "^3.8"
+
+        "jbzoo/utils": "^2.3",
+        "ramsey/uuid": "^3.8",
+        "symfony/cache": "^5.0",
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]
     },
     "require-dev": {
         "phpstan/phpstan": "^0.11.15",
-        "friendsofphp/php-cs-fixer": "^2.15"
+        "friendsofphp/php-cs-fixer": "^2.15",,
+        "eaglewu/swoole-ide-helper": "dev-master"
     }
 }

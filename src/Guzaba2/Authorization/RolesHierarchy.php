@@ -18,7 +18,14 @@ use Guzaba2\Translator\Translator as t;
  */
 class RolesHierarchy extends ActiveRecord
 {
-    public static function create(Role $Role, Role $InheritedRole) /* scalar */
+
+    protected const CONFIG_DEFAULTS = [
+        'main_table'            => 'users',
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+    public static function create(Role $Role, Role $InheritedRole) : ActiveRecord
     {
         if ($Role->is_new() || !$Role->get_id()) {
             throw new InvalidArgumentException(sprintf(t::_('The first argument of %s() is a role that is new or has no ID.'), __METHOD__ ));
@@ -30,6 +37,6 @@ class RolesHierarchy extends ActiveRecord
         $RoleRoles->role_id = $Role->get_id();
         $RoleRoles->inherited_role_id = $InheritedRole->get_id();
         $RoleRoles->save();
-        return $RoleRoles->get_id();
+        return $RoleRoles;
     }
 }

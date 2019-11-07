@@ -228,7 +228,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //no locking here either
         } else {
 
-            $this->load($index);
+            $this->read($index);
         }
     }
 
@@ -321,16 +321,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
-    protected function load(/* mixed */ $index) : void
+    protected function read(/* mixed */ $index) : void
     {
 
         //_before_load() event
-        if (method_exists($this, '_before_load') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_before_load'], $args);//must return void
+            call_user_func_array([$this,'_before_read'], $args);//must return void
         }
         
-        new Event($this, '_before_load');
+        new Event($this, '_before_read');
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
@@ -360,12 +360,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         $this->is_new_flag = FALSE;
 
-        new Event($this, '_after_load');
+        new Event($this, '_after_read');
 
         //_after_load() event
-        if (method_exists($this, '_after_load') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_after_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_after_load'], $args);//must return void
+            call_user_func_array([$this,'_after_read'], $args);//must return void
         }
     }
 
@@ -595,10 +595,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             self::LockManager()->release_lock('', $LR);
         }
 
-        new Event($this, '_after_remove');
-        if (method_exists($this, '_after_remove') && !$this->method_hooks_are_disabled()) {
+        new Event($this, '_after_delete');
+        if (method_exists($this, '_after_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_after_remove'], $args);//must return void
+            call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
 
         parent::__destruct();
@@ -635,7 +635,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     
     /**
      * Initializes the record_data properties with the default values (taking account nullable too).
-     * To be called only from self::load()
+     * To be called only from self::read()
      * @param $initial_data array
      * @author vesko@azonmedia.com
      * @created 14.09.2017

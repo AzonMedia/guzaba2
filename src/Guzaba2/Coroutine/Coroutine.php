@@ -102,15 +102,21 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $Context->sub_coroutine_ids = [];
             $Context->parent_coroutine_id = self::getPcid();
             $Context->current_user_id = 0;
+            //TODO convert these to DI services
             if ($Context->parent_coroutine_id >= 1) {
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
                 $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
                 $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
+                $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
+                $Context->CurrentUser = self::getContext($Context->parent_coroutine_id)->CurrentUser;
             } else {
+                //these are initialized here instead in init() as these may not be needed during execution
                 $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
                 $Context->Events = new Events();
                 $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
+                $User = new User(0);//TODO - pull the user from the Request
+                $Context->CurrentUser = new Guzaba2\Authorization\Rbac\CurrentUser($User);
             }
         }
         return $Context;

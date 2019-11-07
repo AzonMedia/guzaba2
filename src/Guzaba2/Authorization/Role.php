@@ -17,12 +17,19 @@ use Guzaba2\Translator\Translator as t;
  */
 class Role extends ActiveRecord
 {
-    public static function create(string $name) /* scalar */
+
+    protected const CONFIG_DEFAULTS = [
+        'main_table'            => 'roles',
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+    public static function create(string $name) : ActiveRecord
     {
         $Role = new self();
         $Role->role_name = $name;
         $Role->save();
-        return $Role->get_id();
+        return $Role;
     }
 
     public function grant_role(Role $Role) /* scalar */

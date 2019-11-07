@@ -21,7 +21,9 @@ class RolePermission extends ActiveRecord
         'main_table'            => 'rbac_roles_permissions',
     ];
 
-    public static function create(Role $Role, Permission $Permission) /* scalar */
+    protected const CONFIG_RUNTIME = [];
+
+    public static function create(Role $Role, Permission $Permission) : ActiveRecord
     {
 
         if ($Role->is_new() || !$Role->get_id()) {
@@ -35,6 +37,6 @@ class RolePermission extends ActiveRecord
         $RolePermission->role_id = $Role->get_id();
         $RolePermission->permission_id = $Permission->get_id();
         $RolePermission->save();
-        return $RolePermission->get_id();
+        return $RolePermission;
     }
 }
