@@ -26,7 +26,7 @@ class ConnectionMonitor extends Base
 
     public function monitor()
     {
-        $ConnectionFactory = self::ConnectionFactory();
+        $ConnectionFactory = static::get_service('ConnectionFactory');
 
         \Swoole\Timer::tick(self::CONFIG_RUNTIME['ping_time'], function () use ($ConnectionFactory) {
             $ConnectionFactory->ping_connections();

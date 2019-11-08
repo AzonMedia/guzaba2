@@ -13,6 +13,7 @@ use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
+use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -24,23 +25,35 @@ use Psr\Http\Message\ResponseInterface;
  * TODO add execute event
  * @package Guzaba2\Mvc
  */
+//abstract class Controller extends ActiveRecord
 abstract class Controller extends Base
 implements ControllerInterface
 {
 
-    protected const CONFIG_DEFAULTS = [
-        'services'      => [
-            'AuthorizationProvider',
-        ],
+//    protected const CONFIG_DEFAULTS = [
+//        'services'      => [
+//            'AuthorizationProvider',
+//        ],
+//
+//    ];
 
+    protected const CONFIG_DEFAULTS = [
+        //confusing
+        //'store_class'       =>  \Guzaba2\Orm\Store\BlankStore::class,//means that the controllers are not stored in the DB and are not using permissions
+        //'store_class'     => NULL,//means the controllers are stored in the defined store of Orm
+        //'store_class'       => 'some_class',//a custom storage for the controllers
+
+        'store_service'       => NULL,//means no storage for the controllers, internally \Guzaba2\Orm\Store\BlankStore::class is used
+        //'store_service'       => 'OrmStore',//use the standard OrmStore
+        //'store_service'         => 'AnotherService',//the controllers can be stored in different storage service
     ];
+
+    protected const CONFIG_RUNTIME = [];
 
     /**
      * @var RequestInterface
      */
     private $Request;
-
-    private $ActiveRecordController;
 
     /**
      * Controller constructor.
@@ -49,6 +62,11 @@ implements ControllerInterface
     public function __construct(RequestInterface $Request)
     {
         parent::__construct();
+//        $store_service = 'BlankOrmStore';
+//        if (self::CONFIG_RUNTIME['store_service'] === NULL) {
+//
+//        }
+        //parent::__construct( ['controller_class' => get_class($this)] );
         $this->Request = $Request;
 
     }

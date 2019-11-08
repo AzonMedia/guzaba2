@@ -150,7 +150,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @throws RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public final function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
+    public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
@@ -167,7 +167,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         if ($Store) {
             $this->Store = $Store;
         } else {
-            $this->Store = static::OrmStore();//use the default service
+            //$this->Store = static::OrmStore();//use the default service
+            $this->Store = static::get_service('OrmStore');
         }
         
 
@@ -230,7 +231,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //no locking here either
         } else {
 
-            $this->read($index);
+            $this->load($index);
         }
     }
 
@@ -251,7 +252,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
-            self::LockManager()->release_lock($resource);
+            //self::LockManager()->release_lock($resource);
+            static::get_service('LockManager')->release_lock($resource);
         }
     }
 
@@ -268,7 +270,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public static final function get_by_uuid(string $uuid) : ActiveRecord
     {
-        $Store = static::OrmStore();
+        //$Store = static::OrmStore();
+        $Store = static::get_service('OrmStore');
         $meta_data = $Store->get_meta_by_uuid($uuid);
         $id = $meta_data['object_id'];
         return new $meta_data['class']($id);
@@ -323,11 +326,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
-    protected function read(/* mixed */ $index) : void
+    protected function load(/* mixed */ $index) : void
     {
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (self::uses_athorization()) {
+        if (static::uses_service('AuthorizationProvider')) {
             $this->check_permission('read');
         }
 
@@ -363,7 +366,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //if ($this->locking_enabled_flag) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
         }
 
         $this->is_new_flag = FALSE;
@@ -529,7 +533,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (self::uses_service('AuthorizationProvider')) {
+        if (static::uses_service('AuthorizationProvider')) {
             if ($this->is_new()) {
                 $this->check_permission('create');
             } else {
@@ -550,13 +554,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
-            self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
-        self::OrmStore()->update_record($this);
+        //self::OrmStore()->update_record($this);
+        static::get_service('OrmStore')->update_record($this);
 
         if (self::is_locking_enabled()) {
-            self::LockManager()->release_lock('', $LR);
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
         }
 
 
@@ -565,7 +572,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         if ($this->is_new() && self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
         }
 
         new Event($this, '_after_save');
@@ -599,7 +607,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (self::uses_service('AuthorizationProvider')) {
+        if (static::uses_service('AuthorizationProvider')) {
             $this->check_permission('delete');
         }
 
@@ -613,13 +621,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         if (self::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
-            self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
-        self::OrmStore()->remove_record($this);
+        //self::OrmStore()->remove_record($this);
+        static::get_service('OrmStore')->remove_record($this);
 
         if (self::is_locking_enabled()) {
-            self::LockManager()->release_lock('', $LR);
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
         }
 
         new Event($this, '_after_delete');

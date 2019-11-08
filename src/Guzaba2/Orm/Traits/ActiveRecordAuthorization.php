@@ -22,7 +22,7 @@ trait ActiveRecordAuthorization
         //$Request = Coroutine::getContext()->Request;
         //object user_id from $Request
         //self::CurrentUser
-        if (!self::uses_service('AuthorizationProvider')) {
+        if (!static::uses_service('AuthorizationProvider')) {
             throw new RunTimeException(sprintf(t::_('The ActiveRecord is not using the service AuthorizationProvider. A method %s requiring authorization was invoked.'), $method));
         }
         $this->check_permission($action);
@@ -51,11 +51,7 @@ trait ActiveRecordAuthorization
     public function role_can(Role $Role, string $action) : bool
     {
         //get all operations that support that action
-        return self::AuthorizationProvider()::role_can($Role, $action, $this);
+        return static::get_service('AuthorizationProvider')::role_can($Role, $action, $this);
     }
 
-//    public static function uses_authorization() : bool
-//    {
-//        return self::uses_service('AuthorizationProvider');
-//    }
 }

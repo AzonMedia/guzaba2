@@ -83,7 +83,7 @@ class Mysql extends Database implements StructuredStore
     
     public function get_storage_columns_data_by_table_name(string $table_name) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $q = "
 SELECT
@@ -112,15 +112,12 @@ ORDER BY
      */
     public function get_storage_columns_data(string $class) : array
     {
-        $ret = $this->get_storage_columns_data_by_table_name($class::get_main_table());
-
-        if (!count($ret)) {
-            //look for the next storage
-            $ret = $this->FallbackStore->get_record_structure($this->get_unified_columns_data($class));
-            //needs to update the local storage...meaning creating a table...
-            //TODO - either cache the structure or create...
-            //not implemented
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $ret = $this->FallbackStore->get_storage_columns_data($class);
+        } else {
+            $ret = $this->get_storage_columns_data_by_table_name($class::get_main_table());
         }
+
 
         return $ret;
     }
@@ -161,7 +158,7 @@ ORDER BY
 
     public function get_meta(string $class_name, int $object_id) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $q = "
 SELECT
     *
@@ -182,7 +179,7 @@ WHERE
      */
     public function get_meta_by_uuid(string $uuid) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $q = "
 SELECT 
@@ -209,7 +206,7 @@ WHERE
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
             throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s". Instead the new obejcts have their metadata created with Mysql::create_meta() method.'), get_class($ActiveRecord)));
         }
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
 
         $object_last_update_microtime = microtime(TRUE) * 1000000;
@@ -238,7 +235,7 @@ WHERE
 
     protected function create_meta(ActiveRecordInterface $ActiveRecord) : string
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = self::get_meta_table();
 
         $object_create_microtime = microtime(TRUE) * 1000000;
@@ -342,7 +339,7 @@ VALUES
                 }, $field_names_arr));
                 $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
             }
-            $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+            $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
             $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
 
@@ -427,7 +424,7 @@ VALUES
                     return "{$value} = :update_{$value}";
                 }, array_keys($upd_arr)));
 
-                $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+                $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
                 $data_arr = $ActiveRecord->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
 
@@ -486,10 +483,10 @@ ON DUPLICATE KEY UPDATE
     {
 
         //initialization
-        $record_data = $this->get_record_structure($this->get_unified_columns_data($class));
+        $record_data = self::get_record_structure($this->get_unified_columns_data($class));
         //lookup in DB
 
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         //pull data from DB
         //set the data to $record_data['data']
@@ -666,7 +663,7 @@ WHERE
         }
 
         // TODO can use create table if not exists
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $q = "
 SELECT
     *
@@ -715,7 +712,7 @@ LIMIT 1
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $primary_index = $ActiveRecord->get_primary_index();
         $w_arr = [];
         foreach ($primary_index as $key => $value) {

@@ -4,6 +4,7 @@ namespace Guzaba2\Orm\Store\Nosql;
 
 use Azonmedia\Glog\Application\RedisConnection;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Nosql\Redis\ConnectionCoroutine;
 use Guzaba2\Orm\ActiveRecord;
@@ -70,8 +71,11 @@ class Redis extends Database
             $ret = $this->FallbackStore->get_storage_columns_data($class);
         } else {
             // $class is instance of Guzaba2\Orm\ActiveRecord
-            if (!method_exists($class, 'get_structure')) {
-                throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
+            //if (!method_exists($class, 'get_structure')) {
+            //    throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
+            //}
+            if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+                throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
             }
 
             $ret = $class::get_structure();
@@ -105,7 +109,7 @@ class Redis extends Database
         $record_data = $ActiveRecord->get_record_data();
 
         /** @var ConnectionCoroutine $Connection */
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         // Create or update
         foreach ($record_data as $key => $value) {
@@ -156,8 +160,13 @@ class Redis extends Database
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
+
+        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
+        }
+
         /** @var ConnectionCoroutine $Connection */
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $primary_index_columns = $class::get_primary_index_columns();
         $id_column = reset($primary_index_columns);
@@ -187,15 +196,20 @@ class Redis extends Database
         return $return;
     }
     
-    public function get_meta(string $class_name, int $object_id) : array
+    public function get_meta(string $class, int $object_id) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $TCR);
-        $redis_id_key = $this->create_class_id($class_name, [$object_id]);
+
+        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
+        }
+
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $TCR);
+        $redis_id_key = $this->create_class_id($class, [$object_id]);
         $uuid = $Connection->get($redis_id_key);
         $metakey = $uuid . ':meta';
 
         if (!$Connection->exists($metakey)) {
-            return $this->FallbackStore->get_meta($class_name, $object_id);
+            return $this->FallbackStore->get_meta($class, $object_id);
         }
 
         $result = $Connection->hGetAll($metakey);
@@ -231,7 +245,7 @@ class Redis extends Database
     public function get_meta_by_uuid(string $uuid) : array
     {
         $metakey = $uuid . ':meta';
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         if ($Connection->exists($metakey)) {
             return $this->FallbackStore->get_meta_by_uuid($uuid);
         }
@@ -286,7 +300,7 @@ class Redis extends Database
 
         // Checks if the uuid exists in the db; such occurences are rare
         /** @var ConnectionCoroutine $Connection */
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CRR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CRR);
         if ($Connection->exists($uuid)) {
             if ($tries > 7) {
                 throw new \RuntimeException('Cannot create a unique uuid after 7 attempts');
@@ -309,7 +323,7 @@ class Redis extends Database
         $id = $ActiveRecord->get_id();
         $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);
         /** @var ConnectionCoroutine $Connection */
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $TCR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $TCR);
         $Connection->del($uuid);
         $Connection->del($uuid . ':meta');
         $Connection->del($class_id);

@@ -77,7 +77,8 @@ class Memory extends Store implements StoreInterface
         if ($MetaStore) {
             $this->MetaStore = $MetaStore;
         } else {
-            $this->MetaStore = self::OrmMetaStore();
+            //$this->MetaStore = self::OrmMetaStore();
+            $this->MetaStore = static::get_service('OrmMetaStore');
         }
     }
 
