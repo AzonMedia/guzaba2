@@ -110,9 +110,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     //protected $validation_is_disabled_flag = FALSE;
 
 
-    public const AUTHZ_METHOD_PREFIX = 'authz_';
-
-
     /**
      * Contains the unified record structure for this class.
      * @see StoreInterface::UNIFIED_COLUMNS_STRUCTURE
@@ -524,7 +521,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     //    return static::CONFIG_RUNTIME['meta_table'];
     //}
 
-    public function save() : ActiveRecord
+    public function save() : ActiveRecordInterface
     {
         if (!count($this->get_modified_properties_names())) {
             return $this;

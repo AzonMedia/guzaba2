@@ -4,16 +4,17 @@ namespace Guzaba2\Orm\Traits;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 
 trait ActiveRecordAuthorization
 {
     public function __call(string $method, array $args) /* mixed */
     {
-        if (!strpos($method,self::AUTHZ_METHOD_PREFIX)===0) {
+        if (!strpos($method,ActiveRecordInterface::AUTHZ_METHOD_PREFIX)===0) {
             //throw
         }
-        $action = substr($method, strlen(self::AUTHZ_METHOD_PREFIX));
+        $action = substr($method, strlen(ActiveRecordInterface::AUTHZ_METHOD_PREFIX));
         if (!method_exists($this, $action)) {
             //throw
         }
