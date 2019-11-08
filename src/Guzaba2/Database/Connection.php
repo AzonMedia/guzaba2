@@ -24,7 +24,7 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 
     public function __construct()
     {
-        $ConnectionFactory = self::ConnectionFactory();
+        $ConnectionFactory = static::get_service('ConnectionFactory');
         parent::__construct($ConnectionFactory);
     }
 

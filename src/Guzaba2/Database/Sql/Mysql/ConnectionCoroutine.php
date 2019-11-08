@@ -114,51 +114,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
     {
         return $this->MysqlCo->connected;
     }
-
-    /**
-     * Will start number of coroutines corresponding to the number of queries - 1 (the current coroutine & connection will be used too)
-     * @param array $queries Twodimensional indexed array containing 'query' and 'params' keys in the second dimension
-     * @return array
-     */
-    /*
-    public function execute_multiple_queries(array $queries_data) : array
-    {
-        $queries_count = count($queries_data);
-
-        $channel = new \Swoole\Coroutine\Channel(count($queries_data));
-
-        $current_coroutine_query_data = array_pop($queries_data);
-
-        $Function = function (string $query, array $params = []) {
-            print 'substart'.PHP_EOL;
-            $Connection = self::ConnectionFactory()->get_connection(get_class($this), $CR);
-            $Statement = $Connection->prepare($query);
-            $Statement->execute($params);
-//            $data = $Statement->fetchAll();
-//            print 'subok'.PHP_EOL;
-//            $channel->push($data);
-        };
-        foreach ($queries_data as $query_data) {
-            Coroutine::create($Function, $query_data['query'], $query_data['params']);
-        }
-        //the coroutines are started
-        //execute in the main coroutine the poped query
-        $Statement = $this->prepare($current_coroutine_query_data['query']);
-        $Statement->execute($current_coroutine_query_data['params']);
-        $data = $Statement->fetchAll();
-        print 'ok'.PHP_EOL;
-        $channel->push($data);
-
-        $ret = [];
-        for ($aa = 0; $aa<$channel->length(); $aa++) {
-            print 'pop'.PHP_EOL;
-            $ret[] = $channel->pop();
-        }
-
-
-        return $ret;
-    }
-    */
+    
 
     //TODO implement timeout parameter - on timeout this will interrupt the connection so the connection will need to be reestablished
     /**
@@ -175,7 +131,7 @@ abstract class ConnectionCoroutine extends ConnectionTransactional
             $params = $query_data['params'];
             $called_class = get_called_class();
             $callables[] = static function () use ($query, $params, $called_class) : iterable {
-                $Connection = self::ConnectionFactory()->get_connection($called_class, $CR);
+                $Connection = static::get_service('ConnectionFactory')->get_connection($called_class, $CR);
                 $Statement = $Connection->prepare($query);
                 $Statement->execute($params);
                 $data = $Statement->fetchAll();

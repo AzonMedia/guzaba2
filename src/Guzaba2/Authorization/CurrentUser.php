@@ -12,7 +12,7 @@ class CurrentUser extends Base
 
     public function __construct(User $User)
     {
-        $this->User;
+        $this->User = $User;
     }
 
     public function get() : User
