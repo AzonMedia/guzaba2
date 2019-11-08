@@ -6,8 +6,10 @@ namespace Guzaba2\Authorization\Acl;
 
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
+use Guzaba2\Authorization\Role;
 
-class AclAuthorization implements AuthorizationProviderInterface
+class AclAuthorizationProvider implements AuthorizationProviderInterface
 {
     public static function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {

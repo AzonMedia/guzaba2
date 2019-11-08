@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Guzaba2\Authorization\Rbac;
+namespace Guzaba2\Authorization;
 
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;

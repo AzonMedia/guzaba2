@@ -42,16 +42,6 @@ class Operation extends ActiveRecord
     }
 
     /**
-     * Alias of self::create_class_operation()
-     * @param string $class_name
-     * @param string $action
-     */
-    public static function create_privilege(string $class_name, string $action) : ActiveRecord
-    {
-        return self::create_class_operation($class_name, $action);
-    }
-
-    /**
      * Creates an operation that allows the action to be performed on all objects of the given class
      * @param string $class_name
      * @param string $action

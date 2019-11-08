@@ -5,6 +5,7 @@ namespace Guzaba2\Authorization\Rbac;
 
 
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 
 /**
  * Class RolePermission
@@ -23,7 +24,7 @@ class RolePermission extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function create(Role $Role, Permission $Permission) : ActiveRecord
+    public static function create(Role $Role, PermissionInterface $Permission) : ActiveRecord
     {
 
         if ($Role->is_new() || !$Role->get_id()) {

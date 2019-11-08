@@ -28,6 +28,7 @@ use Guzaba2\Orm\Traits\ActiveRecordOverloading;
 use Guzaba2\Orm\Traits\ActiveRecordSave;
 use Guzaba2\Orm\Traits\ActiveRecordLoad;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
+use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 
 //use Guzaba2\Orm\Traits\ActiveRecordValidation;
 //use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
@@ -46,6 +47,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //'ConnectionFactory',
             'OrmStore',
             'LockManager',
+            'AuthorizationProvider',
         ],
         //only for non-sql stores
         'structure' => [
@@ -59,6 +61,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
     use ActiveRecordOverloading;
     use ActiveRecordStructure;
+    use ActiveRecordAuthorization;
 
     const INDEX_NEW = 0;
 
@@ -105,7 +108,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @var bool
      */
     //protected $validation_is_disabled_flag = FALSE;
-  
+
+
+    public const AUTHZ_METHOD_PREFIX = 'authz_';
 
 
     /**
@@ -323,6 +328,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     protected function read(/* mixed */ $index) : void
     {
+        //instead of setting the BypassAuthorizationProvider to bypass the authorization
+        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+        if (self::uses_athorization()) {
+            $this->check_permission('read');
+        }
+
 
         //_before_load() event
         if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
@@ -519,6 +530,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             return $this;
         }
 
+        //instead of setting the BypassAuthorizationProvider to bypass the authorization
+        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+        if (self::uses_service('AuthorizationProvider')) {
+            if ($this->is_new()) {
+                $this->check_permission('create');
+            } else {
+                $this->check_permission('write');
+            }
+        }
+
+
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
         //_before_save() event
@@ -577,10 +599,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public function delete(): void
     {
+
+        //instead of setting the BypassAuthorizationProvider to bypass the authorization
+        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+        if (self::uses_service('AuthorizationProvider')) {
+            $this->check_permission('delete');
+        }
+
         if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_delete'], $args);//must return void
         }
+
 
         new Event($this, '_before_delete');
 

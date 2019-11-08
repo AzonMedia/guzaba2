@@ -27,10 +27,20 @@ use Psr\Http\Message\ResponseInterface;
 abstract class Controller extends Base
 implements ControllerInterface
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'AuthorizationProvider',
+        ],
+
+    ];
+
     /**
      * @var RequestInterface
      */
     private $Request;
+
+    private $ActiveRecordController;
 
     /**
      * Controller constructor.
@@ -40,6 +50,7 @@ implements ControllerInterface
     {
         parent::__construct();
         $this->Request = $Request;
+
     }
 
 
@@ -53,6 +64,7 @@ implements ControllerInterface
 
     /**
      * May be overriden by a child class to provide routing set in an external source like database.
+     * Or suppress certain routes based on permissions.
      * This will allow for the routes to be changed without code modification.
      * @return iterable|null
      */

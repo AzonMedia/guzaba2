@@ -1,13 +1,14 @@
 <?php
 
 
-namespace Guzaba2\Authorization\Rbac;
+namespace Guzaba2\Authorization;
 
 
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Authorization\Rbac\Exceptions\RbacException;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 
 /**
  * Class Role
@@ -24,6 +25,11 @@ class Role extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
+    /**
+     * Creates a new Role and returns it.
+     * @param string $name
+     * @return ActiveRecord
+     */
     public static function create(string $name) : ActiveRecord
     {
         $Role = new self();
@@ -32,11 +38,20 @@ class Role extends ActiveRecord
         return $Role;
     }
 
-    public function grant_role(Role $Role) /* scalar */
+    /**
+     * Grants a role (this role inherits the provided role).
+     * Returns the new RolesHierarchy object of created relation.
+     * @param Role $Role
+     * @return ActiveRecord
+     */
+    public function grant_role(Role $Role) : ActiveRecord
     {
-        return RoleRoles::create($this, $Role);
+        return RolesHierarchy::create($this, $Role);
     }
 
+    /**
+     * @param Role $Role
+     */
     public function revoke_role(Role $Role): void
     {
         try {
@@ -50,12 +65,21 @@ class Role extends ActiveRecord
 
     }
 
-    public function grant_permission(Permission $Permission) /* scalar */
+    /**
+     * Grants a role (this role inherits the provided role).
+     * Returns the new RolePermission object of created relation.
+     * @param Permission $Permission
+     * @return ActiveRecord
+     */
+    public function grant_permission(PermissionInterface $Permission) : ActiveRecord
     {
         return RolePermission::create($this, $Permission);
     }
 
-    public function revoke_permission(Permission $Permission): void
+    /**
+     * @param Permission $Permission
+     */
+    public function revoke_permission(PermissionInterface $Permission): void
     {
         try {
             $RolePermission = new RolePermission(['role_id' => $this->get_index(), 'permission_id' => $Permission->get_id()]);
@@ -95,7 +119,7 @@ class Role extends ActiveRecord
     }
 
     /**
-     * Returns an indexed array of all inherited roles and their inherited roles.
+     * Returns an indexed array of all inherited roles recursively.
      * @return array
      */
     public function get_all_inherited_roles_ids() : array
@@ -108,6 +132,10 @@ class Role extends ActiveRecord
         return $ret;
     }
 
+    /**
+     * Returns an array of all inherited roles recursively.
+     * @return array
+     */
     public function get_all_inherited_roles() : array
     {
         $ret = [];

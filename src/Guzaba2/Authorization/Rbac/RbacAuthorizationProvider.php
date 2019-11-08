@@ -3,10 +3,11 @@
 
 namespace Guzaba2\Authorization\Rbac;
 
-
+use Guzaba2\Authorization\Role;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 
-class RbacAuthorization implements AuthorizationProviderInterface
+class RbacAuthorizationProvider implements AuthorizationProviderInterface
 {
     public static function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {

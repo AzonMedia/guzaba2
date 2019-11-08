@@ -30,7 +30,15 @@ trait UsesServices
      */
     public static function uses_service(string $service_name): bool
     {
-        return static::uses_services() ? in_array($service_name, static::get_services()) : FALSE;
+        //return static::uses_services() ? in_array($service_name, static::get_services()) : FALSE;
+        //as the configuration cant change it is safe to cache in a static var the result of this method
+        //caching it saves several function calls
+        $cache = [];
+        $called_class = get_called_class();
+        if (!array_key_exists($called_class, $cache)) {
+            $cache[$called_class] = static::uses_services() ? in_array($service_name, static::get_services()) : FALSE;
+        }
+        return $cache[$called_class];
     }
 
     /**

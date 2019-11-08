@@ -1,9 +1,10 @@
 <?php
 
 
-namespace Guzaba2\Authorization\Rbac;
+namespace Guzaba2\Authorization;
 
 use Azonmedia\Patterns\ScopeReference;
+use Guzaba2\Orm\ActiveRecord;
 
 /**
  * Class User
@@ -11,7 +12,7 @@ use Azonmedia\Patterns\ScopeReference;
  * @property user_id
  * @property role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
  */
-class User extends ActiveRecordRbac
+class User extends ActiveRecord
 {
 
     protected const CONFIG_DEFAULTS = [

@@ -1,54 +1,19 @@
 <?php
 
+namespace Guzaba2\Orm\Traits;
 
-namespace Guzaba2\Authorization;
-
-
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Translator\Translator as t;
 
-class ActiveRecord extends Guzaba2\Orm\ActiveRecord
+trait ActiveRecordAuthorization
 {
-
-//    protected const CONFIG_DEFAULTS = [
-//        'services'      => [
-//
-//        ],
-//    ];
-//
-//    protected const CONFIG_RUNTIME = [];
-
-    public const AUTHZ_METHOD_PREFIX = 'authz_';
-
-    protected function read() : void
-    {
-        //TODO check permissions for read
-        parent::load();
-    }
-
-    public function save() : ActiveRecord
-    {
-        
-        if ($this->is_new()) {
-            //check permissions for create action
-        } else {
-            //check permissions for save action
-        }
-        
-        return parent::save();
-    }
-
-    public function delete() : ActiveRecord
-    {
-        //TODO check permissions for delete action
-        return parent::delete();
-    }
-
     public function __call(string $method, array $args) /* mixed */
     {
-        if (!strpos($method,self::RBAC_METHOD_PREFIX)===0) {
+        if (!strpos($method,self::AUTHZ_METHOD_PREFIX)===0) {
             //throw
         }
-        $clean_method_name = substr($method, strlen(self::AUTHZ_METHOD_PREFIX));
+        $action = substr($method, strlen(self::AUTHZ_METHOD_PREFIX));
         if (!method_exists($this, $action)) {
             //throw
         }
@@ -56,7 +21,9 @@ class ActiveRecord extends Guzaba2\Orm\ActiveRecord
         //$Request = Coroutine::getContext()->Request;
         //object user_id from $Request
         //self::CurrentUser
-
+        if (!self::uses_service('AuthorizationProvider')) {
+            throw new RunTimeException(sprintf(t::_('The ActiveRecord is not using the service AuthorizationProvider. A method %s requiring authorization was invoked.'), $method));
+        }
         $this->check_permission($action);
 
         return [$this, $action](...$args);
@@ -85,4 +52,9 @@ class ActiveRecord extends Guzaba2\Orm\ActiveRecord
         //get all operations that support that action
         return self::AuthorizationProvider()::role_can($Role, $action, $this);
     }
+
+//    public static function uses_authorization() : bool
+//    {
+//        return self::uses_service('AuthorizationProvider');
+//    }
 }
