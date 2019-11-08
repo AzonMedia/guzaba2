@@ -7,6 +7,7 @@ use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
@@ -48,7 +49,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                 if (
                     strpos($loaded_class, $ns_prefix) === 0
                     && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                    && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class] )
+                    && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
                 ) {
                     $routing = $loaded_class::get_routes();
                     //the models may not define route as not every controller is expected to be directly manageable through the API

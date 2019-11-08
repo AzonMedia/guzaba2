@@ -107,6 +107,11 @@ class Debugger extends Base
         $this->DebugServer->start();
     }
 
+    public static function get_base_port() : int
+    {
+        return self::CONFIG_RUNTIME['base_port'];
+    }
+
     protected function substitute_prompt_vars(string $prompt) : string
     {
         $prompt = str_replace('{WORKER_ID}', $this->worker_id, $prompt);

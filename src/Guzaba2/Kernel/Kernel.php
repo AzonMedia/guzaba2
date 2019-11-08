@@ -58,6 +58,19 @@ class Kernel
 
     public const EXIT_GENERAL_ERROR = 1;
 
+    //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba
+    public const FRAMEWORK_BANNER = <<<BANNER
+
+ ██████╗ ██╗   ██╗███████╗ █████╗ ██████╗  █████╗ 
+██╔════╝ ██║   ██║╚══███╔╝██╔══██╗██╔══██╗██╔══██╗
+██║  ███╗██║   ██║  ███╔╝ ███████║██████╔╝███████║
+██║   ██║██║   ██║ ███╔╝  ██╔══██║██╔══██╗██╔══██║
+╚██████╔╝╚██████╔╝███████╗██║  ██║██████╔╝██║  ██║
+ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝
+                                                  
+BANNER;
+
+
     /**
      * @var string
      */
@@ -127,6 +140,8 @@ class Kernel
      * @var Watchdog
      */
     public static Watchdog $Watchdog;
+
+
 
     private function __construct()
     {

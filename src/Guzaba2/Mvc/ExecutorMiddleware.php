@@ -15,6 +15,8 @@ use Guzaba2\Http\Server;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\ContentType;
 use Guzaba2\Http\StatusCode;
+use Guzaba2\Mvc\Interfaces\ControllerInterface;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -24,6 +26,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
 use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
+use Guzaba2\Mvc\Interfaces\ControllerWithAuthorizationInterface;
 
 /**
  * Class ExecutorMiddleware
@@ -171,6 +174,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                             }
                         }
 
+                        //if ($controller_callable instanceof ControllerInterface && $controller_callable::uses_permissions()) {
+                        if (is_array($controller_callable) && $controller_callable[0] instanceof ControllerWithAuthorizationInterface) {
+                            //if Controller inherits ActiveRecord
+                            //$controller_callable = [ $controller_callable[0], ActiveRecordInterface::AUTHZ_METHOD_PREFIX.$controller_callable[1] ];
+                            $controller_callable[0]->check_permission($controller_callable[1]);
+                        }
                         $Response = $controller_callable(...$ordered_parameters);
                     } catch (InterruptControllerException $Exception) {
                         $Response = $Exception->getResponse();
@@ -187,6 +196,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
 
                     $Response = [$this, $type_handler]($Request, $Response);
+
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
                 }
@@ -194,8 +204,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
 
                 //TODO add cleanup code that unsets all properties set on the child controller
-
-
+                
                 return $Response;
             } elseif (is_object($controller_callable)) {
                 //Closure or class with __invoke

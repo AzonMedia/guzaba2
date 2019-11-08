@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole;
 
 //use Guzaba2\Base\Base as Base;
+use Azonmedia\Utilities\SysUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -126,6 +128,11 @@ class Server extends \Guzaba2\Http\Server
         $this->host = $host;
         $this->port = $port;
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
+
+        if ($options['worker_num'] === NULL) {
+            $options['worker_num'] = swoole_cpu_num() * 2;
+        }
+
         $this->options = $options;
 
 
@@ -140,10 +147,6 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);
         
         $this->validate_server_configuration_options($options);
-
-        if ($options['worker_num'] === NULL) {
-            $options['worker_num'] = swoole_cpu_num() * 2;
-        }
 
         $this->SwooleHttpServer->set($options);
 
@@ -194,6 +197,12 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['ssl_cert_file'])) {
             Kernel::printk(sprintf(t::_('HTTPS enabled')).PHP_EOL);
         }
+
+        $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
+        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
+        Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
+
+        Kernel::printk(PHP_EOL);
 
         $this->SwooleHttpServer->start();
     }

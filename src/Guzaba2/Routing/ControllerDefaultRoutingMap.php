@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Mvc\Controller;
+use Guzaba2\Mvc\ControllerWithAuthorization;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
@@ -55,7 +56,7 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
                 if (
                     strpos($loaded_class, $ns_prefix) === 0
                     && is_a($loaded_class, ControllerInterface::class, TRUE)
-                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class] )
+                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
                 ) {
                     $routing = $loaded_class::get_routes();
                     if ($routing === NULL) { //empty array is acceptable though - this may be intentional (for example to skip/disable the controller)
