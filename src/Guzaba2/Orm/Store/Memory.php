@@ -128,7 +128,7 @@ class Memory extends Store implements StoreInterface
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $class = get_class($ActiveRecord);
 
-        $new_meta = $this->FallbackStore->get_meta($class, (int) $ActiveRecord->get_id());
+        $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_id());
 
         $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
 

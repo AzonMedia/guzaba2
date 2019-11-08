@@ -13,6 +13,7 @@ use Guzaba2\Translator\Translator as t;
 abstract class MetaStore extends Base implements MetaStoreInterface
 {
     protected const KEY_SEPARATOR = '|';
+    protected const LOOKUP_INDEX_LENGTH = 36;
 
     /**
      * Validates the provided lock data.
@@ -37,7 +38,19 @@ abstract class MetaStore extends Base implements MetaStoreInterface
 
     public static function get_key(string $class, array $primary_index) : string
     {
-        return $class.self::KEY_SEPARATOR.Store::form_lookup_index($primary_index);
+        $lookup_index = Store::form_lookup_index($primary_index);
+
+        // uuid length = 36 simbols
+        // if $lookup_index length == 36 => this is uuid; it is unique for the data base => use crc32 for the class
+        // else => this is NOT uuid and is not unique; collisions may occur => use md5 for the class
+
+        if (strlen($lookup_index) >= self::LOOKUP_INDEX_LENGTH) {
+            $class_hash = crc32($class);
+        } else {
+            $class_hash = md5($class);
+
+        }
+        return $class_hash.self::KEY_SEPARATOR.$lookup_index;
     }
 
     public static function get_key_by_object(ActiveRecordInterface $ActiveRecord) : string

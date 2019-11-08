@@ -95,15 +95,23 @@ class MongoDB extends Database
     }
 
 
-    public function get_meta(string $class_name, int $object_id) : array
+    public function get_meta(string $class_name, /* int | string */ $object_id) : array
     {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
-        $filter = [
-            'class_name' => $class_name,
-            'object_id' => $object_id
-        ];
+
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $filter = [
+                'class'         => $class_name,
+                'object_id'     => $object_id
+            ];
+        } else {
+            $filter = [
+                'class'         => $class_name,
+                'object_uuid'   => $object_id
+            ];
+        }
 
         $result = $Connection->query($coll, $filter);
 
@@ -123,10 +131,10 @@ class MongoDB extends Database
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
-        $ret['object_id'] = $data[0]['object_id'];
-        $ret['class'] = $data[0]['class_name'];
+        // $ret['object_id'] = $data[0]['object_id'];
+        // $ret['class'] = $data[0]['class'];
 
-        return $ret;
+        return $data[0];
     }
 
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
@@ -138,10 +146,17 @@ class MongoDB extends Database
 
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
 
-        $filter = [
-            'class_name'	=> get_class($ActiveRecord),
-            'object_id'	 	=> $ActiveRecord->get_id()
-        ];
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $filter = [
+                'class'         => get_class($ActiveRecord),
+                'object_id'     => $ActiveRecord->get_id()
+            ];
+        } else {
+            $filter = [
+                'class'         => get_class($ActiveRecord),
+                'object_uuid'   => $ActiveRecord->get_uuid()
+            ];
+        }
 
         $data = [
             'object_last_update_microtime'  => (int) microtime(TRUE) * 1000000
@@ -159,33 +174,28 @@ class MongoDB extends Database
      * @return string UUID
      * @throws \Exception
      */
-    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : string
+    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : void
     {
         $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
 
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
-        if ($uuid === NULL) {
-            $uuid = Uuid::uuid4()->toString();
-        }
-        // $uuid_binary = $uuid->getBytes();
-            
         $data = [
             'object_uuid'                   => $uuid,
-            // 'object_uuid_binary'            => $uuid_binary,
-            'class_name'                    => get_class($ActiveRecord),
-            'object_id'                     => $ActiveRecord->get_id(),
+            'class'                         => get_class($ActiveRecord),
             'object_create_microtime'       => $object_create_microtime,
             'object_last_update_microtime'  => $object_create_microtime,
         ];
+
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $data['object_id'] = $ActiveRecord->get_id();
+        }
 
         $Connection->insert(
             $meta_table, 
             $data
         );
-
-        return (string) $uuid;
     }
 
     /**
@@ -196,38 +206,39 @@ class MongoDB extends Database
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : string
     {
-        $uuid = NULL;
-
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
-
         /** @var ActiveRecord $ActiveRecord */
         if ($this->FallbackStore instanceof StructuredStore) {
             // Saves record in fallback and gets uuid
             $uuid = $this->FallbackStore->update_record($ActiveRecord);
-        }
-
-        if ($ActiveRecord->is_new() && $ActiveRecord::uses_autoincrement()) {
-            $object_id = $ActiveRecord->get_id();
-
-            if (!$object_id) {
-                // if there isn't FallBackStore, the index is autoincrement and it is not yet set
-                $next_id = $Connection->get_autoincrement_value($ActiveRecord::get_main_table());
-                // this will set $ActiveRecord->record_data[$main_index[0]]
-                $ActiveRecord->update_primary_index($next_id);
-            } else {
-                $Connection->set_autoincrement_value($ActiveRecord::get_main_table(), $object_id);
-            }
+        } elseif ($ActiveRecord->is_new()) {
+            $uuid = Uuid::uuid4()->toString();
+        } else {
+            $uuid = $ActiveRecord->get_uuid();
         }
 
         $record_data = $ActiveRecord->get_record_data();
-        $main_index = $ActiveRecord->get_primary_index_columns();
-        $field_names_arr = $ActiveRecord->get_property_names();
 
-        $filter = [];
-        foreach ($main_index as $field_name) {
-            $filter[$field_name] = $record_data[$field_name];
+        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+
+        if ($ActiveRecord->is_new()) {
+            $this->create_meta($ActiveRecord, $uuid);
+        } else {
+            $this->update_meta($ActiveRecord);
         }
 
+        if ($this->FallbackStore instanceof StructuredStore) {
+            $main_index = $ActiveRecord->get_primary_index_columns();
+
+            $filter = [];
+            foreach ($main_index as $field_name) {
+                $filter[$field_name] = $record_data[$field_name];
+            }
+        } else {
+            $filter = ['object_uuid' => $uuid];
+            $ActiveRecord->update_primary_index($uuid);
+        }
+
+        $field_names_arr = $ActiveRecord->get_property_names();
         $record_data_to_save = [];
         foreach ($field_names_arr as $field) {
             if (!isset($filter[$field])) {
@@ -237,13 +248,6 @@ class MongoDB extends Database
 
         // insert or update record
         $Connection->update($filter, $Connection::get_tprefix().$ActiveRecord::get_main_table(), $record_data_to_save, TRUE);
-
-        if ($ActiveRecord->is_new()) {
-            $uuid = $this->create_meta($ActiveRecord, $uuid);
-        } else {
-            $this->update_meta($ActiveRecord);
-            $uuid = $ActiveRecord->get_uuid();
-        }
 
         return $uuid;
     }
@@ -271,14 +275,19 @@ class MongoDB extends Database
         $data = $Connection->query($coll, $index);
 
         if (count($data)) {
-            $primary_index = $class::get_index_from_data($data[0]);
+            if ($this->FallbackStore instanceof StructuredStore) {
+                $primary_index = $class::get_index_from_data($data[0]);
 
-            if (is_null($primary_index)) {
-                throw new RunTimeException(sprintf(t::_('The primary index for class %s is not found in the retreived data.'), $class));
+                if (is_null($primary_index)) {
+                    throw new RunTimeException(sprintf(t::_('The primary index for class %s is not found in the retreived data.'), $class));
+                }
+                if (count($primary_index) > 1) {
+                    throw new RunTimeException(sprintf(t::_('The class %s has compound index and can not have meta data.'), $class));
+                }
+            } else {
+                $primary_index[0] = $data[0]['object_uuid'];
             }
-            if (count($primary_index) > 1) {
-                throw new RunTimeException(sprintf(t::_('The class %s has compound index and can not have meta data.'), $class));
-            }
+
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
         }

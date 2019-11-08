@@ -490,7 +490,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     {
         $ret = FALSE;
         foreach (static::get_columns_data() as $column_datum) {
-            if ($column_datum['autoincrement'] === TRUE) {
+            if (isset($column_datum['autoincrement']) && $column_datum['autoincrement'] === TRUE) {
                 $ret = TRUE;
                 break;
             }
@@ -882,7 +882,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * To be used on the records using autoincrement.
      * To be called classes implementing the StoreInterface.
      */
-    public function update_primary_index(int $index) : void
+    public function update_primary_index(/* int | string */ $index) : void
     {
         // the index is autoincrement and it is not yet set
         $main_index = static::get_primary_index_columns();
