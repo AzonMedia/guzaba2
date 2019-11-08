@@ -115,8 +115,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
                 $Context->Events = new Events();
                 $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
-                $User = new User(0);//TODO - pull the user from the Request
-                $Context->CurrentUser = new Guzaba2\Authorization\Rbac\CurrentUser($User);
+                $User = new \Guzaba2\Authorization\User(0);//TODO - pull the user from the Request
+                $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
             }
         }
         return $Context;
