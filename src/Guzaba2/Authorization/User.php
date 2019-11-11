@@ -16,7 +16,8 @@ class User extends ActiveRecord
 {
 
     protected const CONFIG_DEFAULTS = [
-        'main_table'            => 'users',
+        'main_table'                => 'users',
+        'default_current_user_id'   => 0,//can be ID or UUID
         'structure' => [
             [
                 'name' => 'object_uuid',
@@ -73,6 +74,11 @@ class User extends ActiveRecord
     ];
 
     protected const CONFIG_RUNTIME = [];
+
+    public static function get_default_current_user_id() /* scalar */
+    {
+        return self::CONFIG_RUNTIME['default_current_user_id'];
+    }
 
     /**
      * Returns the primary role of the user
