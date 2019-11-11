@@ -156,7 +156,7 @@ ORDER BY
         return self::CONFIG_RUNTIME['meta_table'];
     }
 
-    public function get_meta(string $class_name, int $object_id) : array
+    public function get_meta(string $class_name, /* scalar */ $object_id) : array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $q = "
@@ -247,9 +247,9 @@ WHERE
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (object_uuid_binary, object_uuid, class_name, object_id, object_create_microtime, object_last_update_microtime)
+    (object_uuid_binary, class_name, object_id, object_create_microtime, object_last_update_microtime)
 VALUES
-    (:object_uuid_binary, :object_uuid, :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
+    (:object_uuid_binary, :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
         ";
 
         $params = [
@@ -258,7 +258,7 @@ VALUES
             'object_create_microtime'       => $object_create_microtime,
             'object_last_update_microtime'  => $object_create_microtime,
             'object_uuid_binary'            => $uuid_binary,
-            'object_uuid'                   => $uuid,
+            //'object_uuid'                   => $uuid,
         ];
 
         $Statement = $Connection->prepare($q);

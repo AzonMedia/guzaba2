@@ -161,7 +161,7 @@ class Redis extends Database
     public function &get_data_pointer(string $class, array $index) : array
     {
 
-        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
         }
 
@@ -196,10 +196,10 @@ class Redis extends Database
         return $return;
     }
     
-    public function get_meta(string $class, int $object_id) : array
+    public function get_meta(string $class, /*scalar */ $object_id) : array
     {
 
-        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
         }
 

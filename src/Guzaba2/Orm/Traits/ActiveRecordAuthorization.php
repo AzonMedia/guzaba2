@@ -6,6 +6,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Authorization\Role;
 
 trait ActiveRecordAuthorization
 {
