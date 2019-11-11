@@ -21,6 +21,29 @@ class Role extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'roles',
+        'structure' => [
+            [
+                'name' => 'object_uuid',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 1,
+                'nullable' => false,
+                'column_id' => 1,
+                'primary' => true,
+                'autoincrement' => false,
+                'default_value' => 0,
+            ],
+            [
+                'name' => 'role_name_name',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 200,
+                'nullable' => false,
+                'column_id' => 2,
+                'primary' => false,
+                'default_value' => '',
+            ]
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];

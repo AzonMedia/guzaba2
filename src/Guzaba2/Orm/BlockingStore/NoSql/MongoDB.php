@@ -97,7 +97,7 @@ class MongoDB extends Database
 
     public function get_meta(string $class_name, /* int | string */ $object_id) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
 
@@ -120,7 +120,7 @@ class MongoDB extends Database
 
     public function get_meta_by_uuid(string $uuid) : array
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
         $filter = ['object_uuid' => $uuid];
@@ -144,7 +144,7 @@ class MongoDB extends Database
             throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s". Instead the new obejcts have their metadata created with Mysql::create_meta() method.'), get_class($ActiveRecord)));
         }
 
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         if ($this->FallbackStore instanceof StructuredStore) {
             $filter = [
@@ -176,7 +176,7 @@ class MongoDB extends Database
      */
     protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : void
     {
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
 
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
@@ -218,7 +218,7 @@ class MongoDB extends Database
 
         $record_data = $ActiveRecord->get_record_data();
 
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         if ($ActiveRecord->is_new()) {
             $this->create_meta($ActiveRecord, $uuid);
@@ -266,7 +266,7 @@ class MongoDB extends Database
         //lookup in DB
 
         /** @var MongoDBConnection $Connection */
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         // UUID is NEVER provided
 
@@ -325,7 +325,7 @@ class MongoDB extends Database
             $this->FallbackStore->remove_record($ActiveRecord);
         }
 
-        $Connection = self::ConnectionFactory()->get_connection($this->connection_class, $CR);
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $primary_index = $ActiveRecord->get_primary_index();
         $uuid = $ActiveRecord->get_uuid();
 

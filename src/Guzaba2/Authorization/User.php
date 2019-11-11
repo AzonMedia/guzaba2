@@ -17,6 +17,59 @@ class User extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'users',
+        'structure' => [
+            [
+                'name' => 'object_uuid',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 1,
+                'nullable' => false,
+                'column_id' => 1,
+                'primary' => true,
+                'autoincrement' => false,
+                'default_value' => 0,
+            ],
+            [
+                'name' => 'user_name',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 255,
+                'nullable' => false,
+                'column_id' => 2,
+                'primary' => false,
+                'default_value' => '',
+            ],
+            [
+                'name' => 'user_email',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 255,
+                'nullable' => false,
+                'column_id' => 3,
+                'primary' => false,
+                'default_value' => '',
+            ],
+            [
+                'name' => 'user_password',
+                'native_type' => 'varchar',
+                'php_type' => 'string',
+                'size' => 255,
+                'nullable' => false,
+                'column_id' => 3,
+                'primary' => false,
+                'default_value' => '',
+            ],
+            [
+                'name' => 'role_id',
+                'native_type' => 'int',
+                'php_type' => 'integer',
+                'size' => 255,
+                'nullable' => false,
+                'column_id' => 3,
+                'primary' => false,
+                'default_value' => '',
+            ]
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];
