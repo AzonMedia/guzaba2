@@ -276,7 +276,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function getParentCoroutines(?int $cid = NULL) : array
     {
         if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
+            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), __METHOD__));
         }
         $ret = [];
 
