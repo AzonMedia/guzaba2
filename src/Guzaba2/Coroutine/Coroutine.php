@@ -72,7 +72,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     {
         $Context = self::getContext();//this will properly initialize the context
         $Context->Request = $Request;
-
+        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
+        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
+        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
         //
         //not really needed as the Apm & Connections object will be destroyed when the Context is destroyed at the end of the coroutine and this will trigger the needed actions.
 //        \Swoole\Coroutine::defer(function() use ($Context) {
@@ -107,7 +109,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
                 $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
                 $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
-                $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
                 $Context->CurrentUser = self::getContext($Context->parent_coroutine_id)->CurrentUser;
             } else {
                 //these are initialized here instead in init() as these may not be needed during execution
@@ -115,8 +116,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
                 $Context->Events = new Events();
                 $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
-                $User = new \Guzaba2\Authorization\User(0);//TODO - pull the user from the Request
-                $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
             }
         }
         return $Context;
