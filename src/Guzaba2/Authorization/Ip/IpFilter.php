@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Guzaba2\Authorization;
+namespace Guzaba2\Authorization\Ip;
 
 class IpFilter
 {

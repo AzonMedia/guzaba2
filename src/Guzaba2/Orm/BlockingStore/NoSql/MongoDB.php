@@ -263,6 +263,7 @@ class MongoDB extends Database
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
+        $ret = [];
         //lookup in DB
 
         /** @var MongoDBConnection $Connection */

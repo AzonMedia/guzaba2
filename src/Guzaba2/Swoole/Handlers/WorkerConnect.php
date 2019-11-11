@@ -2,7 +2,7 @@
 
 namespace Guzaba2\Swoole\Handlers;
 
-use Guzaba2\Authorization\IpFilter;
+use Guzaba2\Authorization\Ip\IpFilter;
 use Guzaba2\Kernel\Kernel;
 
 /**
