@@ -140,7 +140,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @see self::is_locking_enabled()
      * @var bool
      */
-    protected static $locking_enabled_flag = TRUE;
+    protected static $orm_locking_enabled_flag = TRUE;
 
     /**
      * ActiveRecord constructor.
@@ -294,9 +294,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //self::set_static('locking_enabled_flag', TRUE);
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Context->locking_enabled_flag = TRUE;
+            $Context->orm_locking_enabled_flag = TRUE;
         } else {
-            self::$locking_enabled_flag = TRUE;
+            self::$orm_locking_enabled_flag = TRUE;
         }
     }
 
@@ -306,9 +306,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //self::set_static('locking_enabled_flag', FALSE);
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Context->locking_enabled_flag = FALSE;
+            $Context->orm_locking_enabled_flag = FALSE;
         } else {
-            self::$locking_enabled_flag = FALSE;
+            self::$orm_locking_enabled_flag = FALSE;
         }
     }
 
@@ -316,12 +316,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     {
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
         //return self::get_static('locking_enabled_flag');
+
+        $called_class = get_called_class();
+        if (!empty(self::CONFIG_RUNTIME['orm_locking_disabled'])) { //the ORM locking is disabled for this specific class
+            return FALSE;
+        }
+
         if (Coroutine::inCoroutine()) {
 
             $Context = Coroutine::getContext();
-            $ret = $Context->locking_enabled_flag ?? self::$locking_enabled_flag;
+            $ret = $Context->orm_locking_enabled_flag ?? self::$orm_locking_enabled_flag;
         } else {
-            $ret = self::$locking_enabled_flag;
+            $ret = self::$orm_locking_enabled_flag;
         }
         return $ret;
     }
@@ -362,7 +368,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         //do a check is there a modified data
 
-        if (self::is_locking_enabled()) {
+        if (static::is_locking_enabled()) {
             //if ($this->locking_enabled_flag) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
@@ -552,7 +558,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         new Event($this, '_before_save');
 
-        if (self::is_locking_enabled()) {
+        if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
@@ -561,7 +567,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //self::OrmStore()->update_record($this);
         static::get_service('OrmStore')->update_record($this);
 
-        if (self::is_locking_enabled()) {
+        if (static::is_locking_enabled()) {
             //self::LockManager()->release_lock('', $LR);
             static::get_service('LockManager')->release_lock('', $LR);
         }
@@ -569,7 +575,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
         //instead the lock levle should be updated (lock reacquired)
-        if ($this->is_new() && self::is_locking_enabled()) {
+        if ($this->is_new() && static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
@@ -619,7 +625,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         new Event($this, '_before_delete');
 
-        if (self::is_locking_enabled()) {
+        if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
             //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
@@ -628,7 +634,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //self::OrmStore()->remove_record($this);
         static::get_service('OrmStore')->remove_record($this);
 
-        if (self::is_locking_enabled()) {
+        if (static::is_locking_enabled()) {
             //self::LockManager()->release_lock('', $LR);
             static::get_service('LockManager')->release_lock('', $LR);
         }

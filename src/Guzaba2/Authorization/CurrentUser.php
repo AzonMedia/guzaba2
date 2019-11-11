@@ -20,6 +20,11 @@ class CurrentUser extends Base implements \Azonmedia\Patterns\Interfaces\Wrapper
         return $this->User;
     }
 
+    public function set(User $User) : void
+    {
+        $this->User = $User;
+    }
+
     public function substitute(User $User)
     {
         //TODO add ScopeReference too
