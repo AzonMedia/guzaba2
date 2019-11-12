@@ -186,6 +186,9 @@ class Server extends \Guzaba2\Http\Server
 
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
+        Kernel::printk(Kernel::FRAMEWORK_BANNER);
+        Kernel::printk(PHP_EOL);
+
         Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
         //TODO - add option for setting the timezone of the application, and time format
         Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s at %s %s').PHP_EOL, $this->host, $this->port, date('Y-m-d H:i:s'), date_default_timezone_get() ));
@@ -202,6 +205,7 @@ class Server extends \Guzaba2\Http\Server
         $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
         Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
         Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
+
 
         Kernel::printk(PHP_EOL);
 
