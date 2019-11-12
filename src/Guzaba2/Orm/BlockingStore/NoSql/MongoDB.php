@@ -291,6 +291,8 @@ class MongoDB extends Database
 
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
+        } else {
+            return $this->FallbackStore->get_data_pointer($class, $index);
         }
 
         return $ret;
