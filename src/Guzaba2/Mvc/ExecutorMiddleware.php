@@ -15,6 +15,7 @@ use Guzaba2\Http\Server;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\ContentType;
 use Guzaba2\Http\StatusCode;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
@@ -148,7 +149,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 }
 
                 if (empty($Response)) { //if the _init function hasnt returned any response... it may return response due an error, in the normal case the actual action should be invoked
-
                     try {
                         $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
                         $parameters = $RMethod->getParameters();
@@ -190,13 +190,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
                     $requested_content_type = $Request->getContentType();
+
                     if ($requested_content_type === ContentType::TYPE_HTML && $this->override_html_content_type) {
                         $requested_content_type = $this->override_html_content_type;
                     }
                     $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
 
                     $Response = [$this, $type_handler]($Request, $Response);
-
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
                 }
@@ -231,7 +231,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $StreamBody = new Stream(NULL, $json_string);
         $Response = $Response->
             withBody($StreamBody)->
-            withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
+            withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
             withHeader('Content-Length', (string) strlen($json_string));
         return $Response;
     }
@@ -278,18 +278,21 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         //html null and the rest...
         //if the callable is a class and this class is a controller then we can do a lookup for a corresponding view
         //the first element may be a class or an instance so is_a() should be used
+        $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
         if (
             is_array($controller_callable)
-            &&
-            isset($controller_callable[0])
+            && isset($controller_callable[0])
             && is_a($controller_callable[0], Controller::class, TRUE)
+            && strpos($controller_class, 'Controllers')
         ) {
-            $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);
+
+
             $view_class = str_replace('\\Controllers\\', '\\Views\\', $controller_class);
+
             if (class_exists($view_class)) {
                 if (method_exists($view_class, $controller_callable[1])) {
                     ob_start();
-                    [new $view_class($Response), $controller_callable[1]]();
+                    [new $view_class($Request), $controller_callable[1]]();
                     $view_output = ob_get_contents();
                     ob_end_clean();
                     if (!strlen($view_output)) {

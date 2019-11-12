@@ -38,14 +38,16 @@ trait ActiveRecordAuthorization
     public function check_permission(string $action) : void
     {
         if (!$this->current_role_can($action) ) {
-            $Role = Coroutine::getContext()->CurrentUser->get_role();
+//            $Role = Coroutine::getContext()->CurrentUser->get_role();
+            $Role = self::get_service('CurrentUser')->get()->get_role();
             throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to %s object %s:%s.'), $Role->role_name, $action, get_class($this), $this->get_id() ));
         }
     }
 
     public function current_role_can(string $action) : bool
     {
-        $Role = Coroutine::getContext()->CurrentUser->get_role();
+        //$Role = Coroutine::getContext()->CurrentUser->get_role();
+        $Role = self::get_service('CurrentUser')->get()->get_role();
         return $this->role_can($Role , $action);
     }
 

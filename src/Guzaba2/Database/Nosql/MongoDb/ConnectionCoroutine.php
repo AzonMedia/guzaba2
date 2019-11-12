@@ -150,10 +150,10 @@ abstract class ConnectionCoroutine extends Connection
             $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
             $r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
 
-        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
-            $error_code = $e->getWriteResult()->getWriteErrors()[0]->getCode();
+        } catch (MongoDB\Driver\Exception\BulkWriteException $Exception) {
+            $error_code = $Exception->getWriteResult()->getWriteErrors()[0]->getCode();
 
-            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $e->getMessage()), '', []);
+            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $Exception->getMessage()), '', []);
         }
     }
 

@@ -11,7 +11,7 @@ use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
-use Guzaba2\Orm\Store\Interfaces\StructuredStore;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Store\NullStore;
 use Ramsey\Uuid\Uuid;
@@ -41,7 +41,7 @@ class Redis extends Database
     public function get_unified_columns_data(string $class) : array
     {
         // TODO check deeper for a structured store
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_unified_columns_data($class);
         } else {
             // $class is instance of Guzaba2\Orm\ActiveRecord
@@ -67,7 +67,7 @@ class Redis extends Database
      */
     public function get_storage_columns_data(string $class) : array
     {
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_storage_columns_data($class);
         } else {
             // $class is instance of Guzaba2\Orm\ActiveRecord
@@ -94,19 +94,24 @@ class Redis extends Database
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
         /** @var ActiveRecord $ActiveRecord */
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             // Saves record in fallback and gets uuid
-            $uuid = $this->FallbackStore->update_record($ActiveRecord);
+            $all_data = $this->FallbackStore->update_record($ActiveRecord);
+            $uuid = $all_data['meta']['object_uuid'];
+            $record_data = $all_data['data'];
         } elseif ($ActiveRecord->is_new()) {
             $uuid = $this->create_uuid();
         } else {
             $uuid = $ActiveRecord->get_uuid();
         }
 
-        $record_data = $ActiveRecord->get_record_data();
+        if (empty($record_data)) {
+            $record_data = $ActiveRecord->get_record_data();
+        }
+
 
         /** @var ConnectionCoroutine $Connection */
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
@@ -121,7 +126,7 @@ class Redis extends Database
         }
 
         // Add "class-index" association ot the uuid of the object
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $index = $ActiveRecord->get_primary_index();
             $redis_id_key = $this->create_active_record_id($ActiveRecord, $index);
             $Connection->set($redis_id_key, $uuid);
@@ -132,21 +137,46 @@ class Redis extends Database
 
         // Meta
         $metakey = $uuid . ':meta';
-        $time = time();
+        //$time = time();
         if (!$Connection->exists($metakey)) {
+            /*
             $Connection->hSet($metakey, 'class_name', get_class($ActiveRecord));
             $Connection->hSet($metakey, 'object_create_microtime', $time);
             $Connection->hSet($metakey, 'object_uuid', $uuid);
-            if ($this->FallbackStore instanceof StructuredStore) {
+            if ($this->FallbackStore instanceof StructuredStoreInterface) {
                 $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
             }
+            */
+            if (isset($all_data)) { //it is coming from a fallback
+                $meta_data = $all_data['meta'];
+            } else {
+                $object_create_microtime = (int) microtime(TRUE) * 1000000;
+                $meta_data = [
+                    'class_name'                => get_class($ActiveRecord),
+                    'object_create_microtime'   => $object_create_microtime,
+                    'object_uuid'               => $uuid,
+                ];
+//                $Connection->hSet($metakey, 'class_name', get_class($ActiveRecord));
+//                $Connection->hSet($metakey, 'object_create_microtime', $microtime);
+//                $Connection->hSet($metakey, 'object_uuid', $uuid);
+//                if ($this->FallbackStore instanceof StructuredStoreInterface) {
+//                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
+//                }
+            }
+            foreach ($meta_data as $meta_key=>$meta_value) {
+                $Connection->hSet($metakey, $meta_key, $meta_value);
+            }
+
         }
-        $Connection->hSet($metakey, 'object_last_update_microtime', $time);
+        $meta_data['object_last_update_microtime'] = $meta_data['object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
+        $Connection->hSet($metakey, 'object_last_update_microtime', $meta_data['object_last_update_microtime']);
         if ($Connection->getExpiryTime()) {
             $Connection->expire($metakey, $Connection->getExpiryTime());
         }
 
-        return $uuid;
+        $ret = ['data' => $record_data, 'meta' => $meta_data];
+
+        return $ret;
     }
 
     /**
@@ -171,7 +201,8 @@ class Redis extends Database
         $primary_index_columns = $class::get_primary_index_columns();
         $id_column = reset($primary_index_columns);
         if (!isset($index['object_uuid']) && !isset($index[$id_column])) {
-            return $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            return $ret;
         }
 
         if (isset($index['object_uuid'])) {
@@ -182,18 +213,22 @@ class Redis extends Database
         }
 
         if (strlen($uuid) && !$Connection->exists($uuid)) {
-            return $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            return $ret;
         }
 
         $result = $Connection->hGetAll($uuid);
         if (empty($result)) {
-            return $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            return $ret;
+        } else {
+            $result = $class::fix_record_data_types($result);
         }
 
         $meta = $this->get_meta($class, $index[$id_column]);
-        $return = ['data' => $result, 'meta' => $meta];
+        $ret = ['data' => $result, 'meta' => $meta];
 
-        return $return;
+        return $ret;
     }
     
     public function get_meta(string $class, /*scalar */ $object_id) : array

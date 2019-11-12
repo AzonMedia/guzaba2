@@ -53,7 +53,7 @@ class MultiStore extends Store
      * @param ActiveRecordInterface $ActiveRecord
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
         $callables = [];
         foreach ($this->stores as $Store) {
@@ -61,8 +61,9 @@ class MultiStore extends Store
                 $Store->update_record($ActiveRecord);
             };
         }
-        Coroutine::executeMulti($callables);
-        return $ActiveRecord->get_uuid();
+        $co_ret = Coroutine::executeMulti($callables);
+        //return $ActiveRecord->get_uuid();
+        return $co_ret[0];
     }
 
     public function &get_data_pointer(string $class, array $index) : array

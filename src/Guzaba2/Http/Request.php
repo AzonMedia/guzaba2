@@ -209,14 +209,6 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
         return $method_const;
     }
 
-    public function isGet() : bool
-    {
-    }
-
-    public function isPost() : bool
-    {
-    }
-
     /**
      * Return an instance with the provided HTTP method.
      *

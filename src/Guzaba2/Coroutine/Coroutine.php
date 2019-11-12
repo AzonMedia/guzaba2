@@ -2,6 +2,7 @@
 
 namespace Guzaba2\Coroutine;
 
+use Azonmedia\Apm\Interfaces\ProfilerInterface;
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -29,6 +30,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     use SupportsObjectInternalId;
 
     use SupportsConfig;
+
+    use UsesServices;
 
 
     public const CONFIG_DEFAULTS = [
@@ -71,10 +74,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function init(?RequestInterface $Request) : void
     {
         $Context = self::getContext();//this will properly initialize the context
-        $Context->Request = $Request;
-        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
-        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
-        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
+        //$Context->Request = $Request;
+        $Context->{RequestInterface::class} = $Request;//avoid collisions as other libraries may be using the Context
+//        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
+//        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
+//        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
+
         //
         //not really needed as the Apm & Connections object will be destroyed when the Context is destroyed at the end of the coroutine and this will trigger the needed actions.
 //        \Swoole\Coroutine::defer(function() use ($Context) {
@@ -98,25 +103,39 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
         $Context = parent::getContext($cid);
         if (empty($Context->is_initialized_flag)) {
-            $Context->Resources = new Resources();
-            $Context->Channel = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
+            //$Context->Resources = new Resources();
+            $Context->{Resources::class} = new Resources();
+            //$Context->Channel = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
+            $Context->{Channel::class} = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
             $Context->is_initialized_flag = TRUE;
             $Context->sub_coroutine_ids = [];
             $Context->parent_coroutine_id = self::getPcid();
-            $Context->current_user_id = 0;
+            //$Context->current_user_id = 0;
             //TODO convert these to DI services
             if ($Context->parent_coroutine_id >= 1) {
-                $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
-                $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
-                $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
-                $Context->CurrentUser = self::getContext($Context->parent_coroutine_id)->CurrentUser;
-            } else {
-                //these are initialized here instead in init() as these may not be needed during execution
-                $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
-                $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
-                $Context->Events = new Events();
-                $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
+                //get all properties that are instances
+                $ParentContext = self::getContext($Context->parent_coroutine_id);
+                foreach ($ParentContext as $property_name=>$property_value) {
+                    if (is_object($property_value)) {
+                        $Context->{$property_name} = $property_value;
+                    }
+                }
+                //each coroutine must have its own Channel
+                $Context->{Channel::class} = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
             }
+
+//            if ($Context->parent_coroutine_id >= 1) {
+//                $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
+//                $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
+//                $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
+//                $Context->CurrentUser = self::getContext($Context->parent_coroutine_id)->CurrentUser;
+//            } else {
+//                //these are initialized here instead in init() as these may not be needed during execution
+//                $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
+//                $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
+//                $Context->Events = new Events();
+//                $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
+//            }
         }
         return $Context;
     }
@@ -154,6 +173,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         return $ret;
     }
 
+    public static function executeMultiAsync() : array
+    {
+        
+    }
+
     /**
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \Swoole\Coroutine::create() as this wrapper keeps track of the coroutines hierarchy.
@@ -181,7 +205,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
             $ParentContext = self::getContext(self::getPcid($new_cid));
             $ParentContext->sub_coroutine_ids[] = $new_cid;
-            $ParentChannel = $ParentContext->Channel;
+            $ParentChannel = $ParentContext->{Channel::class};
 
             //each coroutine must have its own global try/catch block as the exception handler is not supported
             try {
@@ -204,8 +228,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //increment parent coroutine apm values
         // print "current cid: " . $current_cid . PHP_EOL;
         // print "parent cid: " . self::getPcid($current_cid) . PHP_EOL;
-        $Apm = self::getContext()->Apm;
+        //$Apm = self::getContext()->Apm;
+        //$Apm->increment_value('cnt_subcoroutines', 1);
+        $Apm = self::get_service('Apm');
         $Apm->increment_value('cnt_subcoroutines', 1);
+
+
 
         parent::create($WrapperFunction, ...$params);
 
@@ -389,7 +417,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
             return [];
         }
-        $Channel = $Context->Channel;
+        $Channel = $Context->{Channel::class};
 
         $subcoroutines_count = self::getSubCoroutinesCount($cid);
         $subcoorutines_arr = self::getSubCoroutines($cid);

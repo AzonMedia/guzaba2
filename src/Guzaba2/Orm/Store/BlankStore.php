@@ -64,9 +64,9 @@ class BlankStore extends Store implements StoreInterface
         return $this->get_storage_columns_data($class);
     }
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
-        //does nothing
+        return ['data' => $ActiveRecord->get_record_data(), 'meta' => $ActiveRecord->get_meta_data()];
     }
 
     public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array

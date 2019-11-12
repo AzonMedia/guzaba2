@@ -3,7 +3,7 @@
 namespace Guzaba2\Orm\Store\Interfaces;
 
 
-interface StructuredStore
+interface StructuredStoreInterface
 {
 
 }

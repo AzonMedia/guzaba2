@@ -115,13 +115,14 @@ class Memory extends Store implements StoreInterface
      * @return string
      * @throws RunTimeException
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
         //$class = get_class($ActiveRecord);
         //$lookup_index = $ActiveRecord->get_lookup_index();
         //$this->data[$class][$lookup_index] = $this->process_instance();
-        if ($this->FallbackStore) {
-            $this->FallbackStore->update_record($ActiveRecord);
+        //if ($this->FallbackStore) {
+        if (true) { //cant work without backend for now
+            $all_data = $this->FallbackStore->update_record($ActiveRecord);
         }
 
         //the meta data needs to be updated
@@ -140,7 +141,15 @@ class Memory extends Store implements StoreInterface
         $cid = \Swoole\Coroutine::getCid();
         unset($this->data[$class][$lookup_index]['cid_'.$cid]);
 
-        return $new_meta['object_uuid'];
+        //return $new_meta['object_uuid'];
+
+        // TODO make sure Memory can work as Final store - needs to generate and store UUIDs
+        //$data = $ActiveRecord->get_record_data();
+        //$meta = $ActiveRecord->
+
+        // TODO - update the data in the memory store here too
+
+        return $all_data;
     }
 
     /**

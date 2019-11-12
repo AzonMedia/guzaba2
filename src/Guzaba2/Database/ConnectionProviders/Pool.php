@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Channel;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Resources;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Resources\ScopeReference;
@@ -29,6 +30,9 @@ class Pool extends Provider
     protected const CONFIG_DEFAULTS = [
         'max_connections'   => 20,
         //'connections'       => [],
+        'services'          => [
+            'Apm',
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -64,7 +68,7 @@ class Pool extends Provider
 
         //check the current scope does it has a connection
         $Context = Coroutine::getContext();
-        $Connection = $Context->Resources->get_resource($connection_class);//may return NULL
+        $Connection = $Context->{Resources::class}->get_resource($connection_class);//may return NULL
 
         //no connection assigned to the current coroutine was found - assign a new one
         if (empty($Connection)) {
@@ -189,7 +193,7 @@ class Pool extends Provider
         }
 
         // increment the time for waiting for free connection
-        $Context_Apm = Coroutine::getContext()->Apm;
+        $Apm = self::get_service('Apm');
         $time_start_waiting = (double) microtime(TRUE);
 
         $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
@@ -199,7 +203,7 @@ class Pool extends Provider
         $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
 
         if (abs($time_waiting_for_connection) > $eps) {
-            $Context_Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
+            $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
         }
 
         $Connection->assign_to_coroutine(Coroutine::getCid());

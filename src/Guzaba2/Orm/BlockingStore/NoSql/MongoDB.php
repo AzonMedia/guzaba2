@@ -5,7 +5,7 @@ namespace Guzaba2\Orm\BlockingStore\NoSql;
 
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
-use Guzaba2\Orm\Store\Interfaces\StructuredStore;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -44,7 +44,7 @@ class MongoDB extends Database
     public function get_unified_columns_data(string $class) : array
     {
         // TODO check deeper for a structured store
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_unified_columns_data($class);
         } else {
             // $class is instance of Guzaba2\Orm\ActiveRecord
@@ -71,7 +71,7 @@ class MongoDB extends Database
      */
     public function get_storage_columns_data(string $class) : array
     {
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_storage_columns_data($class);
         } else {
             // $class is instance of Guzaba2\Orm\ActiveRecord
@@ -101,7 +101,7 @@ class MongoDB extends Database
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
 
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
                 'class'         => $class_name,
                 'object_id'     => $object_id
@@ -137,7 +137,7 @@ class MongoDB extends Database
         return $data[0];
     }
 
-    protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
+    protected function update_meta(ActiveRecordInterface $ActiveRecord) : array
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
@@ -146,7 +146,7 @@ class MongoDB extends Database
 
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
                 'class'         => get_class($ActiveRecord),
                 'object_id'     => $ActiveRecord->get_id()
@@ -163,6 +163,7 @@ class MongoDB extends Database
         ];
 
         $Connection->update($filter, $Connection::get_tprefix() . self::get_meta_table(), $data);
+        return $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() );
     }
 
     /**
@@ -170,11 +171,11 @@ class MongoDB extends Database
      *
      * @param ActiveRecordInterface $ActiveRecord
      * @param string $uuid
-     * if $this->FallbackStore instanceof StructuredStore (Mysql) the uuid is already created; use the same uuid
+     * if $this->FallbackStore instanceof StructuredStoreInterface (Mysql) the uuid is already created; use the same uuid
      * @return string UUID
      * @throws \Exception
      */
-    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : void
+    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
@@ -188,7 +189,7 @@ class MongoDB extends Database
             'object_last_update_microtime'  => $object_create_microtime,
         ];
 
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $data['object_id'] = $ActiveRecord->get_id();
         }
 
@@ -196,6 +197,8 @@ class MongoDB extends Database
             $meta_table, 
             $data
         );
+
+        return $data;
     }
 
     /**
@@ -204,29 +207,34 @@ class MongoDB extends Database
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
         /** @var ActiveRecord $ActiveRecord */
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             // Saves record in fallback and gets uuid
-            $uuid = $this->FallbackStore->update_record($ActiveRecord);
+            //$uuid = $this->FallbackStore->update_record($ActiveRecord);
+            $all_data = $this->FallbackStore->update_record($ActiveRecord);
+            $uuid = $all_data['meta']['object_uuid'];
+            $record_data = $all_data['data'];
         } elseif ($ActiveRecord->is_new()) {
             $uuid = Uuid::uuid4()->toString();
         } else {
             $uuid = $ActiveRecord->get_uuid();
         }
 
-        $record_data = $ActiveRecord->get_record_data();
+        if (empty($record_data)) {
+            $record_data = $ActiveRecord->get_record_data();
+        }
 
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         if ($ActiveRecord->is_new()) {
-            $this->create_meta($ActiveRecord, $uuid);
+            $meta_data = $this->create_meta($ActiveRecord, $uuid);
         } else {
-            $this->update_meta($ActiveRecord);
+            $meta_data = $this->update_meta($ActiveRecord);
         }
 
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $main_index = $ActiveRecord->get_primary_index_columns();
 
             $filter = [];
@@ -249,7 +257,8 @@ class MongoDB extends Database
         // insert or update record
         $Connection->update($filter, $Connection::get_tprefix().$ActiveRecord::get_main_table(), $record_data_to_save, TRUE);
 
-        return $uuid;
+        //return $uuid;
+        return ['data' => $record_data, 'meta' => $meta_data ];
     }
 
     /**
@@ -276,7 +285,7 @@ class MongoDB extends Database
         $data = $Connection->query($coll, $index);
 
         if (count($data)) {
-            if ($this->FallbackStore instanceof StructuredStore) {
+            if ($this->FallbackStore instanceof StructuredStoreInterface) {
                 $primary_index = $class::get_index_from_data($data[0]);
 
                 if (is_null($primary_index)) {
@@ -326,7 +335,7 @@ class MongoDB extends Database
 
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $this->FallbackStore->remove_record($ActiveRecord);
         }
 

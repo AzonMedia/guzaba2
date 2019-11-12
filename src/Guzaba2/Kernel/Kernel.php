@@ -434,16 +434,13 @@ BANNER;
 
                 //get the configuration from the parent class
                 $RParentClass = $RClass->getParentClass();
-                $parent_class_name = $RParentClass->name;
-                //$parent_config = $parent_class_name::get_runtime_configuration();
                 $parent_config = [];
-
-
-                //if (is_a($parent_class_name, ConfigInterface::class)) {
-                if ($RParentClass->implementsInterface(ConfigInterface::class)) {
-                    $parent_config = $parent_class_name::get_runtime_configuration();
+                if ($RParentClass) {
+                    $parent_class_name = $RParentClass->name;
+                    if ($RParentClass->implementsInterface(ConfigInterface::class)) {
+                        $parent_config = $parent_class_name::get_runtime_configuration();
+                    }
                 }
-
 
                 $runtime_config += $parent_config;//the parent config does not overwrite the current config
                 //there is exception though for the 'services' key - this needs to be merged

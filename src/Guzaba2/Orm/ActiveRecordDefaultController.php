@@ -30,6 +30,8 @@ class ActiveRecordDefaultController extends Controller
      */
     protected ActiveRecord $ActiveRecord;
 
+    protected $a;
+
     /**
      * Instantiates the ActiveRecord object.
      * May return Response if there is an error.
@@ -42,7 +44,6 @@ class ActiveRecordDefaultController extends Controller
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
 
         if (!$uuid) {
-
             if ($this->get_request()->getMethodConstant() === Method::HTTP_POST) {
                 //means a new record is to be created
                 if (!empty($route_meta_data['orm_class'])) {
@@ -100,8 +101,16 @@ class ActiveRecordDefaultController extends Controller
      */
     public function create() : ResponseInterface
     {
+
         //because this method handles multiple types of records the expected params can not be listed in the method signature
         $body_arguments = $this->get_request()->getParsedBody();
+        if ($body_arguments === NULL) {
+            $struct = [];
+            $struct['message'] = sprintf(t::_('The provided request could not be parsed.'));
+            $Response = parent::get_structured_badrequest_response($struct);
+            return $Response;
+        }
+
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord->has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
@@ -115,7 +124,7 @@ class ActiveRecordDefaultController extends Controller
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
-        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid ];
+        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'created' ];
         //$Response = self::get_structured_ok_response( $struct );
         $Response = new Response(StatusCode::HTTP_CREATED, [], new Structured($struct));
         return $Response;
@@ -144,7 +153,7 @@ class ActiveRecordDefaultController extends Controller
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord) );
-        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid ];
+        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'updated' ];
         $Response = self::get_structured_ok_response( $struct );
         return $Response;
 
@@ -157,9 +166,11 @@ class ActiveRecordDefaultController extends Controller
      */
     public function delete(string $uuid) : ResponseInterface
     {
+        $uuid = $this->ActiveRecord->get_uuid();
+        $id = $this->ActiveRecord->get_id();
         $this->ActiveRecord->delete();
-        $struct['message'] = sprintf(t::_('The object was deleted successfully.'));
-        $Response = parent::get_structured_ok_response($struct);
+        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $id, $uuid, get_class($this->ActiveRecord) );
+        $Response = parent::get_structured_ok_response( ['message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'deleted'] );
         return $Response;
     }
 

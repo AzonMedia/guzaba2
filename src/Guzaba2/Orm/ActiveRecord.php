@@ -16,6 +16,7 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -44,10 +45,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
-            //'ConnectionFactory',
             'OrmStore',
             'LockManager',
-            'AuthorizationProvider',
+            'Events',
         ],
         //only for non-sql stores
         'structure' => [
@@ -61,7 +61,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
     use ActiveRecordOverloading;
     use ActiveRecordStructure;
-    use ActiveRecordAuthorization;
 
     const INDEX_NEW = 0;
 
@@ -142,6 +141,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     protected static $orm_locking_enabled_flag = TRUE;
 
+    private bool $read_lock_obtained_flag = FALSE;
+
     /**
      * ActiveRecord constructor.
      * @param int $index
@@ -175,6 +176,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         $called_class = get_class($this);
         if (empty(self::$columns_data[$called_class])) {
             $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
+            if (!count($unified_columns_data)) {
+                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), get_class($this) ));
+            }
 
             foreach ($unified_columns_data as $column_datum) {
                 self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
@@ -231,7 +235,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             //no locking here either
         } else {
 
-            $this->load($index);
+            $this->read($index);
         }
     }
 
@@ -250,10 +254,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
 
 
-        if (self::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            //self::LockManager()->release_lock($resource);
-            static::get_service('LockManager')->release_lock($resource);
+        if (self::is_locking_enabled() && !$this->is_new()) {
+
+            if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
+                $resource = MetaStore::get_key_by_object($this);
+                static::get_service('LockManager')->release_lock($resource);
+                $this->read_lock_obtained_flag = FALSE;
+            }
+
         }
     }
 
@@ -273,6 +281,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         //$Store = static::OrmStore();
         $Store = static::get_service('OrmStore');
         $meta_data = $Store->get_meta_by_uuid($uuid);
+        if (!$meta_data) {
+            throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %s.'), $uuid));
+        }
         $id = $meta_data['object_id'];
         return new $meta_data['class']($id);
     }
@@ -332,22 +343,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $ret;
     }
 
-    protected function load(/* mixed */ $index) : void
+    protected function read(/* mixed */ $index) : void
     {
-        //instead of setting the BypassAuthorizationProvider to bypass the authorization
-        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider')) {
-            $this->check_permission('read');
-        }
 
-
-        //_before_load() event
         if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_read'], $args);//must return void
         }
         
-        new Event($this, '_before_read');
+        //new Event($this, '_before_read');
+        self::get_service('Events')::create_event($this, '_before_read');
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
@@ -356,7 +361,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $this->record_modified_data =& $pointer['modified'];
         } else {
             $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
-
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
@@ -374,11 +378,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            $this->read_lock_obtained_flag = TRUE;
         }
 
         $this->is_new_flag = FALSE;
 
-        new Event($this, '_after_read');
+        //new Event($this, '_after_read');
+        self::get_service('Events')::create_event($this, '_after_read');
 
         //_after_load() event
         if (method_exists($this, '_after_read') && !$this->method_hooks_are_disabled()) {
@@ -533,20 +539,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public function save() : ActiveRecordInterface
     {
-        if (!count($this->get_modified_properties_names())) {
+        if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
             return $this;
         }
-
-        //instead of setting the BypassAuthorizationProvider to bypass the authorization
-        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider')) {
-            if ($this->is_new()) {
-                $this->check_permission('create');
-            } else {
-                $this->check_permission('write');
-            }
-        }
-
 
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
@@ -556,7 +551,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             call_user_func_array([$this,'_before_save'], $args);//must return void
         }
 
-        new Event($this, '_before_save');
+        //new Event($this, '_before_save');
+        self::get_service('Events')::create_event($this, '_before_save');
 
         if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
@@ -582,7 +578,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
         }
 
-        new Event($this, '_after_save');
+        //new Event($this, '_after_save');
+        self::get_service('Events')::create_event($this, '_after_save');
 
         //_after_save() event
         if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
@@ -611,19 +608,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     public function delete(): void
     {
 
-        //instead of setting the BypassAuthorizationProvider to bypass the authorization
-        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider')) {
-            $this->check_permission('delete');
-        }
-
         if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_delete'], $args);//must return void
         }
 
 
-        new Event($this, '_before_delete');
+        //new Event($this, '_before_delete');
+        self::get_service('Events')::create_event($this, '_before_delete');
 
         if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
@@ -639,7 +631,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             static::get_service('LockManager')->release_lock('', $LR);
         }
 
-        new Event($this, '_after_delete');
+        //new Event($this, '_after_delete');
+        self::get_service('Events')::create_event($this, '_after_delete');
+
         if (method_exists($this, '_after_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_delete'], $args);//must return void
@@ -678,30 +672,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     }
     
     /**
-     * Initializes the record_data properties with the default values (taking account nullable too).
-     * To be called only from self::read()
-     * @param $initial_data array
-     * @author vesko@azonmedia.com
-     * @created 14.09.2017
-     * @since 0.7.1
-     * @return void
+     * Updates the data type based on the structure.
+     * Certain stores (like Redis) may loose the type and keep everything as string.
+     * @param array $data
+     * @return array
      */
-    private function initialize_record_data(array $initial_data) : void
+    public static function fix_record_data_types(array $data) : array
     {
         // altough we have lazy loading we need to store in record_data whatever we obtained - this will set the index (so get_index() works)
-        foreach ($initial_data as $key=>$value) {
-            if (array_key_exists($key, $this->record_data)) {
-                $type = $this->get_column_type($key, $nullable);
-                if (!isset($type)) {
-                    throw new \Guzaba2\Base\Exceptions\LogicException(sprintf(t::_('There is date for column %s from object %s but there is no such column in table %s.'), $key, get_class($this), $this->main_table));
-                }
-
-                if (in_array($key, self::$primary_index_columns)) {
-                    settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
-                    $this->index[$key] = $value;
-                }
-            } // else - ignore
+        $called_class = get_called_class();
+        $ret = [];
+        foreach ($data as $key=>$value) {
+            $type = static::get_column_type($key, $nullable);
+            if ($type === NULL) {
+                throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+            }
+            settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
+            $ret[$key] = $value;
         }
+        return $ret;
     }
         
     /**
@@ -712,16 +701,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @param string $column
      * @param bool $nullable
      * @return string|null
-     * @since 0.7.1
-     * @created 17.10.2017
-     * @author vesko@azonmedia.com
      */
-    public function get_column_type(string $column, ?bool &$nullable = null) : ?string
+    public static function get_column_type(string $column, ?bool &$nullable = null) : ?string
     {
         $type = NULL;
 
         static $column_type_cache = [];
-        $class = get_class($this);
+        //$class = get_class($this);
+        $class = get_called_class();
 
         if (!array_key_exists($class, $column_type_cache)) {
             $column_type_cache[$class] = [];

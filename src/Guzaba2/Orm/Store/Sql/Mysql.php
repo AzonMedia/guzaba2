@@ -10,7 +10,7 @@ use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
-use Guzaba2\Orm\Store\Interfaces\StructuredStore;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
@@ -19,7 +19,7 @@ use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 
 
-class Mysql extends Database implements StructuredStore
+class Mysql extends Database implements StructuredStoreInterface
 {
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta'
@@ -83,6 +83,7 @@ class Mysql extends Database implements StructuredStore
     
     public function get_storage_columns_data_by_table_name(string $table_name) : array
     {
+
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $q = "
@@ -112,7 +113,7 @@ ORDER BY
      */
     public function get_storage_columns_data(string $class) : array
     {
-        if ($this->FallbackStore instanceof StructuredStore) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_storage_columns_data($class);
         } else {
             $ret = $this->get_storage_columns_data_by_table_name($class::get_main_table());
@@ -274,7 +275,7 @@ VALUES
      * @throws \Guzaba2\Database\Exceptions\DuplicateKeyException
      * @throws \Guzaba2\Database\Exceptions\ForeignKeyConstraintException
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : string
+    public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
 
         //BEGIN DB TRANSACTION
@@ -376,6 +377,10 @@ VALUES
 //                $ActiveRecord->record_data[$main_index[0]] = $last_insert_id;
                 // we need this part of code. It will set $ActiveRecord->record_data[$main_index[0]]
                 $ActiveRecord->update_primary_index($last_insert_id);
+
+                //we need to update the record data as it is being returned by the update method (for the previous stored to use)
+                $main_index = $ActiveRecord::get_primary_index_columns();
+                $record_data[$main_index[0]] = $last_insert_id;
             }
         } else {
             $record_data_to_save = [];
@@ -465,10 +470,13 @@ ON DUPLICATE KEY UPDATE
 
         if ($ActiveRecord->is_new()) {
             $uuid = $this->create_meta($ActiveRecord);
+
         } else {
             $this->update_meta($ActiveRecord);
             $uuid = $ActiveRecord->get_uuid();
         }
+        //$ret = array_merge($record_data, $this->get_meta());
+
 
         // TODO set uuid to $ActiveRecord
 
@@ -476,7 +484,10 @@ ON DUPLICATE KEY UPDATE
 
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
-        return $uuid;
+        //return $uuid;
+        $ret = ['data' => $record_data, 'meta' => $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() )];
+
+        return $ret;
     }
 
     public function &get_data_pointer(string $class, array $index) : array
