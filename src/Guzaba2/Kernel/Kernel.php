@@ -58,7 +58,7 @@ class Kernel
 
     public const EXIT_GENERAL_ERROR = 1;
 
-    //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba
+    //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba%202%20framework
     public const FRAMEWORK_BANNER = <<<BANNER
 
  ██████╗ ██╗   ██╗███████╗ █████╗ ██████╗  █████╗     ██████╗     ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗
