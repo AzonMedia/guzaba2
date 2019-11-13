@@ -275,14 +275,7 @@ class MongoDB extends Database
         $ret = [];
         //lookup in DB
 
-        /** @var MongoDBConnection $Connection */
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
-
-        // UUID is NEVER provided
-
-        $coll = $Connection::get_tprefix() . $class::get_main_table();
-
-        $data = $Connection->query($coll, $index);
+        $data = $this->get_data_by($class, $index); 
 
         if (count($data)) {
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -346,5 +339,23 @@ class MongoDB extends Database
         $Connection->delete($primary_index, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
         $Connection->delete(['object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
     }
+
+    public function &get_data_by(string $class, array $index) : array
+    {
+        /** @var MongoDBConnection $Connection */
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+
+        // UUID is NEVER provided
+
+        $coll = $Connection::get_tprefix() . $class::get_main_table();
+
+        $data = $Connection->query($coll, $index);
+
+        if (!count($data)) {
+            $this->throw_not_found_exception($class, self::form_lookup_index($index));
+        }
+
+        return $data;
+    } 
 
 }

@@ -363,4 +363,10 @@ class Redis extends Database
         $Connection->del($uuid . ':meta');
         $Connection->del($class_id);
     }
+
+    public function get_data_by(string $class, array $index) : iterable
+    {
+         $ret = $this->FallbackStore->get_data_by($class, $index);
+         return $ret;
+    }
 }

@@ -174,36 +174,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $this->Store = static::get_service('OrmStore');
         }
         
-
-        $called_class = get_class($this);
-        if (empty(self::$columns_data[$called_class])) {
-            $unified_columns_data = $this->Store->get_unified_columns_data(get_class($this));
-            if (!count($unified_columns_data)) {
-                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), get_class($this) ));
-            }
-
-            foreach ($unified_columns_data as $column_datum) {
-                self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
-            }
-        }
-
-        if (empty(self::$primary_index_columns[$called_class])) {
-            foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
-                if (!empty($column_data['primary'])) {
-                    self::$primary_index_columns[$called_class][] = $column_name;
-                }
-            }
-        }
+        self::initialize_columns();
 
         $primary_columns = static::get_primary_index_columns();
 
+        $called_class = get_class($this);
         // 1. check is there main index loaded
         // if $this->index is still empty this means that this table has no primary index
         if (!count($primary_columns)) {
             throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The class %s has no primary index defined.'), $called_class));
         }
-
-
 
         if (is_scalar($index)) {
             if (ctype_digit((string)$index)) {
@@ -238,6 +218,31 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         } else {
 
             $this->read($index);
+        }
+    }
+
+    protected static function initialize_columns() : void
+    {
+        $Store = static::get_service('OrmStore');
+
+        $called_class = get_called_class();
+        if (empty(self::$columns_data[$called_class])) {
+            $unified_columns_data = $Store->get_unified_columns_data($called_class);
+            if (!count($unified_columns_data)) {
+                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), get_class($this) ));
+            }
+
+            foreach ($unified_columns_data as $column_datum) {
+                self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
+            }
+        }
+
+        if (empty(self::$primary_index_columns[$called_class])) {
+            foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
+                if (!empty($column_data['primary'])) {
+                    self::$primary_index_columns[$called_class][] = $column_name;
+                }
+            }
         }
     }
 
@@ -929,10 +934,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $this->Store->debug_get_data();
     }
 
-//    public static function get_by(array $index) : iterable
-//    {
-//
-//    }
+    /**
+     * Returns all ActiveRecord objects that match the given criteria
+     * @param  array  $index array of $property_name => $value 
+     * @return iterable  list of ActiveRecord objects
+     */
+    public static function get_by(array $index) : iterable
+    {
+        $Store = static::get_service('OrmStore');
+        static::initialize_columns();
+        $class_name = static::class;
+
+        $data = $Store->get_data_by($class_name, $index);
+        $primary_index = static::get_primary_index_columns()[0];
+        
+        $ret = array();
+        foreach ($data as $record) {
+            $ret[] = new $class_name($record[$primary_index]);
+        }
+
+        return $ret;
+    }
+
+  
 
     /**
      * Returns all ActiveRecord classes that are loaded by the Kernel in the provided namespace prefixes.

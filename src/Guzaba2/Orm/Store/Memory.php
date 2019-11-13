@@ -416,4 +416,10 @@ class Memory extends Store implements StoreInterface
         $primary_index = $ActiveRecord->get_primary_index();
         $this->MetaStore->remove_meta_data($class, $primary_index);
     }
+
+    public function get_data_by(string $class, array $index) : iterable
+    {
+         $ret = $this->FallbackStore->get_data_by($class, $index);
+         return $ret;
+    }
 }
