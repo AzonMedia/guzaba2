@@ -938,6 +938,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * Returns all ActiveRecord objects that match the given criteria
      * @param  array  $index array of $property_name => $value 
      * @return iterable  list of ActiveRecord objects
+     * @throws RunTimeException
      */
     public static function get_by(array $index) : iterable
     {
@@ -950,7 +951,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         
         $ret = array();
         foreach ($data as $record) {
-            $ret[] = new $class_name($record[$primary_index]);
+            if (!empty($record[$primary_index])) {
+                $ret[] = new $class_name($record[$primary_index]);
+            } else {
+                throw new RunTimeException(sprintf(t::_('Possible data discrepancy! Cannot create an instance of class %s because the primary index `%s` is not found in the stored data %s.'), $class_name, $primary_index,  print_r($record, TRUE)));
+            }
         }
 
         return $ret;
