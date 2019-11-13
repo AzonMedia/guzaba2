@@ -6,12 +6,14 @@ namespace Guzaba2\Orm;
 use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
 
+use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
@@ -931,4 +933,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 //    {
 //
 //    }
+
+    /**
+     * Returns all ActiveRecord classes that are loaded by the Kernel in the provided namespace prefixes.
+     * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
+     * @param array $ns_prefixes
+     * @return array Indexed array with class names
+     */
+    public static function get_active_record_classes(array $ns_prefixes) : array
+    {
+
+        $loaded_classes = Kernel::get_loaded_classes();
+        $ret = [];
+        foreach ($ns_prefixes as $ns_prefix) {
+            foreach ($loaded_classes as $loaded_class) {
+                if (
+                    strpos($loaded_class, $ns_prefix) === 0
+                    && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
+                    && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
+                ) {
+                    $ret[] = $loaded_class;
+                }
+            }
+        }
+        return $ret;
+    }
 }

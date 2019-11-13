@@ -33,4 +33,9 @@ trait ActiveRecordValidation
     {
         return $this->validation_is_disabled_flag;
     }
+
+    public static function validate_field() : array
+    {
+
+    }
 }

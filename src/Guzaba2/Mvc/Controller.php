@@ -11,9 +11,11 @@ use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Body\Str;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -82,4 +84,27 @@ implements ControllerInterface
         return $ret;
     }
 
+    /**
+     * Returns all Controller classes that are loaded by the Kernel in the provided namespace prefixes.
+     * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
+     * @param array $ns_prefixes
+     * @return array
+     */
+    public static function get_controller_classes(array $ns_prefixes) : array
+    {
+        $loaded_classes = Kernel::get_loaded_classes();
+        $ret = [];
+        foreach ($ns_prefixes as $ns_prefix) {
+            foreach ($loaded_classes as $loaded_class) {
+                if (
+                    strpos($loaded_class, $ns_prefix) === 0
+                    && is_a($loaded_class, ControllerInterface::class, TRUE)
+                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
+                ) {
+                    $ret[] = $loaded_class;
+                }
+            }
+        }
+        return $ret;
+    }
 }

@@ -6,6 +6,7 @@ namespace Guzaba2\Authorization;
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 
 /**
  * Class User
@@ -18,7 +19,18 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
+        'route'                     => '/user',
         //'default_current_user_id'   => 0,//can be ID or UUID//NOT USED - see DI config instead
+        'validation'                => [
+            'user_name'                 => [
+                'required'              => TRUE,
+                //'max_length'            => 200,//this comes from the DB
+            ],
+            'role_id'                   => [
+                'required'              => TRUE,
+                //'validation_method'     => [User::class, '_validate_role_id'],//can be sete explicitly or if there is a static method _validate_role_id it will be executed
+            ],
+        ],
         'structure' => [
             [
                 'name' => 'object_uuid',
@@ -104,5 +116,20 @@ class User extends ActiveRecord implements UserInterface
     public function revoke_temporary_permission(ScopeReference $ScopeReference) : void
     {
 
+    }
+
+    protected function _before_validate_role_id() : bool
+    {
+        //the primary role role cant be changed
+        //the primary role must be a user role
+    }
+
+    protected function _before_save() : void
+    {
+        if ($this->is_new()) {
+            //a new primary role needs to be created for this user
+            $Role = Role::create($this->user_name);
+            $this->role_id = $Role->get_id();
+        }
     }
 }

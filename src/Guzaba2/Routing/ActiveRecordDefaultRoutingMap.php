@@ -41,31 +41,25 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
         }
         $this->ns_prefixes = $ns_prefixes;
         $this->api_route_prefix = $api_route_prefix;
-        $loaded_classes = Kernel::get_loaded_classes();
+
         $routing_map = [];
         $routing_meta_data = [];
-        foreach ($this->ns_prefixes as $ns_prefix) {
-            foreach ($loaded_classes as $loaded_class) {
-                if (
-                    strpos($loaded_class, $ns_prefix) === 0
-                    && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                    && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
-                ) {
-                    $routing = $loaded_class::get_routes();
-                    //the models may not define route as not every controller is expected to be directly manageable through the API
+        $active_record_classes = ActiveRecord::get_active_record_classes($this->ns_prefixes);
+        foreach ($active_record_classes as $loaded_class) {
+            $routing = $loaded_class::get_routes();
+            //the models may not define route as not every controller is expected to be directly manageable through the API
 //                    if ($routing === NULL) {
 //                        throw new RunTimeException(sprintf(t::_('The model %s has no routing set.'), $loaded_class));
 //                    }
-                    if ($routing) {
-                        if ($api_route_prefix) {
-                            $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
-                        }
-                        $routing_map = array_merge($routing_map, $routing);
-                        $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
-                    }
-
+            if ($routing) {
+                if ($api_route_prefix) {
+                    $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
                 }
+                $routing_map = array_merge($routing_map, $routing);
+                $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
             }
+
+
         }
         parent::__construct($routing_map, $routing_meta_data);
     }
