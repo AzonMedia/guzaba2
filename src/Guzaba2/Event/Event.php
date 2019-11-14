@@ -19,7 +19,7 @@ class Event implements ConfigInterface, EventInterface
     use SupportsConfig;
     use UsesServices;
 
-    public const CONFIG_DEFAULTS = [
+    protected const CONFIG_DEFAULTS = [
         'services'      => [
             'Events'
         ],

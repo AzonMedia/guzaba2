@@ -68,7 +68,7 @@ class ActiveRecordDefaultController extends Controller
                 $this->ActiveRecord = ActiveRecord::get_by_uuid($uuid);
             } catch (RecordNotFoundException $Exception) {
                 $struct = [];
-                $struct['message'] = sprintf(t::_('No object with the provided UUID is found.'));
+                $struct['message'] = sprintf(t::_('No object with the provided UUID %s is found.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
                 return $Response;
             }
@@ -112,7 +112,7 @@ class ActiveRecordDefaultController extends Controller
         }
 
         foreach ($body_arguments as $property_name=>$property_value) {
-            if (!$this->ActiveRecord->has_property($property_name)) {
+            if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;
@@ -141,7 +141,7 @@ class ActiveRecordDefaultController extends Controller
     {
         $body_arguments = $this->get_request()->getParsedBody();
         foreach ($body_arguments as $property_name=>$property_value) {
-            if (!$this->ActiveRecord->has_property($property_name)) {
+            if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;

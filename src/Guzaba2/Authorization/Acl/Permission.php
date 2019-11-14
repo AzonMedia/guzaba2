@@ -19,6 +19,14 @@ use Guzaba2\Authorization\Interfaces\PermissionInterface;
  */
 class Permission extends ActiveRecord implements PermissionInterface
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'main_table'            => 'acl_permissions',
+        'route'                 => '/permission',
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecord
     {
         $Permission = new self();

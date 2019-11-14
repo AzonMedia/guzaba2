@@ -28,13 +28,11 @@ abstract class Connection extends GenericResource implements ConnectionInterface
         parent::__construct($ConnectionFactory);
     }
 
-    public static function get_tprefix() : string
+    public function __destruct()
     {
-        return static::CONFIG_RUNTIME['tprefix'] ?? '';
+        //$this->close();//avoid this - the connections should be close()d immediately
+        //or have a separate flag $is_connected_flag
     }
 
-    public static function get_database() : string
-    {
-        return static::CONFIG_RUNTIME['database'];
-    }
+    public abstract function close() : void ;
 }

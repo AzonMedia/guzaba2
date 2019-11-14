@@ -27,7 +27,7 @@ class Permission extends ActiveRecord
         return $Permission;
     }
 
-    public function _before_save()
+    protected function _before_save() : void
     {
         //check for duplicate
         if (!$this->permission_name) {

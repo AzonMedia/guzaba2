@@ -277,7 +277,7 @@ trait ActiveRecordOverloading
      */
     private function assign_property_value($property, $value) : void
     {
-        $field_type = $this->get_field_type($property, $is_nullable);
+        $field_type = static::get_field_type($property, $is_nullable);
         if ($field_type != gettype($value)) {
             if ($is_nullable && is_null($value)) {
                 //if there is type mismatch it will be still OK if the value is NULL and the column is nullable
@@ -360,6 +360,7 @@ trait ActiveRecordOverloading
         }
     }
 
+    /*
     public static function get_properties_with_enabled_logging() : array
     {
         $ret = [];
@@ -385,6 +386,7 @@ trait ActiveRecordOverloading
         $cache[$called_class] = $ret;
         return $ret;
     }
+    */
 
     public function disable_property_hooks(): void
     {

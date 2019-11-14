@@ -159,8 +159,12 @@ class SourceStream extends Base
 
         $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
         $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ', var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
+
         $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
 
+//        if ($class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
+//            print $class_source;
+//        }
         return $class_source;
     }
 

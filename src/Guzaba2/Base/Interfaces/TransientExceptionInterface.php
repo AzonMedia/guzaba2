@@ -14,11 +14,11 @@ declare(strict_types=1);
  * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
  * @author        Veselin Kenashkov <kenashkov@azonmedia.com>
  */
-namespace Guzaba2\Base\Exceptions;
+namespace Guzaba2\Base\Interfaces;
 
 /**
  * Exceptions that represent transient (temporary errors) are to implement this interface as certain conditions can be retried.
  */
-interface TransientErrorException extends \Throwable
+interface TransientExceptionInterface
 {
 }

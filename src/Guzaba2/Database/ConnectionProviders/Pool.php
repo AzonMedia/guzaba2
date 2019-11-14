@@ -23,6 +23,7 @@ use Guzaba2\Kernel\Kernel;
 /**
  * Class Pool
  * Provides a pool of connections (coroutine based connections) to be used with coroutines.
+ * It can also work in non coroutine context.
  * @package Guzaba2\Database
  */
 class Pool extends Provider
@@ -38,9 +39,18 @@ class Pool extends Provider
     protected const CONFIG_RUNTIME = [];
 
     /**
+     * Associative array with class_name as key and Channel as value.
+     * The Channels contains multiple connections (the pool)
      * @var array
      */
-    protected $available_connections = [];
+    protected array $available_connections = [];
+
+    /**
+     * An associative array with class_name as key and ConnectionInterface as value.
+     * To be used outside Coroutine context - there will be one connection per class in this case.
+     * @var array
+     */
+    protected array $single_connections = [];
 
     /**
      * Pool constructor.
@@ -49,6 +59,26 @@ class Pool extends Provider
     public function __construct()
     {
         parent::__construct();
+    }
+
+    /**
+     * To be called immediately before going in coroutine mode.
+     */
+    public function close_all_connections() : void
+    {
+        foreach ($this->single_connections as $Connection) {
+            $Connection->close();
+        }
+        $this->single_connections = [];//destroy the objects as well
+
+        foreach ($this->available_connections as $Channel) {
+            $length = $this->available_connections[$connection_class]->length();
+            for ($i = 0; $i < $length; $i ++) {
+                $Connection = $this->available_connections[$connection_class]->pop();
+                $Connection->close();
+            }
+        }
+        $this->available_connections = [];
     }
 
     /**
@@ -62,13 +92,16 @@ class Pool extends Provider
      */
     public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
     {
-        if (!Coroutine::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
-        }
+//        if (!Coroutine::inCoroutine()) {
+//            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
+//        }
 
         //check the current scope does it has a connection
-        $Context = Coroutine::getContext();
-        $Connection = $Context->{Resources::class}->get_resource($connection_class);//may return NULL
+
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            $Connection = $Context->{Resources::class}->get_resource($connection_class);//may return NULL
+        }
 
         //no connection assigned to the current coroutine was found - assign a new one
         if (empty($Connection)) {
@@ -95,16 +128,22 @@ class Pool extends Provider
      */
     public function free_connection(ConnectionInterface $Connection) : void
     {
-        if (!Coroutine::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('Connections can be freed in the Pool only in Coroutine context.')));
-        }
+//        if (!Coroutine::inCoroutine()) {
+//            throw new RunTimeException(sprintf(t::_('Connections can be freed in the Pool only in Coroutine context.')));
+//        }
 
-        $connection_class = get_class($Connection);
-        if (!array_key_exists($connection_class, $this->available_connections)) {
-            throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), $connection_class));
+        if (Coroutine::inCoroutine()) {
+            $connection_class = get_class($Connection);
+            if (!array_key_exists($connection_class, $this->available_connections)) {
+                throw new RunTimeException(sprintf(t::_('The provided connection is of class %s and the Pool has no knowledge of such class. It seems the provided connection was not created through this Pool.'), $connection_class));
+            }
+            $Connection->unassign_from_coroutine();
+            $this->available_connections[$connection_class]->push($Connection);
+        } else {
+            //do not close it as it will be reused
+            //$Connection->close();
+            //$Connection = NULL;
         }
-        $Connection->unassign_from_coroutine();
-        $this->available_connections[$connection_class]->push($Connection);
     }
 
     public function stats(string $connection_class = '') : array
@@ -135,6 +174,9 @@ class Pool extends Provider
      */
     public function ping_connections(string $connection_class = '') : void
     {
+        if (!Coroutine::inCoroutine()) {
+            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__ ));
+        }
         if ($connection_class && array_key_exists($connection_class, $this->available_connections)) {
             $connection_classes = [$connection_class];
         } elseif (empty($connection_class)) {
@@ -147,23 +189,26 @@ class Pool extends Provider
             $length = $this->available_connections[$connection_class]->length();
 
             for ($i = 0; $i < $length; $i ++) {
-                $Conn = $this->available_connections[$connection_class]->pop();
+                $Connection = $this->available_connections[$connection_class]->pop();
 
                 try {
-                    $Conn->ping();
-                } catch (\Exception $exception) {
-                    $Conn->initialize();
+                    $Connection->ping();
+                } catch (\Exception $Exception) {
+                    $Connection->initialize();
                 }
 
-                $this->available_connections[$connection_class]->push($Conn);
+                $this->available_connections[$connection_class]->push($Connection);
             }
             //the last $Conn will stay alive => unset it
-            unset($Conn);
+            unset($Connection);
         }
     }
 
     private function initialize_connections(string $connection_class) : void
     {
+        if (!Coroutine::inCoroutine()) {
+            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__ ));
+        }
         $this->available_connections[$connection_class] = new Channel(self::CONFIG_RUNTIME['max_connections']);
         for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections'] ; $aa++) {
             $Connection = new $connection_class();
@@ -181,32 +226,41 @@ class Pool extends Provider
      */
     private function get_new_connection(string $connection_class) : ConnectionInterface
     {
-        if (\Swoole\Coroutine::getCid() === -1) {
-            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
-        }
+//        if (\Swoole\Coroutine::getCid() === -1) {
+//            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
+//        }
 
         if (!class_exists($connection_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided connection class %s does not exist.'), $connection_class));
         }
-        if (!array_key_exists($connection_class, $this->available_connections)) {
-            $this->initialize_connections($connection_class);
+        if (Coroutine::inCoroutine()) {
+            if (!array_key_exists($connection_class, $this->available_connections)) {
+                $this->initialize_connections($connection_class);
+            }
+            // increment the time for waiting for free connection
+
+            $time_start_waiting = (double) microtime(TRUE);
+
+            $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
+
+            $time_end_waiting = (double) microtime(TRUE);
+            $eps = 0.0001;
+            $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
+
+            if (self::has_service('Apm') && abs($time_waiting_for_connection) > $eps )  {
+                $Apm = self::get_service('Apm');
+                $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
+            }
+
+            $Connection->assign_to_coroutine(Coroutine::getCid());
+        } else {
+            if (!array_key_exists($connection_class, $this->single_connections)) {
+                $this->single_connections[$connection_class] = new $connection_class();
+            }
+            return $this->single_connections[$connection_class];
         }
 
-        // increment the time for waiting for free connection
-        $Apm = self::get_service('Apm');
-        $time_start_waiting = (double) microtime(TRUE);
 
-        $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
-
-        $time_end_waiting = (double) microtime(TRUE);
-        $eps = 0.0001;
-        $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
-
-        if (abs($time_waiting_for_connection) > $eps) {
-            $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
-        }
-
-        $Connection->assign_to_coroutine(Coroutine::getCid());
 
         return $Connection;
     }

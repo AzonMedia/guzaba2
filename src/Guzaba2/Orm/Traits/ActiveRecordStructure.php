@@ -19,23 +19,15 @@ trait ActiveRecordStructure
      * @param mixed &$default_value
      * @return string
      * @throws RunTimeException If the provided $field_name is not supported by this object.
-     * @author vesko@azonmedia.com
-     * @created 20.10.2017
-     * @since 0.7.1
      */
-    public function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
+    public static function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
     {
-        if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
+        $class = get_called_class();
+        if (!static::has_field($field_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
         }
-        //$is_nullable = self::$columns_data[$field_name]['nullable'];
-        $is_nullable = $this->is_field_nullable($field_name);
-        //$default_value = self::$columns_data[$field_name]['default_value'];
-        $default_value = $this->get_field_default_value($field_name);
-//        if ($this->is_field_array($field_name)) {
-//            //return 'string';//the value column on the arr_table and assoc_arr_table is string
-//            return 'array';//but returning string will be very misleading so we better return array
-//        }
+        $is_nullable = static::is_field_nullable($field_name);
+        $default_value = static::get_field_default_value($field_name);
         return static::get_columns_data()[$field_name]['php_type'];
     }
 
@@ -44,16 +36,14 @@ trait ActiveRecordStructure
      * @param string $field_name
      * @return string
      * @throws RunTimeException If the provided $field_name is not supported by this object.
-     * @author vesko@azonmedia.com
-     * @created 20.10.2017
-     * @since 0.7.1
      */
-    public function get_field_native_type(string $field_name) : string
+    public static function get_field_native_type(string $field_name) : string
     {
-        if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
+        $class = get_called_class();
+        if (!static::has_field($field_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
         }
-        if ($this->is_field_array($field_name)) {
+        if (static::is_field_array($field_name)) {
             //return 'string';//the value column on the arr_table and assoc_arr_table is string
             return 'array';//but returning string will be very misleading so we better return array (even that mysql actually doesnt support array as a native type (PG does!))
         }
@@ -76,44 +66,57 @@ trait ActiveRecordStructure
      * @param string $field_name
      * @return mixed
      * @throws RunTimeException If the provided $field_name is not supported by this object.
-     * @author vesko@azonmedia.com
-     * @created 20.10.2017
-     * @since 0.7.1
      */
-    public function get_field_information(string $field_name) : array
+    public static function get_field_information(string $field_name) : array
     {
-        if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
+        if (!static::has_field($field_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
         }
         //this will also work for array_field_names and assoc_array_field_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
         return static::get_columns_data()[$field_name];
     }
 
     /**
-     * This is an alias of has_field().
-     * @param string $field_name
-     * @return bool
-     * @author vesko@azonmedia.com
-     * @created 22.01.2018
-     * @since 0.7.1
+     * Returns an indexed array containing the names of all properties/columns.
+     * @return array
      */
-    public function has_property(string $field_name) : bool
+    public static function get_property_names() : array
     {
-        return $this->has_field($field_name);
+        $ret = [];
+        $columns_data = static::get_columns_data();
+        foreach ($columns_data as $columns_datum) {
+            $ret[] = $columns_datum['name'];
+        }
+        return $ret;
+    }
+
+    /**
+     * Alias of self::get_property_names()
+     * @return array
+     */
+    public static function get_field_names() : array
+    {
+        return static::get_property_names();
     }
 
     /**
      * Checks does this object/class has a field/property named $field_name. This checks agains the DB structure (all tables and shards)
      * @param string $field_name
      * @return bool
-     * @author vesko@azonmedia.com
-     * @created 22.01.2018
-     * @since 0.7.1
      */
-    public function has_field(string $field_name) : bool
+    public static function has_property(string $field_name) : bool
     {
-        //return isset(self::$columns_data[$field_name]) || $this->is_field_array($field_name) || $field_name==$this->get_field_prefix().'_url_rewrite';
         return array_key_exists($field_name, static::get_columns_data());
+    }
+
+    /**
+     * This is an alias of has_property().
+     * @param string $field_name
+     * @return bool
+     */
+    public static function has_field(string $field_name) : bool
+    {
+        return static::has_property($field_name);
     }
 
     /**
@@ -121,18 +124,12 @@ trait ActiveRecordStructure
      * @param string $field_name
      * @return bool
      * @throws RunTimeException If the provided $field_name is not supported by this object.
-     * @author vesko@azonmedia.com
-     * @created 20.10.2017
-     * @since 0.7.1
      */
-    public function is_field_nullable(string $field_name) : bool
+    public static function is_field_nullable(string $field_name) : bool
     {
-        if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
+        if (!self::has_field($field_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
         }
-//        if ($this->is_field_array($field_name)) {
-//            return FALSE;//the array fields cant contain NULLs
-//        }
         return static::get_columns_data()[$field_name]['nullable'];
     }
 
@@ -141,19 +138,13 @@ trait ActiveRecordStructure
      * @param string $field_name
      * @return mixed
      * @throws RunTimeException If the provided $field_name is not supported by this object.
-     * @author vesko@azonmedia.com
-     * @created 20.10.2017
-     * @since 0.7.1
      */
-    public function get_field_default_value(string $field_name) /*: mixed */
+    public static function get_field_default_value(string $field_name) /*: mixed */
     {
-        if (!$this->has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), get_class($this), $field_name));
+        $class = get_called_class();
+        if (!static::has_field($field_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
         }
-//        if ($this->is_field_array($field_name)) {
-//            return '';//the default value is empty string (the value column are of type string)
-//        }
-
         return static::get_columns_data()[$field_name]['default_value'];
     }
 }

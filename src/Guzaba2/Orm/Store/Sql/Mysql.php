@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Store\Sql;
 
 use Azonmedia\Utilities\ArrayUtil;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -15,6 +17,7 @@ use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
+use Guzaba2\Resources\ScopeReference;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 
@@ -30,11 +33,13 @@ class Mysql extends Database implements StructuredStoreInterface
     /**
      * @var StoreInterface|null
      */
-    protected $FallbackStore;
+    protected $FallbackStore = NULL;
 
-    protected $connection_class;
+    protected string $connection_class = '';
 
-    protected $meta_exists = false;
+    protected string $no_coroutine_connection_class = '';
+
+    protected bool $meta_exists = false;
 
     const SAVE_MODE_ALL = 1;//overwrites all properties
 
@@ -42,12 +47,31 @@ class Mysql extends Database implements StructuredStoreInterface
 
     const SAVE_MODE = self::SAVE_MODE_ALL;
 
-    public function __construct(StoreInterface $FallbackStore, string $connection_class)
+    public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
         parent::__construct();
+        if (!$connection_class) {
+            throw new InvalidArgumentException(sprintf(t::_('The Store %s needs $connection_class argument provided.'), get_class($this) ));
+        }
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         $this->connection_class = $connection_class;
-        $this->create_meta_if_does_not_exist();
+        $this->no_coroutine_connection_class = $no_coroutine_connection_class;
+        //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
+    }
+
+    protected function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
+    {
+
+        if (Coroutine::inCoroutine()) {
+            $connection_class = $this->connection_class;
+        } else {
+            if (!$this->no_coroutine_connection_class) {
+                throw new RunTimeException(sprintf(t::_('The Store %s is used outside coroutine context but there is no $no_coroutine_connection_class configured/provided to the constructor.'), get_class($this) ));
+            }
+            $connection_class = $this->no_coroutine_connection_class;
+        }
+
+        return static::get_service('ConnectionFactory')->get_connection($connection_class, $ScopeReference);
     }
 
     /**
@@ -84,7 +108,7 @@ class Mysql extends Database implements StructuredStoreInterface
     public function get_storage_columns_data_by_table_name(string $table_name) : array
     {
 
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
 
         $q = "
 SELECT
@@ -146,7 +170,10 @@ ORDER BY
             ];
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
             
-            ArrayUtil::validate_array($ret[$aa], parent::UNIFIED_COLUMNS_STRUCTURE);
+            ArrayUtil::validate_array($ret[$aa], StoreInterface::UNIFIED_COLUMNS_STRUCTURE, $errors);
+            if ($errors) {
+                throw new RunTimeException(sprintf(t::_('The provide $storage_structure_arr to method %s does not conform to %s::UNIFIED_COLUMNS_STRUCTURE.'), __METHOD__, StoreInterface::class));
+            }
         }
         
         return $ret;
@@ -159,7 +186,7 @@ ORDER BY
 
     public function get_meta(string $class_name, /* scalar */ $object_id) : array
     {
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
         $q = "
 SELECT
     *
@@ -180,7 +207,7 @@ WHERE
      */
     public function get_meta_by_uuid(string $uuid) : array
     {
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
 
         $q = "
 SELECT 
@@ -207,7 +234,7 @@ WHERE
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
             throw new RunTimeException(sprintf(t::_('Trying to update the meta data of a new object of class "%s". Instead the new obejcts have their metadata created with Mysql::create_meta() method.'), get_class($ActiveRecord)));
         }
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
         $object_last_update_microtime = microtime(TRUE) * 1000000;
@@ -236,7 +263,7 @@ WHERE
 
     protected function create_meta(ActiveRecordInterface $ActiveRecord) : string
     {
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
         $object_create_microtime = microtime(TRUE) * 1000000;
@@ -318,7 +345,7 @@ VALUES
                     $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
                     $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
                 } else {
-                    $field_names_arr = $ActiveRecord->get_property_names();//this includes the full index
+                    $field_names_arr = $ActiveRecord::get_property_names();//this includes the full index
 
 //                    if (array_key_exists($main_index[0], $record_data_to_save)) {
 //                        unset($record_data_to_save[$main_index[0]]);
@@ -333,14 +360,14 @@ VALUES
                 }
             } else {
                 // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
-                $field_names_arr = array_unique(array_merge($ActiveRecord->get_property_names(), $main_index));
+                $field_names_arr = array_unique(array_merge($ActiveRecord::get_property_names(), $main_index));
                 $field_names_str = implode(', ', $field_names_arr);
                 $placeholder_str = implode(', ', array_map(function ($value) {
                     return ':'.$value;
                 }, $field_names_arr));
                 $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
             }
-            $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+            $Connection = $this->get_connection($CR);
 
             $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
 
@@ -384,7 +411,7 @@ VALUES
             }
         } else {
             $record_data_to_save = [];
-            $field_names = $modified_field_names = $ActiveRecord->get_property_names();
+            $field_names = $modified_field_names = $ActiveRecord::get_property_names();
 
 //            if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
 //                $modified_field_names = $ActiveRecord->get_modified_field_names();
@@ -429,7 +456,7 @@ VALUES
                     return "{$value} = :update_{$value}";
                 }, array_keys($upd_arr)));
 
-                $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+                $Connection = $this->get_connection($CR);
 
                 $data_arr = $ActiveRecord->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
 
@@ -545,12 +572,13 @@ ON DUPLICATE KEY UPDATE
 
     protected function create_meta_if_does_not_exist()
     {
+   return;
         if ($this->meta_exists) {
             return true;
         }
 
         // TODO can use create table if not exists
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
         $q = "
 SELECT
     *
@@ -599,7 +627,7 @@ LIMIT 1
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
         $primary_index = $ActiveRecord->get_primary_index();
         $w_arr = [];
         foreach ($primary_index as $key => $value) {
@@ -639,7 +667,7 @@ WHERE `object_uuid` = '{$uuid}'
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
         //lookup in DB
 
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $Connection = $this->get_connection($CR);
 
         //pull data from DB
         //set the data to $record_data['data']

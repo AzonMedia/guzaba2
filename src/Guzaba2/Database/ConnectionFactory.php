@@ -56,6 +56,12 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
         $this->ConnectionProvider->ping_connections($connection_class);
     }
 
+    public function close_all_connections() : void
+    {
+        $this->ConnectionProvider->close_all_connections();
+    }
+
+
     public function get_resource(string $class_name, &$ScopeReference = '') : ResourceInterface
     {
         return $this->get_connection($class_name, $ScopeReference);
@@ -65,4 +71,6 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
     {
         $this->free_connection($Resource);
     }
+
+
 }

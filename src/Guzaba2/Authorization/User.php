@@ -7,6 +7,7 @@ use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 
 /**
  * Class User
@@ -118,7 +119,7 @@ class User extends ActiveRecord implements UserInterface
 
     }
 
-    protected function _before_validate_role_id() : bool
+    protected function _validate_role_id() : ?ValidationFailedExceptionInterface
     {
         //the primary role role cant be changed
         //the primary role must be a user role

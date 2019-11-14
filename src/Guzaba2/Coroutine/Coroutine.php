@@ -34,7 +34,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     use UsesServices;
 
 
-    public const CONFIG_DEFAULTS = [
+    protected const CONFIG_DEFAULTS = [
         /**
          * This is the maximum number of allowed coroutines within a root (request) coroutine.
          * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
@@ -124,18 +124,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $Context->{Channel::class} = new Channel(self::CONFIG_RUNTIME['max_allowed_subcoroutines']);
             }
 
-//            if ($Context->parent_coroutine_id >= 1) {
-//                $Context->Request = self::getContext($Context->parent_coroutine_id)->Request;
-//                $Context->Apm = self::getContext($Context->parent_coroutine_id)->Apm;
-//                $Context->TransactionManager = self::getContext($Context->parent_coroutine_id)->TransactionManager;
-//                $Context->CurrentUser = self::getContext($Context->parent_coroutine_id)->CurrentUser;
-//            } else {
-//                //these are initialized here instead in init() as these may not be needed during execution
-//                $ProfilerBackend = new \Azonmedia\Apm\NullBackend();
-//                $Context->Apm = new \Azonmedia\Apm\Profiler($ProfilerBackend);
-//                $Context->Events = new Events();
-//                $Context->TransactionManager = new \Azonmedia\Transaction\TransactionManager();
-//            }
         }
         return $Context;
     }
@@ -230,8 +218,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         // print "parent cid: " . self::getPcid($current_cid) . PHP_EOL;
         //$Apm = self::getContext()->Apm;
         //$Apm->increment_value('cnt_subcoroutines', 1);
-        $Apm = self::get_service('Apm');
-        $Apm->increment_value('cnt_subcoroutines', 1);
+        if (self::has_service('Apm')) {
+            $Apm = self::get_service('Apm');
+            $Apm->increment_value('cnt_subcoroutines', 1);
+        }
 
 
 

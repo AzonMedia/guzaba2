@@ -246,7 +246,7 @@ class MongoDB extends Database
             $ActiveRecord->update_primary_index($uuid);
         }
 
-        $field_names_arr = $ActiveRecord->get_property_names();
+        $field_names_arr = $ActiveRecord::get_property_names();
         $record_data_to_save = [];
         foreach ($field_names_arr as $field) {
             if (!isset($filter[$field])) {

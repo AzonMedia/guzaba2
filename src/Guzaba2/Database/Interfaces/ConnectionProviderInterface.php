@@ -17,4 +17,6 @@ interface ConnectionProviderInterface extends ResourceFactoryInterface
     public function free_connection(ConnectionInterface $Connection);
 
     public function stats(string $connection_class = '') : array;
+
+    public function close_all_connections() : void ;
 }

@@ -19,14 +19,17 @@ namespace Guzaba2\Kernel;
 
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
+use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\StackTraceUtil;
+use Azonmedia\Utilities\SysUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
-use Guzaba2\Database\Connection;
+//use Guzaba2\Database\Connection;
 use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Translator\Translator as t;
@@ -35,6 +38,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Azonmedia\Watchdog\Watchdog;
+use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 
 /**
  * Class Kernel
@@ -53,6 +57,10 @@ class Kernel
      */
     public const FRAMEWORK_VERSION = '2-dev';
 
+    public const RUN_OPTIONS_DEFAULTS = [
+        'disable_all_class_load'            => FALSE,
+        'disable_all_class_validation'      => FALSE,
+    ];
 
     public const EXIT_SUCCESS = 0;
 
@@ -141,7 +149,7 @@ BANNER;
      */
     public static Watchdog $Watchdog;
 
-
+    private static float $init_microtime;
 
     private function __construct()
     {
@@ -154,6 +162,9 @@ BANNER;
     //public static function initialize(\Guzaba2\Registry\Interfaces\Registry $Registry, LoggerInterface $Logger) : void
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger): void
     {
+
+        self::$init_microtime = microtime(TRUE);
+
         self::$Registry = $Registry;
         self::$Logger = $Logger;
 
@@ -173,9 +184,101 @@ BANNER;
         //stream_wrapper_register('guzaba.source', SourceStream::class);
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
+        self::print_initialization_messages();
+
         self::$is_initialized_flag = TRUE;
     }
 
+    private static function print_initialization_messages() : void
+    {
+        self::printk(PHP_EOL);
+        self::printk(self::FRAMEWORK_BANNER);
+        self::printk(PHP_EOL);
+
+        Kernel::printk('Initialization microtime: '.self::$init_microtime.PHP_EOL);
+
+        Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
+
+        self::printk(PHP_EOL);
+
+        $registry_backends = self::$Registry->get_backends();
+        $registry_str = 'Registry backends:'.PHP_EOL;
+        foreach ($registry_backends as $RegistryBackend) {
+            $registry_str .= str_repeat(' ',4).'- '.get_class($RegistryBackend).PHP_EOL;
+        }
+        self::printk($registry_str);
+        self::printk(PHP_EOL);
+
+
+        $handlers = self::$Logger->getHandlers();
+        $error_handlers_str = 'Logger Handlers:'.PHP_EOL;
+        foreach ($handlers as $Handler) {
+            $error_handlers_str .= str_repeat(' ',4).'- '.get_class($Handler).' : '.$Handler->getUrl().' : '.self::$Logger::getLevelName($Handler->getLevel()).PHP_EOL;
+        }
+        Kernel::printk($error_handlers_str);
+        self::printk(PHP_EOL);
+
+    }
+
+    /**
+     * @param callable $callable
+     * @return int
+     * @throws \Exception
+     */
+    public static function run(callable $callable, array $options = []) : int
+    {
+        if (!self::is_initialized()) {
+            throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
+        }
+
+        //due to concurrency issues it is better to load all classes used by the application and the framework before the server is started
+        $validated_options = [];
+//        foreach ($options as $option_name => $option_value) {
+//            if (!array_key_exists($option_name,self::OPTIONS_DEFAULTS)) {
+//                throw new \InvalidArgumentException(sprintf('An invalid option %s was provided to %s.', $option_name, __METHOD__));
+//            }
+//        }
+        $run_options_validation = [];
+        foreach (self::RUN_OPTIONS_DEFAULTS as $option=>$value) {
+            $run_options_validation[$option] = gettype($value);
+        }
+        ArrayUtil::validate_array($options, $run_options_validation, $errors);
+        if ($errors) {
+            throw new \InvalidArgumentException(sprintf('Kernel options error: %s', implode(' ', $errors) ));
+        }
+
+        $options += self::RUN_OPTIONS_DEFAULTS;
+
+
+        if (!$options['disable_all_class_load']) {
+            self::load_all_classes();
+            $loaded_classes_info = t::_('Loaded all classes from:').PHP_EOL;
+            foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix => $fs_path) {
+                $loaded_classes_info .= str_repeat(' ',4).'- '.$fs_path.PHP_EOL;
+            }
+            self::printk($loaded_classes_info);
+            self::printk(PHP_EOL);
+        }
+
+        if (!$options['disable_all_class_validation']) {
+            $validation_classes = self::run_all_validations();
+            $validations_info = t::_('Validations run:').PHP_EOL;
+            foreach ($validation_classes as $validation_class) {
+                $validations_info .= str_repeat(' ',4).'- '.$validation_class.PHP_EOL;
+            }
+            self::printk($validations_info);
+            self::printk(PHP_EOL);
+        }
+
+
+        $ret = $callable();
+
+        if (!is_int($ret)) {
+            $ret = self::EXIT_SUCCESS;
+        }
+        return $ret;
+    }
 
     /**
      * @param ContainerInterface $Container
@@ -237,34 +340,17 @@ BANNER;
         return self::$is_initialized_flag;
     }
 
+    public static function get_init_microtime() : float
+    {
+        return self::$init_microtime;
+    }
+
     /**
      * @return LoggerInterface
      */
     public static function get_logger() : LoggerInterface
     {
         return self::$Logger;
-    }
-
-    /**
-     * @param callable $callable
-     * @return int
-     * @throws \Exception
-     */
-    public static function run(callable $callable) : int
-    {
-        if (!self::is_initialized()) {
-            throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
-        }
-
-        //due to concurrency issues it is better to load all classes used by the application and the framework before the server is started
-        self::load_all_classes();
-
-        $ret = $callable();
-
-        if (!is_int($ret)) {
-            $ret = self::EXIT_SUCCESS;
-        }
-        return $ret;
     }
 
     public static function dump(/* mixed */ $var) : void
@@ -379,6 +465,24 @@ BANNER;
     {
         //TODO - would be nice if this can also print to any connected debugger session...
         //better - instead there can be Console sessions attached for these messages (which is different from debug session)
+
+        if (trim($message)) {
+            $microtime = microtime(TRUE);
+            $microtime_diff = round($microtime - self::$init_microtime, 6);
+            if (self::get_http_server()) {
+                $worker_id = self::get_worker_id();
+                if ($worker_id != -1) {
+                    $worker_str = ' Worker #'.$worker_id;
+                } else {
+                    $worker_str = 'Startup';
+                }
+            } else {
+                $worker_str = 'Startup';
+            }
+            // todo fix padding
+            $message = sprintf('[%s %s] %s', $microtime_diff, $worker_str, $message);
+        }
+
         print $message;
     }
 
@@ -416,6 +520,12 @@ BANNER;
         exec("php -l {$path} 2>&1", $output, $return);
         $error = $output[0];
         return $return ? TRUE : FALSE;
+//        $ret = FALSE;
+//        $output = \shell_exec("php -l {$path} 2>&1");
+//        if (strpos($output, 'No syntax errors detected') === FALSE) {
+//            $ret = TRUE;
+//        }
+//        return $ret;
     }
 
     public static function get_runtime_configuration(string $class_name) : array
@@ -462,6 +572,9 @@ BANNER;
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\n==============================\nClass: {$real_class_name}\n");
 
                 $registry_config = self::$Registry->get_class_config_values($real_class_name);
+//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
+//                    print_r($registry_config);
+//                }
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
@@ -488,6 +601,9 @@ BANNER;
                         };
                     }
                 }
+//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
+//                    print_r($runtime_config);
+//                }
 
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, TRUE));
                 // the word FINAL is required here as it announces for final write in the file, when "return" is added
@@ -577,6 +693,26 @@ BANNER;
         }
     }
 
+    /**
+     * Returns an array of validation classes that were executed.
+     * @return array
+     */
+    public static function run_all_validations() : array
+    {
+        $validation_classes = [];
+        foreach (self::$loaded_classes as $loaded_class) {
+            if (
+                is_a($loaded_class, ClassDeclarationValidationInterface::class, TRUE)
+                && $loaded_class !== ClassDeclarationValidationInterface::class
+            ) {
+                $validation_classes[] = $loaded_class;
+                $loaded_class::run_all_validations();
+
+            }
+        }
+        return $validation_classes;
+    }
+
     public static function get_loaded_classes() : array
     {
         return self::$loaded_classes;
@@ -660,6 +796,12 @@ BANNER;
 
             //TODO - he below is a very primitive check - needs to be improved and use tokenizer
             if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== FALSE) {
+
+//                if ($class_name === 'GuzabaPlatform\Platform\Application\MysqlConnection') {
+//                    print '==================================';
+//                    print file_get_contents(SourceStream::PROTOCOL.'://'.$class_path);
+//                    print '==================================';
+//                }
 
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);

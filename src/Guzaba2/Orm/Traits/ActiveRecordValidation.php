@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
 
+use Guzaba2\Orm\Exceptions\ValidationFailedException;
+
 trait ActiveRecordValidation
 {
     /**
@@ -34,8 +36,42 @@ trait ActiveRecordValidation
         return $this->validation_is_disabled_flag;
     }
 
-    public static function validate_field() : array
+    public function validate() : array
     {
+        $properties = static::get_property_names();
+        $validation_exceptions = [];
+        foreach ($properties as $property) {
+            //basic validation
+            $validation_rules = self::get_validation_rules();
+            foreach ($validation_rules as $property_name => $validation_rule) {
+                if (!empty($validation_rule['required']) && !$this->{$property_name}) {
+                    $validation_exceptions[] = new ValidationFailedException(sprintf(t::_('The property %s on instance of class % must have value.'), $property_name, get_class($this) ));
+                }
+                if (!empty($validation_rule['min_length']) && strlen($this->{$property_name}) < $validation_rule['min_length'] ) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
+                    $validation_exceptions[] = new ValidationFailedException(sprintf(t::_('The property %s on instance of class %s must be at least %s characters.'), $property_name, get_class($this), $validation_rule['min_length'] ));
+                }
+                if (!empty($validation_rule['max_length']) && strlen($this->{$property_name}) > $validation_rule['max_length'] ) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
+                    $validation_exceptions[] = new ValidationFailedException(sprintf(t::_('The property %s on instance of class %s must be at maximum %s characters.'), $property_name, get_class($this), $validation_rule['max_length'] ));
+                }
 
+            }
+            //method validation
+            $method_name = '_validate_'.$property;
+            $static_method_name = '_validate_static_'.$property;
+            if (method_exists($this, $method_name)) {
+                $ValidationException = $this->{$method_name}();
+                if ($ValidationException) {
+                    $validation_exceptions[] = $ValidationException;
+                }
+            } elseif (method_exists($this, $static_method_name)) {
+                $ValidationException = $this->{$static_method_name}();
+                if ($ValidationException) {
+                    $validation_exceptions[] = $ValidationException;
+                }
+            }
+        }
+        if ($validation_exceptions) {
+            throw new ValidationFailedException($validation_exceptions);
+        }
     }
 }

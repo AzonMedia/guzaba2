@@ -27,10 +27,4 @@ implements ServerInterface
         $this->port = $port;
         $this->options = $options;
     }
-
-    //abstract public function get_master_pid() : int ;
-
-    //abstract public function get_ports() : array ;
-
-    //abstract public function get_connections() : array ;
 }

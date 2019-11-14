@@ -37,6 +37,11 @@ class Basic extends Provider
         $Connection = NULL;
     }
 
+    public function close_all_connections() : void
+    {
+        //does nothing - there is nothing to close
+    }
+
     public function stats(string $connection_class = '') : array
     {
         return [];

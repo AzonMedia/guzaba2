@@ -3,8 +3,9 @@
 namespace Guzaba2\Database\Sql;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Database\Interfaces\StatementInterface;
 
-class Statement extends Base
+abstract class Statement extends Base implements StatementInterface
 {
     protected $params = [];
 

@@ -41,6 +41,11 @@ trait UsesServices
         return $cache[$called_class];
     }
 
+    public static function has_service(string $service_name) : bool
+    {
+        return Kernel::has_service($service_name);
+    }
+
     /**
      * @return array
      */

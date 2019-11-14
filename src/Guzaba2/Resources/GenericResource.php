@@ -116,8 +116,11 @@ class GenericResource extends Base
             $Context = Coroutine::getContext();
             $Context->{Resources::class}->assign_resource($this);
             // increment the number of used connection in the current coroutine (APM)
-            $Apm = self::get_service('Apm');
-            $Apm->increment_value('cnt_used_connections', 1);
+            if (self::has_service('Apm')) { //the service may not be defined by the Di
+                $Apm = self::get_service('Apm');
+                $Apm->increment_value('cnt_used_connections', 1);
+            }
+
             // this is for incrementing the time_used_connections in unassign_from_coroutine()
             $this->resource_obtained_time = microtime(TRUE);
         }
@@ -139,8 +142,10 @@ class GenericResource extends Base
             $this->resource_released_time = microtime(TRUE);
             $Context = Coroutine::getContext();
             // increment the used connection time (APM)
-            $Apm = self::get_service('Apm');
-            $Apm->increment_value('time_used_connections', ($this->resource_released_time - $this->resource_obtained_time) );
+            if (self::has_service('Apm')) { //the service may not be defined by the Di
+                $Apm = self::get_service('Apm');
+                $Apm->increment_value('time_used_connections', ($this->resource_released_time - $this->resource_obtained_time) );
+            }
 
             $Context->{Resources::class}->unassign_resource($this);
         }

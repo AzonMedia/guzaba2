@@ -2,45 +2,46 @@
 
 namespace Guzaba2\Database\Sql\Mysql;
 
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Database\Exceptions\ConnectionException;
+use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Interfaces\StatementInterface;
+use Guzaba2\Database\Sql\TransactionalConnection;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class Connection
  * A class containing a mysqli connection
  * @package Guzaba2\Database\Sql\Mysql
  */
-abstract class ConnectionMysqli extends \Guzaba2\Database\ConnectionTransactional
+abstract class ConnectionMysqli extends Connection
 {
-    protected const CONFIG_DEFAULTS = [
-        'host'      => 'localhost',
-        'port'      => 3306,
-        'user'      => 'root',
-        'password'  => '',
-        'database'  => '',
-    ];
 
-    protected const CONFIG_RUNTIME = [];
-
-    protected $Mysqli;
-
-    public function __construct(array $options)
+    public function __construct()
     {
         parent::__construct();
-        self::update_runtime_configuration($options);
-        $this->Mysqli = new \mysqli(
-            self::CONFIG_RUNTIME['host'],
-            self::CONFIG_RUNTIME['username'],
-            self::CONFIG_RUNTIME['password'],
-            self::CONFIG_RUNTIME['database'],
-            self::CONFIG_RUNTIME['port'],
-            self::CONFIG_RUNTIME['socket']
-        );
+        $this->connect();
     }
 
     public function prepare(string $query) : StatementInterface
     {
-        $NativeStatement = $this->Mysqli->prepare($query);
-        $Statement = new StatementMysqli($NativeStatement);
+        $Statement = $this->prepare_statement($query, StatementMysqli::class);
         return $Statement;
+    }
+
+    public function connect() : void
+    {
+        $ret = $this->NativeConnection = new \mysqli(
+            static::CONFIG_RUNTIME['host'],
+            static::CONFIG_RUNTIME['user'],
+            static::CONFIG_RUNTIME['password'],
+            static::CONFIG_RUNTIME['database'],
+            static::CONFIG_RUNTIME['port'],
+            static::CONFIG_RUNTIME['socket']
+        );
+
+        if (!$ret) {
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->NativeConnection->connect_errno, $this->NativeConnection->connect_error));
+        }
     }
 }

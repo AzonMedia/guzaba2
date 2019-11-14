@@ -45,6 +45,10 @@ use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
  */
 class ActiveRecord extends Base implements ActiveRecordInterface
 {
+    //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
+    use ActiveRecordOverloading;
+    use ActiveRecordStructure;
+
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'OrmStore',
@@ -60,41 +64,37 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     protected const CONFIG_RUNTIME = [];
 
 
-    //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
-    use ActiveRecordOverloading;
-    use ActiveRecordStructure;
-
-    const INDEX_NEW = 0;
+    public const INDEX_NEW = 0;
 
     /**
      * @var StoreInterface
      */
-    protected $Store;
+    protected StoreInterface $Store;
 
     /**
      * @var bool
      */
-    protected $is_new_flag = TRUE;
+    protected bool $is_new_flag = TRUE;
 
     /**
      * @var array
      */
-    protected $record_data = [];
+    protected array $record_data = [];
 
     /**
      * @var array
      */
-    protected $record_modified_data = [];
+    protected array $record_modified_data = [];
 
     /**
      * @var array
      */
-    protected $meta_data = [];
+    protected array $meta_data = [];
     
     /**
      * @var bool
      */
-    protected $disable_property_hooks_flag = FALSE;
+    protected bool $disable_property_hooks_flag = FALSE;
     
     /**
      * Are the method hooks like _before_save enabled or not.
@@ -103,7 +103,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      *
      * @var bool
      */
-    protected $disable_method_hooks_flag = FALSE;
+    protected bool $disable_method_hooks_flag = FALSE;
     
     /**
      * @var bool
@@ -117,7 +117,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
      * @var array
      */
-    protected static $columns_data = [];
+    protected static array $columns_data = [];
 
     /**
      * Contains the unified record structure for this class meta data (ownership data).
@@ -125,13 +125,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
      * @var array
      */
-    protected static $meta_columns_data = [];
+    protected static array $meta_columns_data = [];
 
     /**
      * Contains an indexed array with the name of the primary key columns. Usually it is one but can be more.
      * @var array
      */
-    protected static $primary_index_columns = [];
+    protected static array $primary_index_columns = [];
 
     /**
      * Should locking be used when creating (read lock) and saving (write lock) objects.
@@ -141,8 +141,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @see self::is_locking_enabled()
      * @var bool
      */
-    protected static $orm_locking_enabled_flag = TRUE;
+    protected static bool $orm_locking_enabled_flag = TRUE;
 
+    /**
+     * @var bool
+     */
     private bool $read_lock_obtained_flag = FALSE;
 
     /**
@@ -229,7 +232,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         if (empty(self::$columns_data[$called_class])) {
             $unified_columns_data = $Store->get_unified_columns_data($called_class);
             if (!count($unified_columns_data)) {
-                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), get_class($this) ));
+                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class ));
             }
 
             foreach ($unified_columns_data as $column_datum) {
@@ -252,6 +255,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
         }
         return static::CONFIG_RUNTIME['structure'];
+    }
+
+    public static function get_validation_rules() : array
+    {
+        $ret = [];
+        if (isset(static::CONFIG_RUNTIME['validation'])) {
+            $ret = static::CONFIG_RUNTIME['validation'];
+        }
+        return $ret;
     }
 
     public function __destruct()
@@ -514,6 +526,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     public static function get_columns_data() : array
     {
         $called_class = get_called_class();
+        self::initialize_columns();
         return self::$columns_data[$called_class];
     }
 
@@ -531,6 +544,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
     public static function get_main_table() : string
     {
+        if (empty(static::CONFIG_RUNTIME['main_table'])) {
+            throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class() ));
+        }
         return static::CONFIG_RUNTIME['main_table'];
     }
 
@@ -858,19 +874,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     }
     
     /**
-     * Returns the property names from the main table and its shards.
-     * @return array
-     */
-    public function get_property_names() : array
-    {
-        $ret = [];
-        foreach (static::get_columns_data() as $field_data) {
-            $ret[] = $field_data['name'];
-        }
-        return $ret;
-    }
-    
-    /**
      * Returns the property names of the modified properties
      * @return array Indexed array with property names
      */
@@ -971,20 +974,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public static function get_active_record_classes(array $ns_prefixes) : array
     {
+        static $active_record_classes = [];
 
-        $loaded_classes = Kernel::get_loaded_classes();
         $ret = [];
         foreach ($ns_prefixes as $ns_prefix) {
-            foreach ($loaded_classes as $loaded_class) {
-                if (
-                    strpos($loaded_class, $ns_prefix) === 0
-                    && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                    && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
-                ) {
-                    $ret[] = $loaded_class;
+            if (!array_key_exists($ns_prefix, $active_record_classes)) {
+                $active_record_classes[$ns_prefix] = [];
+                $loaded_classes = Kernel::get_loaded_classes();
+                foreach ($loaded_classes as $loaded_class) {
+                    $RClass = new ReflectionClass($loaded_class);
+                    if (
+                        strpos($loaded_class, $ns_prefix) === 0
+                        && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
+                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordWithAuthorization::class, ActiveRecordInterface::class, ActiveRecordController::class] )
+                        && $RClass->isInstantiable()
+                    ) {
+                        $active_record_classes[$ns_prefix][] = $loaded_class;
+                    }
                 }
+
             }
+            $ret = array_merge($ret, $active_record_classes[$ns_prefix]);
         }
+
         return $ret;
     }
 }
