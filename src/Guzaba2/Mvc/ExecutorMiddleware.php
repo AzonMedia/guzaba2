@@ -191,7 +191,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 if ($Body instanceof Structured) {
                     $requested_content_type = $Request->getContentType();
 
-                    if ($requested_content_type === ContentType::TYPE_HTML && $this->override_html_content_type) {
+                    if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
                         $requested_content_type = $this->override_html_content_type;
                     }
                     $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
