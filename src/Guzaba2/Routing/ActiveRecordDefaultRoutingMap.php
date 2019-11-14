@@ -12,6 +12,7 @@ use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 
+
 class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 {
     /**
