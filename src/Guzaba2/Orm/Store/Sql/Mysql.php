@@ -764,6 +764,9 @@ WHERE `object_uuid` = '{$uuid}'
                 }
             } //end foreach
 
+            if (empty($w)) {
+                $w[] = "1";
+            }
         }
         //here we join the tables and load only the data from the joined tables
         //this means that some tables / properties will not be loaded - these will be loaded on request

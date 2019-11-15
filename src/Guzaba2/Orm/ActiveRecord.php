@@ -955,7 +955,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      * @return iterable  list of ActiveRecord objects
      * @throws RunTimeException
      */
-    public static function get_by(array $index) : iterable
+    public static function get_by(array $index = []) : iterable
     {
         $class_name = static::class;
         $data = static::get_data_by($index);
