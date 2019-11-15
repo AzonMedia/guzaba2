@@ -245,6 +245,9 @@ class Memory extends Store implements StoreInterface
             throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
         }
 
+        if (!isset($pointer['meta']['object_last_update_microtime'])) {
+            throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
+        }
         $last_update_time = $pointer['meta']['object_last_update_microtime'];
         //print $last_update_time.'BBB'.PHP_EOL;
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;

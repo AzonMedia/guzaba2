@@ -89,6 +89,13 @@ class ActiveRecordDefaultController extends Controller
 //            $struct[$property] = $value;
 //        }
         $struct = array_merge($this->ActiveRecord->get_record_data(), $this->ActiveRecord->get_meta_data());
+//        //print_r($this->ActiveRecord);
+//        //print $this->ActiveRecord;
+//        $o = $this->ActiveRecord;
+//        print_r(json_encode($o));
+//        print json_last_error_msg();
+
+
         $Response = parent::get_structured_ok_response($struct);
         return $Response;
     }

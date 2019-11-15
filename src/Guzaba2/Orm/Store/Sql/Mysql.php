@@ -81,9 +81,13 @@ class Mysql extends Database implements StructuredStoreInterface
      */
     public function get_unified_columns_data(string $class) : array
     {
-        $storage_structure_arr = $this->get_storage_columns_data($class);
+        static $cached_data = [];
+        if (!array_key_exists($class, $cached_data)) {
+            $storage_structure_arr = $this->get_storage_columns_data($class);
+            $cached_data[$class] = $this->unify_columns_data($storage_structure_arr);
+        }
 
-        return $this->unify_columns_data($storage_structure_arr);
+        return $cached_data[$class];
     }
     
     
@@ -108,9 +112,11 @@ class Mysql extends Database implements StructuredStoreInterface
     public function get_storage_columns_data_by_table_name(string $table_name) : array
     {
 
-        $Connection = $this->get_connection($CR);
+        $cached_data = [];
+        if(!array_key_exists($table_name, $cached_data)) {
+            $Connection = $this->get_connection($CR);
 
-        $q = "
+            $q = "
 SELECT
     information_schema.columns.*
 FROM
@@ -121,13 +127,15 @@ WHERE
 ORDER BY
     ordinal_position ASC
         ";
-        $s = $Connection->prepare($q);
-        $s->table_schema = $Connection::get_database();
-        $s->table_name = $Connection::get_tprefix().$table_name;
+            $s = $Connection->prepare($q);
+            $s->table_schema = $Connection::get_database();
+            $s->table_name = $Connection::get_tprefix().$table_name;
 
-        $ret = $s->execute()->fetchAll();
-        
-        return $ret;
+            $cached_data[$table_name] = $s->execute()->fetchAll();
+
+        }
+
+        return $cached_data[$table_name];
     }
 
     /**
@@ -238,7 +246,7 @@ WHERE
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
-        $object_last_update_microtime = microtime(TRUE) * 1000000;
+        $object_last_update_microtime = microtime(TRUE) * 1_000_000;
 
 
         $q = "
@@ -267,7 +275,7 @@ WHERE
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
-        $object_create_microtime = microtime(TRUE) * 1000000;
+        $object_create_microtime = microtime(TRUE) * 1_000_000;
 
         $uuid = Uuid::uuid4();
         $uuid_binary = $uuid->getBytes(); 
@@ -666,6 +674,7 @@ WHERE `object_uuid` = '{$uuid}'
 
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
+
         //lookup in DB
 
         $Connection = $this->get_connection($CR);

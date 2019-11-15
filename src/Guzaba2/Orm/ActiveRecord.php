@@ -229,7 +229,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         $Store = static::get_service('OrmStore');
 
         $called_class = get_called_class();
+
         if (empty(self::$columns_data[$called_class])) {
+
+
             $unified_columns_data = $Store->get_unified_columns_data($called_class);
             if (!count($unified_columns_data)) {
                 throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class ));
@@ -954,23 +957,36 @@ class ActiveRecord extends Base implements ActiveRecordInterface
      */
     public static function get_by(array $index) : iterable
     {
-        $Store = static::get_service('OrmStore');
-        static::initialize_columns();
         $class_name = static::class;
+        $data = static::get_data_by($index);
 
-        $data = $Store->get_data_by($class_name, $index);
-        $primary_index = static::get_primary_index_columns()[0];
-        
+        //$primary_index = static::get_primary_index_columns()[0];
+        $primary_index_columns = static::get_primary_index_columns();
+
         $ret = array();
         foreach ($data as $record) {
+            $object_index = ArrayUtil::extract_keys($record, $primary_index_columns);
+            $ret[] = new $class_name($object_index);
+            /*
             if (!empty($record[$primary_index])) {
                 $ret[] = new $class_name($record[$primary_index]);
             } else {
                 throw new RunTimeException(sprintf(t::_('Possible data discrepancy! Cannot create an instance of class %s because the primary index `%s` is not found in the stored data %s.'), $class_name, $primary_index,  print_r($record, TRUE)));
             }
+            */
         }
 
         return $ret;
+    }
+
+    public static function get_data_by(array $index) : iterable
+    {
+        $Store = static::get_service('OrmStore');
+        static::initialize_columns();
+        $class_name = static::class;
+
+        $data = $Store->get_data_by($class_name, $index);
+        return $data;
     }
 
   

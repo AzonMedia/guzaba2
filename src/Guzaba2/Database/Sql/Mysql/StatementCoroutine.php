@@ -23,7 +23,6 @@ class StatementCoroutine extends Statement implements StatementInterface
     {
 
         $position_parameters = $this->convert_to_position_parameters($parameters);
-
         $ret = $this->NativeStatement->execute($position_parameters);
 
         if ($ret === FALSE) {
@@ -33,7 +32,6 @@ class StatementCoroutine extends Statement implements StatementInterface
         elseif (is_array($ret)) {
             $this->rows = $ret;
         }
-
         $this->is_executed_flag = TRUE;
 
         return $this;
@@ -52,7 +50,8 @@ class StatementCoroutine extends Statement implements StatementInterface
 //        }
         //$this->>execute()
         //return $this->rows;
-        $ret = $this->NativeStatement->fetchAll();
+        //$ret = $this->NativeStatement->fetchAll();//returns nothing...
+        $ret = $this->rows;
         if ($ret===FALSE) {
             throw new QueryException(sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error ));
         }
