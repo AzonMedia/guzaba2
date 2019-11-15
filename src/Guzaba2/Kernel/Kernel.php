@@ -43,8 +43,14 @@ use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 /**
  * Class Kernel
  * @package Guzaba2\Kernel
+ * A static class.
+ * @example
+ * Kernel::initialize($Registry, $Logger);
+ * Kernel::register_autoloader_path($path_to_classes);
+ * Kernel::set_di($Di);//optional
+ * Kernel::run($callable);
  */
-class Kernel
+abstract class Kernel
 {
 
     /**
@@ -159,7 +165,10 @@ BANNER;
     /// PUBLIC METHODS ///
     //////////////////////
 
-    //public static function initialize(\Guzaba2\Registry\Interfaces\Registry $Registry, LoggerInterface $Logger) : void
+    /**
+     * @param RegistryInterface $Registry
+     * @param LoggerInterface $Logger
+     */
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger): void
     {
 
@@ -189,37 +198,6 @@ BANNER;
         self::$is_initialized_flag = TRUE;
     }
 
-    private static function print_initialization_messages() : void
-    {
-        self::printk(PHP_EOL);
-        self::printk(self::FRAMEWORK_BANNER);
-        self::printk(PHP_EOL);
-
-        Kernel::printk('Initialization microtime: '.self::$init_microtime.PHP_EOL);
-
-        Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
-        Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
-
-        self::printk(PHP_EOL);
-
-        $registry_backends = self::$Registry->get_backends();
-        $registry_str = 'Registry backends:'.PHP_EOL;
-        foreach ($registry_backends as $RegistryBackend) {
-            $registry_str .= str_repeat(' ',4).'- '.get_class($RegistryBackend).PHP_EOL;
-        }
-        self::printk($registry_str);
-        self::printk(PHP_EOL);
-
-
-        $handlers = self::$Logger->getHandlers();
-        $error_handlers_str = 'Logger Handlers:'.PHP_EOL;
-        foreach ($handlers as $Handler) {
-            $error_handlers_str .= str_repeat(' ',4).'- '.get_class($Handler).' : '.$Handler->getUrl().' : '.self::$Logger::getLevelName($Handler->getLevel()).PHP_EOL;
-        }
-        Kernel::printk($error_handlers_str);
-        self::printk(PHP_EOL);
-
-    }
 
     /**
      * @param callable $callable
@@ -291,16 +269,35 @@ BANNER;
         self::$Container = $Container;
     }
 
+    /**
+     * @param Watchdog $Watchdog
+     */
+    public static function set_watchdog(Watchdog $Watchdog) : void
+    {
+        self::$Watchdog = $Watchdog;
+    }
+
+    /**
+     * @param Server $HttpServer
+     */
     public static function set_http_server(Server $HttpServer) : void
     {
         self::$HttpServer = $HttpServer;
     }
 
+    /**
+     * @return Server|null
+     */
     public static function get_http_server() : ?Server
     {
         return self::$HttpServer;
     }
 
+    /**
+     * Returns -1 if there is Server set but it is not yet started (meaning not executing in worker).
+     * @return int
+     * @throws RunTimeException
+     */
     public static function get_worker_id() : int
     {
         if (!isset(self::$HttpServer)) {
@@ -726,9 +723,64 @@ BANNER;
         return self::$loaded_paths;
     }
 
+    /**
+     * Logs a message using the default logger
+     *
+     * @param string $message
+     * @param string $level
+     * @param array $context
+     * @return bool
+     */
+    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
+    {
+        $Logger = self::get_logger();
+        if (self::get_http_server()) {
+            $message = 'Worker #'.self::get_worker_id().': '.$message;
+        }
+        $Logger->log($level, $message, $context);
+        return TRUE;
+    }
+
+
+
     /////////////////////////
     /// PROTECTED METHODS ///
     /////////////////////////
+
+    /**
+     * Just prints initialization messages.
+     */
+    protected static function print_initialization_messages() : void
+    {
+        self::printk(PHP_EOL);
+        self::printk(self::FRAMEWORK_BANNER);
+        self::printk(PHP_EOL);
+
+        Kernel::printk(sprintf('Initialization at: %s %s %s', self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get() ).PHP_EOL);
+
+        Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
+
+        self::printk(PHP_EOL);
+
+        $registry_backends = self::$Registry->get_backends();
+        $registry_str = 'Registry backends:'.PHP_EOL;
+        foreach ($registry_backends as $RegistryBackend) {
+            $registry_str .= str_repeat(' ',4).'- '.get_class($RegistryBackend).PHP_EOL;
+        }
+        self::printk($registry_str);
+        self::printk(PHP_EOL);
+
+
+        $handlers = self::$Logger->getHandlers();
+        $error_handlers_str = 'Logger Handlers:'.PHP_EOL;
+        foreach ($handlers as $Handler) {
+            $error_handlers_str .= str_repeat(' ',4).'- '.get_class($Handler).' : '.$Handler->getUrl().' : '.self::$Logger::getLevelName($Handler->getLevel()).PHP_EOL;
+        }
+        Kernel::printk($error_handlers_str);
+        self::printk(PHP_EOL);
+
+    }
 
     protected static function autoloader(string $class_name): bool
     {
@@ -842,55 +894,30 @@ BANNER;
     /**
      * @param string $file_name
      */
-    public static function get_namespace_declarations(string $file_name)
-    {
-        // TODO implement
-    }
+//    public static function get_namespace_declarations(string $file_name)
+//    {
+//        // TODO implement
+//    }
+//
+//    public static function execute_in_worker($callable)
+//    {
+//    }
+//
+//    public static function execute_delayed($callable, ?TraceInfoObject $trace_info = NULL)
+//    {
+//    }
+//
+//    public static function execute_in_shutdown($callable, ?TraceInfoObject $trace_info = NULL)
+//    {
+//    }
+//
+//    /**
+//     * @return bool
+//     * @todo implement
+//     */
+//    public static function is_production()
+//    {
+//        return false;
+//    }
 
-    public static function execute_in_worker($callable)
-    {
-    }
-
-    public static function execute_delayed($callable, ?TraceInfoObject $trace_info = NULL)
-    {
-    }
-
-    public static function execute_in_shutdown($callable, ?TraceInfoObject $trace_info = NULL)
-    {
-    }
-
-    /**
-     * @return bool
-     * @todo implement
-     */
-    public static function is_production()
-    {
-        return false;
-    }
-
-    /**
-     * Logs a message using the default logger
-     *
-     * @param string $message
-     * @param string $level
-     * @param array $context
-     * @return bool
-     */
-    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
-    {
-        $Logger = self::get_logger();
-        if (self::get_http_server()) {
-            $message = 'Worker #'.self::get_worker_id().': '.$message;
-        }
-        $Logger->log($level, $message, $context);
-        return TRUE;
-    }
-    
-    /**
-     *
-     */
-    public static function set_watchdog($Watchdog) : void
-    {
-        self::$Watchdog = $Watchdog;
-    }
 }
