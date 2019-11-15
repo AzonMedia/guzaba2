@@ -197,6 +197,7 @@ WHERE
     AND object_id = :object_id
         ";
         $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
+        unset($data['object_uuid_binary']);//this is only needed internally for MySQL - this MUST stay removed!
         return $data;
     }
 

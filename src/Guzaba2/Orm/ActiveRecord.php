@@ -780,7 +780,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     public function get_meta_data() : array
     {
         $ret = $this->meta_data;
-        unset($ret['object_uuid_binary']);
         return $ret;
     }
         
