@@ -29,21 +29,26 @@ class Memory extends Store implements StoreInterface
 
     protected const CONFIG_RUNTIME = [];
 
+    protected array $known_classes = [];
 
     /**
      * @var MetaStoreInterface
      */
-    protected $MetaStore;
+    protected MetaStoreInterface $MetaStore;
 
     /**
-     * Holds data for last updated time.
-     * THIS DATA IS SHARED BETWEEN THE WORKERS
-     * @var Guzaba2\Orm\SwooleTable
+     * @var array
      */
-    protected $SwooleTable;
-
     protected $record_structures = [];
+
+    /**
+     * @var array
+     */
     protected $unified_columns_data = [];
+
+    /**
+     * @var array
+     */
     protected $storage_columns_data = [];
 
     //protected $data = [];
@@ -88,12 +93,10 @@ class Memory extends Store implements StoreInterface
      */
     public function get_unified_columns_data(string $class) : array
     {
-        if (isset($this->unified_columns_data[$class])) {
-            $ret = $this->unified_columns_data[$class];
-        } else {
-            $ret = $this->FallbackStore->get_unified_columns_data($class);
+        if (!isset($this->unified_columns_data[$class])) {
+            $this->unified_columns_data[$class] = $this->FallbackStore->get_unified_columns_data($class);
         }
-        return $ret;
+        return $this->unified_columns_data[$class];
     }
 
     /**
@@ -102,12 +105,10 @@ class Memory extends Store implements StoreInterface
      */
     public function get_storage_columns_data(string $class) : array
     {
-        if (isset($this->storage_columns_data[$class])) {
-            $ret = $this->storage_columns_data[$class];
-        } else {
-            $ret = $this->FallbackStore->get_storage_columns_data($class);
+        if (!isset($this->storage_columns_data[$class])) {
+            $this->storage_columns_data[$class] = $this->FallbackStore->get_storage_columns_data($class);
         }
-        return $ret;
+        return $this->storage_columns_data[$class];
     }
 
     /**

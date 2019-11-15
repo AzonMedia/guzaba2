@@ -18,74 +18,29 @@ use Ramsey\Uuid\Uuid;
 
 class Redis extends Database
 {
-    /**
-     * @var StoreInterface|null
-     */
-    protected $FallbackStore;
 
-    protected $connection_class;
+    /**
+     * @var string
+     */
+    protected string $connection_class;
+
+    /**
+     *  Cached columns data
+     * @var array
+     */
+    protected array $unified_columns_data = [];
+
+    /**
+     * Cached native columns data
+     * @var array
+     */
+    protected array $storage_columns_data = [];
 
     public function __construct(StoreInterface $FallbackStore, string $connection_class)
     {
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         $this->connection_class = $connection_class;
-    }
-
-    /**
-     * @param string $class
-     * @return array
-     * @throws BadMethodCallException
-     * @throws RunTimeException
-     */
-    public function get_unified_columns_data(string $class) : array
-    {
-        // TODO check deeper for a structured store
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $ret = $this->FallbackStore->get_unified_columns_data($class);
-        } else {
-            // $class is instance of Guzaba2\Orm\ActiveRecord
-            if (!method_exists($class, 'get_structure')) {
-                throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
-            }
-
-            $ret = $class::get_structure();
-
-            if (!$ret) {
-                throw new RunTimeException(sprintf(t::_('Empty structure provided in class %s'), $class));
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * @param string $class
-     * @return array
-     * @throws BadMethodCallException
-     * @throws RunTimeException
-     */
-    public function get_storage_columns_data(string $class) : array
-    {
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $ret = $this->FallbackStore->get_storage_columns_data($class);
-        } else {
-            // $class is instance of Guzaba2\Orm\ActiveRecord
-            //if (!method_exists($class, 'get_structure')) {
-            //    throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
-            //}
-            if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
-            }
-
-            $ret = $class::get_structure();
-
-            if (!$ret) {
-                throw new RunTimeException(sprintf(t::_('Empty structure provided in class %s'), $class));
-            }
-        }
-
-        return $ret;
     }
 
     /**

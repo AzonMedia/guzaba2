@@ -21,10 +21,8 @@ class MongoDB extends Database
     protected const CONFIG_RUNTIME = [];
 
     /**
-     * @var StoreInterface|null
+     * @var string
      */
-    protected $FallbackStore;
-
     protected $connection_class;
 
     public function __construct(StoreInterface $FallbackStore, string $connection_class)
@@ -32,61 +30,6 @@ class MongoDB extends Database
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         $this->connection_class = $connection_class;
-    }
-
-    /**
-     * Returns a unified structure
-     * @param string $class
-     * @return array
-     * @throws BadMethodCallException
-     * @throws RunTimeException
-     */
-    public function get_unified_columns_data(string $class) : array
-    {
-        // TODO check deeper for a structured store
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $ret = $this->FallbackStore->get_unified_columns_data($class);
-        } else {
-            // $class is instance of Guzaba2\Orm\ActiveRecord
-            if (!method_exists($class, 'get_structure')) {
-                throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
-            }
-
-            $ret = $class::get_structure();
-
-            if (!$ret) {
-                throw new RunTimeException(sprintf(t::_('Empty structure provided in class %s'), $class));
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Returns the backend storage structure
-     * @param string $class
-     * @return array
-     * @throws BadMethodCallException
-     * @throws RunTimeException
-     */
-    public function get_storage_columns_data(string $class) : array
-    {
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $ret = $this->FallbackStore->get_storage_columns_data($class);
-        } else {
-            // $class is instance of Guzaba2\Orm\ActiveRecord
-            if (!method_exists($class, 'get_structure')) {
-                throw new BadMethodCallException(sprintf(t::_('Class %s requires a get_structure() method'), $class));
-            }
-
-            $ret = $class::get_structure();
-
-            if (!$ret) {
-                throw new RunTimeException(sprintf(t::_('Empty structure provided in class %s'), $class));
-            }
-        }
-
-        return $ret;
     }
 
     public static function get_meta_table() : string

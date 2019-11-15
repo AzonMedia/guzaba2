@@ -4,8 +4,13 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\BadMethodCallException;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Exceptions\UnknownRecordTypeException;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 
@@ -16,11 +21,51 @@ abstract class Store extends Base implements StoreInterface
     /**
      * @var StoreInterface|null
      */
-    protected $FallbackStore;
+    protected ?StoreInterface $FallbackStore;
 
-    public function __construct()
+    public function get_fallback_store() : ?StoreInterface
     {
-        parent::__construct();
+        return $this->FallbackStore;
+    }
+
+    /**
+     * Default implementation (useful for NonStructured stores)
+     * @param string $class
+     * @return array
+     * @throws BadMethodCallException
+     * @throws RunTimeException
+     */
+    public function get_unified_columns_data(string $class) : array
+    {
+
+        if (!isset($this->unified_columns_data[$class])) {
+            // TODO check deeper for a structured store
+            if ($this->FallbackStore instanceof StructuredStoreInterface) {
+                $this->unified_columns_data[$class] = $this->FallbackStore->get_unified_columns_data($class);
+            } else {
+                if (! ($class instanceof ActiveRecordInterface)) {
+                    throw new InvalidArgumentException(sprintf(t::_('The provided $class %s does not implement %s.'), $class, ActiveRecordInterface::class));
+                }
+                $this->unified_columns_data[$class] = $class::get_structure();
+            }
+        }
+        if (empty($this->unified_columns_data[$class])) {
+            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s.'), $class));
+        }
+
+        return $this->unified_columns_data[$class];
+    }
+
+    /**
+     * Nonstructured Stores have this method as alias of self::get_unified_columns_data()
+     * @param string $class
+     * @return array
+     * @throws BadMethodCallException
+     * @throws RunTimeException
+     */
+    public function get_storage_columns_data(string $class) : array
+    {
+        return $this->get_storage_columns_data($class);
     }
 
     /**
@@ -50,11 +95,6 @@ abstract class Store extends Base implements StoreInterface
         }
         
         return $ret;
-    }
-
-    public function get_fallback_store() : ?StoreInterface
-    {
-        return $this->FallbackStore;
     }
 
     public static function form_lookup_index(array $primary_index) : string

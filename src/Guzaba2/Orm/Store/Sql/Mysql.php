@@ -30,10 +30,11 @@ class Mysql extends Database implements StructuredStoreInterface
 
     protected const CONFIG_RUNTIME = [];
 
-    /**
-     * @var StoreInterface|null
-     */
-    protected $FallbackStore = NULL;
+    const SAVE_MODE_ALL = 1;//overwrites all properties
+
+    const SAVE_MODE_MODIFIED = 2;//saves only the modified ones
+
+    const SAVE_MODE = self::SAVE_MODE_ALL;
 
     protected string $connection_class = '';
 
@@ -41,11 +42,19 @@ class Mysql extends Database implements StructuredStoreInterface
 
     protected bool $meta_exists = false;
 
-    const SAVE_MODE_ALL = 1;//overwrites all properties
+    /**
+     *  Cached columns data
+     * @var array
+     */
+    protected array $unified_columns_data = [];
 
-    const SAVE_MODE_MODIFIED = 2;//saves only the modified ones
+    /**
+     * Cached native columns data
+     * @var array
+     */
+    protected array $storage_columns_data = [];
 
-    const SAVE_MODE = self::SAVE_MODE_ALL;
+
 
     public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
@@ -81,61 +90,20 @@ class Mysql extends Database implements StructuredStoreInterface
      */
     public function get_unified_columns_data(string $class) : array
     {
-        static $cached_data = [];
-        if (!array_key_exists($class, $cached_data)) {
-            $storage_structure_arr = $this->get_storage_columns_data($class);
-            $cached_data[$class] = $this->unify_columns_data($storage_structure_arr);
+        if (!isset($this->unified_columns_data[$class])) {
+            // TODO check deeper for a structured store
+            if ($this->FallbackStore instanceof StructuredStoreInterface) {
+                $this->unified_columns_data[$class] = $this->FallbackStore->get_unified_columns_data($class);
+            } else {
+                $storage_structure_arr = $this->get_storage_columns_data($class);
+                $this->unified_columns_data[$class] = $this->unify_columns_data($storage_structure_arr);
+            }
+        }
+        if (empty($this->unified_columns_data[$class])) {
+            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s.'), $class));
         }
 
-        return $cached_data[$class];
-    }
-    
-    
-    /**
-     * Returns a unified structure
-     * @param string $class
-     * @return array
-     */
-    public function get_unified_columns_data_by_table_name(string $table_name) : array
-    {
-        $storage_structure_arr = $this->get_storage_columns_data_by_table_name($table_name);
-
-        return $this->unify_columns_data($storage_structure_arr);
-    }
-    
-    /**
-    * Returns the backend storage structure
-    * @param string $table_name
-    * @return array
-    */
-    
-    public function get_storage_columns_data_by_table_name(string $table_name) : array
-    {
-
-        $cached_data = [];
-        if(!array_key_exists($table_name, $cached_data)) {
-            $Connection = $this->get_connection($CR);
-
-            $q = "
-SELECT
-    information_schema.columns.*
-FROM
-    information_schema.columns
-WHERE
-    table_schema = :table_schema
-    AND table_name = :table_name
-ORDER BY
-    ordinal_position ASC
-        ";
-            $s = $Connection->prepare($q);
-            $s->table_schema = $Connection::get_database();
-            $s->table_name = $Connection::get_tprefix().$table_name;
-
-            $cached_data[$table_name] = $s->execute()->fetchAll();
-
-        }
-
-        return $cached_data[$table_name];
+        return $this->unified_columns_data[$class];
     }
 
     /**
@@ -145,15 +113,62 @@ ORDER BY
      */
     public function get_storage_columns_data(string $class) : array
     {
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $ret = $this->FallbackStore->get_storage_columns_data($class);
-        } else {
-            $ret = $this->get_storage_columns_data_by_table_name($class::get_main_table());
+
+        if (!isset($this->storage_columns_data[$class])) {
+            // TODO check deeper for a structured store
+            if ($this->FallbackStore instanceof StructuredStoreInterface) {
+                $this->storage_columns_data[$class] = $this->FallbackStore->get_unified_columns_data($class);
+            } else {
+                $this->storage_columns_data[$class] = $this->get_storage_columns_data_by_table_name($class::get_main_table());
+            }
+        }
+        if (empty($this->storage_columns_data[$class])) {
+            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s.'), $class));
         }
 
+        return $this->storage_columns_data[$class];
+    }
+    
+    /**
+     * Returns a unified structure
+     * @param string $class
+     * @return array
+     */
+    protected final function get_unified_columns_data_by_table_name(string $table_name) : array
+    {
+        $storage_structure_arr = $this->get_storage_columns_data_by_table_name($table_name);
+
+        return $this->unify_columns_data($storage_structure_arr);
+    }
+    
+    /**
+    * Returns the backend storage structure.
+    * @param string $table_name
+    * @return array
+    */
+    protected final function get_storage_columns_data_by_table_name(string $table_name) : array
+    {
+
+        $Connection = $this->get_connection($CR);
+        $q = "
+SELECT
+    information_schema.columns.*
+FROM
+    information_schema.columns
+WHERE
+    table_schema = :table_schema
+    AND table_name = :table_name
+ORDER BY
+    ordinal_position ASC
+    ";
+        $s = $Connection->prepare($q);
+        $s->table_schema = $Connection::get_database();
+        $s->table_name = $Connection::get_tprefix().$table_name;
+        $ret = $s->execute()->fetchAll();
 
         return $ret;
     }
+
     
     /**
      *
