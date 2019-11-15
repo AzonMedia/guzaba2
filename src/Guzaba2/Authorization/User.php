@@ -125,6 +125,11 @@ class User extends ActiveRecord implements UserInterface
         //the primary role must be a user role
     }
 
+    protected function _validate_user_name() : ?ValidationFailedExceptionInterface
+    {
+
+    }
+
     protected function _before_save() : void
     {
         if ($this->is_new()) {

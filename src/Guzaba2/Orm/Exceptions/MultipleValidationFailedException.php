@@ -26,7 +26,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 
 /**
  * This exception is thrown by @see ActiveRecord::validate() with all the validation errors that were found.
- *
+ * The provided ValidationFailedExceptions to the constructor may have different targets (if for example more than one ActiveRecord instance is being validated)
  */
 class MultipleValidationFailedException extends ValidationFailedException
 {
@@ -45,7 +45,7 @@ class MultipleValidationFailedException extends ValidationFailedException
     {
         self::check_validation_exceptions($validation_exceptions);
         $this->validation_exceptions = $validation_exceptions;
-        $messages = $this->get_messages();
+        $messages = $this->getMessages();
 
         parent::__construct(implode(' ', $messages), $code, $Exception);
     }
@@ -54,7 +54,7 @@ class MultipleValidationFailedException extends ValidationFailedException
      * Returns an indexed array with the error messages.
      * @return array
      */
-    public function get_messages() : array
+    public function getMessages() : array
     {
         $messages = [];
         foreach ($this->validation_exceptions as $ValidationException) {
@@ -67,21 +67,38 @@ class MultipleValidationFailedException extends ValidationFailedException
      * Returns an indexed array of ValidationException
      * @return array
      */
-    public function get_validation_exceptions() : array
+    public function getExceptions() : array
     {
         return $this->validation_exceptions;
     }
 
     /**
-     * Checks if the provided $validation_errors array conforming to the expected structure
+     * Returns a two-dimensional array with targets & fields
+     * @return array
+     */
+    public function getTargets() : array
+    {
+        $targets = [];
+        foreach ($this->validation_exceptions as $ValidationException) {
+            $targets[] = [$ValidationException->getTarget(), $ValidationException->getField()];
+        }
+        return $targets;
+    }
+
+    /**
+     * Checks if the provided $validation_errors array conforming to the expected structure.
      * @param array $validation_errors
      * @throws InvalidArgumentException
      */
-    public static function check_validation_exceptions(array $validation_exceptions) : void
+    private static function check_validation_exceptions(array $validation_exceptions) : void
     {
+        if (!count($validation_exceptions)) {
+            throw new InvalidArgumentException(sprintf(t::_('No ValidationFailedExceptions provided.')));
+        }
         if ( array_keys($arr) !== range(0, count($arr) - 1) ) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $validation_exceptions array it not an indexed array.')));
         }
+
         foreach ($validation_exceptions as $ValidationException) {
             if (! ($ValidationException instanceof ValidationFailedException) ) {
                 throw new InvalidArgumentException(sprintf(t::_('An element of the provided $validation_exceptions is not an instance of %s.'), ValidationFailedException::class));

@@ -264,8 +264,11 @@ BANNER;
         if (!$options['disable_all_class_validation']) {
             $validation_classes = self::run_all_validations();
             $validations_info = t::_('Validations run:').PHP_EOL;
-            foreach ($validation_classes as $validation_class) {
+            foreach ($validation_classes as $validation_class => $validation_methods) {
                 $validations_info .= str_repeat(' ',4).'- '.$validation_class.PHP_EOL;
+                foreach ($validation_methods as $validation_method) {
+                    $validations_info .= str_repeat(' ',8).'- '.$validation_method.'()'.PHP_EOL;
+                }
             }
             self::printk($validations_info);
             self::printk(PHP_EOL);
@@ -694,7 +697,7 @@ BANNER;
     }
 
     /**
-     * Returns an array of validation classes that were executed.
+     * Returns a twodimensional associative array: class_name=>['method1','method2']
      * @return array
      */
     public static function run_all_validations() : array
@@ -705,9 +708,9 @@ BANNER;
                 is_a($loaded_class, ClassDeclarationValidationInterface::class, TRUE)
                 && $loaded_class !== ClassDeclarationValidationInterface::class
             ) {
-                $validation_classes[] = $loaded_class;
-                $loaded_class::run_all_validations();
 
+                $methods_run = $loaded_class::run_all_validations();
+                $validation_classes[$loaded_class] = $methods_run;
             }
         }
         return $validation_classes;

@@ -57,14 +57,14 @@ trait ActiveRecordValidation
             }
             //method validation
             $method_name = '_validate_'.$property;
-            $static_method_name = '_validate_static_'.$property;
+            //$static_method_name = '_validate_static_'.$property;
             if (method_exists($this, $method_name)) {
                 $ValidationException = $this->{$method_name}();
                 if ($ValidationException) {
                     $validation_exceptions[] = $ValidationException;
                 }
             } elseif (method_exists($this, $static_method_name)) {
-                $ValidationException = $this->{$static_method_name}();
+                $ValidationException = $this->{$static_method_name}($this->{$property});
                 if ($ValidationException) {
                     $validation_exceptions[] = $ValidationException;
                 }
@@ -74,4 +74,10 @@ trait ActiveRecordValidation
             throw new ValidationFailedException($validation_exceptions);
         }
     }
+
+    //in future may allow static validation
+//    public static function __callStatic($name, $arguments)
+//    {
+//
+//    }
 }

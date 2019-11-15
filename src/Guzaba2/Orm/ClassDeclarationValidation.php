@@ -4,6 +4,7 @@
 namespace Guzaba2\Orm;
 
 
+use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Reflection\ReflectionMethod;
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Base;
@@ -28,11 +29,21 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         '_before_delete', '_after_delete',
     ];
 
-    public static function run_all_validations() : void
+    public const VALIDATION_METHODS = [
+        'validate_validation_hooks',
+        'validate_crud_hooks',
+        'validate_validation_rules',
+        'validate_properties',
+        'validate_structure_source',
+    ];
+
+    public static function run_all_validations() : array
     {
-        self::validate_validation_hooks(array_keys(Kernel::get_registered_autoloader_paths()));
-        self::validate_crud_hooks(array_keys(Kernel::get_registered_autoloader_paths()));
-        self::validate_validation_rules(array_keys(Kernel::get_registered_autoloader_paths()));
+        $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        foreach (self::VALIDATION_METHODS as $method_name) {
+            self::$method_name($ns_prefixes);
+        }
+        return self::VALIDATION_METHODS;
     }
 
     /**
@@ -69,16 +80,20 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
     public static function validate_property_validation_hook(string $class, string $method) : void
     {
         $RMethod = new ReflectionMethod($class, $method);
-        if (!$RMethod->isProtected()) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
-        }
+
         if ($RMethod->isStatic()) { // the _validate_static_ are static
             if ($RMethod->getNumberOfParameters() !== 1) {
                 throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept a single argument (the value that is being validated).'), $class, $method ));
             }
+            if (!$RMethod->isPublic()) {
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
+            }
         } else {
             if ($RMethod->getNumberOfParameters()) {
                 throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method ));
+            }
+            if (!$RMethod->isProtected()) {
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
             }
         }
 
@@ -132,6 +147,12 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         }
     }
 
+    /**
+     * @param string $class
+     * @param string $method
+     * @throws ClassValidationException
+     * @throws \ReflectionException
+     */
     public static function validate_crud_hook(string $class, string $method) : void
     {
         $RMethod = new ReflectionMethod($class, $method);
@@ -152,6 +173,45 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
             throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type void.'), $class, $method ));
         }
 
+    }
+
+    /**
+     * Validates the dynamic properties - the ActiveRecord classes are not allowed to define any properties be it static or dynamic.
+     * @param array $ns_prefixes
+     * @throws ClassValidationException
+     * @throws \ReflectionException
+     */
+    public static function validate_properties(array $ns_prefixes) : void
+    {
+        $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
+        foreach ($active_record_classes as $active_record_class) {
+            $RClass = new ReflectionClass($active_record_class);
+            if (count($RClass->getOwnDynamicProperties())) {
+                throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
+            }
+            if (count($RClass->getOwnStaticProperties())) {
+                throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined static properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
+            }
+        }
+    }
+
+    /**
+     * The ActiveRecord classes must have either CONFIG_RUNTIME['main_table'] defined or CONFIG_RUNTIME['structure'].
+     * It is allowed these to come from a parent class.
+     * @param array $ns_prefixes
+     */
+    public static function validate_structure_source(array $ns_prefixes) : void
+    {
+        $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
+        foreach ($active_record_classes as $active_record_class) {
+            $RClass = new ReflectionClass($active_record_class);
+            if (!$RClass->hasConstant('CONFIG_RUNTIME')) {
+                throw new ClassValidationException(sprintf(t::_('The class %s does not have CONFIG_RUNTIME defined. ActiveRecord classes must have it defined and it must contain either "main_table" or a "structure" entry.'), $active_record_class));
+            }
+            if (!$active_record_class::has_main_table_defined() && !$active_record_class::has_structure_defined()) {
+                throw new ClassValidationException(sprintf(t::_('The class %s does not define neither "main_table" nor "structure" in CONFIG_RUNTIME.'), $active_record_class));
+            }
+        }
     }
 
 }

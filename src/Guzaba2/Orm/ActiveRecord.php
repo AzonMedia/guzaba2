@@ -249,9 +249,27 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         }
     }
 
+    public static function has_main_table_defined() : bool
+    {
+        return isset(static::CONFIG_RUNTIME['main_table']);
+    }
+
+    public static function get_main_table() : string
+    {
+        if (empty(static::CONFIG_RUNTIME['main_table'])) {
+            throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class() ));
+        }
+        return static::CONFIG_RUNTIME['main_table'];
+    }
+
+    public static function has_structure_defined() : bool
+    {
+        return isset(static::CONFIG_RUNTIME['structure']);
+    }
+
     public static function get_structure() : array
     {
-        if (!isset(static::CONFIG_RUNTIME['structure'])) {
+        if (empty(static::CONFIG_RUNTIME['structure'])) {
             throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
         }
         return static::CONFIG_RUNTIME['structure'];
@@ -540,14 +558,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             }
         }
         return $ret;
-    }
-
-    public static function get_main_table() : string
-    {
-        if (empty(static::CONFIG_RUNTIME['main_table'])) {
-            throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class() ));
-        }
-        return static::CONFIG_RUNTIME['main_table'];
     }
 
     public static function get_default_route() : ?string

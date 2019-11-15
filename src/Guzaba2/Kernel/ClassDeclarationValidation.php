@@ -14,9 +14,17 @@ use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
  */
 class ClassDeclarationValidation implements ClassDeclarationValidationInterface
 {
-    public static function run_all_validations(): void
+
+    public const VALIDATION_METHODS = [
+        'validate_config_constants',
+    ];
+
+    public static function run_all_validations(): array
     {
-        self::validate_config_constants();
+        foreach (self::VALIDATION_METHODS as $method) {
+            self::$method();
+        }
+        return self::VALIDATION_METHODS;
     }
 
     public static function validate_config_constants() : void
