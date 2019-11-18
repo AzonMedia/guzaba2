@@ -3,9 +3,10 @@
 namespace Guzaba2\Orm\Store\Nosql;
 
 use Azonmedia\Glog\Application\RedisConnection;
-use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Nosql\Redis\ConnectionCoroutine;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -41,6 +42,23 @@ class Redis extends Database
         parent::__construct();
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         $this->connection_class = $connection_class;
+    }
+
+
+    /**
+     * @return ConnectionInterface
+     * @throws RunTimeException
+     */
+    protected function get_connection() : ConnectionInterface
+    {
+        if (Coroutine::inCoroutine()) {
+            $connection_class = $this->connection_class;
+        } else {
+            // TODO implement non coroutine redis class
+            throw new RunTimeException(sprintf(t::_('Only coroutine redis class connection available. Non coroutine TBD')));
+        }
+
+        return static::get_service('ConnectionFactory')->get_connection($connection_class);
     }
 
     /**
