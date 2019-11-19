@@ -8,7 +8,7 @@ namespace Guzaba2\Mvc\Interfaces;
  * @package Guzaba2\Mvc\Interfaces
  * It is similar to ActiveRecordWithAuthorizationInterface
  */
-interface ControllerWithAuthorizationInterface
+interface ControllerWithAuthorizationInterface extends ControllerInterface
 {
     public function check_permission(string $action) : void ;
 

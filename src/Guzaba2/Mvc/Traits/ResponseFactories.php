@@ -29,7 +29,7 @@ trait ResponseFactories
      * Factory for creating HTTP
      * @return ResponseInterface
      */
-    public static function get_structured_ok_response(array $structure = []) : ResponseInterface
+    public static function get_structured_ok_response(iterable $structure = []) : ResponseInterface
     {
 //        if (!$structure) {
 //            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));

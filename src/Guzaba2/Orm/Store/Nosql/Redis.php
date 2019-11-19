@@ -25,18 +25,6 @@ class Redis extends Database
      */
     protected string $connection_class;
 
-    /**
-     *  Cached columns data
-     * @var array
-     */
-    protected array $unified_columns_data = [];
-
-    /**
-     * Cached native columns data
-     * @var array
-     */
-    protected array $storage_columns_data = [];
-
     public function __construct(StoreInterface $FallbackStore, string $connection_class)
     {
         parent::__construct();
@@ -252,6 +240,7 @@ class Redis extends Database
 
     public function get_meta_by_uuid(string $uuid) : array
     {
+
         $metakey = $uuid . ':meta';
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         if ($Connection->exists($metakey)) {
@@ -259,6 +248,7 @@ class Redis extends Database
         }
 
         $result = $Connection->hGetAll($metakey);
+
         return $result;
     }
 

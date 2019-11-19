@@ -33,7 +33,7 @@ class Structured extends Base implements StreamInterface
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
-    public function __construct(array $structure = [])
+    public function __construct(iterable $structure = [])
     {
         parent::__construct();
 
@@ -273,7 +273,7 @@ class Structured extends Base implements StreamInterface
      * This can be used for reading and writing.
      * @return array
      */
-    public function &getStructure() : array
+    public function &getStructure() : iterable
     {
         return $this->structure;
     }

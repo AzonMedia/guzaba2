@@ -36,25 +36,28 @@ class Mysql extends Database implements StructuredStoreInterface
 
     const SAVE_MODE = self::SAVE_MODE_ALL;
 
+    /**
+     * @var string
+     */
     protected string $connection_class = '';
 
+    /**
+     * @var string
+     */
     protected string $no_coroutine_connection_class = '';
 
+    /**
+     * @var bool
+     */
     protected bool $meta_exists = false;
 
     /**
-     *  Cached columns data
+     * Associative array with class_name=>main_table
+     * It is used to check do two classes write to the same main table
+     * This must NOT be allowed
      * @var array
      */
-    protected array $unified_columns_data = [];
-
-    /**
-     * Cached native columns data
-     * @var array
-     */
-    protected array $storage_columns_data = [];
-
-
+    protected array $known_classes = [];
 
     public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
@@ -596,7 +599,7 @@ ON DUPLICATE KEY UPDATE
 
     protected function create_meta_if_does_not_exist()
     {
-   return;
+
         if ($this->meta_exists) {
             return true;
         }

@@ -29,6 +29,9 @@ class Memory extends Store implements StoreInterface
 
     protected const CONFIG_RUNTIME = [];
 
+    /**
+     * @var array
+     */
     protected array $known_classes = [];
 
     /**
@@ -39,17 +42,8 @@ class Memory extends Store implements StoreInterface
     /**
      * @var array
      */
-    protected $record_structures = [];
+    protected array $record_structures = [];
 
-    /**
-     * @var array
-     */
-    protected $unified_columns_data = [];
-
-    /**
-     * @var array
-     */
-    protected $storage_columns_data = [];
 
     //protected $data = [];
     //instead of storing the data

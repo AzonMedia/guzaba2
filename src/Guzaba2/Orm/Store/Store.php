@@ -23,6 +23,18 @@ abstract class Store extends Base implements StoreInterface
      */
     protected ?StoreInterface $FallbackStore;
 
+    /**
+     * Cached structures
+     * @var array
+     */
+    protected array $unified_columns_data = [];
+
+    /**
+     * Cached structures
+     * @var array
+     */
+    protected array $storage_columns_data = [];
+
     public function get_fallback_store() : ?StoreInterface
     {
         return $this->FallbackStore;

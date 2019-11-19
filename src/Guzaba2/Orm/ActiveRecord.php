@@ -5,7 +5,6 @@ namespace Guzaba2\Orm;
 
 use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
-
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -24,18 +23,11 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Event\Event;
-
-
-
 use Guzaba2\Orm\Traits\ActiveRecordOverloading;
-use Guzaba2\Orm\Traits\ActiveRecordSave;
-use Guzaba2\Orm\Traits\ActiveRecordLoad;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
-use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
+use Guzaba2\Orm\Traits\ActiveRecordIterator;
+use Guzaba2\Orm\Traits\ActiveRecordValidation;
 
-//use Guzaba2\Orm\Traits\ActiveRecordValidation;
-//use Guzaba2\Orm\Traits\ActiveRecordDynamicProperties;
-//use Guzaba2\Orm\Traits\ActiveRecordDelete;
 
 /**
  * Class ActiveRecord
@@ -43,11 +35,14 @@ use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
  * @method \Guzaba2\Orm\Store\Store OrmStore()
  * @method \Azonmedia\Lock\Interfaces\LockManagerInterface LockManager()
  */
-class ActiveRecord extends Base implements ActiveRecordInterface
+class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializable, \Iterator
+    //, \ArrayAccess, \Countable
 {
     //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
     use ActiveRecordOverloading;
     use ActiveRecordStructure;
+    use ActiveRecordIterator;
+    use ActiveRecordValidation;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
@@ -222,6 +217,203 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
             $this->read($index);
         }
+
+        $this->iterator_position = array_key_first($this->record_data);
+    }
+
+    public function __destruct()
+    {
+        if (!$this->is_new()) {
+            $this->Store->free_pointer($this);
+        }
+
+
+        if (self::is_locking_enabled() && !$this->is_new()) {
+
+            if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
+                $resource = MetaStore::get_key_by_object($this);
+                static::get_service('LockManager')->release_lock($resource);
+                $this->read_lock_obtained_flag = FALSE;
+            }
+
+        }
+    }
+
+    final public function __toString() : string
+    {
+        //return MetaStore::get_key_by_object($this);
+        return $this->as_array();
+    }
+
+    /**
+     * @implements \jsonSerializable
+     * @return mixed|void
+     */
+    public function jsonSerialize()
+    {
+        return $this->as_array();
+    }
+
+    public function as_array() : array
+    {
+        //return ['data' => $this->get_property_data(), 'meta' => $this->get_meta_data()];
+        return array_merge( $this->get_property_data(), $this->get_meta_data() );
+    }
+
+    protected function read(/* mixed */ $index) : void
+    {
+
+
+        if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_before_read'], $args);//must return void
+        }
+
+        //new Event($this, '_before_read');
+        self::get_service('Events')::create_event($this, '_before_read');
+
+        if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
+            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+            $this->record_modified_data =& $pointer['modified'];
+        } else {
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            $this->record_data =& $pointer['data'];
+            $this->meta_data =& $pointer['meta'];
+            $this->record_modified_data = [];
+        }
+
+        if (!count($this->meta_data)) {
+            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
+        }
+
+        //do a check is there a modified data
+
+        if (static::is_locking_enabled()) {
+            //if ($this->locking_enabled_flag) {
+            $resource = MetaStore::get_key_by_object($this);
+            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            $this->read_lock_obtained_flag = TRUE;
+        }
+
+        $this->is_new_flag = FALSE;
+
+        //new Event($this, '_after_read');
+        self::get_service('Events')::create_event($this, '_after_read');
+
+        //_after_load() event
+        if (method_exists($this, '_after_read') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_after_read'], $args);//must return void
+        }
+    }
+
+    public function save() : ActiveRecordInterface
+    {
+        if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
+            return $this;
+        }
+
+        //BEGIN ORMTransaction (==ORMDBTransaction)
+
+        //_before_save() event
+        if (method_exists($this, '_before_save') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_before_save'], $args);//must return void
+        }
+
+        //new Event($this, '_before_save');
+        self::get_service('Events')::create_event($this, '_before_save');
+
+        if (static::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        }
+
+        //self::OrmStore()->update_record($this);
+        static::get_service('OrmStore')->update_record($this);
+
+        if (static::is_locking_enabled()) {
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
+        }
+
+
+        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
+        //instead the lock levle should be updated (lock reacquired)
+        if ($this->is_new() && static::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+        }
+
+        //new Event($this, '_after_save');
+        self::get_service('Events')::create_event($this, '_after_save');
+
+        //_after_save() event
+        if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_after_save'], $args);//must return void
+        }
+
+
+        //COMMIT ORMTransaction
+
+        //reattach the pointer
+        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+
+        $this->record_data =& $pointer['data'];
+        $this->meta_data =& $pointer['meta'];
+        $this->record_modified_data = [];
+
+        $this->is_new_flag = FALSE;
+
+        return $this;
+    }
+
+    /**
+     * Deletes active record
+     */
+    public function delete(): void
+    {
+
+        if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_before_delete'], $args);//must return void
+        }
+
+
+        //new Event($this, '_before_delete');
+        self::get_service('Events')::create_event($this, '_before_delete');
+
+        if (static::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        }
+
+        //self::OrmStore()->remove_record($this);
+        static::get_service('OrmStore')->remove_record($this);
+
+        if (static::is_locking_enabled()) {
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
+        }
+
+        //new Event($this, '_after_delete');
+        self::get_service('Events')::create_event($this, '_after_delete');
+
+        if (method_exists($this, '_after_delete') && !$this->method_hooks_are_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_after_delete'], $args);//must return void
+        }
+
+        //parent::__destruct();
     }
 
     protected static function initialize_columns() : void
@@ -285,29 +477,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $ret = static::CONFIG_RUNTIME['validation'];
         }
         return $ret;
-    }
-
-    public function __destruct()
-    {
-        if (!$this->is_new()) {
-            $this->Store->free_pointer($this);
-        }
-
-
-        if (self::is_locking_enabled() && !$this->is_new()) {
-
-            if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
-                $resource = MetaStore::get_key_by_object($this);
-                static::get_service('LockManager')->release_lock($resource);
-                $this->read_lock_obtained_flag = FALSE;
-            }
-
-        }
-    }
-
-    final public function __toString() : string
-    {
-        return MetaStore::get_key_by_object($this);
     }
 
     /**
@@ -381,56 +550,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface
             $ret = self::$orm_locking_enabled_flag;
         }
         return $ret;
-    }
-
-    protected function read(/* mixed */ $index) : void
-    {
-
-        if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_before_read'], $args);//must return void
-        }
-        
-        //new Event($this, '_before_read');
-        self::get_service('Events')::create_event($this, '_before_read');
-
-        if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
-            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
-            $this->record_modified_data =& $pointer['modified'];
-        } else {
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
-            $this->record_modified_data = [];
-        }
-
-        if (!count($this->meta_data)) {
-            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
-        }
-
-        //do a check is there a modified data
-
-        if (static::is_locking_enabled()) {
-            //if ($this->locking_enabled_flag) {
-            $resource = MetaStore::get_key_by_object($this);
-            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            $this->read_lock_obtained_flag = TRUE;
-        }
-
-        $this->is_new_flag = FALSE;
-
-        //new Event($this, '_after_read');
-        self::get_service('Events')::create_event($this, '_after_read');
-
-        //_after_load() event
-        if (method_exists($this, '_after_read') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_after_read'], $args);//must return void
-        }
     }
 
     /**
@@ -573,110 +692,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface
     //    return static::CONFIG_RUNTIME['meta_table'];
     //}
 
-    public function save() : ActiveRecordInterface
-    {
-        if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
-            return $this;
-        }
 
-        //BEGIN ORMTransaction (==ORMDBTransaction)
-
-        //_before_save() event
-        if (method_exists($this, '_before_save') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_before_save'], $args);//must return void
-        }
-
-        //new Event($this, '_before_save');
-        self::get_service('Events')::create_event($this, '_before_save');
-
-        if (static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-        }
-
-        //self::OrmStore()->update_record($this);
-        static::get_service('OrmStore')->update_record($this);
-
-        if (static::is_locking_enabled()) {
-            //self::LockManager()->release_lock('', $LR);
-            static::get_service('LockManager')->release_lock('', $LR);
-        }
-
-
-        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
-        //instead the lock levle should be updated (lock reacquired)
-        if ($this->is_new() && static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-        }
-
-        //new Event($this, '_after_save');
-        self::get_service('Events')::create_event($this, '_after_save');
-
-        //_after_save() event
-        if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_after_save'], $args);//must return void
-        }
-        
-
-        //COMMIT ORMTransaction
-
-        //reattach the pointer
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
-
-        $this->record_data =& $pointer['data'];
-        $this->meta_data =& $pointer['meta'];
-        $this->record_modified_data = [];
-
-        $this->is_new_flag = FALSE;
-
-        return $this;
-    }
-
-    /**
-     * Deletes active record
-     */
-    public function delete(): void
-    {
-
-        if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_before_delete'], $args);//must return void
-        }
-
-
-        //new Event($this, '_before_delete');
-        self::get_service('Events')::create_event($this, '_before_delete');
-
-        if (static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-        }
-
-        //self::OrmStore()->remove_record($this);
-        static::get_service('OrmStore')->remove_record($this);
-
-        if (static::is_locking_enabled()) {
-            //self::LockManager()->release_lock('', $LR);
-            static::get_service('LockManager')->release_lock('', $LR);
-        }
-
-        //new Event($this, '_after_delete');
-        self::get_service('Events')::create_event($this, '_after_delete');
-
-        if (method_exists($this, '_after_delete') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_after_delete'], $args);//must return void
-        }
-
-        parent::__destruct();
-    }
 
     /**
      * Returns true is the record is just being created now and it is not yet saved
@@ -775,6 +791,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         return $type;
     }
 
+    /**
+     * This is similar to self::get_record_data() but also invokes
+     * @return array
+     */
+    public function get_property_data() : array
+    {
+        $ret = [];
+        foreach ($this->get_property_names() as $property) {
+            $ret[$property] = $this->{$property};//this triggers the overloading and the hooks
+        }
+        return $ret;
+    }
+
+    /**
+     * Returns the raw record data.
+     * To take into account the _before_get and _after_get hooks please use self::get_property_data()
+     * @return array
+     */
     public function get_record_data() : array
     {
         return $this->record_data;
@@ -967,18 +1001,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface
         foreach ($data as $record) {
             $object_index = ArrayUtil::extract_keys($record, $primary_index_columns);
             $ret[] = new $class_name($object_index);
-            /*
-            if (!empty($record[$primary_index])) {
-                $ret[] = new $class_name($record[$primary_index]);
-            } else {
-                throw new RunTimeException(sprintf(t::_('Possible data discrepancy! Cannot create an instance of class %s because the primary index `%s` is not found in the stored data %s.'), $class_name, $primary_index,  print_r($record, TRUE)));
-            }
-            */
         }
 
         return $ret;
     }
 
+    /**
+     * @param array $index
+     * @return iterable
+     * @throws RunTimeException
+     */
     public static function get_data_by(array $index) : iterable
     {
         $Store = static::get_service('OrmStore');
@@ -1024,4 +1056,5 @@ class ActiveRecord extends Base implements ActiveRecordInterface
 
         return $ret;
     }
+
 }

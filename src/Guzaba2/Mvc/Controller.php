@@ -3,6 +3,7 @@
 
 namespace Guzaba2\Mvc;
 
+use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -96,10 +97,12 @@ implements ControllerInterface
         $ret = [];
         foreach ($ns_prefixes as $ns_prefix) {
             foreach ($loaded_classes as $loaded_class) {
+                $RClass = new ReflectionClass($loaded_class);
                 if (
                     strpos($loaded_class, $ns_prefix) === 0
                     && is_a($loaded_class, ControllerInterface::class, TRUE)
                     && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
+                    && $RClass->isInstantiable()
                 ) {
                     $ret[] = $loaded_class;
                 }
