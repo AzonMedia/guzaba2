@@ -126,7 +126,7 @@ class Mysql extends Database implements StructuredStoreInterface
             }
         }
         if (empty($this->storage_columns_data[$class])) {
-            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s.'), $class));
+            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s with main table %s. Please check is the main table for the class and table prefix set correctly in the connection config.'), $class, $class::get_main_table() ));
         }
 
         return $this->storage_columns_data[$class];
@@ -168,6 +168,11 @@ ORDER BY
         $s->table_schema = $Connection::get_database();
         $s->table_name = $Connection::get_tprefix().$table_name;
         $ret = $s->execute()->fetchAll();
+
+        if (!$ret) {
+            throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix().$table_name ));
+        }
+
 
         return $ret;
     }
