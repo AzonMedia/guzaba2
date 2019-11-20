@@ -493,6 +493,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (!$meta_data) {
             throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %s.'), $uuid));
         }
+        print_r($meta_data);
         $id = $meta_data['object_id'];
         return new $meta_data['class']($id);
     }
@@ -1008,20 +1009,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     /**
      * @param array $index
+     * @param int $offset
+     * @param int $limit
+     * @param bool $use_like
      * @return iterable
      * @throws RunTimeException
      */
-    public static function get_data_by(array $index) : iterable
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
     {
         $Store = static::get_service('OrmStore');
         static::initialize_columns();
         $class_name = static::class;
-
-        $data = $Store->get_data_by($class_name, $index);
+        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like);
         return $data;
     }
 
-  
+    public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
+    {
+        $Store = static::get_service('OrmStore');
+        static::initialize_columns();
+        $class_name = static::class;
+        $data = $Store->get_data_count_by($class_name, $index, $use_like);
+        return $data;
+    }
 
     /**
      * Returns all ActiveRecord classes that are loaded by the Kernel in the provided namespace prefixes.

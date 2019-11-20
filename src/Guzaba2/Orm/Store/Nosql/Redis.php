@@ -72,7 +72,8 @@ class Redis extends Database
         if (empty($record_data)) {
             $record_data = $ActiveRecord->get_record_data();
         }
-
+print('Record_data: ' .PHP_EOL);
+print_r($record_data);
 
         /** @var ConnectionCoroutine $Connection */
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
@@ -243,7 +244,7 @@ class Redis extends Database
 
         $metakey = $uuid . ':meta';
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
-        if ($Connection->exists($metakey)) {
+        if (!$Connection->exists($metakey)) {
             return $this->FallbackStore->get_meta_by_uuid($uuid);
         }
 
@@ -327,9 +328,15 @@ class Redis extends Database
         $Connection->del($class_id);
     }
 
-    public function get_data_by(string $class, array $index) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
     {
-         $ret = $this->FallbackStore->get_data_by($class, $index);
+         $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like);
          return $ret;
+    }
+
+    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
+    {
+        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
+        return $ret;
     }
 }

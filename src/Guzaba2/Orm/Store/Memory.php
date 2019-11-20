@@ -394,11 +394,11 @@ class Memory extends Store implements StoreInterface
         if (isset($this->uuid_data[$uuid])) {
             $ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
             $ret['class'] = $this->uuid_data[$uuid]['class'];
-
         } else {
             $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
         }
-
+        print('Memory: ' . PHP_EOL);
+print_r($ret);
         return $ret;
     }
 
@@ -415,9 +415,15 @@ class Memory extends Store implements StoreInterface
         $this->MetaStore->remove_meta_data($class, $primary_index);
     }
 
-    public function get_data_by(string $class, array $index) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
     {
-         $ret = $this->FallbackStore->get_data_by($class, $index);
-         return $ret;
+        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like);
+        return $ret;
+    }
+
+    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
+    {
+        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
+        return $ret;
     }
 }

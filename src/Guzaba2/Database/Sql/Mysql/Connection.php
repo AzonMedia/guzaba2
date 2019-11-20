@@ -82,15 +82,17 @@ abstract class Connection extends TransactionalConnection
      * @param mixed $value
      * @return string '=' or 'IS'
      */
-    public static function equals($value) : string
+    public static function equals($value, $use_like = FALSE) : string
     {
         if (is_null($value)) {
             return 'IS';
-        } else {
+        } elseif (!$use_like) {
             return '=';
+        } else {
+            return 'LIKE';
         }
     }
-
+    
     public function ping()
     {
         return $this->NativeConnection->query("SELECT 1");
