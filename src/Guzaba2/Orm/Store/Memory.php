@@ -397,8 +397,7 @@ class Memory extends Store implements StoreInterface
         } else {
             $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
         }
-        print('Memory: ' . PHP_EOL);
-print_r($ret);
+
         return $ret;
     }
 

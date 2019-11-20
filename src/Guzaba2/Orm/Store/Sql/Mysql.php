@@ -938,7 +938,6 @@ WHERE
         //$j_str = implode(" INNER JOIN ", $j);//cant do this way as now we use keys
         //the key is the alias of the table, the value is the real full name of the table (including the prefix)
         $j_alias_arr = [];
-        $select_arr = [];
 
         foreach ($j as $table_alias=>$full_table_name) {
 
@@ -963,7 +962,6 @@ WHERE
                 $on_str = "ON ".implode(" AND ", $on_arr);
             }
             $j_alias_arr[] = "`{$full_table_name}` AS `{$table_alias}` {$on_str}";
-            $select_arr[] = $table_alias . ".*";
             //$this->data_is_loaded_from_tables[] = $table_alias;
         }
 
@@ -971,8 +969,6 @@ WHERE
         unset($j, $j_alias_arr);
         $w_str = implode(" AND ", $w);
         unset($w);
-        $select_str = implode(PHP_EOL."\t".", ", $select_arr);
-        unset($select_arr);
         
         $q = "
 SELECT 

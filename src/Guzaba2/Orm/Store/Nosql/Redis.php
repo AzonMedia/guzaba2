@@ -72,8 +72,6 @@ class Redis extends Database
         if (empty($record_data)) {
             $record_data = $ActiveRecord->get_record_data();
         }
-print('Record_data: ' .PHP_EOL);
-print_r($record_data);
 
         /** @var ConnectionCoroutine $Connection */
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);

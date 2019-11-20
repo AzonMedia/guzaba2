@@ -493,7 +493,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (!$meta_data) {
             throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %s.'), $uuid));
         }
-        print_r($meta_data);
         $id = $meta_data['object_id'];
         return new $meta_data['class']($id);
     }

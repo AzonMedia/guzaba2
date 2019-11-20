@@ -80,9 +80,10 @@ abstract class Connection extends TransactionalConnection
     /**
      * Returns '=' is the value is not null and IS if it is. This function is needed by mysql (and possibly others) because in mysql WHERE column = null is not giving the expected result. Must be used for WHERE clauses on columns that can be null.
      * @param mixed $value
+     * @param bool $use_like (whether to use = or LIKE)
      * @return string '=' or 'IS'
      */
-    public static function equals($value, $use_like = FALSE) : string
+    public static function equals($value, bool $use_like = FALSE) : string
     {
         if (is_null($value)) {
             return 'IS';
@@ -92,7 +93,7 @@ abstract class Connection extends TransactionalConnection
             return 'LIKE';
         }
     }
-    
+
     public function ping()
     {
         return $this->NativeConnection->query("SELECT 1");
