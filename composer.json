@@ -1,5 +1,5 @@
 {
-    "name": "azonmedia/guzaba2",
+    "name": "guzaba/guzaba2",
     "type": "library",
     "description": "PHP Framework for swoole",
     "keywords": ["framework","swoole"],
