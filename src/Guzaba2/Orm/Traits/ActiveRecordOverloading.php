@@ -261,6 +261,27 @@ trait ActiveRecordOverloading
     }
 
     /**
+     * A singledimensional associative array containing properties of this class.
+     * No exception is thrown if there are more properties or missing properties.
+     * The ones that are foudn will be cast to the expected type.
+     * @param array $data
+     * @return array
+     */
+    public static function cast_data_to_property_types(array $data) : array
+    {
+        $properties = static::get_property_names();
+        foreach ($properties as $property) {
+            $type = static::get_property_type($property, $is_nullable, $default_value);
+            if (array_key_exists($property, $data)) {
+                $value = $data[$property];
+                settype($value, $type);
+                $data[$property] = $value;
+            }
+        }
+        return $data;
+    }
+
+    /**
      * Checks the type of the provided value against the expected type and if there is mismatch it may:
      * - cast to the correct type
      * - write a NOTICE

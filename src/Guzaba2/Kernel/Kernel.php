@@ -32,6 +32,7 @@ use Guzaba2\Coroutine\Coroutine;
 //use Guzaba2\Database\Connection;
 use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
+use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\IpBlackList;
 use Psr\Container\ContainerInterface;
@@ -228,8 +229,8 @@ BANNER;
 
         $options += self::RUN_OPTIONS_DEFAULTS;
 
-
-        if (!$options['disable_all_class_load']) {
+        //it is really a bad idea to skip the class load
+        //if (!$options['disable_all_class_load']) {
             self::load_all_classes();
             $loaded_classes_info = t::_('Loaded all classes from:').PHP_EOL;
             foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix => $fs_path) {
@@ -237,7 +238,18 @@ BANNER;
             }
             self::printk($loaded_classes_info);
             self::printk(PHP_EOL);
+        //}
+
+        $initialization_classes = self::run_all_initializations();
+        $initializations_info = t::_('Initializations run:').PHP_EOL;
+        foreach ($initialization_classes as $initialization_class => $initialization_methods) {
+            $initializations_info .= str_repeat(' ',4).'- '.$initialization_class.PHP_EOL;
+            foreach ($initialization_methods as $initialization_method) {
+                $initializations_info .= str_repeat(' ',8).'- '.$initialization_method.'()'.PHP_EOL;
+            }
         }
+        self::printk($initializations_info);
+        self::printk(PHP_EOL);
 
         if (!$options['disable_all_class_validation']) {
             $validation_classes = self::run_all_validations();
@@ -711,6 +723,22 @@ BANNER;
             }
         }
         return $validation_classes;
+    }
+
+    public static function run_all_initializations() : array
+    {
+        $initialization_classes = [];
+        foreach (self::$loaded_classes as $loaded_class) {
+            if (
+                is_a($loaded_class, ClassInitializationInterface::class, TRUE)
+                && $loaded_class !== ClassInitializationInterface::class
+            ) {
+
+                $methods_run = $loaded_class::run_all_initializations();
+                $initialization_classes[$loaded_class] = $methods_run;
+            }
+        }
+        return $initialization_classes;
     }
 
     public static function get_loaded_classes() : array

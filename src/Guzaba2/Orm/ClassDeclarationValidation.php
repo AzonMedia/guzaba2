@@ -140,10 +140,9 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
-            foreach (ActiveRecordInterface::CRUD_HOOKS as $method_name) {
-                if (method_exists($active_record_class, $method_name)) {
-                    self::validate_crud_hook($active_record_class, $method_name);
-                }
+            $crud_hooks = $active_record_class::get_crud_hooks();
+            foreach ($crud_hooks as $method_name) {
+                self::validate_crud_hook($active_record_class, $method_name);
             }
         }
     }

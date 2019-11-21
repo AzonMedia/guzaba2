@@ -64,7 +64,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
     public const INDEX_NEW = 0;
-    
+
 
     /**
      * @var StoreInterface
@@ -177,7 +177,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->Store = static::get_service('OrmStore');
         }
         
-        self::initialize_columns();
+        //self::initialize_columns();
 
         $primary_columns = static::get_primary_index_columns();
 
@@ -421,7 +421,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //parent::__destruct();
     }
 
-    protected static function initialize_columns() : void
+    public static function initialize_columns() : void
     {
         $Store = static::get_service('OrmStore');
 
@@ -671,7 +671,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_columns_data() : array
     {
         $called_class = get_called_class();
-        self::initialize_columns();
+        //self::initialize_columns();
         return self::$columns_data[$called_class];
     }
 
@@ -1023,7 +1023,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
     {
         $Store = static::get_service('OrmStore');
-        static::initialize_columns();
+        //static::initialize_columns();
         $class_name = static::class;
         $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
         return $data;
@@ -1032,7 +1032,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
     {
         $Store = static::get_service('OrmStore');
-        static::initialize_columns();
+        //static::initialize_columns();
         $class_name = static::class;
         $data = $Store->get_data_count_by($class_name, $index, $use_like);
         return $data;
