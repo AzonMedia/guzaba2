@@ -139,7 +139,7 @@ class ActiveRecordDefaultController extends Controller
                 return $Response;
             }
 
-            if (in_array($property_name, $primary_index)) {
+            if (in_array($property_name, $primary_index) && empty($property_value)) {
                 continue;
             }
 
