@@ -694,7 +694,7 @@ WHERE `object_uuid` = '{$uuid}'
      * @param  int $limit
      * @return array  dataset
      */
-    public function &get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : array
+    public function &get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : array
     {
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
@@ -713,11 +713,20 @@ WHERE `object_uuid` = '{$uuid}'
         //so the join will look like JOIN key AS value
         $w = [];//array containing the where clauses
         $b = [];//associative array with the variables that must have values bound
+        $sort_str = '';
 
         if ($offset || $limit) {
             $l_str = "LIMIT {$offset}, {$limit}";
         } else {
             $l_str = "";
+        }
+
+        $sort_direction = [
+            TRUE => 'DESC',
+            FALSE => 'ASC',
+        ];
+        if ($sort_by != 'none') {
+            $sort_str = " ORDER BY " . $sort_by . " " . $sort_direction[$sort_desc];
         }
 
         //we need to always join all the main tables
@@ -849,6 +858,7 @@ FROM
 {$meta_str}
 WHERE
 {$w_str}
+{$sort_str}
 {$l_str}
 ";
 

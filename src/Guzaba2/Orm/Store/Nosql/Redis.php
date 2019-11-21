@@ -326,10 +326,10 @@ class Redis extends Database
         $Connection->del($class_id);
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
     {
-         $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like);
-         return $ret;
+        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+        return $ret;
     }
 
     public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int

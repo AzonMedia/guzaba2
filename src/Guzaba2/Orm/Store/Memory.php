@@ -414,9 +414,9 @@ class Memory extends Store implements StoreInterface
         $this->MetaStore->remove_meta_data($class, $primary_index);
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
     {
-        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like);
+        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
         return $ret;
     }
 

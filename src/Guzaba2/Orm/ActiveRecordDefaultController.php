@@ -55,7 +55,7 @@ class ActiveRecordDefaultController extends Controller
                     return $Response;
                 }
 
-            } else {
+            } elseif ($this->get_request()->getMethodConstant() !== Method::HTTP_OPTIONS) {
                 //manipulation of an existing record is requested but no UUID is provided
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No UUID provided.'));
@@ -74,6 +74,17 @@ class ActiveRecordDefaultController extends Controller
             }
         }
         return NULL;
+    }
+
+    /**
+     * Used by the OPTIONS method without uuid - returns true
+     * @return ResponseInterface
+     */
+    public function options() : ResponseInterface
+    {
+        $struct = [true];
+        $Response = parent::get_structured_ok_response($struct);
+        return $Response;
     }
 
     /**
@@ -119,12 +130,19 @@ class ActiveRecordDefaultController extends Controller
             return $Response;
         }
 
+        $primary_index = $this->ActiveRecord::get_primary_index_columns();
+
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;
             }
+
+            if (in_array($property_name, $primary_index)) {
+                continue;
+            }
+
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 

@@ -58,6 +58,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         ],
     ];
 
+    protected const CAST_PROPERTIES_ON_ASSIGNMENT = false;
+
     protected const CONFIG_RUNTIME = [];
 
 
@@ -910,6 +912,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $default_route = static::CONFIG_RUNTIME['route'];
             $ret = [
                 $default_route                            => [
+                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'create'],
                 ],
                 $default_route.'/{uuid}'                       => [
@@ -1017,12 +1020,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return iterable
      * @throws RunTimeException
      */
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE) : iterable
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
     {
         $Store = static::get_service('OrmStore');
         static::initialize_columns();
         $class_name = static::class;
-        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like);
+        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
         return $data;
     }
 

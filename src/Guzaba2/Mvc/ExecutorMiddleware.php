@@ -92,7 +92,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
                         if ($repeating_arguments = array_intersect($controller_arguments, $body_params)) {
                             //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
-                            $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) );
+                            $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true) );
                             $Body = new Structured( [ 'message' => $message ] );
                             $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
 
