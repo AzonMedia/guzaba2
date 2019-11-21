@@ -4,6 +4,7 @@
 namespace Guzaba2\Orm;
 
 
+use Azonmedia\Reflection\Reflection;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Reflection\ReflectionMethod;
 use Azonmedia\Utilities\ArrayUtil;
@@ -23,15 +24,11 @@ use Guzaba2\Translator\Translator as t;
 class ClassDeclarationValidation extends Base implements ClassDeclarationValidationInterface
 {
 
-    public const CRUD_HOOKS = [
-        '_before_read', '_after_read',
-        '_before_save', '_after_save',
-        '_before_delete', '_after_delete',
-    ];
-
     public const VALIDATION_METHODS = [
         'validate_validation_hooks',
         'validate_crud_hooks',
+        'validate_property_hooks',
+
         'validate_validation_rules',
         'validate_properties',
         'validate_structure_source',
@@ -55,16 +52,9 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
-            $properties = $active_record_class::get_property_names();
-            foreach ($properties as $property) {
-                $method_name = '_validate_'.$property;
-                if (method_exists($active_record_class, $method_name)) {
-                    self::validate_property_validation_hook($active_record_class, $method_name);
-                }
-                $static_method_name = '_validate_static_'.$property;
-                if (method_exists($active_record_class, $static_method_name)) {
-                    self::validate_property_validation_hook($active_record_class, $static_method_name);
-                }
+            $property_hooks = $active_record_class::get_property_validation_hooks();
+            foreach ($property_hooks as $property_hook) {
+                self::validate_property_validation_hook($active_record_class, $property_hook);
             }
         }
     }
@@ -82,18 +72,29 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         $RMethod = new ReflectionMethod($class, $method);
 
         if ($RMethod->isStatic()) { // the _validate_static_ are static
-            if ($RMethod->getNumberOfParameters() !== 1) {
-                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept a single argument (the value that is being validated).'), $class, $method ));
-            }
             if (!$RMethod->isPublic()) {
                 throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
             }
-        } else {
-            if ($RMethod->getNumberOfParameters()) {
-                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method ));
+
+            if ($RMethod->getNumberOfParameters() !== 1) {
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept a single argument (the value that is being validated).'), $class, $method ));
             }
+            $expected_type = $class::get_property_type(str_replace('_validate_static_', '', $method));
+            $RParam = $RMethod->getParameters()[0];
+            $RType = $RParam->getType();
+            if (!$RType) {
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+            }
+            if ($RType->getName() !== $expected_type) {
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+            }
+        } else {
             if (!$RMethod->isProtected()) {
                 throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
+            }
+
+            if ($RMethod->getNumberOfParameters()) {
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method ));
             }
         }
 
@@ -139,7 +140,7 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
-            foreach (self::CRUD_HOOKS as $method_name) {
+            foreach (ActiveRecordInterface::CRUD_HOOKS as $method_name) {
                 if (method_exists($active_record_class, $method_name)) {
                     self::validate_crud_hook($active_record_class, $method_name);
                 }
@@ -211,6 +212,168 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
             if (!$active_record_class::has_main_table_defined() && !$active_record_class::has_structure_defined()) {
                 throw new ClassValidationException(sprintf(t::_('The class %s does not define neither "main_table" nor "structure" in CONFIG_RUNTIME.'), $active_record_class));
             }
+        }
+    }
+
+    public static function validate_property_hooks(array $ns_prefixes) : void
+    {
+        $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
+        foreach ($active_record_classes as $active_record_class) {
+            $before_set_hooks = $active_record_class::get_before_set_property_hooks($active_record_class);
+            foreach ($before_set_hooks as $before_set_hook) {
+                self::validate_before_set_property_hook($active_record_class, $before_set_hook);
+            }
+            $after_set_hooks = $active_record_class::get_after_set_property_hooks($active_record_class);
+            foreach ($after_set_hooks as $after_set_hook) {
+                self::validate_after_set_property_hook($active_record_class, $after_set_hook);
+            }
+            $before_get_hooks = $active_record_class::get_before_get_property_hooks($active_record_class);
+            foreach ($before_get_hooks as $before_get_hook) {
+                self::validate_before_get_property_hook($active_record_class, $before_get_hook);
+            }
+            $after_get_hooks = $active_record_class::get_after_get_property_hooks($active_record_class);
+            foreach ($after_get_hooks as $after_get_hook) {
+                self::validate_after_get_property_hook($active_record_class, $after_get_hook);
+            }
+        }
+    }
+
+    /**
+     * The _before_set_PROPERTY hook must be protected, dynamic, accept a single argument and have return type (the properties have known types and these can be used).
+     * @param string $class_name
+     * @param string $method_name
+     */
+    public static function validate_before_set_property_hook(string $class_name, string $method_name) : void
+    {
+        $RMethod = new ReflectionMethod($class_name, $method_name);
+        if ($RMethod->isStatic()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
+        }
+        if (!$RMethod->isProtected()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be protected.'), $class_name, $method_name));
+        }
+        if ($RMethod->getNumberOfParameters() !== 1) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept a single argument.'), $class_name, $method_name));
+        }
+
+        $expected_type = $class_name::get_property_type(str_replace('_before_set_', '', $method_name));
+        $RParam = $RMethod->getParameters()[0];
+        $RType = $RParam->getType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+        }
+        if ($RType->getName() !== $expected_type) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+        }
+
+        $RType = $RMethod->getReturnType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s.'), $class_name, $method_name, $expected_type));
+        }
+        if ($RType->getName() !== $expected_type) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ));
+        }
+    }
+
+    /**
+     * The _after_set_PROPERTY hook must be protected, dynamic, accept a single argument and return void
+     * @param string $class_name
+     * @param string $method_name
+     */
+    public static function validate_after_set_property_hook(string $class_name, string $method_name) : void
+    {
+        $RMethod = new ReflectionMethod($class, $method);
+        if ($RMethod->isStatic()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
+        }
+        if (!$RMethod->isProtected()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be protected.'), $class_name, $method_name));
+        }
+        if ($RMethod->getNumberOfParameters() !== 1) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept a single argument.'), $class_name, $method_name));
+        }
+
+        $expected_type = $class_name::get_property_type(str_replace('_after_set_', '', $method_name));
+        $RParam = $RMethod->getParameters()[0];
+        $RType = $RParam->getType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+        }
+        if ($RType->getName() !== $expected_type) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+        }
+
+        $RType = $RMethod->getReturnType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void.'), $class_name, $method_name));
+        }
+        if ($RType->getName() !== 'void') {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName() ));
+        }
+    }
+
+    /**
+     * The _before_get_PROPERTY hook must be protected, dynamic, not accept any arguments and return void
+     * @param string $class_name
+     * @param string $method_name
+     */
+    public static function validate_before_get_property_hook(string $class_name, string $method_name) : void
+    {
+        $RMethod = new ReflectionMethod($class, $method);
+        if ($RMethod->isStatic()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
+        }
+        if (!$RMethod->isProtected()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be protected.'), $class_name, $method_name));
+        }
+        if ($RMethod->getNumberOfParameters() !== 0) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must not accept any arguments.'), $class_name, $method_name));
+        }
+
+        $RType = $RMethod->getReturnType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void.'), $class_name, $method_name));
+        }
+        if ($RType->getName() !== 'void') {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName() ));
+        }
+    }
+
+
+    /**
+     * The _after_set_PROPERTY hook must be protected, dynamic, accept a single argument and return void
+     * @param string $class_name
+     * @param string $method_name
+     */
+    public static function validate_after_get_property_hook(string $class_name, string $method_name) : void
+    {
+        $RMethod = new ReflectionMethod($class, $method);
+        if ($RMethod->isStatic()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
+        }
+        if (!$RMethod->isProtected()) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be protected.'), $class_name, $method_name));
+        }
+        if ($RMethod->getNumberOfParameters() !== 1) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept a single argument.'), $class_name, $method_name));
+        }
+
+        $expected_type = $class_name::get_property_type(str_replace('_after_get_', '', $method_name));
+        $RParam = $RMethod->getParameters()[0];
+        $RType = $RParam->getType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+        }
+        if ($RType->getName() !== $expected_type) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+        }
+
+        $RType = $RMethod->getReturnType();
+        if (!$RType) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s.'), $class_name, $method_name, $expected_type));
+        }
+        if ($RType->getName() !== $expected_type) {
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ));
         }
     }
 

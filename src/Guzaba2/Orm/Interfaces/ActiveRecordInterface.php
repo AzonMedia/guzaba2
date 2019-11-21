@@ -11,7 +11,14 @@ interface ActiveRecordInterface
         'min_length'    => 'int',
     ];
 
+    public const CRUD_HOOKS = [
+        '_before_read', '_after_read',
+        '_before_save', '_after_save',
+        '_before_delete', '_after_delete',
+    ];
+
     public const AUTHZ_METHOD_PREFIX = 'authz_';
+
     
     public static function get_routes() : ?iterable ;
 

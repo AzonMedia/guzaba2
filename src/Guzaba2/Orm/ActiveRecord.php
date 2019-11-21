@@ -21,6 +21,7 @@ use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Orm\Traits\ActiveRecordHooks;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Event\Event;
 use Guzaba2\Orm\Traits\ActiveRecordOverloading;
@@ -43,6 +44,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     use ActiveRecordStructure;
     use ActiveRecordIterator;
     use ActiveRecordValidation;
+    use ActiveRecordHooks;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
@@ -60,6 +62,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
     public const INDEX_NEW = 0;
+    
 
     /**
      * @var StoreInterface
@@ -792,7 +795,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
-     * This is similar to self::get_record_data() but also invokes
+     * This is similar to self::get_record_data() but also invokes the property hooks.
      * @return array
      */
     public function get_property_data() : array

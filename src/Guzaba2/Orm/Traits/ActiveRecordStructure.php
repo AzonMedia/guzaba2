@@ -10,6 +10,11 @@ use Guzaba2\Translator\Translator as t;
 trait ActiveRecordStructure
 {
 
+    public static function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
+    {
+        return self::get_property_type($field_name, $is_nullable, $default_value);
+    }
+
     /**
      * Returns the field/property PHP type as string.
      * Optionally by reference as second argument it will be assigned a boolean can it hold a NULL value.
@@ -20,7 +25,7 @@ trait ActiveRecordStructure
      * @return string
      * @throws RunTimeException If the provided $field_name is not supported by this object.
      */
-    public static function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
+    public static function get_property_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
     {
         $class = get_called_class();
         if (!static::has_field($field_name)) {
@@ -86,6 +91,16 @@ trait ActiveRecordStructure
         $columns_data = static::get_columns_data();
         foreach ($columns_data as $columns_datum) {
             $ret[] = $columns_datum['name'];
+        }
+        return $ret;
+    }
+
+    public static function get_property_names_with_types() : array
+    {
+        $ret = [];
+        $columns_data = static::get_columns_data();
+        foreach ($columns_data as $columns_datum) {
+            $ret[$columns_datum['name']] = $columns_datum['type'];
         }
         return $ret;
     }
