@@ -700,7 +700,8 @@ BANNER;
                         //skip this file - it is already included
                         continue;
                     }
-                    self::autoloader($class);
+                    class_exists($class);//this will trigger the autoloader if the class doesnt already exist
+                    //self::autoloader($class);//an explicit call will trigger an error if the class is already loaded
                 }
             }
         }
@@ -854,7 +855,6 @@ BANNER;
         } else {
             self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => &self::$class_structure[$parent_class], 'children' => [] ];
         }
-
 
         self::$class_structure[$parent_class]['children'][] =& self::$class_structure[$class_name];
 
