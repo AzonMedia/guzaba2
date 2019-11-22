@@ -494,7 +494,8 @@ BANNER;
             // todo fix padding
             $message = sprintf('[%s %s] %s', $microtime_diff, $worker_str, $message);
         }
-
+        //$handlers = self::$Logger->getHandlers();
+        //TODO log to the main log too
         print $message;
     }
 

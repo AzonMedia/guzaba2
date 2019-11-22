@@ -213,7 +213,7 @@ class Server extends \Guzaba2\Http\Server
 
         $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
         Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
-
+        Kernel::printk(sprintf(t::_('End of startup messages. Swoole server is now serving requests')).PHP_EOL );
         Kernel::printk(PHP_EOL);
     }
 

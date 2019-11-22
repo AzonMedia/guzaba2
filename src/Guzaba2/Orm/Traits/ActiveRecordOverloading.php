@@ -11,7 +11,7 @@ trait ActiveRecordOverloading
 {
 
     /**
-     * The overloading is used so that all the columns/fields fro mthe database can appear as properties on instance.
+     * The overloading is used so that all the columns/propertys fro mthe database can appear as properties on instance.
      * The logic of the framework includes handling also of multilanguage and array properties.
      * @param string $property The name of the property that is being accessed
      * @return mixed
@@ -36,7 +36,7 @@ trait ActiveRecordOverloading
         if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];
         } else {
-            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
@@ -46,7 +46,7 @@ trait ActiveRecordOverloading
     }
 
     /**
-     * The overloading is used so that all the columns/fields fro mthe database can appear as properties on instance.
+     * The overloading is used so that all the columns/propertys fro mthe database can appear as properties on instance.
      * The logic of the framework includes handling also of multilanguage and array properties.
      * @param string $property The name of the property that is being accessed
      * @return mixed
@@ -81,7 +81,7 @@ trait ActiveRecordOverloading
         }
 
         if (!array_key_exists($property, $this->record_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/field "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
         $old_value = $this->record_data[$property];
@@ -152,8 +152,8 @@ trait ActiveRecordOverloading
     public function __call(string $method, array $args) {
 
         if (isset($args[0])) { //use the method as setter only if there is a value provided
-            //if (in_array($method,$this->field_names)||in_array($method,$this->field_names_2)) {
-            //if (in_array($method,$this->field_names)) {
+            //if (in_array($method,$this->property_names)||in_array($method,$this->property_names_2)) {
+            //if (in_array($method,$this->property_names)) {
             if (in_array($method, array_keys($this->record_data) )) {
                 $this->__set($method, $args[0]);
                 return $this;//allow method chaining
@@ -170,7 +170,7 @@ trait ActiveRecordOverloading
     /**
      * It is used to provide overloading for the validation methods.
      * @example user::_validate_static_subject_name($some_value);
-     * This method uses @uses activeRecordValidation::validate_field_static() but unlike it does not support passing custom validation settings (against which the validation sohuld be performed instead of the configuration validation settings)
+     * This method uses @uses activeRecordValidation::validate_property_static() but unlike it does not support passing custom validation settings (against which the validation sohuld be performed instead of the configuration validation settings)
      * @param string $method The method name should be like _validate_static_PROPERTYNAME
      * @param array $args There should be only a single argument provided to the overloaded method so the args should be an indexed array with one element
      * @return array | object If this is a service it may return an object (service), otherwise it should return a twodimensional indexed array with validation errors.
@@ -209,7 +209,7 @@ trait ActiveRecordOverloading
         if (!is_scalar($args[0]) && !is_array($args[0])) {
             throw new RunTimeException(sprintf(t::_('An unsupported value of type "%s" was provided to %s::%s(). The provided value against which the validation will be performed must be of the scalar or array.'), gettype($args[0]), get_class($instance), $method ));
         }
-        $ret = self::validate_field_static($property, $args[0]);
+        $ret = self::validate_property_static($property, $args[0]);
         return $ret;
     }
     */
@@ -298,26 +298,26 @@ trait ActiveRecordOverloading
      */
     private function assign_property_value($property, $value) : void
     {
-        $field_type = static::get_field_type($property, $is_nullable);
-        if ($field_type != gettype($value)) {
+        $property_type = static::get_property_type($property, $is_nullable);
+        if ($property_type != gettype($value)) {
             if ($is_nullable && is_null($value)) {
                 //if there is type mismatch it will be still OK if the value is NULL and the column is nullable
                 $this->record_data[$property] = $value;
-            } elseif (empty($value) && in_array(gettype($value), ['integer','int','double','float']) && in_array($field_type, ['integer','int','double','float'])) {
+            } elseif (empty($value) && in_array(gettype($value), ['integer','int','double','float']) && in_array($property_type, ['integer','int','double','float'])) {
                 // we don't need error on zeros - casting (float) 0 still treated as integer
-                $this->record_data[$property] = $this->_cast($field_type, $value);
+                $this->record_data[$property] = $this->_cast($property_type, $value);
             //also we should always allow INT to be set on FLOAT column but not the reverse - a FLOAT to be set to an INT column
-                //$value is the value being set, $field_type is the type of the column
-            } elseif (gettype($value)=='double' && $field_type=='integer') {
+                //$value is the value being set, $property_type is the type of the column
+            } elseif (gettype($value)=='double' && $property_type=='integer') {
                 //this is allowed
-                $this->record_data[$property] = $this->_cast($field_type, $value);
-            //} else if (gettype($value)=='integer' && $field_type=='double') {//no need to explicitly have a case for this as it will go into the section below
+                $this->record_data[$property] = $this->_cast($property_type, $value);
+            //} else if (gettype($value)=='integer' && $property_type=='double') {//no need to explicitly have a case for this as it will go into the section below
             } else {
                 //casting is needed
                 if (self::CAST_PROPERTIES_ON_ASSIGNMENT) {
 
                     //check if a nonnumeric string is assigned to an integer or double
-                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
+                    if (gettype($value)=='string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
                         //we should allow $500 and convert it to 500
                         if ($value[0]=='$') {
                             $value = substr($value, 1);
@@ -331,8 +331,8 @@ trait ActiveRecordOverloading
                     }
 
                     //after the transformations above lets check again...
-                    if (gettype($value)=='string' && in_array($field_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
-                        $message = sprintf(t::_('Trying to assign a string nonnumeric value "%s" to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type);
+                    if (gettype($value)=='string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
+                        $message = sprintf(t::_('Trying to assign a string nonnumeric value "%s" to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $property_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                         } else {
@@ -340,15 +340,15 @@ trait ActiveRecordOverloading
                             throw new RunTimeException($message);
                         }
                         //we cant allow a string that parses to float (like "1.5") to be cast and assigned to an int
-                    } elseif (gettype($value)=='string' && in_array($field_type, ['integer','int']) && strpos($value, '.')!==FALSE && $value!='') { //empty string is treated like 0
-                        $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $field_type);
+                    } elseif (gettype($value)=='string' && in_array($property_type, ['integer','int']) && strpos($value, '.')!==FALSE && $value!='') { //empty string is treated like 0
+                        $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $property_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
                         } else {
                             //this will be thrown even if THROW_EXCEPTION_ON_PROPERTY_CAST=FALSE because it is a major issue
                             throw new RunTimeException($message);
                         }
-                    } elseif (!is_array($value) && $field_type=='array') {
+                    } elseif (!is_array($value) && $property_type=='array') {
                         $message = sprintf(t::_('Trying to assign a non array type "%s" to an array property "%s" of an instance of class "%s".'), gettype($value), $property, get_class($this));
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
@@ -359,9 +359,9 @@ trait ActiveRecordOverloading
                     if (!$value && $is_nullable) {
                         $value = NULL;
                     }
-                    $this->record_data[$property] = $this->_cast($field_type, $value);
+                    $this->record_data[$property] = $this->_cast($property_type, $value);
 
-                    $message = sprintf(t::_('The property "%s" on instance of "%s" is of type "%s" but is being assigned value of type "%s".'), $property, get_class($this), $field_type, gettype($value));
+                    $message = sprintf(t::_('The property "%s" on instance of "%s" is of type "%s" but is being assigned value of type "%s".'), $property, get_class($this), $property_type, gettype($value));
                     if (self::LOG_NOTICE_ON_PROPERTY_CAST) {
                         //self::logger()::notice($message, self::logger()::OPTION_BACKTRACE );//suppress this logger due to too many errors
                     }

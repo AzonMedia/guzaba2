@@ -10,53 +10,48 @@ use Guzaba2\Translator\Translator as t;
 trait ActiveRecordStructure
 {
 
-    public static function get_field_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
-    {
-        return self::get_property_type($field_name, $is_nullable, $default_value);
-    }
-
     /**
-     * Returns the field/property PHP type as string.
+     * Returns the property/property PHP type as string.
      * Optionally by reference as second argument it will be assigned a boolean can it hold a NULL value.
      * An optional third argument set by reference canbe provided to retrieve the default value as defined in the database.
-     * @param string $field_name
+     * @param string $property_name
      * @param bool &$is_nullable
      * @param mixed &$default_value
      * @return string
-     * @throws RunTimeException If the provided $field_name is not supported by this object.
+     * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_property_type(string $field_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
+    public static function get_property_type(string $property_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
     {
         $class = get_called_class();
-        if (!static::has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
+        if (!static::has_property($property_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        $is_nullable = static::is_field_nullable($field_name);
-        $default_value = static::get_field_default_value($field_name);
-        return static::get_columns_data()[$field_name]['php_type'];
+        $is_nullable = static::is_property_nullable($property_name);
+        $default_value = static::get_property_default_value($property_name);
+        return static::get_columns_data()[$property_name]['php_type'];
     }
 
     /**
-     * Returns the native type of the property/field name as in the database.
-     * @param string $field_name
+     * Returns the native type of the property/property name as in the database.
+     * @param string $property_name
      * @return string
-     * @throws RunTimeException If the provided $field_name is not supported by this object.
+     * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_field_native_type(string $field_name) : string
+    public static function get_property_native_type(string $property_name) : string
     {
         $class = get_called_class();
-        if (!static::has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
+        if (!static::has_property($property_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        if (static::is_field_array($field_name)) {
+        if (static::is_property_array($property_name)) {
             //return 'string';//the value column on the arr_table and assoc_arr_table is string
             return 'array';//but returning string will be very misleading so we better return array (even that mysql actually doesnt support array as a native type (PG does!))
         }
-        return static::get_columns_data()[$field_name]['native_type'];
+        return static::get_columns_data()[$property_name]['native_type'];
     }
 
     /**
-     * Returns an array with all the available data for the provided field.
+     * Returns an array with all the available data for the provided property.
      * @example $arr =  array (
      * 'name' => 'fee_is_admin',//the name of the column
      * 'native_type' => 'tinyint',//the type of the column in the database
@@ -68,17 +63,17 @@ trait ActiveRecordStructure
      * 'default_value' => '0',//the default value of the column in the table
      * 'autoincrement' => false,//is it an autoincrement column
      * );
-     * @param string $field_name
+     * @param string $property_name
      * @return mixed
-     * @throws RunTimeException If the provided $field_name is not supported by this object.
+     * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_field_information(string $field_name) : array
+    public static function get_property_information(string $property_name) : array
     {
-        if (!static::has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
+        if (!static::has_property($property_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        //this will also work for array_field_names and assoc_array_field_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
-        return static::get_columns_data()[$field_name];
+        //this will also work for array_property_names and assoc_array_property_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
+        return static::get_columns_data()[$property_name];
     }
 
     /**
@@ -106,60 +101,42 @@ trait ActiveRecordStructure
     }
 
     /**
-     * Alias of self::get_property_names()
-     * @return array
-     */
-    public static function get_field_names() : array
-    {
-        return static::get_property_names();
-    }
-
-    /**
-     * Checks does this object/class has a field/property named $field_name. This checks agains the DB structure (all tables and shards)
-     * @param string $field_name
+     * Checks does this object/class has a property named $property_name. This checks agains the DB structure (all tables and shards)
+     * @param string $property_name
      * @return bool
      */
-    public static function has_property(string $field_name) : bool
+    public static function has_property(string $property_name) : bool
     {
-        return array_key_exists($field_name, static::get_columns_data());
+        return array_key_exists($property_name, static::get_columns_data());
     }
 
-    /**
-     * This is an alias of has_property().
-     * @param string $field_name
-     * @return bool
-     */
-    public static function has_field(string $field_name) : bool
-    {
-        return static::has_property($field_name);
-    }
 
     /**
-     * Returns can the field hold a NULL value (is the corresponding column in the database nullable)
-     * @param string $field_name
+     * Returns can the property hold a NULL value (is the corresponding column in the database nullable)
+     * @param string $property_name
      * @return bool
-     * @throws RunTimeException If the provided $field_name is not supported by this object.
+     * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function is_field_nullable(string $field_name) : bool
+    public static function is_property_nullable(string $property_name) : bool
     {
-        if (!self::has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
+        if (!self::has_property($property_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        return static::get_columns_data()[$field_name]['nullable'];
+        return static::get_columns_data()[$property_name]['nullable'];
     }
 
     /**
-     * Returns the default value of the field as defined in the database.
-     * @param string $field_name
+     * Returns the default value of the property as defined in the database.
+     * @param string $property_name
      * @return mixed
-     * @throws RunTimeException If the provided $field_name is not supported by this object.
+     * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_field_default_value(string $field_name) /*: mixed */
+    public static function get_property_default_value(string $property_name) /*: mixed */
     {
         $class = get_called_class();
-        if (!static::has_field($field_name)) {
-            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a field/property named "%s".'), $class, $field_name));
+        if (!static::has_property($property_name)) {
+            throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        return static::get_columns_data()[$field_name]['default_value'];
+        return static::get_columns_data()[$property_name]['default_value'];
     }
 }
