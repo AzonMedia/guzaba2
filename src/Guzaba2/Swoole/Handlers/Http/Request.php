@@ -29,7 +29,7 @@ class Request extends HandlerBase
      * Array of MiddlewareInterface
      * @var array
      */
-    protected $middlewares = [];
+    protected iterable $middlewares = [];
 
     /**
      * @var Response
@@ -43,7 +43,7 @@ class Request extends HandlerBase
      * @param Response|null $DefaultResponse
      * @throws RunTimeException
      */
-    public function __construct(Server $HttpServer, array $middlewares = [], ?Response $DefaultResponse = NULL)
+    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL)
     {
         parent::__construct($HttpServer);
 

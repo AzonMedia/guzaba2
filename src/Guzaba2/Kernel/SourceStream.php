@@ -119,6 +119,8 @@ class SourceStream extends Base
      */
     private static function load_data(string $path) : string
     {
+
+
         if (Kernel::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
             //throw new AutoloadException($error_str);
@@ -133,16 +135,43 @@ class SourceStream extends Base
             $class_source = file_get_contents($path);
         }
 
-        $class_name = $path;
-        $registered_autoload_paths = Kernel::get_registered_autoloader_paths();
-        foreach ($registered_autoload_paths as $autoload_path) {
-            $class_name = str_replace($autoload_path, '', $class_name);
+
+        foreach (Kernel::get_registered_autoloader_paths() as $ns_base => $autoload_path) {
+            if (strpos($path, $autoload_path) !== FALSE) {
+                $class_ns = $ns_base;
+            }
+        }
+        if (empty($class_ns)) {
+            throw new \RuntimeException(sprintf('The file %s can not be loaded as it is not from whithin a registered autoload path.', $path));
         }
 
-        $class_name = str_replace('/', '\\', $class_name);
-        $class_name = str_replace('.php', '', $class_name);
-        // Strip leading slash
-        $class_name = substr($class_name, 1);
+        //print $path.PHP_EOL;
+
+        $ns_pos = strpos( $path, str_replace('\\', '/', $class_ns) );
+        if ($ns_pos) {
+            $class_name = substr($path, $ns_pos );
+            $class_name = str_replace('/', '\\', $class_name);
+            $class_name = str_replace('.php', '', $class_name);
+        } else {
+            $class_name = $class_ns.'\\'.basename($path,'.php');
+        }
+
+
+        //print $class_name.PHP_EOL.PHP_EOL;
+        //print $path.' '.$class_ns.PHP_EOL;
+        //print $class_name.PHP_EOL.PHP_EOL;
+
+        //$class_name = $path;
+//        $registered_autoload_paths = Kernel::get_registered_autoloader_paths();
+//        foreach ($registered_autoload_paths as $autoload_path) {
+//            $class_name = str_replace($autoload_path, '', $class_name);
+//        }
+
+//        $class_name = str_replace('/', '\\', $class_name);
+//        $class_name = str_replace('.php', '', $class_name);
+//        // Strip leading slash
+//        $class_name = substr($class_name, 1);
+
 
         $ns_arr = explode('\\', $class_name);
         $class_name_without_ns = array_pop($ns_arr);

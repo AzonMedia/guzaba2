@@ -690,9 +690,20 @@ BANNER;
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path=>$match) {
+
+                //print $path.' ';
+                /*
                 $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
                 if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
+
+
+
                     $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
+
+//                    if (strpos($class, 'CachingMiddleware') !== FALSE) {
+//                        print 'GGGGGGGGGGGGGGGGGG';
+//                    }
+
                     //we also need to check again already included files
                     //as including a certain file may trigger the autoload and load other classes that will be included a little later
                     $included_files = get_included_files();
@@ -700,9 +711,35 @@ BANNER;
                         //skip this file - it is already included
                         continue;
                     }
+                    //print 'OK'.PHP_EOL;
                     class_exists($class);//this will trigger the autoloader if the class doesnt already exist
                     //self::autoloader($class);//an explicit call will trigger an error if the class is already loaded
+                } else {
+                    //print 'NOOOO'.PHP_EOL;
+                    print $path.' '.$ns_with_forward_slash.PHP_EOL;
                 }
+                */
+
+
+                $class_name = str_replace($autoload_lookup_path, '', $path);
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('/', '\\', $class_name);
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace($namespace_base, '', $class_name);//some may contain it
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = $namespace_base.'\\'.$class_name;
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('.php', '', $class_name);
+
+                //we also need to check again already included files
+                //as including a certain file may trigger the autoload and load other classes that will be included a little later
+                $included_files = get_included_files();
+                if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
+                    //skip this file - it is already included
+                    continue;
+                }
+                class_exists($class_name);//this will trigger the autoloader if the class doesnt already exist
+                //self::autoloader($class_name);//an explicit call will trigger an error if the class is already loaded
             }
         }
     }
@@ -824,9 +861,46 @@ BANNER;
             }
 
             if (strpos($class_name, $namespace_base) === 0) {
-                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
+                //$class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
+                //$ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
+
+                if ($namespace_base === self::FRAMEWORK_NAME) {
+                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', $class_name).'.php');
+                } else {
+                    //$class_path = realpath(str_replace(str_replace('\\', '/', $namespace_base), '', $lookup_path).'/'.str_replace('\\', '/', $class_name).'.php');
+                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php');
+                }
+
+
+                //$class_path = realpath(str_replace(str_replace('\\', '/', $namespace_base), '', $lookup_path).'/'.str_replace('\\', '/', $class_name).'.php');
+                //$class_path2 = str_replace(str_replace('\\', '/', $namespace_base), '', $lookup_path).'/'.str_replace('\\', '/', $class_name).'.php';
+                //$ns_base_as_path = str_replace('\\', '/', $namespace_base);
+//                $class_path = $lookup_path.'/'.str_replace('\\', '/', $class_name).'.php';
+//                $ns_base_pos = strpos($class_path, $namespace_base);
+//                if ($ns_base_pos !== FALSE) {
+////                    $class_path = substr_replace($class_path, '', $ns_base_pos, strlen($namespace_base));
+//                }
+//                print $class_path.PHP_EOL;
                 //$class_path = realpath($class_path);
-                if (is_readable($class_path)) {
+                //$ns_base_found_in_class = FALSE;
+                //$ns_base_found_in_path
+
+                //if (strpos($class_name, 'Caching')) {
+                    //print $class_path2.PHP_EOL;
+
+                    //type 1: Guzaba2 /home/local/PROJECTS/guzaba-platform-marketplace/guzaba-platform-marketplace/vendor/guzaba/guzaba2/src Guzaba2\Orm\ActiveRecord
+                    //type 2: GuzabaPlatform\Platform /home/local/PROJECTS/guzaba-platform-marketplace/guzaba-platform-marketplace/vendor/guzaba-platform/guzaba-platform/app/src/GuzabaPlatform/Platform GuzabaPlatform\Platform\Authentication\Models\Tokens
+                    //type 3: GuzabaPlatform\RequestCaching /home/local/PROJECTS/guzaba-platform-marketplace/guzaba-platform-marketplace/vendor/guzaba-platform/request-caching/app/src GuzabaPlatform\RequestCaching\Component
+                    //print $class_path.PHP_EOL;
+                    //print $namespace_base.' '.$lookup_path.' '.$class_name.PHP_EOL.PHP_EOL;
+                //}
+
+                //print $class_name.' '.$class_path.PHP_EOL;
+                //print $class_path.PHP_EOL;
+                //print $class_path.PHP_EOL;
+                //print $lookup_path.PHP_EOL;
+                //$class_path = realpath($class_path);
+                if ($class_path && is_readable($class_path)) {
                     //require_once($class_path);
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
@@ -869,6 +943,9 @@ BANNER;
      */
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
+
+        //print $class_path.' '.$class_name.PHP_EOL;
+
         $ret = NULL;
 
         try {

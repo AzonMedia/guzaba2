@@ -19,18 +19,51 @@ use Guzaba2\Event\Interfaces\EventsInterface;
 class Events extends Base implements EventsInterface
 {
 
-    
+    /**
+     * To be used for callbacks added before entering coroutine context
+     * Once coroutine context is entered the Context->Callbacks will be used and any previously added callbacks to $this->Callbacks will be ignored.
+     * @var Callbacks
+     */
+    private Callbacks $Callbacks;
+
+    /**
+     * Events constructor.
+     * Initializes the Callbacks for the non-coroutine context.
+     */
+    public function __construct()
+    {
+        $this->Callbacks = new Callbacks();
+    }
+
+    /**
+     * @param ObjectInternalIdInterface $Subject
+     * @param string $event_name
+     * @return EventInterface
+     */
     public static function create_event(ObjectInternalIdInterface $Subject, string $event_name) : EventInterface
     {
         return new Event($Subject, $event_name);
     }
 
+    /**
+     * @param ObjectInternalIdInterface $Subject
+     * @param string $event_name
+     * @param callable $callback
+     * @return bool
+     * @throws LogicException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function add_object_callback(ObjectInternalIdInterface $Subject, string $event_name, callable $callback) : bool
     {
-        $this->initialize_callbacks();
+        $Callbacks = $this->get_callbacks();
         $callback_hash = GeneralUtil::get_callable_hash($callback);
         $subject_unique_id = $Subject->get_object_internal_id();
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
+        if (Coroutine::inCoroutine()) {
+            $Callbacks = Coroutine::getContext()->{Callbacks::class};
+        } else {
+            $Callbacks = Coroutine::getContext()->{Callbacks::class};
+        }
+
         if (isset($Callbacks->object_callbacks[$subject_unique_id][$event_name][$callback_hash])) {
             if ($Callbacks->object_callbacks[$subject_unique_id][$event_name][$callback_hash] === $callback) {
                 //it is already added
@@ -43,11 +76,16 @@ class Events extends Base implements EventsInterface
         return TRUE;
     }
 
+    /**
+     * @param ObjectInternalIdInterface $Subject
+     * @param string $event_name
+     * @param callable|null $callback
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name, ?callable $callback) : void
     {
-        $this->initialize_callbacks();
+        $Callbacks = $this->get_callbacks();
         $subject_unique_id = $Subject->get_object_internal_id();
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
         if ($callback) { //unset only this callback
             $callback_hash = GeneralUtil::get_callable_hash($callback);
             unset($Callbacks->object_callbacks[$subject_unique_id][$event_name][$callback_hash]);
@@ -58,11 +96,16 @@ class Events extends Base implements EventsInterface
         }
     }
 
+    /**
+     * @param ObjectInternalIdInterface $Subject
+     * @param string $event_name
+     * @return array
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function get_object_callbacks(ObjectInternalIdInterface $Subject, string $event_name = '') : array
     {
-        $this->initialize_callbacks();
+        $Callbacks = $this->get_callbacks();
         $subject_unique_id = $Subject->get_object_internal_id();
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
         if ($event_name) {
             $event_callbacks = $Callbacks->object_callbacks[$subject_unique_id][$event_name] ?? [];
             $all_events_callbacks = $Callbacks->object_callbacks[$subject_unique_id]['*'] ?? [];
@@ -71,11 +114,18 @@ class Events extends Base implements EventsInterface
         return $Callbacks->object_callbacks[$subject_unique_id] ?? [];
     }
 
+    /**
+     * @param string $class
+     * @param string $event_name
+     * @param callable $callback
+     * @return bool
+     * @throws LogicException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function add_class_callback(string $class, string $event_name, callable $callback) : bool
     {
-        $this->initialize_callbacks();
+        $Callbacks = $this->get_callbacks();
         $callback_hash = GeneralUtil::get_callable_hash($callback);
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
         if (isset($Callbacks->class_callbacks[$class][$event_name][$callback_hash])) {
             if ($Callbacks->class_callbacks[$class][$event_name][$callback_hash] === $callback) {
                 //it is already added
@@ -88,10 +138,15 @@ class Events extends Base implements EventsInterface
         return TRUE;
     }
 
+    /**
+     * @param string $class
+     * @param string $event_name
+     * @param callable|null $callback
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function remove_class_callback(string $class, string $event_name, ?callable $callback) : void
     {
-        $this->initialize_callbacks();
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
+        $Callbacks = $this->get_callbacks();
         if ($callback) { //unset only this callback
             $callback_hash = GeneralUtil::get_callable_hash($callback);
             unset($Callbacks->class_callbacks[$class][$event_name][$callback_hash]);
@@ -102,10 +157,15 @@ class Events extends Base implements EventsInterface
         }
     }
 
+    /**
+     * @param string $class
+     * @param string $event_name
+     * @return array
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function get_class_callbacks(string $class, string $event_name = '') : array
     {
-        $this->initialize_callbacks();
-        $Callbacks = Coroutine::getContext()->{Callbacks::class};
+        $Callbacks = $this->get_callbacks();
         if ($event_name) {
             $event_callbacks = $Callbacks->class_callbacks[$class][$event_name] ?? [];
             $all_events_callbacks = $Callbacks->class_callbacks[$class]['*'] ?? [];
@@ -115,11 +175,22 @@ class Events extends Base implements EventsInterface
         return $Callbacks->class_callbacks[$class] ?? [];
     }
 
-    private function initialize_callbacks() : void
+    /**
+     * @return Callbacks
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
+    private function get_callbacks() : Callbacks
     {
-        $Context = Coroutine::getContext();
-        if (empty($Context->{Callbacks::class})) {
-            $Context->{Callbacks::class} = new Callbacks();
+        if (Coroutine::inCoroutine()) {
+            $Context = Coroutine::getContext();
+            if (empty($Context->{Callbacks::class})) {
+                $Context->{Callbacks::class} = new Callbacks($this->Callbacks->object_callbacks, $this->Callbacks->class_callbacks);
+            }
+            $Callbacks = $Context->{Callbacks::class};
+        } else {
+            $Callbacks = $this->Callbacks;
         }
+
+        return $Callbacks;
     }
 }
