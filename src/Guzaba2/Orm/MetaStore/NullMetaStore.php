@@ -26,6 +26,34 @@ class NullMetaStore extends MetaStore
     }
 
     /**
+     * @param string $class
+     * @return int|null
+     */
+    public function get_class_last_update_time(string $class) : ?int
+    {
+        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+    }
+
+    /**
+     * Returns data when an instance from a class was last created or modified
+     * @param string $class
+     */
+    public function get_class_meta_data(string $class) : ?array
+    {
+        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+    }
+
+    /**
+     * @param string $class
+     * @param array $data
+     * @throws InvalidArgumentException
+     */
+    public function set_class_meta_data(string $class, array $data) : void
+    {
+        //it is expected to be called - do nothing
+    }
+
+    /**
      * @param string $key
      * @return array|null
      * @throws RecordNotFoundException
@@ -106,7 +134,7 @@ class NullMetaStore extends MetaStore
      */
     public function remove_meta_data(string $class, array $primary_index): void
     {
-        // TODO: Implement remove_meta_data() method.
+        //it is expected to be called - do nothing
     }
 
     /**
@@ -116,6 +144,6 @@ class NullMetaStore extends MetaStore
      */
     public function remove_meta_data_by_object(ActiveRecord $ActiveRecord): void
     {
-        // TODO: Implement remove_meta_data_by_object() method.
+        //it is expected to be called - do nothing
     }
 }

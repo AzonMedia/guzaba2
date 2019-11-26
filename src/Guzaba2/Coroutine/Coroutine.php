@@ -15,6 +15,7 @@ use Guzaba2\Base\Traits\SupportsObjectInternalId;
 //use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Event\Events;
+use Guzaba2\Http\Request;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
@@ -75,7 +76,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     {
         $Context = self::getContext();//this will properly initialize the context
         //$Context->Request = $Request;
-        $Context->{RequestInterface::class} = $Request;//avoid collisions as other libraries may be using the Context
+
+        //$Context->{RequestInterface::class} = $Request;//avoid collisions as other libraries may be using the Context
+        //even though this is not the perfect solution as someone else might use the same approach and the property name is the Interface name, not the specific Class name
+        //to make sure there are not collisions the specific class name is used
+        $Context->{Request::class} = $Request;
+
 //        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
 //        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
 //        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
@@ -86,6 +92,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 //            $Context->Apm->store_data();
 //            $Context->Connections->freeAllConnections();
 //        });
+    }
+
+    public static function getRequest($cid = NULL) : ?RequestInterface
+    {
+        $Context = self::getContext($cid);
+        return $Context->{Request::class} ?? NULL ;
     }
 
     /**

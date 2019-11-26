@@ -19,6 +19,30 @@ interface MetaStoreInterface
         //'updated_from_coroutine_id' => 'int',
     ];
 
+    /**
+     * @param string $class
+     * @return int|null
+     */
+    public function get_class_last_update_time(string $class) : ?int ;
+
+    /**
+     * Returns data when an instance from a class was last created or modified
+     * @param string $class
+     */
+    public function get_class_meta_data(string $class) : ?array ;
+
+    /**
+     * @param string $class
+     * @param array $data
+     * @throws InvalidArgumentException
+     */
+    public function set_class_meta_data(string $class, array $data) : void ;
+
+    /**
+     * @param string $class
+     * @param array $primary_index
+     * @return array|null
+     */
     public function get_meta_data(string $class, array $primary_index) : ?array ;
 
     /**

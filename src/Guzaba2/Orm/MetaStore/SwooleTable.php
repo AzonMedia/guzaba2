@@ -73,6 +73,34 @@ class SwooleTable extends MetaStore
     }
 
     /**
+     * @param string $class
+     * @return int|null
+     */
+    public function get_class_last_update_time(string $class) : ?int
+    {
+        return $this->get_last_update_time($class, []);
+    }
+    
+    /**
+     * Returns data when an instance from a class was last created or modified
+     * @param string $class
+     */
+    public function get_class_meta_data(string $class) : ?array
+    {
+        return $this->get_meta_data($class, []);
+    }
+
+    /**
+     * @param string $class
+     * @param array $data
+     * @throws InvalidArgumentException
+     */
+    public function set_class_meta_data(string $class, array $data) : void
+    {
+        $this->set_meta_data($class, [], $data);
+    }
+
+    /**
      * @param string $key
      * @return array|null
      */

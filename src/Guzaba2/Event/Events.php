@@ -10,6 +10,7 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Interfaces\EventInterface;
 use Guzaba2\Event\Interfaces\EventsInterface;
+use Guzaba2\Kernel\Kernel;
 
 /**
  * Class Events
@@ -166,13 +167,16 @@ class Events extends Base implements EventsInterface
     public function get_class_callbacks(string $class, string $event_name = '') : array
     {
         $Callbacks = $this->get_callbacks();
-        if ($event_name) {
-            $event_callbacks = $Callbacks->class_callbacks[$class][$event_name] ?? [];
-            $all_events_callbacks = $Callbacks->class_callbacks[$class]['*'] ?? [];
-            return array_merge($event_callbacks, $all_events_callbacks);
+        $event_callbacks = [];
+        $classes = array_merge([$class], Kernel::get_class_all_parents($class));
+        foreach ($classes as $class) {
+            if ($event_name) {
+                $event_callbacks = array_merge($event_callbacks, $Callbacks->class_callbacks[$class][$event_name] ?? [], $Callbacks->class_callbacks[$class]['*'] ?? []);
+            } else {
+                $event_callbacks = array_merge($event_callbacks, $Callbacks->class_callbacks[$class] ?? []);
+            }
         }
-
-        return $Callbacks->class_callbacks[$class] ?? [];
+        return $event_callbacks;
     }
 
     /**
