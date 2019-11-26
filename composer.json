@@ -13,12 +13,16 @@
             "role": "Developer"
         }
     ],
-    "require": {
+    "_require_disabled": {
         "php": ">=7.4.0",
         "ext-pdo": "*",
         "ext-mysqli": "*",
         "ext-swoole": ">=4.4.8",
-        "ext-json": "*",
+        "ext-json": "*"
+    },
+
+    "require": {
+
 
         "psr/http-message": "^1.0",
         "psr/http-server-middleware": "^1.0",
