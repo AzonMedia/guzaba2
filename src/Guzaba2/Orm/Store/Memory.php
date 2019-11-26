@@ -164,7 +164,7 @@ class Memory extends Store implements StoreInterface
                     }
                     $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                    Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                    Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
             }
@@ -189,7 +189,7 @@ class Memory extends Store implements StoreInterface
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                         $pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                        Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $pointer;
                    }
                 }

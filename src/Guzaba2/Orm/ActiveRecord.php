@@ -741,12 +741,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $ret = [];
         foreach ($data as $key=>$value) {
             //$type = static::get_column_type($key, $nullable);
-            $type = static::get_property_type($property_name, $nullable, $default_value);
-            if ($type === NULL) {
-                throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+            if (static::has_property($key)) {
+                $type = static::get_property_type($key, $nullable, $default_value);
+                if ($type === NULL) {
+                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+                }
+                settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
+                $ret[$key] = $value;
             }
-            settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
-            $ret[$key] = $value;
+
         }
         return $ret;
     }
