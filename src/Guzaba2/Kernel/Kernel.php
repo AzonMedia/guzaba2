@@ -639,7 +639,7 @@ BANNER;
     public static function get_class_all_children(string $class_name) : array
     {
         $children = [];
-        $Function = function ($class_name) use (&$Function, &$children) {
+        $Function = static function ($class_name) use (&$Function, &$children) {
             $class_children = self::$class_structure[$class_name]['children'];
             foreach ($class_children as $class_child) {
                 $children[] = $class_child['name'];
@@ -659,11 +659,19 @@ BANNER;
         return $children;
     }
 
+    /**
+     * @param string $class
+     * @return string|null
+     */
     public static function get_class_parent(string $class) : ?string
     {
         return isset(self::$class_structure[$class]['parent']) ? self::$class_structure[$class]['parent']['name'] : NULL;
     }
 
+    /**
+     * @param string $class
+     * @return array
+     */
     public static function get_class_all_parents(string $class) : array
     {
         $ret = [];
@@ -672,7 +680,8 @@ BANNER;
             if (!$parent_class) {
                 break;
             }
-            $ret[] = $parent_class;
+            $ret[] = $parent_class['name'];
+            $class = $parent_class['name'];
         } while (TRUE);
         return $ret;
     }
@@ -690,9 +699,20 @@ BANNER;
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path=>$match) {
+
+                //print $path.' ';
+                /*
                 $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
                 if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
+
+
+
                     $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
+
+//                    if (strpos($class, 'CachingMiddleware') !== FALSE) {
+//                        print 'GGGGGGGGGGGGGGGGGG';
+//                    }
+
                     //we also need to check again already included files
                     //as including a certain file may trigger the autoload and load other classes that will be included a little later
                     $included_files = get_included_files();
@@ -700,9 +720,35 @@ BANNER;
                         //skip this file - it is already included
                         continue;
                     }
+                    //print 'OK'.PHP_EOL;
                     class_exists($class);//this will trigger the autoloader if the class doesnt already exist
                     //self::autoloader($class);//an explicit call will trigger an error if the class is already loaded
+                } else {
+                    //print 'NOOOO'.PHP_EOL;
+                    print $path.' '.$ns_with_forward_slash.PHP_EOL;
                 }
+                */
+
+
+                $class_name = str_replace($autoload_lookup_path, '', $path);
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('/', '\\', $class_name);
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace($namespace_base, '', $class_name);//some may contain it
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = $namespace_base.'\\'.$class_name;
+                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('.php', '', $class_name);
+
+                //we also need to check again already included files
+                //as including a certain file may trigger the autoload and load other classes that will be included a little later
+                $included_files = get_included_files();
+                if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
+                    //skip this file - it is already included
+                    continue;
+                }
+                class_exists($class_name);//this will trigger the autoloader if the class doesnt already exist
+                //self::autoloader($class_name);//an explicit call will trigger an error if the class is already loaded
             }
         }
     }
@@ -814,20 +860,24 @@ BANNER;
 
     protected static function autoloader(string $class_name): bool
     {
-        //print $class_name.PHP_EOL;
         $ret = FALSE;
 
         foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
+            //needed because swoole is not available on windows and CI may run on windows.
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
-                // if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && strpos($class_name, 'ReplacementClasses')) {
                 continue;
             }
 
             if (strpos($class_name, $namespace_base) === 0) {
-                $class_path = str_replace('\\', \DIRECTORY_SEPARATOR, $lookup_path . \DIRECTORY_SEPARATOR . $class_name) . '.php';
-                //$class_path = realpath($class_path);
-                if (is_readable($class_path)) {
-                    //require_once($class_path);
+
+                if ($namespace_base === self::FRAMEWORK_NAME) {
+                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', $class_name).'.php');
+                } else {
+                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php');
+                }
+
+                if ($class_path && is_readable($class_path)) {
+
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
                     if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
@@ -838,25 +888,26 @@ BANNER;
                     self::$loaded_classes[] = $class_name;
                     self::$loaded_paths[] = $class_path;
                     $ret = TRUE;
+
+                    $parent_class = get_parent_class($class_name);
+                    if (!$parent_class) {
+                        $parent_class = NULL;
+                        self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => $parent_class, 'children' => [] ];
+                    } else {
+                        self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => &self::$class_structure[$parent_class], 'children' => [] ];
+                    }
+
+                    self::$class_structure[$parent_class]['children'][] =& self::$class_structure[$class_name];
+
                 } else {
                     //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                    $message = sprintf('Class %s (path %s) is not found (or not readable).', $class_name, $class_path);
+                    $message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
                     throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                 }
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
             }
         }
-
-        $parent_class = get_parent_class($class_name);
-        if (!$parent_class) {
-            $parent_class = NULL;
-            self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => $parent_class, 'children' => [] ];
-        } else {
-            self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => &self::$class_structure[$parent_class], 'children' => [] ];
-        }
-
-        self::$class_structure[$parent_class]['children'][] =& self::$class_structure[$class_name];
 
         return $ret;
     }
@@ -869,6 +920,9 @@ BANNER;
      */
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
+
+        //print $class_path.' '.$class_name.PHP_EOL;
+
         $ret = NULL;
 
         try {

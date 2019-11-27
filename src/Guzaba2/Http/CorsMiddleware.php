@@ -24,7 +24,7 @@ class CorsMiddleware extends Base implements MiddlewareInterface
      * @param Rewriter $Rewriter
      * @param $headers
      */
-    public function __construct(array $headers = [])
+    public function __construct(array $headers = ['Access-Control-Allow-Origin' => '*'])
     {
         parent::__construct();
 
@@ -42,15 +42,10 @@ class CorsMiddleware extends Base implements MiddlewareInterface
     {
         $Response = $Handler->handle($Request);
 
-        //TODO - improve
-        if (empty($this->headers)) {
-            $Response = $Response->withAddedHeader('Access-Control-Allow-Origin', '*');
-        } else {
-            foreach ($this->headers as $key => $value) {
-                $Response = $Response->withAddedHeader($key, $value);
-            }
+        foreach ($this->headers as $key => $value) {
+            $Response = $Response->withAddedHeader($key, $value);
         }
-
+        
         return $Response;
     }
 }

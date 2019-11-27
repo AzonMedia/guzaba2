@@ -741,12 +741,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $called_class = get_called_class();
         $ret = [];
         foreach ($data as $key=>$value) {
-            $type = static::get_column_type($key, $nullable);
-            if ($type === NULL) {
-                throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+            //$type = static::get_column_type($key, $nullable);
+            if (static::has_property($key)) {
+                $type = static::get_property_type($key, $nullable, $default_value);
+                if ($type === NULL) {
+                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+                }
+                settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
+                $ret[$key] = $value;
             }
-            settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
-            $ret[$key] = $value;
+
         }
         return $ret;
     }
@@ -760,42 +764,42 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param bool $nullable
      * @return string|null
      */
-    public static function get_column_type(string $column, ?bool &$nullable = null) : ?string
-    {
-        $type = NULL;
+//    public static function get_column_type(string $column, ?bool &$nullable = null) : ?string
+//    {
+//        $type = NULL;
+//
+//        static $column_type_cache = [];
+//        $class = get_called_class();
+//
+//        if (!array_key_exists($class, $column_type_cache)) {
+//            $column_type_cache[$class] = [];
+//        }
+//
+//        if (array_key_exists($column, $column_type_cache[$class])) {
+//            $nullable = $column_type_cache[$class][$column][1];
+//            return $column_type_cache[$class][$column][0];
+//        }
+//
+//        $column_found = FALSE;
+//        foreach (static::get_columns_data() as $column_key_name => $column_data) {
+//            if ($column_data['name'] == $column) {
+//                $type = $column_data['php_type'];
+//                $nullable = (bool) $column_data['nullable'];
+//                $column_found = TRUE;
+//                break;
+//            }
+//        }
+//
+//        if (!$column_found) {
+//            $message = sprintf(t::_('The column "%s" is not found in table "%s". Please clear the cache and try again. If the error persists it would mean wrong column name.'), $column, self::get_main_table());
+//            throw new RunTimeException($message);
+//        }
+//
+//        $column_type_cache[$class][$column] = [$type, $nullable];
+//
+//        return $type;
+//    }
 
-        static $column_type_cache = [];
-        //$class = get_class($this);
-        $class = get_called_class();
-
-        if (!array_key_exists($class, $column_type_cache)) {
-            $column_type_cache[$class] = [];
-        }
-
-        if (array_key_exists($column, $column_type_cache[$class])) {
-            $nullable = $column_type_cache[$class][$column][1];
-            return $column_type_cache[$class][$column][0];
-        }
-        
-        $column_found = FALSE;
-        foreach (static::get_columns_data() as $column_key_name => $column_data) {
-            if ($column_data['name'] == $column) {
-                $type = $column_data['php_type'];
-                $nullable = (bool) $column_data['nullable'];
-                $column_found = TRUE;
-                break;
-            }
-        }
-        
-        if (!$column_found) {
-            $message = sprintf(t::_('The column "%s" is not found in table "%s". Please clear the cache and try again. If the error persists it would mean wrong column name.'), $column, self::get_main_table());
-            throw new RunTimeException($message);
-        }
-
-        $column_type_cache[$class][$column] = [$type, $nullable];
-
-        return $type;
-    }
 
     /**
      * This is similar to self::get_record_data() but also invokes the property hooks.

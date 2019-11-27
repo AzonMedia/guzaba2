@@ -39,12 +39,6 @@ class Memory extends Store implements StoreInterface
      */
     protected MetaStoreInterface $MetaStore;
 
-    /**
-     * @var array
-     */
-    protected array $record_structures = [];
-
-
     //protected $data = [];
     //instead of storing the data
     protected $data = [
@@ -170,7 +164,7 @@ class Memory extends Store implements StoreInterface
                     }
                     $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                    Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                    Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
             }
@@ -195,7 +189,7 @@ class Memory extends Store implements StoreInterface
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                         $pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                        Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $pointer;
                    }
                 }
@@ -255,7 +249,7 @@ class Memory extends Store implements StoreInterface
         $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
         //Kernel::dump(['active_record',$this->uuid_data]);
         //there can be other versions for the same class & lookup_index
-
+        //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
 
         if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
@@ -281,6 +275,11 @@ class Memory extends Store implements StoreInterface
             }
         }
         $this->MetaStore->set_meta_data($class, $primary_index, $meta);
+
+        //only the last update time matters (it is also updated when an object is created)
+        //$class_meta = ['object_last_update_microtime' => $meta['object_last_update_microtime'] ];
+        $class_meta = $meta;
+        $this->MetaStore->set_class_meta_data($class, $class_meta);
     }
 
     /**

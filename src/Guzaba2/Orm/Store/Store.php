@@ -114,6 +114,28 @@ abstract class Store extends Base implements StoreInterface
         return implode(self::KEY_SEPARATOR, $primary_index);
     }
 
+    public static function parse_lookup_index(string $lookup_index) : array
+    {
+        return explode(self::KEY_SEPARATOR, $lookup_index);
+    }
+
+    /**
+     * Returns the primary index array with data based on the provided $class and $lookup_index
+     * @param string $class
+     * @param string $lookup_index
+     * @return array
+     */
+    public static function restore_primary_index(string $class, string $lookup_index) : array
+    {
+        $primary_index_columns = $class::get_primary_index_columns();
+        $primary_index_data = self::parse_lookup_index($lookup_index);
+        $primary_index = [];
+        for ($aa=0; $aa<count($primary_index_columns); $aa++) {
+            $primary_index[$primary_index_columns[$aa]] = $primary_index_data[$aa];
+        }
+        return $primary_index;
+    }
+
     public static function get_root_coroutine_id() : int
     {
         if (\Swoole\Coroutine::getCid() === -1) {

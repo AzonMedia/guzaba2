@@ -29,7 +29,7 @@ class Request extends HandlerBase
      * Array of MiddlewareInterface
      * @var array
      */
-    protected $middlewares = [];
+    protected iterable $middlewares = [];
 
     /**
      * @var Response
@@ -43,7 +43,7 @@ class Request extends HandlerBase
      * @param Response|null $DefaultResponse
      * @throws RunTimeException
      */
-    public function __construct(Server $HttpServer, array $middlewares = [], ?Response $DefaultResponse = NULL)
+    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL)
     {
         parent::__construct($HttpServer);
 
@@ -121,7 +121,7 @@ class Request extends HandlerBase
             //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //Kernel::printk($message);
             //when using log() the worker # is always printed
-            $message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            $message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             Kernel::log($message, LogLevel::INFO);
         }
     }
