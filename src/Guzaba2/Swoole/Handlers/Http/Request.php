@@ -123,14 +123,12 @@ class Request extends HandlerBase
             //when using log() the worker # is always printed
             $time_str = '';
             $served_in_time = $end_time - $start_time;
-            $round_to = 4;//the PHP microtime(TRUE) gives time down to 100 microseconds
-            //because of this it is realistic to round to 4th not 6th symbol
             if ($served_in_time > 1) {
-                $time_str = round($served_in_time, $round_to).' SECONDS';
+                $time_str = round($served_in_time, Kernel::MICROTIME_ROUNDING).' SECONDS';
             } elseif ($served_in_time > 0.001) {
-                $time_str = (round($served_in_time, $round_to) * 1_000).' MILLISECONDS';
+                $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000).' MILLISECONDS';
             } else {
-                $time_str = (round($served_in_time, $round_to) * 1_000_000).' MICROSECONDS';
+                $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
             }
             $message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             Kernel::log($message, LogLevel::INFO);

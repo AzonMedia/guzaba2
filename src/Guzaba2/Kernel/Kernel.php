@@ -35,6 +35,7 @@ use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\IpBlackList;
+use Monolog\Handler\StreamHandler;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -72,6 +73,12 @@ abstract class Kernel
     public const EXIT_SUCCESS = 0;
 
     public const EXIT_GENERAL_ERROR = 1;
+
+    /**
+     * Currently microtime(TRUE) returns up to 100 microseconds.
+     * Time differences between two microtimes make sense to be rounded up to the 4 digit.
+     */
+    public const MICROTIME_ROUNDING = 4;
 
     //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba%202%20framework
     public const FRAMEWORK_BANNER = <<<BANNER
@@ -480,7 +487,7 @@ BANNER;
 
         if (trim($message)) {
             $microtime = microtime(TRUE);
-            $microtime_diff = round($microtime - self::$init_microtime, 6);
+            $microtime_diff = round($microtime - self::$init_microtime, self::MICROTIME_ROUNDING);
             if (self::get_http_server()) {
                 $worker_id = self::get_worker_id();
                 if ($worker_id != -1) {
@@ -492,11 +499,28 @@ BANNER;
                 $worker_str = 'Startup';
             }
             // todo fix padding
-            $message = sprintf('[%s %s] %s', $microtime_diff, $worker_str, $message);
+            $message = sprintf('[%.4f %s] %s', $microtime_diff, $worker_str, $message);
         }
-        //$handlers = self::$Logger->getHandlers();
-        //TODO log to the main log too
+        $handlers = self::$Logger->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+                if ($url && $url[0] === '/') { //skip php://output
+                    self::file_put_contents($url, $message, \FILE_APPEND);
+                }
+            }
+        }
         print $message;
+    }
+
+    public static function file_put_contents(string $file, string $contents, int $flags = 0) : int
+    {
+        if (\Swoole\Coroutine::getCid() > 0) {
+            $ret = \Swoole\Coroutine\System::writeFile($file, $contents, $flags);
+        } else {
+            $ret = file_put_contents($file, $contents, $flags);
+        }
+        return $ret;
     }
 
     /**
