@@ -154,8 +154,16 @@ abstract class Message extends Base implements MessageInterface
     public function getHeader(/* string */ $name) : array
     //public function getHeader(string $name) : array
     {
+        $ret = [];
         $name = strtolower($name);
-        return array_key_exists($name, $this->headers) ? $this->headers[$name] : [];
+        //return array_key_exists($name, $this->headers) ? $this->headers[$name] : [];
+        foreach ($this->headers as $header_name => $header_value) {
+            if (strtolower($name) === strtolower($header_name)) {
+                $ret = $header_value;
+                break;
+            }
+        }
+        return $ret;
     }
 
     /**
