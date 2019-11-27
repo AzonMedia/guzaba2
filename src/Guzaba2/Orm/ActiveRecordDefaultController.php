@@ -131,7 +131,7 @@ class ActiveRecordDefaultController extends Controller
         }
 
         $primary_index = $this->ActiveRecord::get_primary_index_columns();
-
+        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
@@ -166,6 +166,7 @@ class ActiveRecordDefaultController extends Controller
     public function update(string $uuid) : ResponseInterface
     {
         $body_arguments = $this->get_request()->getParsedBody();
+        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
