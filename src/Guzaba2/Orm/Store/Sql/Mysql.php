@@ -72,7 +72,7 @@ class Mysql extends Database implements StructuredStoreInterface
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
     }
 
-    protected function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
+    public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
     {
 
         if (Coroutine::inCoroutine()) {
