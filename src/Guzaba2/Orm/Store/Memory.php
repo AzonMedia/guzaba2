@@ -177,8 +177,8 @@ class Memory extends Store implements StoreInterface
             // TODO UUID
         } elseif ($uuid = $class::get_uuid_from_data($index)) {
             if (isset($this->uuid_data[$uuid])) {
-                $lookup_index = $this->uuid_data[$uuid]['lookup_index'];
-                $class_by_uuid = $this->uuid_data[$uuid]['class'];
+                $lookup_index = $this->uuid_data[$uuid]['object_id'];
+                $class_by_uuid = $this->uuid_data[$uuid]['class_name'];
                 if ($class_by_uuid !== $class) {
                     throw new LogicException(sprintf(t::_('The requested object is of class %s while the the provided UUID %s is of class %s.'), $class, $uuid, $class_by_uuid));
                 }
@@ -252,8 +252,8 @@ class Memory extends Store implements StoreInterface
         // $this->data[$class][$uuid] =& $this->data[$class][$lookup_index];
         //v2 - use a separate UUID index that corresponds to the ID
         // TODO UUID
-        $this->uuid_data[$uuid] = ['class' => $class, 'id' => $primary_index, 'lookup_index' => $lookup_index];
-
+        $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
+        //Kernel::dump(['active_record',$this->uuid_data]);
         //there can be other versions for the same class & lookup_index
 
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
@@ -392,10 +392,13 @@ class Memory extends Store implements StoreInterface
     public function get_meta_by_uuid(string $uuid) : array
     {
         if (isset($this->uuid_data[$uuid])) {
-            $ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
-            $ret['class'] = $this->uuid_data[$uuid]['class'];
+            //$ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
+            //$ret['class'] = $this->uuid_data[$uuid]['class'];
+            $ret = $this->uuid_data[$uuid];
+            //Kernel::dump(array('Memory1 get_meta_by_uuid', $ret));
         } else {
             $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
+            //Kernel::dump(array('Memory2 get_meta_by_uuid', $ret, get_class($this->FallbackStore)));
         }
 
         return $ret;

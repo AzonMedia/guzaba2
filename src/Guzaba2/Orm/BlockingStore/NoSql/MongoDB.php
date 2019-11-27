@@ -11,6 +11,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
+use Guzaba2\Kernel\Kernel;
 
 class MongoDB extends Database
 {    
@@ -46,12 +47,12 @@ class MongoDB extends Database
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
-                'class'         => $class_name,
+                'class_name'         => $class_name,
                 'object_id'     => $object_id
             ];
         } else {
             $filter = [
-                'class'         => $class_name,
+                'class_name'         => $class_name,
                 'object_uuid'   => $object_id
             ];
         }
@@ -74,6 +75,8 @@ class MongoDB extends Database
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
+        //Kernel::dump(array('MongoDb get_meta_by_uuid',$data));
+
         // $ret['object_id'] = $data[0]['object_id'];
         // $ret['class'] = $data[0]['class'];
 
@@ -91,12 +94,12 @@ class MongoDB extends Database
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
-                'class'         => get_class($ActiveRecord),
+                'class_name'         => get_class($ActiveRecord),
                 'object_id'     => $ActiveRecord->get_id()
             ];
         } else {
             $filter = [
-                'class'         => get_class($ActiveRecord),
+                'class_name'         => get_class($ActiveRecord),
                 'object_uuid'   => $ActiveRecord->get_uuid()
             ];
         }
@@ -127,7 +130,7 @@ class MongoDB extends Database
 
         $data = [
             'object_uuid'                   => $uuid,
-            'class'                         => get_class($ActiveRecord),
+            'class_name'                         => get_class($ActiveRecord),
             'object_create_microtime'       => $object_create_microtime,
             'object_last_update_microtime'  => $object_create_microtime,
         ];

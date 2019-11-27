@@ -22,6 +22,7 @@ use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 
 
+
 class Mysql extends Database implements StructuredStoreInterface
 {
     protected const CONFIG_DEFAULTS = [
@@ -254,10 +255,12 @@ WHERE
         if (!count($data)) {
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
-        $ret['object_id'] = $data['object_id'];
-        $ret['class'] = $data['class_name'];
+        //$ret['object_id'] = $data['object_id'];
+        //$ret['class'] = $data['class_name'];
 
-        return $ret;
+        //Kernel::dump(array('Mysql get_meta_by_uuid', $ret));
+        //return $ret;
+        return $data;
     }
 
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
@@ -570,6 +573,7 @@ ON DUPLICATE KEY UPDATE
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
+            //Kernel::dump(array($ret,'MYSQL get data pointer'));
         } else {
             //TODO IVO may be should be moved in ActiveRecord
             //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));

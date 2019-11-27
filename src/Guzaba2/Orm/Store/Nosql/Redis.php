@@ -16,6 +16,7 @@ use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Store\NullStore;
 use Ramsey\Uuid\Uuid;
+use Guzaba2\Kernel\Kernel;
 
 class Redis extends Database
 {
@@ -123,6 +124,7 @@ class Redis extends Database
 //                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
 //                }
             }
+            //Kernel::dump(['update_record_REDIS', $meta_data]);
             foreach ($meta_data as $meta_key=>$meta_value) {
                 $Connection->hSet($metakey, $meta_key, $meta_value);
             }
@@ -174,6 +176,7 @@ class Redis extends Database
 
         if (strlen($uuid) && !$Connection->exists($uuid)) {
             $ret = $this->FallbackStore->get_data_pointer($class, $index);
+
             return $ret;
         }
 
@@ -185,6 +188,7 @@ class Redis extends Database
             $result = $class::fix_record_data_types($result);
         }
 
+   
         $meta = $this->get_meta($class, $index[$id_column]);
         $ret = ['data' => $result, 'meta' => $meta];
 
@@ -203,12 +207,12 @@ class Redis extends Database
         $uuid = $Connection->get($redis_id_key);
         $metakey = $uuid . ':meta';
 
+        
         if (!$Connection->exists($metakey)) {
             return $this->FallbackStore->get_meta($class, $object_id);
         }
 
         $result = $Connection->hGetAll($metakey);
-
         foreach ($result as $key => $value) {
             if (is_numeric($value)) {
                 $result[$key] = (int) $value;
@@ -243,11 +247,14 @@ class Redis extends Database
         $metakey = $uuid . ':meta';
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         if (!$Connection->exists($metakey)) {
+            //Kernel::dump(array('Redis1 get_meta_by_uuid'));
             return $this->FallbackStore->get_meta_by_uuid($uuid);
         }
 
+        
         $result = $Connection->hGetAll($metakey);
 
+        //Kernel::dump(array('Redis2 get_meta_by_uuid', $result));
         return $result;
     }
 
