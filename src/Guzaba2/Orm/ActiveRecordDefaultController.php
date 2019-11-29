@@ -31,8 +31,6 @@ class ActiveRecordDefaultController extends Controller
      */
     protected ActiveRecord $ActiveRecord;
 
-    protected $a;
-
     /**
      * Instantiates the ActiveRecord object.
      * May return Response if there is an error.
@@ -97,18 +95,9 @@ class ActiveRecordDefaultController extends Controller
     {
 
         $struct = [];
-//        foreach ($this->ActiveRecord as $property => $value) {
-//            $struct[$property] = $value;
-//        }
-//$struct = array_merge($this->ActiveRecord->get_record_data(), $this->ActiveRecord->get_meta_data());
-//        //print_r($this->ActiveRecord);
-//        //print $this->ActiveRecord;
-//        $o = $this->ActiveRecord;
-//        print_r(json_encode($o));
-//        print json_last_error_msg();
 
         $struct = $this->ActiveRecord->as_array();
-
+        //$struct = $this->ActiveRecord;//also works
         $Response = parent::get_structured_ok_response($struct);
         return $Response;
     }
@@ -132,7 +121,7 @@ class ActiveRecordDefaultController extends Controller
         }
 
         $primary_index = $this->ActiveRecord::get_primary_index_columns();
-
+        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
@@ -167,6 +156,7 @@ class ActiveRecordDefaultController extends Controller
     public function update(string $uuid) : ResponseInterface
     {
         $body_arguments = $this->get_request()->getParsedBody();
+        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
