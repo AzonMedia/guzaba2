@@ -148,7 +148,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     private bool $read_lock_obtained_flag = FALSE;
 
-    protected bool $is_deleted_flag = FALSE;
 
     /**
      * ActiveRecord constructor.
@@ -432,7 +431,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
 
-        $this->is_deleted_flag = TRUE;
         //parent::__destruct();
     }
 
