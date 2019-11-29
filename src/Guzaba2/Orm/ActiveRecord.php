@@ -79,7 +79,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @var array
      */
-    protected array $record_data = [];
+    public array $record_data = [];
 
     /**
      * @var array
@@ -147,6 +147,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @var bool
      */
     private bool $read_lock_obtained_flag = FALSE;
+
+    protected bool $is_deleted_flag = FALSE;
 
     /**
      * ActiveRecord constructor.
@@ -228,7 +230,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     public function __destruct()
     {
-        if (!$this->is_new()) {
+        if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
             $this->Store->free_pointer($this);
         }
 
@@ -267,8 +269,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     protected function read(/* mixed */ $index) : void
     {
-
-
         if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_read'], $args);//must return void
@@ -317,7 +317,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     public function save() : ActiveRecordInterface
-    {
+    {   
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+            }
+        }
+
         if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
             return $this;
         }
@@ -386,6 +393,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public function delete(): void
     {
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                throw new RunTimeException(sprintf(t::_('Trying to delete object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+            }
+        }
 
         if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
@@ -404,6 +417,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //self::OrmStore()->remove_record($this);
         static::get_service('OrmStore')->remove_record($this);
+        
 
         if (static::is_locking_enabled()) {
             //self::LockManager()->release_lock('', $LR);
@@ -418,6 +432,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
 
+        $this->is_deleted_flag = TRUE;
         //parent::__destruct();
     }
 
@@ -1031,6 +1046,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //static::initialize_columns();
         $class_name = static::class;
         $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+
         return $data;
     }
 

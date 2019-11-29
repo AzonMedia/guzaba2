@@ -153,12 +153,14 @@ class Memory extends Store implements StoreInterface
         //check is the provided array matching the primary index
 
         if ($primary_index = $class::get_index_from_data($index)) {
+            
             $lookup_index = self::form_lookup_index($primary_index);
             if (isset($this->data[$class][$lookup_index])) {
                 //if found check is it current in MetaStore
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                 //print $last_update_time.'AAA'.PHP_EOL;
                 if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    
                     if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                         $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                     }
@@ -247,7 +249,6 @@ class Memory extends Store implements StoreInterface
         //v2 - use a separate UUID index that corresponds to the ID
         // TODO UUID
         $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
-        //Kernel::dump(['active_record',$this->uuid_data]);
         //there can be other versions for the same class & lookup_index
         //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
@@ -368,6 +369,7 @@ class Memory extends Store implements StoreInterface
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
             $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
         }
+
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
             //if this is the latest version leave it in memory for the purpose of caching
             $latest_update_time = 0;
@@ -376,6 +378,8 @@ class Memory extends Store implements StoreInterface
             }
             if ($latest_update_time > $last_update_time) {
                 //then there is a more recent record and this one can be deleted (as it is refcount 0)
+                unset($this->data[$class][$lookup_index][$last_update_time]);
+            } elseif (!empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted'])) {
                 unset($this->data[$class][$lookup_index][$last_update_time]);
             } else {
                 //leave the record in ormstore for the purpose of caching
@@ -394,10 +398,8 @@ class Memory extends Store implements StoreInterface
             //$ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
             //$ret['class'] = $this->uuid_data[$uuid]['class'];
             $ret = $this->uuid_data[$uuid];
-            //Kernel::dump(array('Memory1 get_meta_by_uuid', $ret));
         } else {
             $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
-            //Kernel::dump(array('Memory2 get_meta_by_uuid', $ret, get_class($this->FallbackStore)));
         }
 
         return $ret;
@@ -410,10 +412,47 @@ class Memory extends Store implements StoreInterface
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
-        $this->FallbackStore->remove_record($ActiveRecord);
         $class = get_class($ActiveRecord);
         $primary_index = $ActiveRecord->get_primary_index();
+        $index = $ActiveRecord->get_id();
+
+        $this->FallbackStore->remove_record($ActiveRecord);
         $this->MetaStore->remove_meta_data($class, $primary_index);
+
+        //this is a safe delete only for the version used by the current coroutine
+        //(but leaves an empty entry $data[class][index])
+        // $pointer =& $this->get_data_pointer(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+        // $pointer['meta'] = [];
+        // $pointer['data'] = [];
+        //if proper locking on obth read & write is used there cant be any other instnaces used by other corouties
+        //and deleting all records/versions of this instance should not affect any other coroutines
+        //there even no need to have a loop thorugh the timestamps as if there is proper locking there should be only one (last) version remaining
+        //the free_pointer() should have released all previous versions (and all other coroutines/instances should have been destroyed if this coroutine has write lock)
+
+        // foreach ($this->data[$class][$index] as $microtime=>&$object_data) {
+        //     $object_data['meta'] = [];
+        //     $object_data['data'] = [];
+        // }
+        // unset($this->data[$class][$index]);
+        //if (count($this->data[$class][$index]) > 1) {
+            //$message = sprintf(t::_('At the time of deletion of object of class %s with index %s there are %s versions in Memory Store. This can be due to improper locking (both read & write needs to be used) or there is a bug in the cleanup in ActiveRecord::__destruct() or Memory::free_pointer().'),
+            //$class, print_r($primary_index, TRUE), count($this->data[$class][$index]) );
+            //throw new RunTimeException($message);
+        //}
+        foreach ($this->data[$class][$index] as $update_microtime => & $object_data) {
+            $object_data['is_deleted'] = TRUE;
+            //$object_data['meta']['meta_is_deleted'] = TRUE;
+        }
+        //the below should also be correct (see explanation above)
+        //$last_version_microtime = array_key_first($this->data[$class][$index]);
+        //$this->data[$class][$index][$last_version_microtime]['data'] = [];
+        //$this->data[$class][$index][$last_version_microtime]['meta'] = [];
+        //unset($this->data[$class][$index]);
+        //instead of deleting the data now (which may affect other coroutines in the same worker) we mark it for deletion
+        //which deletion will take place when refcount = 0 in free_pointer()
+        //this will allow GET requests to remain without locking
+        //but mandates a check that no WRITE/DELETE occurs in a GET request
+        //$this->data[$class][$index][$last_version_microtime]['is_deleted'] = TRUE;
     }
 
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable

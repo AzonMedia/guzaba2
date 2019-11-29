@@ -124,7 +124,7 @@ class Redis extends Database
 //                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
 //                }
             }
-            //Kernel::dump(['update_record_REDIS', $meta_data]);
+            
             foreach ($meta_data as $meta_key=>$meta_value) {
                 $Connection->hSet($metakey, $meta_key, $meta_value);
             }
@@ -243,18 +243,13 @@ class Redis extends Database
 
     public function get_meta_by_uuid(string $uuid) : array
     {
-
         $metakey = $uuid . ':meta';
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         if (!$Connection->exists($metakey)) {
-            //Kernel::dump(array('Redis1 get_meta_by_uuid'));
             return $this->FallbackStore->get_meta_by_uuid($uuid);
         }
-
-        
         $result = $Connection->hGetAll($metakey);
 
-        //Kernel::dump(array('Redis2 get_meta_by_uuid', $result));
         return $result;
     }
 
@@ -323,6 +318,7 @@ class Redis extends Database
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
         $this->FallbackStore->remove_record($ActiveRecord);
+
         $uuid = $ActiveRecord->get_uuid();
         $id = $ActiveRecord->get_id();
         $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);

@@ -75,8 +75,6 @@ class MongoDB extends Database
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
-        //Kernel::dump(array('MongoDb get_meta_by_uuid',$data));
-
         // $ret['object_id'] = $data[0]['object_id'];
         // $ret['class'] = $data[0]['class'];
 

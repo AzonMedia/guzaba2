@@ -258,7 +258,6 @@ WHERE
         //$ret['object_id'] = $data['object_id'];
         //$ret['class'] = $data['class_name'];
 
-        //Kernel::dump(array('Mysql get_meta_by_uuid', $ret));
         //return $ret;
         return $data;
     }
@@ -558,12 +557,6 @@ ON DUPLICATE KEY UPDATE
         $data = $this->get_data_by($class, $index);
 
         if (count($data)) {
-            //TODO meta data object onwenrs table, i will set it manuly until save() is finished
-            //$record_data['meta']['updated_microtime'] = time();
-            //based on the returned data we need to determine the primary index (which needs to be a single column for the objects which support meta data)
-            //$record_data['meta'] = $this->get_meta($class, );
-            //TODO IVO [0]
-            //$record_data['data'] = $data[0];
             $primary_index = $class::get_index_from_data($data[0]);
             if (is_null($primary_index)) {
                 throw new RunTimeException(sprintf(t::_('The primary index for class %s is not found in the retreived data.'), $class));
@@ -573,10 +566,7 @@ ON DUPLICATE KEY UPDATE
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
-            //Kernel::dump(array($ret,'MYSQL get data pointer'));
         } else {
-            //TODO IVO may be should be moved in ActiveRecord
-            //throw new framework\orm\exceptions\missingRecordException(sprintf(t::_('The required object of class "%s" with index "%s" does not exist.'), $class, var_export($lookup_index, true)));
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
@@ -760,13 +750,10 @@ WHERE `object_uuid` = '{$uuid}'
 
             $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
             $object_id = $meta_data['object_id'];
-
             $w[] = $main_index[0] . ' = :object_id';
             $b['object_id'] = $object_id;
 
         } else {
-
-
             foreach ($index as $field_name=>$field_value) {
                 if (!is_string($field_name)) {
                     //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
@@ -865,7 +852,6 @@ WHERE
 {$sort_str}
 {$l_str}
 ";
-
         $Statement = $Connection->prepare($q);
         $Statement->execute($b);
         $data = $Statement->fetchAll();
@@ -873,6 +859,7 @@ WHERE
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
+
         return $data;
 
     }
