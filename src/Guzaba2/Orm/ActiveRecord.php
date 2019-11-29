@@ -79,7 +79,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @var array
      */
-    public array $record_data = [];
+    protected array $record_data = [];
 
     /**
      * @var array
