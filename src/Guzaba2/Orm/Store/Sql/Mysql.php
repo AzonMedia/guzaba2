@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
+use Guzaba2\Database\Sql\Mysql\Connection;
 use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
@@ -421,14 +422,14 @@ VALUES
                 ";
 
 
-            try {
+//            try {
                 $Statement = $Connection->prepare($q);
                 $Statement->execute($data_arr);
-            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
-                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
-            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
-                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
-            }
+//            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $Exception) {
+//                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException(NULL, $Exception->getMessage(), 0, $Exception);
+//            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $Exception) {
+//                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException(NULL, $Exception->getMessage(), 0, $Exception);
+//            }
 
             //if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->index[$main_index[0]]) {
             if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_id()) {
@@ -698,13 +699,16 @@ WHERE `object_uuid` = '{$uuid}'
      * @param  int $limit
      * @return array  dataset
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : array
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
 
         //lookup in DB
 
+        /**
+         * @var Connection
+         */
         $Connection = $this->get_connection($CR);
 
         //pull data from DB
@@ -729,7 +733,7 @@ WHERE `object_uuid` = '{$uuid}'
             TRUE => 'DESC',
             FALSE => 'ASC',
         ];
-        if ($sort_by != 'none') {
+        if ($sort_by !== NULL) {
             $sort_str = " ORDER BY " . $sort_by . " " . $sort_direction[$sort_desc];
         }
 
@@ -850,13 +854,17 @@ LEFT JOIN
 ON 
     meta.object_id = {$table_name}.{$main_index[0]} 
 AND
-    meta.class_name = :class_name
+    meta.class_name = :meta_class_name
 ";
-        $b['class_name'] = $class;
-        
+        $b['meta_class_name'] = $class;//needs to be different from "class_name" as this is used elsewhere too
+
+
         $q = "
-SELECT 
-{$select_str}, meta.object_uuid
+SELECT SQL_CALC_FOUND_ROWS
+meta.*,
+{$select_str}
+-- meta.object_id AS meta_object_id,
+-- meta.class_name AS meta_class_name,
 FROM
 {$j_str}
 {$meta_str}
@@ -869,10 +877,8 @@ WHERE
         $Statement = $Connection->prepare($q);
         $Statement->execute($b);
         $data = $Statement->fetchAll();
+        $total_found_rows = $Connection->get_found_rows();
 
-        if (empty($data)) {
-            // $this->throw_not_found_exception($class, self::form_lookup_index($index));
-        }
         return $data;
 
     }

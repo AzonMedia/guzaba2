@@ -118,10 +118,23 @@ abstract class Connection extends TransactionalConnection
         return $this->NativeConnection->affected_rows;
     }
 
+    /**
+     * Returns the rows found by the previous query
+     * This should be called only by pdoStatement::fetchAllAsArray() and the similar methods
+     *
+     * @return int
+     */
+    public function get_found_rows() : int
+    {
+        $q = "SELECT FOUND_ROWS() AS found_rows";
+        return (int) $this->prepare($q)->execute()->fetchRow('found_rows');
+    }
+
     public function get_last_error() : string
     {
         return $this->NativeConnection->error;
     }
+
 
     public function get_last_error_number() : int
     {

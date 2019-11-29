@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
@@ -21,7 +21,8 @@ class User extends ActiveRecord implements UserInterface
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
         'route'                     => '/user',
-        //'default_current_user_id'   => 0,//can be ID or UUID//NOT USED - see DI config instead
+        //instead of hardcoding this in DI it is much better if it is accessible from outside the DI context
+        'default_current_user_id'   => 1,
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,
@@ -32,6 +33,7 @@ class User extends ActiveRecord implements UserInterface
                 //'validation_method'     => [User::class, '_validate_role_id'],//can be sete explicitly or if there is a static method _validate_role_id it will be executed
             ],
         ],
+
         'structure' => [
             [
                 'name' => 'object_uuid',
@@ -89,10 +91,10 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_RUNTIME = [];
 
-//    public static function get_default_current_user_id() /* scalar */
-//    {
-//        return self::CONFIG_RUNTIME['default_current_user_id'];
-//    }
+    public static function get_default_current_user_id() /* scalar */
+    {
+        return self::CONFIG_RUNTIME['default_current_user_id'];
+    }
 
     /**
      * Returns the primary role of the user
@@ -138,4 +140,5 @@ class User extends ActiveRecord implements UserInterface
             $this->role_id = $Role->get_id();
         }
     }
+
 }

@@ -267,19 +267,19 @@ trait ActiveRecordOverloading
      * @param array $data
      * @return array
      */
-    public static function cast_data_to_property_types(array $data) : array
-    {
-        $properties = static::get_property_names();
-        foreach ($properties as $property) {
-            $type = static::get_property_type($property, $is_nullable, $default_value);
-            if (array_key_exists($property, $data)) {
-                $value = $data[$property];
-                settype($value, $type);
-                $data[$property] = $value;
-            }
-        }
-        return $data;
-    }
+//    public static function cast_data_to_property_types(array $data) : array
+//    {
+//        $properties = static::get_property_names();
+//        foreach ($properties as $property) {
+//            $type = static::get_property_type($property, $is_nullable, $default_value);
+//            if (array_key_exists($property, $data)) {
+//                $value = $data[$property];
+//                settype($value, $type);
+//                $data[$property] = $value;
+//            }
+//        }
+//        return $data;
+//    }
 
     /**
      * Checks the type of the provided value against the expected type and if there is mismatch it may:
@@ -379,6 +379,119 @@ trait ActiveRecordOverloading
             //the type matches - no need to cast
             $this->record_data[$property] = $value;
         }
+    }
+
+
+    /**
+     * Updates the data type based on the structure.
+     * Certain stores (like Redis) may loose the type and keep everything as string.
+     * @param array $data
+     * @return array
+     */
+    public static function fix_record_data_types(array $data) : array
+    {
+        // altough we have lazy loading we need to store in record_data whatever we obtained - this will set the index (so get_index() works)
+        $called_class = get_called_class();
+        $ret = [];
+        foreach ($data as $key=>$value) {
+            //$type = static::get_column_type($key, $nullable);
+            if (static::has_property($key)) {
+                $type = static::get_property_type($key, $nullable, $default_value);
+                if ($type === NULL) {
+                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+                }
+                settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
+                $ret[$key] = $value;
+            }
+
+        }
+        return $ret;
+    }
+
+
+    /**
+     * It is invoked on @see save()
+     * save() provides the record_data array as first argument
+     * Checks for properties that are empty ==='' and if the property is int or float converts it as follows:
+     * - if the column is nullable sets to NULL
+     * - if the column has a default values it sets it to the default value
+     * - otherwise sets to 0
+     * It also checks if a field is ===NULL and the column is not nullable then converts as follows:
+     * - strings to ''
+     * - ints and floats to 0
+     *
+     * @param array $data_arr
+     * @return array The provided array after the processing
+     */
+    public static function fix_data_arr_empty_values_type(array $data_arr) : array
+    {
+        //$columns_data = self::$columns_data;
+        $columns_data = static::get_columns_data();
+
+        foreach ($data_arr as $field_name=>$field_value) {
+            if ($field_value==='') {
+                // there is no value - lets see what it has to be
+                // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
+                // look for the field
+                //for ($aa = 0; $aa < count($columns_data); $aa++) {
+                foreach ($columns_data as $column_name => $columns_datum) {
+                    if ($columns_datum['name'] == $field_name) {
+                        if ($columns_datum['php_type'] == 'string') {
+                            // this is OK - a string can be empty
+                        } elseif ($columns_datum['php_type'] == 'int' || $columns_datum['php_type'] == 'float') {
+                            // check the default value - the default value may be set to NULL in the table cache but if the column is not NULL-able this means that there is no default value
+                            // in this case we need to set it to 0
+                            // even if the column is NULLable but threre is default value we must use the default value
+
+                            if ($columns_datum['default_value']!==null) {
+                                //we have a default value and we must use it
+                                $data_arr[$field_name] = $columns_datum['default_value'];
+                            } elseif ($columns_datum['nullable']) {
+                                $data_arr[$field_name] = null;
+                            } else {
+                                $data_arr[$field_name] = 0;
+                            }
+                        } else {
+                            // ignore
+                        }
+                        break;// we found our column
+                    }
+                }
+            } elseif ($field_value===NULL) {
+                // we need to check does the column support this type
+                // if it doesnt we need to cast it to 0 or ''
+                // look for the field
+                /*
+                for ($aa = 0; $aa < count($columns_data); $aa++) {
+                    if ($columns_data[$aa]['name'] == $field_name) {
+                        if (!$columns_data[$aa]['nullable']) { // the column does not support NULL but the value is null
+                            // we will need to cast it
+                            if ($columns_data[$aa]['php_type'] == 'string') {
+                                $data_arr[$field_name] = '';
+                            } elseif ($columns_data[$aa]['php_type'] == 'int' || $columns_data[$aa]['php_type'] == 'float') {
+                                $data_arr[$field_name] = 0;
+                            } else {
+                                // ignore for now - let it throw an error
+                            }
+                        }
+                        break;// we found our column
+                    }
+                }
+                */
+                if (!$columns_data[$field_name]['nullable']) { // the column does not support NULL but the value is null
+                    // we will need to cast it
+                    if ($columns_data[$field_name]['php_type'] == 'string') {
+                        $data_arr[$field_name] = '';
+                    } elseif ($columns_data[$field_name]['php_type'] == 'int' || $columns_data[$field_name]['php_type'] == 'float') {
+                        $data_arr[$field_name] = 0;
+                    } else {
+                        // ignore for now - let it throw an error
+                    }
+                }
+            }
+        }
+
+        return $data_arr;
     }
 
     /*

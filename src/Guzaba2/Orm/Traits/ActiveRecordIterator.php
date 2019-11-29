@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
 
@@ -12,7 +12,6 @@ namespace Guzaba2\Orm\Traits;
  */
 trait ActiveRecordIterator
 {
-    private $iterator_position;
 
     private $record_and_meta_data = [];
 

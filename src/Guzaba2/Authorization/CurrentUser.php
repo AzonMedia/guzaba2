@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
@@ -12,25 +12,30 @@ use Guzaba2\Coroutine\Coroutine;
  * The current User is stored in the Coroutine Context.
  * @package Guzaba2\Authorization
  */
-class CurrentUser extends Base implements \Azonmedia\Patterns\Interfaces\WrapperInterface
+class CurrentUser extends Base implements \Azonmedia\Patterns\Interfaces\WrapperInterface, \Azonmedia\Di\Interfaces\CoroutineDependencyInterface
 {
+
+    private UserInterface $User;
 
     public function __construct(UserInterface $User)
     {
-        $Context = Coroutine::getContext();
-        $Context->{UserInterface::class} = $User;
+        $this->User = $User;
+        //$Context = Coroutine::getContext();
+        //$Context->{UserInterface::class} = $User;
     }
 
     public function get() : UserInterface
     {
-        $Context = Coroutine::getContext();
-        return $Context->{UserInterface::class};
+        return $this->User;
+        //$Context = Coroutine::getContext();
+        //return $Context->{UserInterface::class};
     }
 
     public function set(UserInterface $User) : void
     {
-        $Context = Coroutine::getContext();
-        $Context->{UserInterface::class} = $User;
+        $this->User = $User;
+        //$Context = Coroutine::getContext();
+        //$Context->{UserInterface::class} = $User;
     }
 
     public function substitute(UserInterface $User)

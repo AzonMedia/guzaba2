@@ -19,7 +19,16 @@ class StatementMysqli extends Statement implements StatementInterface
     public function execute(array $parameters = []) : self
     {
 
-        $position_parameters = $this->convert_to_position_parameters($parameters);
+        if ($parameters && $this->params) {
+            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
+            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
+        }
+
+        if ($parameters) {
+            $this->params = $parameters;
+        }
+
+        $position_parameters = $this->convert_to_position_parameters($this->params);
 
         //mysqli does not support arguments provided to execute()
         //the argumetns must be bound individually

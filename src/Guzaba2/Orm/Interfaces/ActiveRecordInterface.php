@@ -2,6 +2,8 @@
 
 namespace Guzaba2\Orm\Interfaces;
 
+use Guzaba2\Authorization\Role;
+
 interface ActiveRecordInterface
 {
 
@@ -19,6 +21,7 @@ interface ActiveRecordInterface
 
     public const AUTHZ_METHOD_PREFIX = 'authz_';
 
+    public const INDEX_NEW = 0;
     
     public static function get_routes() : ?iterable ;
 
@@ -34,5 +37,11 @@ interface ActiveRecordInterface
 
     public function delete() : void;
 
+
+    public function check_permission(string $action) : void ;
+
+    public function current_role_can(string $action) : bool ;
+
+    public function role_can(Role $Role, string $action) : bool ;
 
 }

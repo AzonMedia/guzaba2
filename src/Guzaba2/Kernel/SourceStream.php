@@ -3,6 +3,7 @@
 
 namespace Guzaba2\Kernel;
 
+use Azonmedia\Utilities\DebugUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Exceptions\NotImplementedException;
@@ -182,7 +183,20 @@ class SourceStream extends Base
         }
         //before evluating check for parse errors
         //this will not be executing anything so runtime errors are not expected
-        eval($class_without_config_source);
+        try {
+            eval($class_without_config_source);
+        } catch (\Throwable $Exception) {
+//            $message = '';
+//            $PreviosException = $Exception->getPrevious();
+//
+//            $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
+//            if ($PreviosException) {
+//                $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
+//            }
+//            //Kernel::log($message);
+            Kernel::exception_handler($Exception);
+        }
+
 
         $runtime_config = Kernel::get_runtime_configuration($class_name.'_without_config');
 

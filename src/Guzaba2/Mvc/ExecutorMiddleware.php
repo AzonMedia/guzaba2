@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -27,7 +28,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
 use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
-use Guzaba2\Mvc\Interfaces\ControllerWithAuthorizationInterface;
+//use Guzaba2\Mvc\Interfaces\ControllerWithAuthorizationInterface;
 
 /**
  * Class ExecutorMiddleware
@@ -174,15 +175,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                             }
                         }
 
-                        //if ($controller_callable instanceof ControllerInterface && $controller_callable::uses_permissions()) {
-                        if (is_array($controller_callable) && $controller_callable[0] instanceof ControllerWithAuthorizationInterface) {
-                            //if Controller inherits ActiveRecord
-                            //$controller_callable = [ $controller_callable[0], ActiveRecordInterface::AUTHZ_METHOD_PREFIX.$controller_callable[1] ];
-                            $controller_callable[0]->check_permission($controller_callable[1]);
-                        }
+                        $controller_callable[0]->check_permission($controller_callable[1]);
                         $Response = $controller_callable(...$ordered_parameters);
                     } catch (InterruptControllerException $Exception) {
                         $Response = $Exception->getResponse();
+                    } catch (PermissionDeniedException $Exception) {
+                        $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
                     }
 
                 }

@@ -146,7 +146,7 @@ class Server extends \Guzaba2\Http\Server
         }
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);
         
-        $this->validate_server_configuration_options($options);
+        self::validate_server_configuration_options($options);
 
         $this->SwooleHttpServer->set($options);
 
@@ -170,19 +170,7 @@ class Server extends \Guzaba2\Http\Server
         //\Swoole\Runtime::enableStrictMode();
         //Swoole\Runtime::enableStrictMode(): Swoole\Runtime::enableStrictMode is deprecated, it will be removed in v4.5.0
 
-        if (!empty($this->options['document_root']) && empty($this->options['enable_static_handler'])) {
-            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $this->options['document_root']));
-        }
 
-        if (!empty($this->options['enable_static_handler']) && empty($this->options['document_root'])) {
-            throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
-        }
-        if (!empty($this->options['open_http2_protocol']) && (empty($this->options['ssl_cert_file']) || empty($this->options['ssl_key_file']))) {
-            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
-        }
-        if (!empty($this->options['open_http2_protocol']) && !empty($this->options['enable_static_handler'])) {
-            throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
-        }
 
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
@@ -201,6 +189,11 @@ class Server extends \Guzaba2\Http\Server
 
         //TODO - add option for setting the timezone of the application, and time format
         Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s at %s %s').PHP_EOL, $this->host, $this->port, date('Y-m-d H:i:s'), date_default_timezone_get() ));
+
+
+        $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
+        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
+
         if (!empty($this->options['document_root'])) {
             Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
         }
@@ -210,9 +203,9 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['ssl_cert_file'])) {
             Kernel::printk(sprintf(t::_('HTTPS enabled')).PHP_EOL);
         }
-
-        $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
-        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
+        if (!empty($this->options['daemonize'])) {
+            Kernel::printk(sprintf(t::_('DEAMONIZED, log file: %s'), $this->options['log_file']).PHP_EOL);
+        }
         Kernel::printk(sprintf(t::_('End of startup messages. Swoole server is now serving requests')).PHP_EOL );
         Kernel::printk(PHP_EOL);
     }
@@ -261,20 +254,48 @@ class Server extends \Guzaba2\Http\Server
         return $this->SwooleHttpServer->worker_id;
     }
 
-    
-
     /**
      * Validates swooole server configuration options
      * @param array $options this array will be passed to $SwooleHttpServer->set()
      *
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function validate_server_configuration_options(array $options) : void
+    public static function validate_server_configuration_options(array $options) : void
     {
         foreach ($options as $option_name => $option_value) {
             if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
                 throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option "%s" provided to server configuration.'), $option_name));
             }
+        }
+
+        if (!empty($options['document_root']) && empty($options['enable_static_handler'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $options['document_root']));
+        }
+
+        if (!empty($options['enable_static_handler']) && empty($options['document_root'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
+        }
+        if (!empty($options['open_http2_protocol']) && (empty($options['ssl_cert_file']) || empty($options['ssl_key_file']))) {
+            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
+        }
+        if (!empty($options['ssl_cert_file']) && !is_readable($options['ssl_cert_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable.'), $options['ssl_cert_file']));
+        }
+        if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable.'), $options['ssl_cert_file']));
+        }
+        if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
+            throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
+        }
+
+        if (!empty($options['daemonize']) && empty($options['log_file'])) {
+            throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));
+        }
+        if (!empty($options['daemonize']) && file_exists($options['log_file']) && !is_writable($options['log_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable.'), $options['log_file'] ));
+        }
+        if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable.'), $options['log_file'] , dirname($options['log_file']) ));
         }
     }
 

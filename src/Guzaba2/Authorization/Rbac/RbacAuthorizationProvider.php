@@ -4,12 +4,17 @@
 namespace Guzaba2\Authorization\Rbac;
 
 use Guzaba2\Authorization\Role;
+use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
+use Guzaba2\Base\Base;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 
-class RbacAuthorizationProvider implements AuthorizationProviderInterface
+class RbacAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
-    public static function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
+
+    use AuthorizationProviderTrait;
+
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {
         $ret = FALSE;
         $operations = Operation::get_data_by( ['action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] );
@@ -30,5 +35,10 @@ class RbacAuthorizationProvider implements AuthorizationProviderInterface
                 }
             }
         }
+    }
+
+    public static function get_used_active_record_classes() : array
+    {
+        return [Permission::class, Operation::class, PermissionOperation::class, RolePermission::class, Role::class];
     }
 }

@@ -7,6 +7,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 
@@ -78,7 +79,12 @@ class SwooleTable extends MetaStore
      */
     public function get_class_last_update_time(string $class) : ?int
     {
-        return $this->get_last_update_time($class, []);
+        $ret = NULL;
+        try {
+            $ret = $this->get_last_update_time($class, []);
+        } catch (RecordNotFoundException $Exception) {
+        }
+        return $ret;
     }
     
     /**
@@ -87,7 +93,12 @@ class SwooleTable extends MetaStore
      */
     public function get_class_meta_data(string $class) : ?array
     {
-        return $this->get_meta_data($class, []);
+        $ret = NULL;
+        try {
+            $ret = $this->get_meta_data($class, []);
+        } catch (RecordNotFoundException $Exception) {
+        }
+        return $ret;
     }
 
     /**

@@ -22,6 +22,9 @@ class Role extends ActiveRecord
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'roles',
         'route'                 => '/role',
+
+        'no_permissions'        => TRUE,//the roles do not use permissions
+
         'structure' => [
             [
                 'name' => 'object_uuid',

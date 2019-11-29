@@ -86,14 +86,10 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
      */
     protected function convert_to_position_parameters(array $parameters) : array
     {
-        if ($parameters && $this->params) {
-            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
-            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
-        }
 
-        if (!$parameters) {
-            $parameters = $this->params;
-        }
+//        if (!$parameters) {
+//            $parameters = $this->params;
+//        }
 
         //validate the set parameters do they correspond to the expected parameters
         foreach ($this->expected_parameters as $expected_parameter) {
@@ -120,16 +116,16 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
         $error_code = $this->NativeStatement->errno ?? 0;
 
         if ($error_code=='40001') { //deadlock TODO need to check
-            throw new DeadlockException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
+            throw new DeadlockException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE) );
         } else {
             if ($error_code == '1062') {
                 // duplicate entry
-                throw new DuplicateKeyException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
+                throw new DuplicateKeyException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE));
             } elseif ($error_code == '1452') {
                 // foreign key constraint
-                throw new ForeignKeyConstraintException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
+                throw new ForeignKeyConstraintException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE));
             } else {
-                throw new QueryException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), $parameters);
+                throw new QueryException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE) );
             }
         }
     }

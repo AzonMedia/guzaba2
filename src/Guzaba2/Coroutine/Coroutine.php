@@ -54,17 +54,40 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * The ID of the last corotuine that was created
      * @var int
      */
-    protected static $last_coroutine_id = 0;
+    protected static int $last_coroutine_id = 0;
+
+    protected static array $registered_coroutine_services = [];
 
     /**
      * To be used for storing static data while not in coroutine context
      * @var array
      */
-    protected static $static_data = [];
+    //protected static array $static_data = [];
 
     public static function completeBacktraceEnabled() : bool
     {
         return self::CONFIG_RUNTIME['enable_complete_backtrace'];
+    }
+
+    public static function getRegisteredCoroutineServices() : iterable
+    {
+        return self::$registered_coroutine_services;
+    }
+
+    /**
+     * Registers a new services. Expects the class name of the service to be provied.
+     * If the service is already registered returns FALSE.
+     * @param string $class_name
+     * @return bool
+     */
+    public static function registerCoroutineService(string $class_name) : bool
+    {
+        $ret = FALSE;
+        if (!in_array($class_name, self::$registered_coroutine_services)) {
+            self::$registered_coroutine_services[] = $class_name;
+            $ret = TRUE;
+        }
+        return $ret;
     }
 
     /**
@@ -81,12 +104,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //even though this is not the perfect solution as someone else might use the same approach and the property name is the Interface name, not the specific Class name
         //to make sure there are not collisions the specific class name is used
         $Context->{Request::class} = $Request;
+        
+        foreach (self::$registered_coroutine_services as $class_name) {
+            $Context->{$class_name} = new $class_name();
+        }
 
-//        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
-//        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
-//        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
-
-        //
         //not really needed as the Apm & Connections object will be destroyed when the Context is destroyed at the end of the coroutine and this will trigger the needed actions.
 //        \Swoole\Coroutine::defer(function() use ($Context) {
 //            $Context->Apm->store_data();
