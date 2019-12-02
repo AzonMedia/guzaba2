@@ -32,7 +32,6 @@ abstract class ConnectionMysqli extends Connection
 
     public function connect() : void
     {
-        Kernel::dump(static::CONFIG_RUNTIME);
         $ret = $this->NativeConnection = new \mysqli(
             static::CONFIG_RUNTIME['host'],
             static::CONFIG_RUNTIME['user'],

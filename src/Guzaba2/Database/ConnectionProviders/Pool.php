@@ -95,7 +95,6 @@ class Pool extends Provider
 //        if (!Coroutine::inCoroutine()) {
 //            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
 //        }
-
         //check the current scope does it has a connection
 
         if (Coroutine::inCoroutine()) {
@@ -244,10 +243,11 @@ class Pool extends Provider
             $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
 
             $time_end_waiting = (double) microtime(TRUE);
-            $eps = 0.0001;
+            //$eps = 0.0001;
             $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
 
-            if (self::has_service('Apm') && abs($time_waiting_for_connection) > $eps )  {
+            //if (self::has_service('Apm') && abs($time_waiting_for_connection) > $eps )  {
+            if (self::has_service('Apm') && abs($time_waiting_for_connection) > Kernel::MICROTIME_EPS )  {
                 $Apm = self::get_service('Apm');
                 $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
             }

@@ -11,6 +11,50 @@ trait ActiveRecordStructure
 {
 
     /**
+     * @return array
+     * @throws RunTimeException
+     */
+    public static function get_structure() : array
+    {
+        if (empty(static::CONFIG_RUNTIME['structure'])) {
+            throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
+        }
+        return static::CONFIG_RUNTIME['structure'];
+    }
+
+    /**
+     * To be called by ClassInitialization
+     * @throws RunTimeException
+     */
+    public static function initialize_columns() : void
+    {
+        $Store = static::get_service('OrmStore');
+
+        $called_class = get_called_class();
+
+        if (empty(self::$columns_data[$called_class])) {
+
+
+            $unified_columns_data = $Store->get_unified_columns_data($called_class);
+            if (!count($unified_columns_data)) {
+                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class ));
+            }
+
+            foreach ($unified_columns_data as $column_datum) {
+                self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
+            }
+        }
+
+        if (empty(self::$primary_index_columns[$called_class])) {
+            foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
+                if (!empty($column_data['primary'])) {
+                    self::$primary_index_columns[$called_class][] = $column_name;
+                }
+            }
+        }
+    }
+
+    /**
      * Returns the property/property PHP type as string.
      * Optionally by reference as second argument it will be assigned a boolean can it hold a NULL value.
      * An optional third argument set by reference canbe provided to retrieve the default value as defined in the database.

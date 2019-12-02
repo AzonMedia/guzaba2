@@ -4,6 +4,7 @@ namespace Guzaba2\Coroutine;
 
 use Azonmedia\Apm\Interfaces\ProfilerInterface;
 use Azonmedia\Utilities\GeneralUtil;
+use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -14,8 +15,10 @@ use Guzaba2\Base\Traits\SupportsObjectInternalId;
 //use Guzaba2\Database\Interfaces\ConnectionInterface;
 //use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Traits\UsesServices;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Event\Events;
 use Guzaba2\Http\Request;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
@@ -46,6 +49,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
          * Should a complete backtrace (taking into account parent coroutines) be provided when exception occurrs inside a coroutine
          */
         'enable_complete_backtrace'         => TRUE,
+        'services'                          => [
+            'Apm'
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -54,17 +60,40 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * The ID of the last corotuine that was created
      * @var int
      */
-    protected static $last_coroutine_id = 0;
+    protected static int $last_coroutine_id = 0;
+
+    protected static array $registered_coroutine_services = [];
 
     /**
      * To be used for storing static data while not in coroutine context
      * @var array
      */
-    protected static $static_data = [];
+    //protected static array $static_data = [];
 
     public static function completeBacktraceEnabled() : bool
     {
         return self::CONFIG_RUNTIME['enable_complete_backtrace'];
+    }
+
+    public static function getRegisteredCoroutineServices() : iterable
+    {
+        return self::$registered_coroutine_services;
+    }
+
+    /**
+     * Registers a new services. Expects the class name of the service to be provied.
+     * If the service is already registered returns FALSE.
+     * @param string $class_name
+     * @return bool
+     */
+    public static function registerCoroutineService(string $class_name) : bool
+    {
+        $ret = FALSE;
+        if (!in_array($class_name, self::$registered_coroutine_services)) {
+            self::$registered_coroutine_services[] = $class_name;
+            $ret = TRUE;
+        }
+        return $ret;
     }
 
     /**
@@ -81,17 +110,32 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //even though this is not the perfect solution as someone else might use the same approach and the property name is the Interface name, not the specific Class name
         //to make sure there are not collisions the specific class name is used
         $Context->{Request::class} = $Request;
+        
+        foreach (self::$registered_coroutine_services as $class_name) {
+            $Context->{$class_name} = new $class_name();
+        }
 
-//        $current_user_id = $Context->Request->getAttribute('current_user_id', \Guzaba2\Authorization\User::get_default_current_user_id() );
-//        $User = new \Guzaba2\Authorization\User($current_user_id);//TODO - pull the user from the Request
-//        $Context->CurrentUser = new \Guzaba2\Authorization\CurrentUser($User);
-
-        //
         //not really needed as the Apm & Connections object will be destroyed when the Context is destroyed at the end of the coroutine and this will trigger the needed actions.
 //        \Swoole\Coroutine::defer(function() use ($Context) {
 //            $Context->Apm->store_data();
 //            $Context->Connections->freeAllConnections();
 //        });
+
+
+        //this is triggers the object destruction before the $Context it self is destroyed at the end of the coroutine
+        //this is needed because the objects being destroyed may be referring to the $Context of the coroutine which is already destroyed
+        //this is to say that there is no guarantee that the $Context object is the very
+        \Swoole\Coroutine::defer(function() use ($Context) {
+            Kernel::get_di_container()->coroutine_services_cleanup();
+            //cleanup any remaining objects
+            $context_vars = get_object_vars($Context);
+            foreach($context_vars as $name => $value) {
+                if (is_object($value)) {
+                    $Context->{$name} = NULL;//trigger the destructor
+                }
+            }
+            $Context->is_destroyed = TRUE;
+        });
     }
 
     public static function getRequest($cid = NULL) : ?RequestInterface
@@ -114,6 +158,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $cid = $cid ?? self::getcid();
 
         $Context = parent::getContext($cid);
+
+        if (!empty($Context->is_destroyed)) {
+            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));
+        }
+
         if (empty($Context->is_initialized_flag)) {
             //$Context->Resources = new Resources();
             $Context->{Resources::class} = new Resources();
@@ -223,6 +272,19 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     $ParentChannel->push(['hash' => $hash, 'exception' => $Exception]);
                 }
             }
+
+            \Swoole\Coroutine::defer(function() use ($Context) {
+                //print_r(array_keys(get_object_vars($Context)));
+                Kernel::get_di_container()->coroutine_services_cleanup();
+                //cleanup any remaining objects
+                $context_vars = get_object_vars($Context);
+                foreach($context_vars as $name => $value) {
+                    if (is_object($value)) {
+                        $Context->{$name} = NULL;//trigger the destructor
+                    }
+                }
+                $Context->is_destroyed = TRUE;
+            });
         };
 
         //increment parent coroutine apm values

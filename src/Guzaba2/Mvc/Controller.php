@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
@@ -17,6 +17,7 @@ use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\ActiveRecordDefaultController;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -30,32 +31,50 @@ use Guzaba2\Mvc\Traits\ResponseFactories;
  * @package Guzaba2\Mvc
  */
 //abstract class Controller extends ActiveRecord
+abstract class Controller extends ActiveRecord
 //it is possible to inherit ActiveRecord but this causes names collisions (and possible other issues with properties)
-abstract class Controller extends Base
+//abstract class Controller extends Base
 implements ControllerInterface
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'main_table'            => 'controllers',
+        'route'                 => '/controller',
+        //'structure' => []//TODO add structure
+    ];
+
+    protected const CONFIG_RUNTIME = [];
 
     use ResponseFactories;
 
     /**
      * @var RequestInterface
      */
-    private $Request;
+    private ?RequestInterface $Request;
 
     /**
      * Controller constructor.
+     * Allows for initialization with NULL in case it needs to be used as an ActiveRecord instance and not as a controller.
+     * If $Request is provided it will be used as a Controller meaning no "read" permission will be checked at creation.
+     * The ExecutorMiddleware will only check the permissions of the method being invoked.
      * @param RequestInterface $Request
      */
-    public function __construct(RequestInterface $Request)
+    //public function __construct(RequestInterface $Request)
+    public function __construct(?RequestInterface $Request = NULL)
     {
-        parent::__construct();
         $this->Request = $Request;
+        if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated
+            parent::__construct( ['controller_class' => get_class($this)] );
+        } else { //it remains as a new record meaning no "read" permission will be checked
+            parent::__construct( 0 );
+        }
+
     }
 
     /**
      * @return RequestInterface
      */
-    public function get_request() : RequestInterface
+    public function get_request() : ?RequestInterface
     {
         return $this->Request;
     }
@@ -101,7 +120,8 @@ implements ControllerInterface
                 if (
                     strpos($loaded_class, $ns_prefix) === 0
                     && is_a($loaded_class, ControllerInterface::class, TRUE)
-                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
+                    //&& !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
+                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class] )
                     && $RClass->isInstantiable()
                 ) {
                     $ret[] = $loaded_class;

@@ -13,6 +13,7 @@ class ClassInitialization extends Base implements ClassInitializationInterface
     public const INITIALIZATION_METHODS = [
         'initialize_columns',
         'initialize_hooks',
+        'initialize_memory',
     ];
 
     public static function run_all_initializations() : array
@@ -37,6 +38,16 @@ class ClassInitialization extends Base implements ClassInitializationInterface
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
             $active_record_class::initialize_hooks();
+        }
+    }
+
+    public static function initialize_memory(array $ns_prefixes) : void
+    {
+        $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
+        foreach ($active_record_classes as $active_record_class) {
+            if ($active_record_class::is_loaded_in_memory()) {
+                $active_record_class::initialize_in_memory();
+            }
         }
     }
 }

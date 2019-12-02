@@ -1,8 +1,9 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
+use Azonmedia\Di\Interfaces\CoroutineDependencyInterface;
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Orm\ActiveRecord;
@@ -12,16 +13,16 @@ use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 /**
  * Class User
  * @package Guzaba2\Authorization\Rbac
+ * It MUST implement the CoroutineDependencyInterface as otherwise the DefaultCurrentUser will persist between the requests
  * @property user_id
  * @property role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
  */
-class User extends ActiveRecord implements UserInterface
+class User extends ActiveRecord implements UserInterface, CoroutineDependencyInterface
 {
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
         'route'                     => '/user',
-        //'default_current_user_id'   => 0,//can be ID or UUID//NOT USED - see DI config instead
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,
@@ -32,6 +33,7 @@ class User extends ActiveRecord implements UserInterface
                 //'validation_method'     => [User::class, '_validate_role_id'],//can be sete explicitly or if there is a static method _validate_role_id it will be executed
             ],
         ],
+
         'structure' => [
             [
                 'name' => 'object_uuid',
@@ -89,10 +91,15 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_RUNTIME = [];
 
-//    public static function get_default_current_user_id() /* scalar */
-//    {
-//        return self::CONFIG_RUNTIME['default_current_user_id'];
-//    }
+    public function __construct($index)
+    {
+        parent::__construct($index);
+    }
+
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
     /**
      * Returns the primary role of the user
@@ -138,4 +145,5 @@ class User extends ActiveRecord implements UserInterface
             $this->role_id = $Role->get_id();
         }
     }
+
 }

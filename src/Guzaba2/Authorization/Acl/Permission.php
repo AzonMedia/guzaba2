@@ -28,6 +28,9 @@ class Permission extends ActiveRecord implements PermissionInterface
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'acl_permissions',
         'route'                 => '/permission',
+        'load_in_memory'        => TRUE,
+
+        'no_permissions'    => TRUE,//the permissions records themselves cant use permissions
     ];
 
     protected const CONFIG_RUNTIME = [];

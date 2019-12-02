@@ -24,6 +24,7 @@ class Memory extends Store implements StoreInterface
         'cleanup_percentage_records'    => 20,//the percentage of records to be removed
         'services'      => [
             'OrmMetaStore',
+            'Apm',
         ]
     ];
 
@@ -198,6 +199,9 @@ class Memory extends Store implements StoreInterface
            }
         } elseif (array_key_exists($class, $this->data)) {
             //do a search in the available memory objects....
+
+            $time_start_lookup = (double) microtime(TRUE);
+
             foreach ($this->data[$class] as $lookup_index=>$records) {
                 foreach ($records as $update_time=>$record) {
                     if (array_intersect($index, $record['data']) === $index) {
@@ -223,6 +227,15 @@ class Memory extends Store implements StoreInterface
                     }
                 }
             }
+
+            $time_end_lookup = (double) microtime(TRUE);
+            $memory_looukp_time = $time_end_lookup - $time_start_lookup;
+
+            if (self::has_service('Apm') && abs($memory_looukp_time) > Kernel::MICROTIME_EPS )  {
+                $Apm = self::get_service('Apm');
+                $Apm->increment_value('memory_store_time', $memory_time);
+            }
+
         } else {
             //no primary index provided and no local data for this class
             //proceed to the fallback store
@@ -249,6 +262,7 @@ class Memory extends Store implements StoreInterface
         //v2 - use a separate UUID index that corresponds to the ID
         // TODO UUID
         $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
+
         //there can be other versions for the same class & lookup_index
         //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
         $this->update_meta_data($class, $primary_index, $pointer['meta']);
@@ -455,15 +469,49 @@ class Memory extends Store implements StoreInterface
         //$this->data[$class][$index][$last_version_microtime]['is_deleted'] = TRUE;
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
-        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+        $ret = [];
+        //loaded in memory means that ALL records are loaded in memory, not just some (cached)
+        if ($class::is_loaded_in_memory() && array_key_exists($class, $this->data) ) {
+        //if (false) {
+            $time_start_lookup = (double) microtime(TRUE);
+
+            //should be initialized ... return the data from memory
+            //temp solution - TODO - update to use the indexes - create new keys and references based on the column keys for speed
+            foreach ($this->data[$class] as $lookup_index=>$datum) {
+                foreach ($datum as $last_update_microtime=>$row) {
+                    foreach ($index as $index_key=>$index_value) {
+                        if ($row[$index_key] === $index_value) {
+                            $ret[] = $row;
+                        }
+                    }
+                }
+            }
+
+            $time_end_lookup = (double) microtime(TRUE);
+            $memory_looukp_time = $time_end_lookup - $time_start_lookup;
+
+            if (self::has_service('Apm') && abs($memory_looukp_time) > Kernel::MICROTIME_EPS )  {
+                $Apm = self::get_service('Apm');
+                $Apm->increment_value('memory_store_time', $memory_looukp_time);
+            }
+
+        } else {
+            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+            foreach ($ret as $row) {
+                $primary_index = $class::get_index_from_data($row);
+                $lookup_index = self::form_lookup_index($primary_index);
+                $this->data[$class][$lookup_index][$row['meta_object_last_update_microtime']] = $row;
+            }
+        }
+
         return $ret;
     }
 
-    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
-    {
-        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
-        return $ret;
-    }
+//    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
+//    {
+//        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
+//        return $ret;
+//    }
 }

@@ -33,6 +33,7 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
+use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\IpBlackList;
 use Monolog\Handler\StreamHandler;
@@ -79,6 +80,8 @@ abstract class Kernel
      * Time differences between two microtimes make sense to be rounded up to the 4 digit.
      */
     public const MICROTIME_ROUNDING = 4;
+
+    public const MICROTIME_EPS = 100;//100 microseconds
 
     //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba%202%20framework
     public const FRAMEWORK_BANNER = <<<BANNER
@@ -197,6 +200,7 @@ BANNER;
         spl_autoload_register([__CLASS__, 'autoloader'], TRUE, TRUE);//prepend before Composer's autoloader
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
+        register_shutdown_function([__CLASS__,'fatal_error_handler']);
 
         //stream_wrapper_register('guzaba.source', SourceStream::class);
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
@@ -218,26 +222,31 @@ BANNER;
             throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
         }
 
-        //due to concurrency issues it is better to load all classes used by the application and the framework before the server is started
-        $validated_options = [];
+        self::printk('Kernel::run() invoked').PHP_EOL;
+        self::printk(PHP_EOL);
+
+        $ret = 0;
+        try {
+            //due to concurrency issues it is better to load all classes used by the application and the framework before the server is started
+            $validated_options = [];
 //        foreach ($options as $option_name => $option_value) {
 //            if (!array_key_exists($option_name,self::OPTIONS_DEFAULTS)) {
 //                throw new \InvalidArgumentException(sprintf('An invalid option %s was provided to %s.', $option_name, __METHOD__));
 //            }
 //        }
-        $run_options_validation = [];
-        foreach (self::RUN_OPTIONS_DEFAULTS as $option=>$value) {
-            $run_options_validation[$option] = gettype($value);
-        }
-        ArrayUtil::validate_array($options, $run_options_validation, $errors);
-        if ($errors) {
-            throw new \InvalidArgumentException(sprintf('Kernel options error: %s', implode(' ', $errors) ));
-        }
+            $run_options_validation = [];
+            foreach (self::RUN_OPTIONS_DEFAULTS as $option=>$value) {
+                $run_options_validation[$option] = gettype($value);
+            }
+            ArrayUtil::validate_array($options, $run_options_validation, $errors);
+            if ($errors) {
+                throw new \InvalidArgumentException(sprintf('Kernel options error: %s', implode(' ', $errors) ));
+            }
 
-        $options += self::RUN_OPTIONS_DEFAULTS;
+            $options += self::RUN_OPTIONS_DEFAULTS;
 
-        //it is really a bad idea to skip the class load
-        //if (!$options['disable_all_class_load']) {
+            //it is really a bad idea to skip the class load
+            //if (!$options['disable_all_class_load']) {
             self::load_all_classes();
             $loaded_classes_info = t::_('Loaded all classes from:').PHP_EOL;
             foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix => $fs_path) {
@@ -245,38 +254,43 @@ BANNER;
             }
             self::printk($loaded_classes_info);
             self::printk(PHP_EOL);
-        //}
+            //}
 
-        $initialization_classes = self::run_all_initializations();
-        $initializations_info = t::_('Initializations run:').PHP_EOL;
-        foreach ($initialization_classes as $initialization_class => $initialization_methods) {
-            $initializations_info .= str_repeat(' ',4).'- '.$initialization_class.PHP_EOL;
-            foreach ($initialization_methods as $initialization_method) {
-                $initializations_info .= str_repeat(' ',8).'- '.$initialization_method.'()'.PHP_EOL;
-            }
-        }
-        self::printk($initializations_info);
-        self::printk(PHP_EOL);
-
-        if (!$options['disable_all_class_validation']) {
-            $validation_classes = self::run_all_validations();
-            $validations_info = t::_('Validations run:').PHP_EOL;
-            foreach ($validation_classes as $validation_class => $validation_methods) {
-                $validations_info .= str_repeat(' ',4).'- '.$validation_class.PHP_EOL;
-                foreach ($validation_methods as $validation_method) {
-                    $validations_info .= str_repeat(' ',8).'- '.$validation_method.'()'.PHP_EOL;
+            $initialization_classes = self::run_all_initializations();
+            $initializations_info = t::_('Initializations run:').PHP_EOL;
+            foreach ($initialization_classes as $initialization_class => $initialization_methods) {
+                $initializations_info .= str_repeat(' ',4).'- '.$initialization_class.PHP_EOL;
+                foreach ($initialization_methods as $initialization_method) {
+                    $initializations_info .= str_repeat(' ',8).'- '.$initialization_method.'()'.PHP_EOL;
                 }
             }
-            self::printk($validations_info);
+            self::printk($initializations_info);
             self::printk(PHP_EOL);
+
+            if (!$options['disable_all_class_validation']) {
+                $validation_classes = self::run_all_validations();
+                $validations_info = t::_('Validations run:').PHP_EOL;
+                foreach ($validation_classes as $validation_class => $validation_methods) {
+                    $validations_info .= str_repeat(' ',4).'- '.$validation_class.PHP_EOL;
+                    foreach ($validation_methods as $validation_method) {
+                        $validations_info .= str_repeat(' ',8).'- '.$validation_method.'()'.PHP_EOL;
+                    }
+                }
+                self::printk($validations_info);
+                self::printk(PHP_EOL);
+            }
+
+
+            $ret = $callable();
+
+            if (!is_int($ret)) {
+                $ret = self::EXIT_SUCCESS;
+            }
+        } catch (\Throwable $Exception) {
+            self::exception_handler($Exception);
+            $ret = 1;
         }
 
-
-        $ret = $callable();
-
-        if (!is_int($ret)) {
-            $ret = self::EXIT_SUCCESS;
-        }
         return $ret;
     }
 
@@ -286,6 +300,11 @@ BANNER;
     public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
+    }
+
+    public static function get_di_container() : ?ContainerInterface
+    {
+        return self::$Container;
     }
 
     /**
@@ -351,6 +370,19 @@ BANNER;
         return self::$Container->has($id);
     }
 
+//    /**
+//     * @param string $id
+//     * @return bool
+//     * @throws RunTimeException
+//     */
+//    public static function is_service_instantiated(string $id) : bool
+//    {
+//        if (!isset(self::$Container)) {
+//            throw new RunTimeException(sprintf(t::_('There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.')));
+//        }
+//        return self::$Container->is_dependency_instantiated($id);
+//    }
+
     /**
      * @return bool
      */
@@ -399,14 +431,25 @@ BANNER;
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
      */
-    public static function exception_handler(\Throwable $exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
+    public static function exception_handler(\Throwable $Exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
     {
+
+        //if we reaching this this request/coroutine cant proceed and all own locks should be released
+        //then disable the locking for this coroutine
+        //self::$Container->get('LockManager')->release_all_own_locks();
+        //if the below is not invoked on Swoole 4.4.12 / PHP 7.4.0 there is an error on the line $ret = $Context->orm_locking_enabled_flag ?? self::$orm_locking_enabled_flag
+        //ActiveRecord::disable_locking();
+
         $output = '';
-        //$output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
-        //should not depend on the translator (t::_()) or any other code that is additionally autoloaded
-        $output .= sprintf('Exception %s: %s in %s#%s', get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
-        $output .= PHP_EOL;
-        $output .= $exception->getTraceAsString();
+        do {
+
+            //$output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
+            //should not depend on the translator (t::_()) or any other code that is additionally autoloaded
+            $output .= sprintf('Exception %s: %s in %s#%s', get_class($Exception), $Exception->getMessage(), $Exception->getFile(), $Exception->getLine());
+            $output .= PHP_EOL;
+            $output .= $Exception->getTraceAsString().PHP_EOL.PHP_EOL;
+            $Exception = $Exception->getPrevious();
+        } while ($Exception);
 
         self::log($output, LogLevel::EMERGENCY);
         //file_put_contents('AAA', $output.PHP_EOL, FILE_APPEND);
@@ -423,6 +466,7 @@ BANNER;
             //when NULL is provided just print the message but do not exit
             //this is to be used in Server context - no point to kill the worker along with the rest of the coroutines
         }
+
     }
 
     /**
@@ -437,7 +481,16 @@ BANNER;
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): void
     {
-        throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
+        //throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
+        self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
+    }
+
+    public static function fatal_error_handler() : void
+    {
+        $error = error_get_last();
+        if ($error) {
+            self::error_handler($error['type'], $error['message'], $error['file'], $error['line']);
+        }
     }
 
     public static function logtofile(string $content, array $context = []): void
@@ -879,6 +932,8 @@ BANNER;
         }
         Kernel::printk($error_handlers_str);
         self::printk(PHP_EOL);
+        self::printk('Kernel is initialized').PHP_EOL;
+        self::printk(PHP_EOL);
 
     }
 
@@ -901,7 +956,6 @@ BANNER;
                 }
 
                 if ($class_path && is_readable($class_path)) {
-
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
                     if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
@@ -926,7 +980,8 @@ BANNER;
                 } else {
                     //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
                     $message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
-                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                    //throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                    self::exception_handler(new \Guzaba2\Kernel\Exceptions\AutoloadException($message));
                 }
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it

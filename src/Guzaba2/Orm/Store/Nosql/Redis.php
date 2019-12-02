@@ -15,6 +15,7 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Store\NullStore;
+use Psr\Log\LogLevel;
 use Ramsey\Uuid\Uuid;
 use Guzaba2\Kernel\Kernel;
 
@@ -176,7 +177,6 @@ class Redis extends Database
 
         if (strlen($uuid) && !$Connection->exists($uuid)) {
             $ret = $this->FallbackStore->get_data_pointer($class, $index);
-
             return $ret;
         }
 
@@ -186,6 +186,7 @@ class Redis extends Database
             return $ret;
         } else {
             $result = $class::fix_record_data_types($result);
+            Kernel::log(sprintf('%s: Object of class %s with index %s was found in Redis Store.', __CLASS__, $class, $uuid, LogLevel::DEBUG));
         }
 
    
@@ -329,15 +330,15 @@ class Redis extends Database
         $Connection->del($class_id);
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
         $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
         return $ret;
     }
 
-    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
-    {
-        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
-        return $ret;
-    }
+//    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
+//    {
+//        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
+//        return $ret;
+//    }
 }
