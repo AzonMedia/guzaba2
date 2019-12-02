@@ -127,10 +127,10 @@ class MongoDB extends Database
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
         $data = [
-            'object_uuid'                   => $uuid,
-            'class_name'                         => get_class($ActiveRecord),
-            'object_create_microtime'       => $object_create_microtime,
-            'object_last_update_microtime'  => $object_create_microtime,
+            'meta_object_uuid'                   => $uuid,
+            'meta_class_name'                         => get_class($ActiveRecord),
+            'meta_object_create_microtime'       => $object_create_microtime,
+            'meta_object_last_update_microtime'  => $object_create_microtime,
         ];
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {

@@ -101,9 +101,9 @@ class Redis extends Database
         //$time = time();
         if (!$Connection->exists($metakey)) {
             /*
-            $Connection->hSet($metakey, 'class_name', get_class($ActiveRecord));
-            $Connection->hSet($metakey, 'object_create_microtime', $time);
-            $Connection->hSet($metakey, 'object_uuid', $uuid);
+            $Connection->hSet($metakey, 'meta_class_name', get_class($ActiveRecord));
+            $Connection->hSet($metakey, 'meta_object_create_microtime', $time);
+            $Connection->hSet($metakey, 'meta_object_uuid', $uuid);
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
                 $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
             }
@@ -113,25 +113,25 @@ class Redis extends Database
             } else {
                 $object_create_microtime = (int) microtime(TRUE) * 1000000;
                 $meta_data = [
-                    'class_name'                => get_class($ActiveRecord),
-                    'object_create_microtime'   => $object_create_microtime,
-                    'object_uuid'               => $uuid,
+                    'meta_class_name'                => get_class($ActiveRecord),
+                    'meta_object_create_microtime'   => $object_create_microtime,
+                    'meta_object_uuid'               => $uuid,
                 ];
-//                $Connection->hSet($metakey, 'class_name', get_class($ActiveRecord));
-//                $Connection->hSet($metakey, 'object_create_microtime', $microtime);
-//                $Connection->hSet($metakey, 'object_uuid', $uuid);
+//                $Connection->hSet($metakey, 'meta_class_name', get_class($ActiveRecord));
+//                $Connection->hSet($metakey, 'meta_object_create_microtime', $microtime);
+//                $Connection->hSet($metakey, 'meta_object_uuid', $uuid);
 //                if ($this->FallbackStore instanceof StructuredStoreInterface) {
 //                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
 //                }
             }
-            
+
             foreach ($meta_data as $meta_key=>$meta_value) {
                 $Connection->hSet($metakey, $meta_key, $meta_value);
             }
 
         }
-        $meta_data['object_last_update_microtime'] = $meta_data['object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
-        $Connection->hSet($metakey, 'object_last_update_microtime', $meta_data['object_last_update_microtime']);
+        $meta_data['meta_object_last_update_microtime'] = $meta_data['meta_object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
+        $Connection->hSet($metakey, 'meta_object_last_update_microtime', $meta_data['meta_object_last_update_microtime']);
         if ($Connection->getExpiryTime()) {
             $Connection->expire($metakey, $Connection->getExpiryTime());
         }

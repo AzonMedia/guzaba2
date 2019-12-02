@@ -13,8 +13,8 @@ use Guzaba2\Orm\ActiveRecord;
 interface MetaStoreInterface
 {
     public const DATA_STRUCT = [
-        'object_create_microtime'               => 'integer',
-        'object_last_update_microtime'          => 'integer',
+        'meta_object_create_microtime'               => 'integer',
+        'meta_object_last_update_microtime'          => 'integer',
         //'updated_from_worker_id'    => 'int',
         //'updated_from_coroutine_id' => 'int',
     ];

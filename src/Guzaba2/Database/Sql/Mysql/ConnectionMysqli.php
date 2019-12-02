@@ -8,6 +8,7 @@ use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Database\Sql\TransactionalConnection;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Kernel\Kernel;
 
 /**
  * Class Connection
@@ -31,6 +32,7 @@ abstract class ConnectionMysqli extends Connection
 
     public function connect() : void
     {
+        Kernel::dump(static::CONFIG_RUNTIME);
         $ret = $this->NativeConnection = new \mysqli(
             static::CONFIG_RUNTIME['host'],
             static::CONFIG_RUNTIME['user'],

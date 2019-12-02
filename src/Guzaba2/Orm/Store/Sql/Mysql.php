@@ -225,8 +225,8 @@ SELECT
 FROM
     {$Connection::get_tprefix()}{$this::get_meta_table()}
 WHERE
-    class_name = :class_name
-    AND object_id = :object_id
+    meta_class_name = :class_name
+    AND meta_object_id = :object_id
         ";
         $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
         unset($data['object_uuid_binary']);//this is only needed internally for MySQL - this MUST stay removed!
@@ -309,17 +309,17 @@ WHERE
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (object_uuid_binary, class_name, object_id, object_create_microtime, object_last_update_microtime)
+    (meta_object_uuid_binary, meta_class_name, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
 VALUES
     (:object_uuid_binary, :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
         ";
 
         $params = [
-            'class_name'                    => get_class($ActiveRecord),
-            'object_id'                     => $ActiveRecord->get_id(),
-            'object_create_microtime'       => $object_create_microtime,
-            'object_last_update_microtime'  => $object_create_microtime,
-            'object_uuid_binary'            => $uuid_binary,
+            'meta_class_name'                    => get_class($ActiveRecord),
+            'meta_object_id'                     => $ActiveRecord->get_id(),
+            'meta_object_create_microtime'       => $object_create_microtime,
+            'meta_object_last_update_microtime'  => $object_create_microtime,
+            'meta_object_uuid_binary'            => $uuid_binary,
             //'object_uuid'                   => $uuid,
         ];
 
@@ -628,14 +628,14 @@ LIMIT 1
 
         $q = "
         CREATE TABLE `{$s->table_name}` (
-  `object_uuid_binary` binary(16) NOT NULL,
-  `object_uuid` char(36) GENERATED ALWAYS AS (bin_to_uuid(`object_uuid_binary`)) VIRTUAL NOT NULL,
-  `class_name` varchar(255) NOT NULL,
-  `object_id` bigint(20) UNSIGNED NOT NULL,
-  `object_create_microtime` bigint(16) UNSIGNED NOT NULL,
-  `object_last_update_microtime` bigint(16) UNSIGNED NOT NULL,
-  `object_create_transaction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
-  `object_last_update_transction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+  `meta_object_uuid_binary` binary(16) NOT NULL,
+  `meta_object_uuid` char(36) GENERATED ALWAYS AS (bin_to_uuid(`meta_object_uuid_binary`)) VIRTUAL NOT NULL,
+  `meta_class_name` varchar(255) NOT NULL,
+  `meta_object_id` bigint(20) UNSIGNED NOT NULL,
+  `meta_object_create_microtime` bigint(16) UNSIGNED NOT NULL,
+  `meta_object_last_update_microtime` bigint(16) UNSIGNED NOT NULL,
+  `meta_object_create_transaction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+  `meta_object_last_update_transction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY (`object_uuid_binary`),
   CONSTRAINT `class_name` UNIQUE (`class_name`,`object_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -674,7 +674,7 @@ WHERE {$w_str}
         $uuid = $ActiveRecord->get_uuid();
         $q = "
 DELETE FROM {$Connection::get_tprefix()}{$meta_table} 
-WHERE `object_uuid` = '{$uuid}'
+WHERE `meta_object_uuid` = '{$uuid}'
 ";
         $s = $Connection->prepare($q);
         $s->execute();
@@ -766,8 +766,6 @@ WHERE `object_uuid` = '{$uuid}'
                     }
                 }
 
-                //TODO IVO add owners_table, meta table
-
                 $j[$table_name] = $Connection::get_tprefix().$table_name;
                 //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
                 //$b[$field_name] = $field_value;
@@ -830,20 +828,21 @@ WHERE `object_uuid` = '{$uuid}'
 
 
         // JOIN meta data
+        Kernel::dump($Connection::get_tprefix());
         $meta_table = $Connection::get_tprefix().$this::get_meta_table();
         $meta_str = " 
 LEFT JOIN 
     `{$meta_table}` as `meta` 
 ON 
-    meta.object_id = {$table_name}.{$main_index[0]} 
+    meta.meta_object_id = {$table_name}.{$main_index[0]} 
 AND
-    meta.class_name = :class_name
+    meta.meta_class_name = :meta_class_name
 ";
-        $b['class_name'] = $class;
+        $b['meta_class_name'] = $class;
         
         $q = "
 SELECT 
-{$select_str}, meta.object_uuid
+{$select_str}, meta.meta_object_uuid
 FROM
 {$j_str}
 {$meta_str}

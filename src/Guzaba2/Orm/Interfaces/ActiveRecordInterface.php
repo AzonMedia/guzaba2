@@ -18,14 +18,14 @@ interface ActiveRecordInterface
     ];
 
     public const META_TABLE_COLUMNS = [
-        'object_uuid_binary',
-        'object_uuid',
-        'class_name',
-        'object_id',
-        'object_create_microtime',
-        'object_last_update_microtime',
-        'object_create_transaction_id',
-        'object_last_update_transaction_id',
+        'meta_object_uuid_binary',
+        'meta_object_uuid',
+        'meta_class_name',
+        'meta_object_id',
+        'meta_object_create_microtime',
+        'meta_object_last_update_microtime',
+        'meta_object_create_transaction_id',
+        'meta_object_last_update_transaction_id',
     ];
 
     public const AUTHZ_METHOD_PREFIX = 'authz_';
