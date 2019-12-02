@@ -5,6 +5,8 @@ namespace Guzaba2\Orm\Traits;
 
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Http\Method;
 use Guzaba2\Translator\Translator as t;
 
 trait ActiveRecordOverloading
@@ -66,6 +68,16 @@ trait ActiveRecordOverloading
 
     public function __set(string $property, /* mixed */ $value) : void
     {
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                throw new RunTimeException(sprintf(t::_('Trying to set a property on object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+            }
+        }
+        //the below cant be reached as it is not supposed to have SET/WRITE/DELETE on GET
+        // if (!empty($this->meta_data['meta_is_deleted'])) {
+        //     throw new RunTimeException(sprintf(t::_('Trying to set a property on a deleted object of class %s with ID %s.'), get_class($this), $this->get_id() ));
+        // }
 
         //instead of unhooking we need to rehook it to a new version called "0" until saved
         //if this is a new object then we do not really need (or can) hook as there is no yet primary index

@@ -267,8 +267,12 @@ abstract class BaseException extends \Exception
                 if ($this instanceof ContextDestroyedException) {
                     //no context so nothing to reset
                 } else {
-                    $Context = Coroutine::getContext();
-                    $Context->CurrentException = NULL;
+                    try {
+                        $Context = Coroutine::getContext();
+                        $Context->CurrentException = NULL;
+                    } catch (ContextDestroyedException $Exception) {
+                        //ignore
+                    }
                 }
 
             } else {

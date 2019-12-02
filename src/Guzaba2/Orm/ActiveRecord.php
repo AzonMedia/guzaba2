@@ -149,6 +149,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     private bool $read_lock_obtained_flag = FALSE;
 
+
     /**
      * To store what was initially provided as $index to the constructor.
      * Will be returned by get_id() when the record_data is not yet populated.
@@ -247,9 +248,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public function __destruct()
     {
 
+
         //print 'destr '.get_class($this).PHP_EOL;
 
-        if (!$this->is_new()) {
+
+        if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
+
             $this->Store->free_pointer($this);
         }
 
@@ -289,12 +293,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     protected function read(/* int|string|array */ $index) : void
     {
-//print get_class($this).PHP_EOL;
+
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
         //if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
         if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
             $this->check_permission('read');
         }
+
 
         if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
@@ -357,6 +362,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 $this->check_permission('create');
             } else {
                 $this->check_permission('write');
+            }
+        }
+
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
             }
         }
 
@@ -428,6 +440,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public function delete(): void
     {
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                throw new RunTimeException(sprintf(t::_('Trying to delete object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+            }
+        }
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
@@ -452,6 +470,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //self::OrmStore()->remove_record($this);
         static::get_service('OrmStore')->remove_record($this);
+        
 
         if (static::is_locking_enabled()) {
             //self::LockManager()->release_lock('', $LR);
@@ -890,6 +909,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param int $offset
      * @param int $limit
      * @param bool $use_like
+     * @param string $sort_by
+     * @param $sort_desc
      * @return iterable
      * @throws RunTimeException
      */
@@ -899,6 +920,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $Store = static::get_service('OrmStore');
         //static::initialize_columns();
         $class_name = static::class;
+
         $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
         return $data;
     }

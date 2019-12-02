@@ -32,8 +32,8 @@ class SwooleTable extends MetaStore
     protected $FallbackMetaStore;
 
     protected const SWOOLE_TABLE_SIZES = [
-        'object_create_microtime'               => 8,
-        'object_last_update_microtime'          => 8,
+        'meta_object_create_microtime'               => 8,
+        'meta_object_last_update_microtime'          => 8,
     ];
 
 
@@ -145,8 +145,8 @@ class SwooleTable extends MetaStore
     {
         $ret = NULL;
         $data = $this->get_meta_data($class, $primary_index);
-        if (isset($data['object_last_update_microtime'])) {
-            $ret = $data['object_last_update_microtime'];
+        if (isset($data['meta_object_last_update_microtime'])) {
+            $ret = $data['meta_object_last_update_microtime'];
         }
         return $ret;
     }

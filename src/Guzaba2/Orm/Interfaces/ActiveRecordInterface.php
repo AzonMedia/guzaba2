@@ -19,6 +19,17 @@ interface ActiveRecordInterface
         '_before_delete', '_after_delete',
     ];
 
+    public const META_TABLE_COLUMNS = [
+        'meta_object_uuid_binary',
+        'meta_object_uuid',
+        'meta_class_name',
+        'meta_object_id',
+        'meta_object_create_microtime',
+        'meta_object_last_update_microtime',
+        'meta_object_create_transaction_id',
+        'meta_object_last_update_transaction_id',
+    ];
+
     public const AUTHZ_METHOD_PREFIX = 'authz_';
 
     public const INDEX_NEW = 0;

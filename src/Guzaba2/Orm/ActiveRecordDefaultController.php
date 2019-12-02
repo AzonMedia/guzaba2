@@ -13,6 +13,7 @@ use Guzaba2\Translator\Translator as t;
 use Guzaba2\Http\Method;
 use http\Exception\InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
+use Guzaba2\Kernel\Kernel;
 
 
 /**
@@ -191,6 +192,7 @@ class ActiveRecordDefaultController extends Controller
         $this->ActiveRecord->delete();
         $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $id, $uuid, get_class($this->ActiveRecord) );
         $Response = parent::get_structured_ok_response( ['message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'deleted'] );
+
         return $Response;
     }
 

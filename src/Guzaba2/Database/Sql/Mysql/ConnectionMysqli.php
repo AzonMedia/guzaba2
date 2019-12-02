@@ -8,6 +8,7 @@ use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Database\Sql\TransactionalConnection;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Kernel\Kernel;
 
 /**
  * Class Connection

@@ -75,8 +75,6 @@ class MongoDB extends Database
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
-        //Kernel::dump(array('MongoDb get_meta_by_uuid',$data));
-
         // $ret['object_id'] = $data[0]['object_id'];
         // $ret['class'] = $data[0]['class'];
 
@@ -129,10 +127,10 @@ class MongoDB extends Database
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
         $data = [
-            'object_uuid'                   => $uuid,
-            'class_name'                         => get_class($ActiveRecord),
-            'object_create_microtime'       => $object_create_microtime,
-            'object_last_update_microtime'  => $object_create_microtime,
+            'meta_object_uuid'                   => $uuid,
+            'meta_class_name'                         => get_class($ActiveRecord),
+            'meta_object_create_microtime'       => $object_create_microtime,
+            'meta_object_last_update_microtime'  => $object_create_microtime,
         ];
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
