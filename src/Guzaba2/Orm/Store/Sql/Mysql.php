@@ -278,17 +278,17 @@ WHERE
 UPDATE
     {$Connection::get_tprefix()}{$meta_table} 
 SET
-    object_last_update_microtime = :object_last_update_microtime
+    meta_object_last_update_microtime = :meta_object_last_update_microtime
 WHERE
-    class_name = :class_name
-    AND object_id = :object_id
+    meta_class_name = :meta_class_name
+    AND meta_object_id = :meta_object_id
         ";
 
         $params = [
             //'class_name'                    => str_replace('\\','\\\\',get_class($ActiveRecord)),
-            'class_name'                    => get_class($ActiveRecord),
-            'object_id'                     => $ActiveRecord->get_id(),
-            'object_last_update_microtime'  => $object_last_update_microtime,
+            'meta_class_name'                    => get_class($ActiveRecord),
+            'meta_object_id'                     => $ActiveRecord->get_id(),
+            'meta_object_last_update_microtime'  => $object_last_update_microtime,
         ];
 
         $Statement = $Connection->prepare($q);
