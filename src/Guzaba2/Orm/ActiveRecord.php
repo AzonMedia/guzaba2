@@ -1035,6 +1035,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param int $offset
      * @param int $limit
      * @param bool $use_like
+     * @param string $sort_by
+     * @param $sort_desc
      * @return iterable
      * @throws RunTimeException
      */
