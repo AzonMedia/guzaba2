@@ -831,7 +831,6 @@ WHERE `meta_object_uuid` = '{$uuid}'
 
 
         // JOIN meta data
-        Kernel::dump($Connection::get_tprefix());
         $meta_table = $Connection::get_tprefix().$this::get_meta_table();
         $meta_str = " 
 LEFT JOIN 
