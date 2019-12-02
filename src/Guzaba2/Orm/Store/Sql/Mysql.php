@@ -311,7 +311,7 @@ INTO
     {$Connection::get_tprefix()}{$meta_table}
     (meta_object_uuid_binary, meta_class_name, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
 VALUES
-    (:object_uuid_binary, :class_name, :object_id, :object_create_microtime, :object_last_update_microtime)
+    (:meta_object_uuid_binary, :meta_class_name, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime)
         ";
 
         $params = [

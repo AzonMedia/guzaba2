@@ -236,15 +236,15 @@ class Memory extends Store implements StoreInterface
             throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
         }
 
-        if (!isset($pointer['meta']['object_last_update_microtime'])) {
+        if (!isset($pointer['meta']['meta_object_last_update_microtime'])) {
             throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
         }
-        $last_update_time = $pointer['meta']['object_last_update_microtime'];
+        $last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
         //print $last_update_time.'BBB'.PHP_EOL;
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
 
         //v1
-        $uuid = $pointer['meta']['object_uuid'];
+        $uuid = $pointer['meta']['meta_object_uuid'];
         // $this->data[$class][$uuid] =& $this->data[$class][$lookup_index];
         //v2 - use a separate UUID index that corresponds to the ID
         // TODO UUID
@@ -365,7 +365,7 @@ class Memory extends Store implements StoreInterface
     {
         $class = get_class($ActiveRecord);
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
-        $last_update_time = $ActiveRecord->get_meta_data()['object_last_update_microtime'];
+        $last_update_time = $ActiveRecord->get_meta_data()['meta_object_last_update_microtime'];
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
             $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
         }
