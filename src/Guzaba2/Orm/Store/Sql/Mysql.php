@@ -682,11 +682,14 @@ WHERE `meta_object_uuid` = '{$uuid}'
 
     /**
      * Returns all results matching criteria
-     * @param  string $class class name
-     * @param  array  $index [$column => $value]
-     * @param  int $offset
-     * @param  int $limit
-     * @return array  dataset
+     * @param string $class class name
+     * @param array  $index [$column => $value]
+     * @param int $offset
+     * @param int $limit
+     * @param bool $use_like
+     * @param string $sort_by
+     * @param $sort_desc
+     * @return array dataset
      */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : array
     {
