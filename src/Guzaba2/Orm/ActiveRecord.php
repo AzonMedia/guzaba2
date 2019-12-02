@@ -10,6 +10,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;
@@ -21,6 +22,7 @@ use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Event\Event;
@@ -45,12 +47,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     use ActiveRecordIterator;
     use ActiveRecordValidation;
     use ActiveRecordHooks;
+    use ActiveRecordAuthorization;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'OrmStore',
             'LockManager',
             'Events',
+            'AuthorizationProvider',
         ],
         //only for non-sql stores
         'structure' => [
@@ -58,12 +62,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         ],
     ];
 
-    protected const CAST_PROPERTIES_ON_ASSIGNMENT = false;
-
     protected const CONFIG_RUNTIME = [];
 
-
-    public const INDEX_NEW = 0;
+    protected const CAST_PROPERTIES_ON_ASSIGNMENT = false;
 
 
     /**
@@ -150,6 +151,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
     /**
+     * To store what was initially provided as $index to the constructor.
+     * Will be returned by get_id() when the record_data is not yet populated.
+     * This may happen when DetaultCurrentUser is set to non 0.
+     * @var scalar
+     */
+    private /* scalar */ $requested_index = self::INDEX_NEW;
+
+    /**
      * ActiveRecord constructor.
      * @param int $index
      * @param StoreInterface|null $Store
@@ -179,6 +188,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
         
         //self::initialize_columns();
+        $this->requested_index = $index;
 
         $primary_columns = static::get_primary_index_columns();
 
@@ -223,26 +233,41 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
             $this->read($index);
         }
+    }
 
-        $this->iterator_position = array_key_first($this->record_data);
+    /**
+     * Returns an instance filled with the provided data (it should also inject it in the Memory store)
+     * @param iterable $data
+     * @return ActiveRecordInterface
+     */
+    public static function get_from_record(iterable $data) : ActiveRecordInterface
+    {
+        //TODO implement
     }
 
     public function __destruct()
     {
+
+
+        //print 'destr '.get_class($this).PHP_EOL;
+
+
         if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
+
             $this->Store->free_pointer($this);
         }
-
 
         if (self::is_locking_enabled() && !$this->is_new()) {
 
             if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
                 $resource = MetaStore::get_key_by_object($this);
                 static::get_service('LockManager')->release_lock($resource);
+
                 $this->read_lock_obtained_flag = FALSE;
             }
 
         }
+        parent::__destruct();
     }
 
     final public function __toString() : string
@@ -266,11 +291,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return array_merge( $this->get_property_data(), $this->get_meta_data() );
     }
 
-    protected function read(/* mixed */ $index) : void
+    protected function read(/* int|string|array */ $index) : void
     {
+
+        //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
+        //if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+            $this->check_permission('read');
+        }
+
+
         if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_read'], $args);//must return void
+        }
+
+        if (!is_string($index) && !is_int($index) && !is_array($index)) {
+            throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
         }
 
         //new Event($this, '_before_read');
@@ -292,7 +329,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
         }
 
-        //do a check is there a modified data
 
         if (static::is_locking_enabled()) {
             //if ($this->locking_enabled_flag) {
@@ -300,6 +336,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+
             $this->read_lock_obtained_flag = TRUE;
         }
 
@@ -316,7 +353,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     public function save() : ActiveRecordInterface
-    {   
+    {
+
+        //instead of setting the BypassAuthorizationProvider to bypass the authorization
+        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+            if ($this->is_new()) {
+                $this->check_permission('create');
+            } else {
+                $this->check_permission('write');
+            }
+        }
+
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
             if ($Request->getMethodConstant() === Method::HTTP_GET) {
@@ -399,6 +447,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
         }
 
+        //instead of setting the BypassAuthorizationProvider to bypass the authorization
+        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+            $this->check_permission('delete');
+        }
+
         if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_delete'], $args);//must return void
@@ -434,34 +488,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //parent::__destruct();
     }
 
-    public static function initialize_columns() : void
-    {
-        $Store = static::get_service('OrmStore');
-
-        $called_class = get_called_class();
-
-        if (empty(self::$columns_data[$called_class])) {
-
-
-            $unified_columns_data = $Store->get_unified_columns_data($called_class);
-            if (!count($unified_columns_data)) {
-                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class ));
-            }
-
-            foreach ($unified_columns_data as $column_datum) {
-                self::$columns_data[$called_class][$column_datum['name']] = $column_datum;
-            }
-        }
-
-        if (empty(self::$primary_index_columns[$called_class])) {
-            foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
-                if (!empty($column_data['primary'])) {
-                    self::$primary_index_columns[$called_class][] = $column_name;
-                }
-            }
-        }
-    }
-
     public static function has_main_table_defined() : bool
     {
         return isset(static::CONFIG_RUNTIME['main_table']);
@@ -478,14 +504,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function has_structure_defined() : bool
     {
         return isset(static::CONFIG_RUNTIME['structure']);
-    }
-
-    public static function get_structure() : array
-    {
-        if (empty(static::CONFIG_RUNTIME['structure'])) {
-            throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
-        }
-        return static::CONFIG_RUNTIME['structure'];
     }
 
     public static function get_validation_rules() : array
@@ -561,34 +579,27 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             return FALSE;
         }
 
-        if (Coroutine::inCoroutine()) {
+        if (Coroutine::inCoroutine() ) {
 
-            $Context = Coroutine::getContext();
-            $ret = $Context->orm_locking_enabled_flag ?? self::$orm_locking_enabled_flag;
+            try {
+                $Context = Coroutine::getContext();
+                if (property_exists($Context,'orm_locking_enabled_flag')) {
+                    $ret = $Context->orm_locking_enabled_flag;
+                } else {
+                    $ret = self::$orm_locking_enabled_flag;
+                }
+            } catch (ContextDestroyedException $Exception) {
+                //$ret = self::$orm_locking_enabled_flag;
+                $ret = FALSE;
+                //it is OK - the coroutine is over and this destructor is invoked as part of the context cleanup
+                //at this stage all locks have been released
+            }
+
+
+
         } else {
             $ret = self::$orm_locking_enabled_flag;
         }
-        return $ret;
-    }
-
-    /**
-     * Works only for classes that have a single primary index.
-     * If the class has a compound index throws a RunTimeException.
-     * @return int
-     * @throws RunTimeException
-     * @throws \Guzaba2\Base\Exceptions\DeprecatedException
-     */
-    public function get_index() /* scalar */
-    {
-        throw new \Guzaba2\Base\Exceptions\DeprecatedException(sprintf(t::_('"get_index()" is deprecated, please use get_id() or get_uuid() instead.')));
-
-        $primary_index_columns = static::get_primary_index_columns();
-        if (count($primary_index_columns) > 1) {
-            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
-        }
-        
-        $ret = $this->record_data[$primary_index_columns[0]];
-        
         return $ret;
     }
 
@@ -598,14 +609,22 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return mixed
      * @throws RunTimeException
      */
-    public function get_id()  /* scalar */
+    public function get_id()  /* int|string */
     {
         $primary_index_columns = static::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
             throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index and %s can not be used on it.'), get_class($this), __METHOD__));
         }
-        
-        $ret = $this->record_data[$primary_index_columns[0]];
+
+        if ($this->record_data) {
+            $ret = $this->record_data[$primary_index_columns[0]];//the index should exist
+        } else {
+            if (is_array($this->requested_index)) {
+                $ret = array_key_first($this->requested_index);
+            } else {
+                $ret = $this->requested_index;
+            }
+        }
         
         return $ret;
     }
@@ -741,78 +760,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         return $this->disable_method_hooks_flag;
     }
-    
-    /**
-     * Updates the data type based on the structure.
-     * Certain stores (like Redis) may loose the type and keep everything as string.
-     * @param array $data
-     * @return array
-     */
-    public static function fix_record_data_types(array $data) : array
-    {
-        // altough we have lazy loading we need to store in record_data whatever we obtained - this will set the index (so get_index() works)
-        $called_class = get_called_class();
-        $ret = [];
-        foreach ($data as $key=>$value) {
-            //$type = static::get_column_type($key, $nullable);
-            if (static::has_property($key)) {
-                $type = static::get_property_type($key, $nullable, $default_value);
-                if ($type === NULL) {
-                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
-                }
-                settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
-                $ret[$key] = $value;
-            }
-
-        }
-        return $ret;
-    }
-        
-    /**
-     * Returns the column type as string.
-     * The optional second argument $nullable will be populated with TRUE or FALSE if provided.
-     * WIll return NULL if the column does not exist.
-     * @see self::is_column_nullable()
-     * @param string $column
-     * @param bool $nullable
-     * @return string|null
-     */
-//    public static function get_column_type(string $column, ?bool &$nullable = null) : ?string
-//    {
-//        $type = NULL;
-//
-//        static $column_type_cache = [];
-//        $class = get_called_class();
-//
-//        if (!array_key_exists($class, $column_type_cache)) {
-//            $column_type_cache[$class] = [];
-//        }
-//
-//        if (array_key_exists($column, $column_type_cache[$class])) {
-//            $nullable = $column_type_cache[$class][$column][1];
-//            return $column_type_cache[$class][$column][0];
-//        }
-//
-//        $column_found = FALSE;
-//        foreach (static::get_columns_data() as $column_key_name => $column_data) {
-//            if ($column_data['name'] == $column) {
-//                $type = $column_data['php_type'];
-//                $nullable = (bool) $column_data['nullable'];
-//                $column_found = TRUE;
-//                break;
-//            }
-//        }
-//
-//        if (!$column_found) {
-//            $message = sprintf(t::_('The column "%s" is not found in table "%s". Please clear the cache and try again. If the error persists it would mean wrong column name.'), $column, self::get_main_table());
-//            throw new RunTimeException($message);
-//        }
-//
-//        $column_type_cache[$class][$column] = [$type, $nullable];
-//
-//        return $type;
-//    }
-
 
     /**
      * This is similar to self::get_record_data() but also invokes the property hooks.
@@ -842,79 +789,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $ret = $this->meta_data;
         return $ret;
     }
-        
-    /**
-     * It is invoked on @see save()
-     * save() provides the record_data array as first argument
-     * Checks for properties that are empty ==='' and if the property is int or float converts it as follows:
-     * - if the column is nullable sets to NULL
-     * - if the column has a default values it sets it to the default value
-     * - otherwise sets to 0
-     * It also checks if a field is ===NULL and the column is not nullable then converts as follows:
-     * - strings to ''
-     * - ints and floats to 0
-     *
-     * @param array $data_arr
-     * @return array The provided array after the processing
-     */
-    public static function fix_data_arr_empty_values_type(array $data_arr) : array
-    {
-        //$columns_data = self::$columns_data;
-        $columns_data = static::get_columns_data();
-        
-        foreach ($data_arr as $field_name=>$field_value) {
-            if ($field_value==='') {
-                // there is no value - lets see what it has to be
-                // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
-                // look for the field
-                //for ($aa = 0; $aa < count($columns_data); $aa++) {
-                foreach ($columns_data as $column_name => $columns_datum) {
-                    if ($columns_datum['name'] == $field_name) {
-                        if ($columns_datum['php_type'] == 'string') {
-                            // this is OK - a string can be empty
-                        } elseif ($columns_datum['php_type'] == 'int' || $columns_datum['php_type'] == 'float') {
-                            // check the default value - the default value may be set to NULL in the table cache but if the column is not NULL-able this means that there is no default value
-                            // in this case we need to set it to 0
-                            // even if the column is NULLable but threre is default value we must use the default value
-
-                            if ($columns_datum['default_value']!==null) {
-                                //we have a default value and we must use it
-                                $data_arr[$field_name] = $columns_datum['default_value'];
-                            } elseif ($columns_datum['nullable']) {
-                                $data_arr[$field_name] = null;
-                            } else {
-                                $data_arr[$field_name] = 0;
-                            }
-                        } else {
-                            // ignore
-                        }
-                        break;// we found our column
-                    }
-                }
-            } elseif ($field_value===NULL) {
-                // we need to check does the column support this type
-                // if it doesnt we need to cast it to 0 or ''
-                // look for the field
-                for ($aa = 0; $aa < count($columns_data); $aa++) {
-                    if ($columns_data[$aa]['name'] == $field_name) {
-                        if (!$columns_data[$aa]['nullable']) { // the column does not support NULL but the value is null
-                            // we will need to cast it
-                            if ($columns_data[$aa]['php_type'] == 'string') {
-                                $data_arr[$field_name] = '';
-                            } elseif ($columns_data[$aa]['php_type'] == 'int' || $columns_data[$aa]['php_type'] == 'float') {
-                                $data_arr[$field_name] = 0;
-                            } else {
-                                // ignore for now - let it throw an error
-                            }
-                        }
-                        break;// we found our column
-                    }
-                }
-            }
-        }
-        
-        return $data_arr;
-    }
 
     /**
      * Can be overriden to provide editable default routing.
@@ -931,12 +805,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $ret = [
                 $default_route                            => [
                     Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
-                    Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'create'],
+                    Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_action_create'],
                 ],
                 $default_route.'/{uuid}'                       => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'read'],
-                    Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'update'],
-                    Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'delete'],
+                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
+                    Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
+                    Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
                 ],
             ];
         }
@@ -1040,24 +914,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return iterable
      * @throws RunTimeException
      */
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
+    //public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
         $Store = static::get_service('OrmStore');
         //static::initialize_columns();
         $class_name = static::class;
-        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
 
+        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
         return $data;
     }
 
-    public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
-    {
-        $Store = static::get_service('OrmStore');
-        //static::initialize_columns();
-        $class_name = static::class;
-        $data = $Store->get_data_count_by($class_name, $index, $use_like);
-        return $data;
-    }
+//    public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
+//    {
+//        $Store = static::get_service('OrmStore');
+//        //static::initialize_columns();
+//        $class_name = static::class;
+//        $data = $Store->get_data_count_by($class_name, $index, $use_like);
+//        return $data;
+//    }
 
     /**
      * Returns all ActiveRecord classes that are loaded by the Kernel in the provided namespace prefixes.
@@ -1079,7 +954,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     if (
                         strpos($loaded_class, $ns_prefix) === 0
                         && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordWithAuthorization::class, ActiveRecordInterface::class, ActiveRecordController::class] )
+                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
                         && $RClass->isInstantiable()
                     ) {
                         $active_record_classes[$ns_prefix][] = $loaded_class;
@@ -1091,6 +966,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         return $ret;
+    }
+
+    public static function is_loaded_in_memory() : bool
+    {
+        return !empty(static::CONFIG_RUNTIME['load_in_memory']);
+    }
+
+    public static function initialize_in_memory() : void
+    {
+        $class = get_called_class();
+        $OrmStore = self::get_service('OrmStore');
+        $data = $OrmStore->get_data_by($class, []);//get everything
     }
 
 }

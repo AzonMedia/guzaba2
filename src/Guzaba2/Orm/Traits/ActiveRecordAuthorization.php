@@ -20,13 +20,9 @@ trait ActiveRecordAuthorization
             //throw
         }
 
-        //$Request = Coroutine::getContext()->Request;
-        //object user_id from $Request
-        //self::CurrentUser
-        if (!static::uses_service('AuthorizationProvider')) {
-            throw new RunTimeException(sprintf(t::_('The ActiveRecord is not using the service AuthorizationProvider. A method %s requiring authorization was invoked.'), $method));
+        if (static::uses_service('AuthorizationProvider')) {
+            $this->check_permission($action);
         }
-        $this->check_permission($action);
 
         return [$this, $action](...$args);
     }
@@ -37,24 +33,24 @@ trait ActiveRecordAuthorization
      */
     public function check_permission(string $action) : void
     {
-        if (!$this->current_role_can($action) ) {
-//            $Role = Coroutine::getContext()->CurrentUser->get_role();
-            $Role = self::get_service('CurrentUser')->get()->get_role();
-            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to %s object %s:%s.'), $Role->role_name, $action, get_class($this), $this->get_id() ));
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+            static::get_service('AuthorizationProvider')->check_permission($action, $this);
         }
+        return;
     }
 
     public function current_role_can(string $action) : bool
     {
-        //$Role = Coroutine::getContext()->CurrentUser->get_role();
-        $Role = self::get_service('CurrentUser')->get()->get_role();
-        return $this->role_can($Role , $action);
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can($action, $this) : TRUE;
     }
 
     public function role_can(Role $Role, string $action) : bool
     {
-        //get all operations that support that action
-        return static::get_service('AuthorizationProvider')::role_can($Role, $action, $this);
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->role_can($Role, $action, $this) : TRUE;
     }
 
+    public static function uses_permissions() : bool
+    {
+        return empty(static::CONFIG_RUNTIME['no_permissions']);
+    }
 }

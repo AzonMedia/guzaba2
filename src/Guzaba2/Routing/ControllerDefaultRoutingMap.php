@@ -8,7 +8,6 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Mvc\Controller;
-use Guzaba2\Mvc\ControllerWithAuthorization;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
@@ -48,24 +47,7 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
 
         $this->ns_prefixes = $ns_prefixes;
         $routing_map = [];
-        /*
-        $loaded_classes = Kernel::get_loaded_classes();
-        foreach ($this->ns_prefixes as $ns_prefix) {
-            foreach ($loaded_classes as $loaded_class) {
-                if (
-                    strpos($loaded_class, $ns_prefix) === 0
-                    && is_a($loaded_class, ControllerInterface::class, TRUE)
-                    && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
-                ) {
-                    $routing = $loaded_class::get_routes();
-                    if ($routing === NULL) { //empty array is acceptable though - this may be intentional (for example to skip/disable the controller)
-                        throw new RunTimeException(sprintf(t::_('The controller %s has no routing set. Please set the %s::ROUTES constant.'), $loaded_class, $loaded_class));
-                    }
-                    $routing_map = array_merge($routing_map, $routing);
-                }
-            }
-        }
-        */
+
         $controller_classes = Controller::get_controller_classes($ns_prefixes);
         foreach ($controller_classes as $loaded_class) {
             $routing = $loaded_class::get_routes();

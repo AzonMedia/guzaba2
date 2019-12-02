@@ -70,10 +70,19 @@ trait ResponseFactories
         return $Response;
     }
 
+    public static function get_structured_forbidden_response(array $structure = []) : ResponseInterface
+    {
+        if (!$structure) {
+            $structure['message'] = sprintf(t::_('You are not allowed to perform the requested action.'));
+        }
+        $Response = new Response(StatusCode::HTTP_FORBIDDEN, [], new Structured($structure));
+        return $Response;
+    }
+
     public static function get_structured_unauthorized_response(array $structure = []) : ResponseInterface
     {
         if (!$structure) {
-            $structure['message'] = sprintf(t::_('You are not allowed to access the requested resource.'));
+            $structure['message'] = sprintf(t::_('The requested action requires authentication.'));
         }
         $Response = new Response(StatusCode::HTTP_UNAUTHORIZED, [], new Structured($structure));
         return $Response;

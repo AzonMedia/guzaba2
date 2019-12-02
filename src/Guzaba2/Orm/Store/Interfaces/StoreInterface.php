@@ -17,6 +17,8 @@ interface StoreInterface
         'primary'               => 'bool',
         'default_value'         => '', // mixed
         'autoincrement'         => 'bool',
+        'key_name'              => 'string',
+        'key_reference'         => 'string',
     ];
 
     public function get_fallback_store() : ?StoreInterface ;

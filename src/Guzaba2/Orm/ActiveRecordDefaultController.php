@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
@@ -91,7 +91,7 @@ class ActiveRecordDefaultController extends Controller
      * @param string $uuid
      * @return ResponseInterface
      */
-    public function read(string $uuid) : ResponseInterface
+    public function crud_action_read(string $uuid) : ResponseInterface
     {
 
         $struct = [];
@@ -99,6 +99,7 @@ class ActiveRecordDefaultController extends Controller
         $struct = $this->ActiveRecord->as_array();
         //$struct = $this->ActiveRecord;//also works
         $Response = parent::get_structured_ok_response($struct);
+        $Response = $Response->withHeader('data-origin','orm-specific');
         return $Response;
     }
 
@@ -108,11 +109,13 @@ class ActiveRecordDefaultController extends Controller
      * Instead these are obtained internally with $this->get_request()->getParsedBody();
      * @return ResponseInterface
      */
-    public function create() : ResponseInterface
+    public function crud_action_create() : ResponseInterface
     {
 
         //because this method handles multiple types of records the expected params can not be listed in the method signature
         $body_arguments = $this->get_request()->getParsedBody();
+        //print_r($body_arguments);
+        //print gettype($body_arguments['object_id']);
         if ($body_arguments === NULL) {
             $struct = [];
             $struct['message'] = sprintf(t::_('The provided request could not be parsed.'));
@@ -121,7 +124,8 @@ class ActiveRecordDefaultController extends Controller
         }
 
         $primary_index = $this->ActiveRecord::get_primary_index_columns();
-        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
+        $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
+
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
@@ -153,10 +157,10 @@ class ActiveRecordDefaultController extends Controller
      * @param string $uuid
      * @return ResponseInterface
      */
-    public function update(string $uuid) : ResponseInterface
+    public function crud_action_update(string $uuid) : ResponseInterface
     {
         $body_arguments = $this->get_request()->getParsedBody();
-        $body_arguments = $this->ActiveRecord::cast_data_to_property_types($body_arguments);
+        $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
@@ -181,7 +185,7 @@ class ActiveRecordDefaultController extends Controller
      * @param string $uuid
      * @return ResponseInterface
      */
-    public function delete(string $uuid) : ResponseInterface
+    public function crud_action_delete(string $uuid) : ResponseInterface
     {
         $uuid = $this->ActiveRecord->get_uuid();
         $id = $this->ActiveRecord->get_id();

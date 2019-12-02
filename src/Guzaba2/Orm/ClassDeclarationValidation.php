@@ -12,6 +12,7 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Mvc\Controller;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 use Guzaba2\Translator\Translator as t;
@@ -186,6 +187,9 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
             $RClass = new ReflectionClass($active_record_class);
+            if (is_a($active_record_class, Controller::class, TRUE)) {
+                continue;//as the Controller is now also an ActiveRecord this check needs to be suppressed. These are expected to have properties.
+            }
             if (count($RClass->getOwnDynamicProperties())) {
                 throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
             }
@@ -214,6 +218,11 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         }
     }
 
+    /**
+     * Validates the property hooks (_before_set(), _after_set(), _before_get(), _after_get() )
+     * @param array $ns_prefixes
+     * @throws ClassValidationException
+     */
     public static function validate_property_hooks(array $ns_prefixes) : void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);

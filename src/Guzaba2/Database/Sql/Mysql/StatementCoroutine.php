@@ -22,7 +22,15 @@ class StatementCoroutine extends Statement implements StatementInterface
     public function execute(array $parameters = []) : self
     {
 
-        $position_parameters = $this->convert_to_position_parameters($parameters);
+        if ($parameters && $this->params) {
+            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
+            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
+        }
+        if ($parameters) {
+            $this->params = $parameters;
+        }
+
+        $position_parameters = $this->convert_to_position_parameters($this->params);
         $ret = $this->NativeStatement->execute($position_parameters);
 
         if ($ret === FALSE) {

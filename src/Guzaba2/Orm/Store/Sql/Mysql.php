@@ -8,6 +8,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
+use Guzaba2\Database\Sql\Mysql\Connection;
 use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
@@ -156,14 +157,16 @@ class Mysql extends Database implements StructuredStoreInterface
         $Connection = $this->get_connection($CR);
         $q = "
 SELECT
-    information_schema.columns.*
+    *,
+    '' AS COLUMN_KEY_NAME,
+    '' AS COLUMN_KEY_REFERENCE
 FROM
-    information_schema.columns
+    information_schema.COLUMNS
 WHERE
-    table_schema = :table_schema
-    AND table_name = :table_name
+    TABLE_SCHEMA = :table_schema
+    AND TABLE_NAME = :table_name
 ORDER BY
-    ordinal_position ASC
+    ORDINAL_POSITION ASC
     ";
         $s = $Connection->prepare($q);
         $s->table_schema = $Connection::get_database();
@@ -174,6 +177,32 @@ ORDER BY
             throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix().$table_name ));
         }
 
+        $q = "
+SELECT
+    *
+FROM
+    information_schema.KEY_COLUMN_USAGE
+WHERE
+    TABLE_SCHEMA = :table_schema
+    AND TABLE_NAME = :table_name
+    
+        ";
+        $s = $Connection->prepare($q);
+        $s->table_schema = $Connection::get_database();
+        $s->table_name = $Connection::get_tprefix().$table_name;
+        //print_r($s->get_params());
+        $keys_ret = $s->execute()->fetchAll();
+
+        foreach ($keys_ret as $key_row) {
+            foreach ($ret as &$row) {
+                if ($row['COLUMN_NAME'] === $key_row['COLUMN_NAME']) {
+                    $row['COLUMN_KEY_NAME'] = $key_row['CONSTRAINT_NAME'];
+                    if ($key_row['REFERENCED_TABLE_SCHEMA']) {
+                        $row['COLUMN_KEY_REFERENCE'] = $key_row['REFERENCED_TABLE_SCHEMA'].'.'.$key_row['REFERENCED_TABLE_NAME'].'.'.$key_row['REFERENCED_COLUMN_NAME'];//TODO - improve this
+                    }
+                }
+            }
+        }
 
         return $ret;
     }
@@ -199,6 +228,8 @@ ORDER BY
                 'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
                 'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
                 'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
+                'key_name'              => $column_structure_arr['COLUMN_KEY_NAME'],
+                'key_reference'         => $column_structure_arr['COLUMN_KEY_REFERENCE'],
             ];
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
             
@@ -229,7 +260,7 @@ WHERE
     AND meta_object_id = :object_id
         ";
         $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
-        unset($data['object_uuid_binary']);//this is only needed internally for MySQL - this MUST stay removed!
+        unset($data['meta_object_uuid_binary']);//this is only needed internally for MySQL - this MUST stay removed!
         return $data;
     }
 
@@ -420,14 +451,14 @@ VALUES
                 ";
 
 
-            try {
+//            try {
                 $Statement = $Connection->prepare($q);
                 $Statement->execute($data_arr);
-            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
-                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
-            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
-                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
-            }
+//            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $Exception) {
+//                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException(NULL, $Exception->getMessage(), 0, $Exception);
+//            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $Exception) {
+//                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException(NULL, $Exception->getMessage(), 0, $Exception);
+//            }
 
             //if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->index[$main_index[0]]) {
             if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_id()) {
@@ -691,13 +722,16 @@ WHERE `meta_object_uuid` = '{$uuid}'
      * @param $sort_desc
      * @return array dataset
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : array
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
 
         //lookup in DB
 
+        /**
+         * @var Connection
+         */
         $Connection = $this->get_connection($CR);
 
         //pull data from DB
@@ -722,7 +756,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
             TRUE => 'DESC',
             FALSE => 'ASC',
         ];
-        if ($sort_by != 'none') {
+        if ($sort_by !== NULL) {
             $sort_str = " ORDER BY " . $sort_by . " " . $sort_direction[$sort_desc];
         }
 
@@ -841,10 +875,11 @@ AND
     meta.meta_class_name = :meta_class_name
 ";
         $b['meta_class_name'] = $class;
-        
+
         $q = "
-SELECT 
-{$select_str}, meta.meta_object_uuid
+SELECT SQL_CALC_FOUND_ROWS
+{$select_str},
+meta.*
 FROM
 {$j_str}
 {$meta_str}
@@ -853,13 +888,17 @@ WHERE
 {$sort_str}
 {$l_str}
 ";
+
         $Statement = $Connection->prepare($q);
         $Statement->execute($b);
         $data = $Statement->fetchAll();
+        $total_found_rows = $Connection->get_found_rows();
+
 
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
+
 
         return $data;
 

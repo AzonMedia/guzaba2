@@ -21,6 +21,11 @@ class RolesHierarchy extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'users',
+
+        'load_in_memory'        => TRUE,
+
+        'no_permissions'        => TRUE,//the roles do not use permissions
+
     ];
 
     protected const CONFIG_RUNTIME = [];
