@@ -248,7 +248,7 @@ SELECT
 FROM
     {$Connection::get_tprefix()}{$this::get_meta_table()}
 WHERE
-    object_uuid_binary = UUID_TO_BIN(:object_uuid)";
+    meta_object_uuid_binary = UUID_TO_BIN(:object_uuid)";
 
         $data = $Connection->prepare($q)->execute([ 'object_uuid' => $uuid])->fetchRow();
 
