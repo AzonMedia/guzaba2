@@ -23,6 +23,7 @@ use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Base\Traits\ContextAware;
 use Guzaba2\Base\Exceptions\Traits\ExceptionPropertyModification;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Throwable;
 
 /**
@@ -137,6 +138,7 @@ abstract class BaseException extends \Exception
      */
     public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL)
     {
+
         parent::__construct($message, $code, $previous);
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
@@ -177,9 +179,13 @@ abstract class BaseException extends \Exception
             //it is too late here to get the trace where was this coroutine created/started
             //this is done at the time the coroutine is started - the backtrace is saved in the Context
             //$this->setTrace(Coroutine::getFullBacktrace());
-            
-            $Context = \Swoole\Coroutine::getContext();
-            $Context->CurrentException = $this->cloneException();
+            if ($this instanceof ContextDestroyedException) {
+                //there is no context so we cant preserve the current exception
+            } else {
+                $Context = \Swoole\Coroutine::getContext();
+                $Context->CurrentException = $this->cloneException();
+            }
+
         } else {
             self::$CurrentException = $this->cloneException();
         }
@@ -258,8 +264,13 @@ abstract class BaseException extends \Exception
         if (!$this->context_changed_flag) {
             //self::set_static('CurrentException', NULL);
             if (Coroutine::inCoroutine()) {
-                $Context = Coroutine::getContext();
-                $Context->CurrentException = NULL;
+                if ($this instanceof ContextDestroyedException) {
+                    //no context so nothing to reset
+                } else {
+                    $Context = Coroutine::getContext();
+                    $Context->CurrentException = NULL;
+                }
+
             } else {
                 self::$CurrentException = NULL;
             }

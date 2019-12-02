@@ -20,8 +20,21 @@ class CurrentUser extends Base implements \Azonmedia\Patterns\Interfaces\Wrapper
     public function __construct(UserInterface $User)
     {
         $this->User = $User;
-        //$Context = Coroutine::getContext();
-        //$Context->{UserInterface::class} = $User;
+    }
+
+    public function __destruct()
+    {
+//        print 'CURRENT USER DESTR'.PHP_EOL;
+//        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
+        unset($this->User);
+        //$this->User = NULL;//this will trigger a typed property error
+        parent::__destruct();
+    }
+
+    public function destroy() : void
+    {
+        unset($this->User);
     }
 
     public function get() : UserInterface

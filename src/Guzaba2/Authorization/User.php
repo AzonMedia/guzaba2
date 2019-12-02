@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
+use Azonmedia\Di\Interfaces\CoroutineDependencyInterface;
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Orm\ActiveRecord;
@@ -12,17 +13,16 @@ use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 /**
  * Class User
  * @package Guzaba2\Authorization\Rbac
+ * It MUST implement the CoroutineDependencyInterface as otherwise the DefaultCurrentUser will persist between the requests
  * @property user_id
  * @property role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
  */
-class User extends ActiveRecord implements UserInterface
+class User extends ActiveRecord implements UserInterface, CoroutineDependencyInterface
 {
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
         'route'                     => '/user',
-        //instead of hardcoding this in DI it is much better if it is accessible from outside the DI context
-        'default_current_user_id'   => 1,
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,
@@ -91,9 +91,14 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function get_default_current_user_id() /* scalar */
+    public function __construct($index)
     {
-        return self::CONFIG_RUNTIME['default_current_user_id'];
+        parent::__construct($index);
+    }
+
+    public function __destruct()
+    {
+        parent::__destruct();
     }
 
     /**

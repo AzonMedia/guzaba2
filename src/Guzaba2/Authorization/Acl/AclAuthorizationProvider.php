@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
 
+use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -51,6 +52,6 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 
     public static function get_used_active_record_classes() : array
     {
-        return [Permission::class, Role::class];
+        return [Permission::class, Role::class, RolesHierarchy::class];
     }
 }

@@ -157,14 +157,16 @@ class Mysql extends Database implements StructuredStoreInterface
         $Connection = $this->get_connection($CR);
         $q = "
 SELECT
-    information_schema.columns.*
+    *,
+    '' AS COLUMN_KEY_NAME,
+    '' AS COLUMN_KEY_REFERENCE
 FROM
-    information_schema.columns
+    information_schema.COLUMNS
 WHERE
-    table_schema = :table_schema
-    AND table_name = :table_name
+    TABLE_SCHEMA = :table_schema
+    AND TABLE_NAME = :table_name
 ORDER BY
-    ordinal_position ASC
+    ORDINAL_POSITION ASC
     ";
         $s = $Connection->prepare($q);
         $s->table_schema = $Connection::get_database();
@@ -175,6 +177,32 @@ ORDER BY
             throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix().$table_name ));
         }
 
+        $q = "
+SELECT
+    *
+FROM
+    information_schema.KEY_COLUMN_USAGE
+WHERE
+    TABLE_SCHEMA = :table_schema
+    AND TABLE_NAME = :table_name
+    
+        ";
+        $s = $Connection->prepare($q);
+        $s->table_schema = $Connection::get_database();
+        $s->table_name = $Connection::get_tprefix().$table_name;
+        //print_r($s->get_params());
+        $keys_ret = $s->execute()->fetchAll();
+
+        foreach ($keys_ret as $key_row) {
+            foreach ($ret as &$row) {
+                if ($row['COLUMN_NAME'] === $key_row['COLUMN_NAME']) {
+                    $row['COLUMN_KEY_NAME'] = $key_row['CONSTRAINT_NAME'];
+                    if ($key_row['REFERENCED_TABLE_SCHEMA']) {
+                        $row['COLUMN_KEY_REFERENCE'] = $key_row['REFERENCED_TABLE_SCHEMA'].'.'.$key_row['REFERENCED_TABLE_NAME'].'.'.$key_row['REFERENCED_COLUMN_NAME'];//TODO - improve this
+                    }
+                }
+            }
+        }
 
         return $ret;
     }
@@ -200,6 +228,8 @@ ORDER BY
                 'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
                 'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
                 'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
+                'key_name'              => $column_structure_arr['COLUMN_KEY_NAME'],
+                'key_reference'         => $column_structure_arr['COLUMN_KEY_REFERENCE'],
             ];
             settype($ret[$aa]['default_value'], $ret[$aa]['php_type']);
             
@@ -859,6 +889,7 @@ AND
         $b['meta_class_name'] = $class;//needs to be different from "class_name" as this is used elsewhere too
 
 
+
         $q = "
 SELECT SQL_CALC_FOUND_ROWS
 meta.*,
@@ -873,6 +904,9 @@ WHERE
 {$sort_str}
 {$l_str}
 ";
+
+        //print $q;
+        //print_r($b);
 
         $Statement = $Connection->prepare($q);
         $Statement->execute($b);

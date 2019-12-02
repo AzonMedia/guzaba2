@@ -6,6 +6,7 @@ use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Method;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
@@ -17,13 +18,13 @@ use Throwable;
 
 class Request extends HandlerBase
 {
-//    protected const CONFIG_DEFAULTS = [
-//        'services'      => [
-//            'ConnectionFactory'
-//        ]
-//    ];
-//
-//    protected const CONFIG_RUNTIME = [];
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Apm'
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
 
     /**
      * Array of MiddlewareInterface
@@ -115,7 +116,9 @@ class Request extends HandlerBase
             //$message = 'Error occurred while handling request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker '.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //Kernel::log($message);
             //Kernel::printk($message);
+            unset($Exception);//destroy it now  instead of waiting unti lthe end of the scope
         } finally {
+
             //\Guzaba2\Coroutine\Coroutine::end();//no need
             $end_time = microtime(TRUE);
             //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
@@ -130,6 +133,19 @@ class Request extends HandlerBase
             } else {
                 $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
             }
+            if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
+                $slow_message = __CLASS__.': '.'Slow response to '.$PsrRequest->getMethod().' request detected (more than 5 milliseconds). Dumping APM data:'.PHP_EOL;
+            } elseif ($served_in_time > 0.050) {
+                $slow_message = __CLASS__.': '.'Slow response to '.$PsrRequest->getMethod().' request detected (more than 50 milliseconds). Dumping APM data:'.PHP_EOL;
+            } else {
+                //excellent performance !!!
+            }
+            if (!empty($slow_message)) {
+                $slow_message .= (string) self::get_service('Apm');
+                Kernel::log($slow_message, LogLevel::DEBUG);
+            }
+
+
             $message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             Kernel::log($message, LogLevel::INFO);
         }

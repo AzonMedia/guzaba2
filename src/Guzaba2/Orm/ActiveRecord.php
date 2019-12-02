@@ -10,6 +10,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;
@@ -245,20 +246,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     public function __destruct()
     {
+
+        //print 'destr '.get_class($this).PHP_EOL;
+
         if (!$this->is_new()) {
             $this->Store->free_pointer($this);
         }
-
 
         if (self::is_locking_enabled() && !$this->is_new()) {
 
             if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
                 $resource = MetaStore::get_key_by_object($this);
                 static::get_service('LockManager')->release_lock($resource);
+
                 $this->read_lock_obtained_flag = FALSE;
             }
 
         }
+        parent::__destruct();
     }
 
     final public function __toString() : string
@@ -319,7 +324,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
         }
 
-        //do a check is there a modified data
 
         if (static::is_locking_enabled()) {
             //if ($this->locking_enabled_flag) {
@@ -327,6 +331,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
             //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+
             $this->read_lock_obtained_flag = TRUE;
         }
 
@@ -555,10 +560,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             return FALSE;
         }
 
-        if (Coroutine::inCoroutine()) {
-            $Context = Coroutine::getContext();
+        if (Coroutine::inCoroutine() ) {
 
-            $ret = $Context->orm_locking_enabled_flag ?? self::$orm_locking_enabled_flag;
+            try {
+                $Context = Coroutine::getContext();
+                if (property_exists($Context,'orm_locking_enabled_flag')) {
+                    $ret = $Context->orm_locking_enabled_flag;
+                } else {
+                    $ret = self::$orm_locking_enabled_flag;
+                }
+            } catch (ContextDestroyedException $Exception) {
+                //$ret = self::$orm_locking_enabled_flag;
+                $ret = FALSE;
+                //it is OK - the coroutine is over and this destructor is invoked as part of the context cleanup
+                //at this stage all locks have been released
+            }
+
+
 
         } else {
             $ret = self::$orm_locking_enabled_flag;
@@ -926,6 +944,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         return $ret;
+    }
+
+    public static function is_loaded_in_memory() : bool
+    {
+        return !empty(static::CONFIG_RUNTIME['load_in_memory']);
+    }
+
+    public static function initialize_in_memory() : void
+    {
+        $class = get_called_class();
+        $OrmStore = self::get_service('OrmStore');
+        $data = $OrmStore->get_data_by($class, []);//get everything
     }
 
 }

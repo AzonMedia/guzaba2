@@ -4,6 +4,7 @@ namespace Guzaba2\Coroutine;
 
 use Azonmedia\Apm\Interfaces\ProfilerInterface;
 use Azonmedia\Utilities\GeneralUtil;
+use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -14,8 +15,10 @@ use Guzaba2\Base\Traits\SupportsObjectInternalId;
 //use Guzaba2\Database\Interfaces\ConnectionInterface;
 //use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Traits\UsesServices;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Event\Events;
 use Guzaba2\Http\Request;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
@@ -114,6 +117,22 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 //            $Context->Apm->store_data();
 //            $Context->Connections->freeAllConnections();
 //        });
+
+
+        //this is triggers the object destruction before the $Context it self is destroyed at the end of the coroutine
+        //this is needed because the objects being destroyed may be referring to the $Context of the coroutine which is already destroyed
+        //this is to say that there is no guarantee that the $Context object is the very
+        \Swoole\Coroutine::defer(function() use ($Context) {
+            Kernel::get_di_container()->coroutine_services_cleanup();
+            //cleanup any remaining objects
+            $context_vars = get_object_vars($Context);
+            foreach($context_vars as $name => $value) {
+                if (is_object($value)) {
+                    $Context->{$name} = NULL;//trigger the destructor
+                }
+            }
+            $Context->is_destroyed = TRUE;
+        });
     }
 
     public static function getRequest($cid = NULL) : ?RequestInterface
@@ -136,6 +155,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $cid = $cid ?? self::getcid();
 
         $Context = parent::getContext($cid);
+
+        if (!empty($Context->is_destroyed)) {
+            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));
+        }
+
         if (empty($Context->is_initialized_flag)) {
             //$Context->Resources = new Resources();
             $Context->{Resources::class} = new Resources();
@@ -245,6 +269,19 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     $ParentChannel->push(['hash' => $hash, 'exception' => $Exception]);
                 }
             }
+
+            \Swoole\Coroutine::defer(function() use ($Context) {
+                //print_r(array_keys(get_object_vars($Context)));
+                Kernel::get_di_container()->coroutine_services_cleanup();
+                //cleanup any remaining objects
+                $context_vars = get_object_vars($Context);
+                foreach($context_vars as $name => $value) {
+                    if (is_object($value)) {
+                        $Context->{$name} = NULL;//trigger the destructor
+                    }
+                }
+                $Context->is_destroyed = TRUE;
+            });
         };
 
         //increment parent coroutine apm values

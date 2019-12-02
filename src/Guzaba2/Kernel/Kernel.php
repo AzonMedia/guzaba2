@@ -81,6 +81,8 @@ abstract class Kernel
      */
     public const MICROTIME_ROUNDING = 4;
 
+    public const MICROTIME_EPS = 100;//100 microseconds
+
     //http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=guzaba%202%20framework
     public const FRAMEWORK_BANNER = <<<BANNER
 
@@ -298,6 +300,11 @@ BANNER;
     public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
+    }
+
+    public static function get_di_container() : ?ContainerInterface
+    {
+        return self::$Container;
     }
 
     /**

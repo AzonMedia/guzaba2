@@ -23,6 +23,8 @@ class Role extends ActiveRecord
         'main_table'            => 'roles',
         'route'                 => '/role',
 
+        //'load_in_memory'        => TRUE,
+
         'no_permissions'        => TRUE,//the roles do not use permissions
 
         'structure' => [
