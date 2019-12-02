@@ -49,6 +49,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
          * Should a complete backtrace (taking into account parent coroutines) be provided when exception occurrs inside a coroutine
          */
         'enable_complete_backtrace'         => TRUE,
+        'services'                          => [
+            'Apm'
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];

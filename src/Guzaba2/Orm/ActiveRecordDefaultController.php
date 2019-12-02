@@ -98,6 +98,7 @@ class ActiveRecordDefaultController extends Controller
         $struct = $this->ActiveRecord->as_array();
         //$struct = $this->ActiveRecord;//also works
         $Response = parent::get_structured_ok_response($struct);
+        $Response = $Response->withHeader('data-origin','orm-specific');
         return $Response;
     }
 
