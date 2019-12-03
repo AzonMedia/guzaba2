@@ -22,6 +22,7 @@ use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
+use Guzaba2\Application\Application;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -558,6 +559,7 @@ BANNER;
         foreach ($handlers as $Handler) {
             if ($Handler instanceof StreamHandler) {
                 $url = $Handler->getUrl();
+
                 if ($url && $url[0] === '/') { //skip php://output
                     self::file_put_contents($url, $message, \FILE_APPEND);
                 }

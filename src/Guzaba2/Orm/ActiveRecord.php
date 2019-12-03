@@ -158,6 +158,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     private /* scalar */ $requested_index = self::INDEX_NEW;
 
+
+    private bool $read_only_flag = FALSE;
+
+    private bool $permission_checks_disabled_flag = FALSE;
+
     /**
      * ActiveRecord constructor.
      * @param int $index
@@ -166,12 +171,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
+    //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
+    public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = FALSE, bool $permission_checks_disabled = FALSE, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
 
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
+        }
+
+        $this->read_lock_obtained_flag = $read_only;
+        $this->permission_checks_disabled_flag = $permission_checks_disabled;
+
+        if (Coroutine::inCoroutine()) {
+            $Request = Coroutine::getRequest();
+            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+                $this->read_only_flag = TRUE;
+            }
         }
 
         //$this->locking_enabled_flag = self::is_locking_enabled();
@@ -294,23 +310,19 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     protected function read(/* int|string|array */ $index) : void
     {
 
-        //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
-        //if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
-            $this->check_permission('read');
-        }
-
-
-        if (method_exists($this, '_before_read') && !$this->method_hooks_are_disabled()) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_before_read'], $args);//must return void
-        }
-
         if (!is_string($index) && !is_int($index) && !is_array($index)) {
             throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
         }
 
-        //new Event($this, '_before_read');
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
+            $this->check_permission('read');
+        }
+
+        if (method_exists($this, '_before_read') && !$this->are_method_hooks_disabled()) {
+            $args = func_get_args();
+            call_user_func_array([$this,'_before_read'], $args);//must return void
+        }
+
         self::get_service('Events')::create_event($this, '_before_read');
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
@@ -346,7 +358,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         self::get_service('Events')::create_event($this, '_after_read');
 
         //_after_load() event
-        if (method_exists($this, '_after_read') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_after_read') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
@@ -357,7 +369,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
             if ($this->is_new()) {
                 $this->check_permission('create');
             } else {
@@ -365,12 +377,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
         }
 
-        if (Coroutine::inCoroutine()) {
-            $Request = Coroutine::getRequest();
-            if ($Request->getMethodConstant() === Method::HTTP_GET) {
-                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
-            }
+        if ($this->is_read_only()) {
+            throw new RunTimeException(sprintf(t::_('Trying to save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
         }
+
+//read_only is set in constructor() if method is GET
+//        if (Coroutine::inCoroutine()) {
+//            $Request = Coroutine::getRequest();
+//            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+//                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+//            }
+//        }
 
         if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
             return $this;
@@ -379,7 +396,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
         //_before_save() event
-        if (method_exists($this, '_before_save') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_before_save') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_save'], $args);//must return void
         }
@@ -415,7 +432,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         self::get_service('Events')::create_event($this, '_after_save');
 
         //_after_save() event
-        if (method_exists($this, '_after_save') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_after_save') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_save'], $args);//must return void
         }
@@ -440,20 +457,28 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public function delete(): void
     {
-        if (Coroutine::inCoroutine()) {
-            $Request = Coroutine::getRequest();
-            if ($Request->getMethodConstant() === Method::HTTP_GET) {
-                throw new RunTimeException(sprintf(t::_('Trying to delete object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
-            }
+
+        if ($this->is_read_only()) {
+            throw new RunTimeException(sprintf(t::_('Trying to delete a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
         }
+
+//read_only is set in constructor() if method is GET
+//        if (Coroutine::inCoroutine()) {
+//            $Request = Coroutine::getRequest();
+//            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+//                throw new RunTimeException(sprintf(t::_('Trying to delete object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+//            }
+//        }
+
+
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
             $this->check_permission('delete');
         }
 
-        if (method_exists($this, '_before_delete') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_before_delete') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_delete'], $args);//must return void
         }
@@ -480,7 +505,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_after_delete');
         self::get_service('Events')::create_event($this, '_after_delete');
 
-        if (method_exists($this, '_after_delete') && !$this->method_hooks_are_disabled()) {
+        if (method_exists($this, '_after_delete') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
@@ -620,6 +645,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $ret = $this->record_data[$primary_index_columns[0]];//the index should exist
         } else {
             if (is_array($this->requested_index)) {
+                if (count($this->requested_index) > 1) {
+                    throw new RunTimeException(sprintf(t::_('The instance was instantiated with an array as index with more than one element.')));
+                }
                 $ret = array_key_first($this->requested_index);
             } else {
                 $ret = $this->requested_index;
@@ -627,6 +655,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
         
         return $ret;
+    }
+
+    /**
+     * Returns the $index provided to the constructor.
+     * The returned index is always converted to an array with column_name=>$value even if scalar was provided.
+     * @return array
+     */
+    public function get_requested_index() : array
+    {
+        $ret = [];
+        if (is_array($this->requested_index)) {
+            $ret = $this->requested_index;
+        } else {
+            $primary_columns = self::get_primary_index_columns();
+            if (count($primary_columns) > 1) {
+                //TODO - complete
+            }
+        }
     }
 
     /**
@@ -756,9 +802,19 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->disable_method_hooks_flag = false;
     }
 
-    public function method_hooks_are_disabled() : bool
+    public function are_method_hooks_disabled() : bool
     {
         return $this->disable_method_hooks_flag;
+    }
+
+    public function is_read_only() : bool
+    {
+        return $this->read_only_flag;
+    }
+
+    public function are_permission_checks_disabled() : bool
+    {
+        return $this->permission_checks_disabled_flag;
     }
 
     /**

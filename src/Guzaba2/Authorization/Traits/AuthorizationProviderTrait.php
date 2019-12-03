@@ -23,9 +23,10 @@ trait AuthorizationProviderTrait
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
         //do not check the permissions of the default user as this will trigger recursion
         //if the default user is 0 the permissions are not checked as this is a new object
-        if ($ActiveRecord instanceof User && $ActiveRecord->get_id() === Container::get_default_current_user_id()) {
-            return TRUE;
-        }
+        //if ($ActiveRecord instanceof User && $ActiveRecord->get_id() === Container::get_default_current_user_id()) {
+            //return TRUE;
+        //}
+        //the above is no longer needed as the user instance used for currentUser now is created as readonly and without permissions checks
 
         $Role = self::get_service('CurrentUser')->get()->get_role();
         return $this->role_can($Role, $action, $ActiveRecord);

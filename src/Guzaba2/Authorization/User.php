@@ -91,15 +91,6 @@ class User extends ActiveRecord implements UserInterface, CoroutineDependencyInt
 
     protected const CONFIG_RUNTIME = [];
 
-    public function __construct($index)
-    {
-        parent::__construct($index);
-    }
-
-    public function __destruct()
-    {
-        parent::__destruct();
-    }
 
     /**
      * Returns the primary role of the user
