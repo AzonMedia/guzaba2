@@ -63,7 +63,7 @@ class Redis extends Database
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             // Saves record in fallback and gets uuid
             $all_data = $this->FallbackStore->update_record($ActiveRecord);
-            $uuid = $all_data['meta']['object_uuid'];
+            $uuid = $all_data['meta']['meta_object_uuid'];
             $record_data = $all_data['data'];
         } elseif ($ActiveRecord->is_new()) {
             $uuid = $this->create_uuid();
@@ -163,13 +163,13 @@ class Redis extends Database
 
         $primary_index_columns = $class::get_primary_index_columns();
         $id_column = reset($primary_index_columns);
-        if (!isset($index['object_uuid']) && !isset($index[$id_column])) {
+        if (!isset($index['meta_object_uuid']) && !isset($index[$id_column])) {
             $ret = $this->FallbackStore->get_data_pointer($class, $index);
             return $ret;
         }
 
-        if (isset($index['object_uuid'])) {
-            $uuid = $index['object_uuid'];
+        if (isset($index['meta_object_uuid'])) {
+            $uuid = $index['meta_object_uuid'];
         } else {
             $redis_id_key = $this->create_class_id($class, $index);
             $uuid = $Connection->get($redis_id_key);
@@ -332,7 +332,7 @@ class Redis extends Database
 
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
-        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+        $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
         return $ret;
     }
 

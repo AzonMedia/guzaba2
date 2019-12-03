@@ -273,6 +273,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 }
             }
 
+            $Context = self::getContext($new_cid);
+
             \Swoole\Coroutine::defer(function() use ($Context) {
                 //print_r(array_keys(get_object_vars($Context)));
                 Kernel::get_di_container()->coroutine_services_cleanup();

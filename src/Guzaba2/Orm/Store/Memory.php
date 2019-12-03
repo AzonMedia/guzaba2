@@ -174,15 +174,15 @@ class Memory extends Store implements StoreInterface
             // TODO UUID
         } elseif ($uuid = $class::get_uuid_from_data($index)) {
             if (isset($this->uuid_data[$uuid])) {
-                $lookup_index = $this->uuid_data[$uuid]['object_id'];
-                $class_by_uuid = $this->uuid_data[$uuid]['class_name'];
+                $lookup_index = $this->uuid_data[$uuid]['meta_object_id'];
+                $class_by_uuid = $this->uuid_data[$uuid]['meta_class_name'];
                 if ($class_by_uuid !== $class) {
                     throw new LogicException(sprintf(t::_('The requested object is of class %s while the the provided UUID %s is of class %s.'), $class, $uuid, $class_by_uuid));
                 }
                 if (isset($this->data[$class][$lookup_index])) {
 
                     $meta_data = $this->get_meta_by_uuid($uuid);
-                    $primary_index = [$meta_data['object_id']];
+                    $primary_index = [$meta_data['meta_object_id']];
                     //if found check is it current in MetaStore
                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                     
@@ -488,6 +488,7 @@ class Memory extends Store implements StoreInterface
                     }
                 }
             }
+            $total_found_rows = count($ret);
 
             $time_end_lookup = (double) microtime(TRUE);
             $memory_looukp_time = $time_end_lookup - $time_start_lookup;
@@ -498,7 +499,7 @@ class Memory extends Store implements StoreInterface
             }
 
         } else {
-            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc);
+            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
             foreach ($ret as $row) {
                 $primary_index = $class::get_index_from_data($row);
                 $lookup_index = self::form_lookup_index($primary_index);

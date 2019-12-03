@@ -863,6 +863,16 @@ WHERE `meta_object_uuid` = '{$uuid}'
         $select_str = implode(PHP_EOL."\t".", ", $select_arr);
         unset($select_arr);
 
+        // GET meda data
+        $select_str .= "
+            , meta.meta_object_uuid
+            , meta.meta_class_name
+            , meta.meta_object_id
+            , meta.meta_object_create_microtime
+            , meta.meta_object_last_update_microtime
+            , meta.meta_object_create_transaction_id
+            , meta.meta_object_last_update_transaction_id
+        ";
 
         // JOIN meta data
         $meta_table = $Connection::get_tprefix().$this::get_meta_table();
@@ -876,35 +886,49 @@ AND
 ";
         $b['meta_class_name'] = $class;
 
-        $q = "
-SELECT SQL_CALC_FOUND_ROWS
-{$select_str},
-meta.meta_object_uuid,
-meta.meta_class_name,
-meta.meta_object_id,
-meta.meta_object_create_microtime,
-meta.meta_object_last_update_microtime,
-meta.meta_object_create_transaction_id,
-meta.meta_object_last_update_transaction_id
+        $q_data = "
+SELECT
+    {$select_str}
 FROM
-{$j_str}
-{$meta_str}
+    {$j_str}
+    {$meta_str}
 WHERE
-{$w_str}
-{$sort_str}
-{$l_str}
+    {$w_str}
+    {$sort_str}
+    {$l_str}
 ";
 
-        $Statement = $Connection->prepare($q);
-        $Statement->execute($b);
-        $data = $Statement->fetchAll();
-        $total_found_rows = $Connection->get_found_rows();
+        $q_count = "
+SELECT
+    COUNT(*) as total_found_rows
+FROM
+    {$j_str}
+    {$meta_str}
+WHERE
+    {$w_str}
+";
 
+        if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
+            $queries = [
+                ['query' => $q_data, 'params' => $b],
+                ['query' => $q_count, 'params' => $b]
+            ];
+            list($data, $count) = $Connection->execute_parallel_queries($queries);
+        } else {
+            $Statement = $Connection->prepare($q_data);
+            $Statement->execute($b);
+            $data = $Statement->fetchAll();
+
+            $Statement = $Connection->prepare($q_count);
+            $Statement->execute($b);
+            $count = $Statement->fetchAll();
+        }
+
+        $total_found_rows = $count[0]['total_found_rows'];
 
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
-
 
         return $data;
 
