@@ -530,8 +530,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %s.'), $uuid));
         }
             
-        $id = $meta_data['object_id'];
-        return new $meta_data['class_name']($id);
+        $id = $meta_data['meta_object_id'];
+        return new $meta_data['meta_class_name']($id);
     }
 
     public function _before_change_context() : void
@@ -636,7 +636,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public function get_uuid() : string
     {
-        $ret = $this->meta_data['object_uuid'];
+        $ret = $this->meta_data['meta_object_uuid'];
         return $ret;
     }
 
@@ -685,8 +685,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_uuid_from_data(array $data) : ?string
     {
         $ret = NULL;
-        if (isset($data['object_uuid'])) {
-            $ret = $data['object_uuid'];
+        if (isset($data['meta_object_uuid'])) {
+            $ret = $data['meta_object_uuid'];
         }
         return $ret;
     }
