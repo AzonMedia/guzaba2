@@ -181,6 +181,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                         $Response = $Exception->getResponse();
                     } catch (PermissionDeniedException $Exception) {
                         $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
+                        $Response = $Response->withHeader('data-origin','orm-specific');
                     }
 
                 }

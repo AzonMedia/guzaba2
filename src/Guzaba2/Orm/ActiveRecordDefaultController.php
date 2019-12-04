@@ -51,6 +51,7 @@ class ActiveRecordDefaultController extends Controller
                     $struct = [];
                     $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class.'), $this->get_request()->getUri()->getPath());
                     $Response = parent::get_structured_badrequest_response($struct);
+                    $Response = $Response->withHeader('data-origin','orm-specific');
                     return $Response;
                 }
 
@@ -59,6 +60,7 @@ class ActiveRecordDefaultController extends Controller
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No UUID provided.'));
                 $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;
             }
 
@@ -69,6 +71,7 @@ class ActiveRecordDefaultController extends Controller
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No object with the provided UUID %s is found.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;
             }
         }
