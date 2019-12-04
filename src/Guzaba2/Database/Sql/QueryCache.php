@@ -1,28 +1,13 @@
 <?php
 declare(strict_types=1);
-/*
- * Guzaba Framework
- * http://framework.guzaba.org
- *
- * This source file is subject to the BSD license that is bundled with this
- * package in the file LICENSE.txt and available also at:
- * http://www.opensource.org/licenses/bsd-license.php
- *
- */
 
-/**
- * @category    Guzaba Framework
- * @package        Database
- * @subpackage    PDO
- * @copyright    Copyright (c) Guzaba Ltd - http://guzaba.com
- * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
- * @author        Vesselin Kenashkov <vesko@webstudiobulgaria.com>
- */
-
-namespace Guzaba2\Database;
+namespace Guzaba2\Database\Sql;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Cache\Interfaces\CacheInterface;
+use Guzaba2\Cache\Interfaces\IntCacheInterface;
+use Guzaba2\Cache\Interfaces\ProcessCacheInterface;
 use Guzaba2\Database\PdoStatement;
 use Guzaba2\Database\Transaction;
 use Guzaba2\Patterns\Singleton;
@@ -30,14 +15,38 @@ use Guzaba2\Transaction\TransactionManager;
 
 /**
  * Class QueryCache
- * @package org\guzaba\framework\database\classes
- * @todo refactor and re-implement
+ * @package Guzaba2\Database
  */
 class QueryCache extends Base
 {
-    protected const CACHE_TTL = 3600;
-    protected const CACHE_QUERIES_CONTAINING_RAND = false;
-    protected const CACHE_RESULT_MATRICES_UP_TO_ELEMENTS = 10000;
+    //protected const CACHE_TTL = 3600;
+    //protected const CACHE_QUERIES_CONTAINING_RAND = false;//never cache these
+    //protected const CACHE_RESULT_MATRICES_UP_TO_ELEMENTS = 10000;
+
+    protected const CONFIG_DEFAULTS = [
+        'cache_queries_containing_rand'         => FALSE,
+        'cache_result_matrices_up_to_elements'  => 10000,
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+    /**
+     * A global cache used to store the microtime of the tables modifications
+     * @var IntCacheInterface
+     */
+    private ProcessCacheInterface $TimeCache;
+
+    /**
+     * Used to store the query results
+     * @var CacheInterface
+     */
+    private CacheInterface $Cache;
+
+    public function __construct(ProcessCacheInterface $TimeCache, CacheInterface $Cache)
+    {
+        $this->TimeCache = $TimeCache;
+        $this->Cache = $Cache;
+    }
 
     /**
      * @param string $table
@@ -46,32 +55,28 @@ class QueryCache extends Base
      */
     public function update_table_modification_microtime(string $table, int $add_time = 0): void
     {
-        $table_key = 'table_' . $table;
-        $microtime = $add_time + microtime(true);
-        self::cache()->cache_value($table_key, $microtime);//no TTL for the table update time - the tables are a limited amount and small data is cached
+        $microtime = ($add_time + microtime(TRUE) ) * 1_000_000;
+        $microtime = (int) $microtime;
+        $this->TimeCache->set('table',$table, $microtime);//no TTL for the table update time - the tables are a limited amount and small data is cached
     }
 
-    public function get_table_modification_microtime(string $table): float
+    public function get_table_modification_microtime(string $table): ?int
     {
-        $table_key = 'table_' . $table;
-        $table_updated_microtime = (float)self::cache()->get_value($table_key);
-
-        return $table_updated_microtime;
+        return $this->TimeCache->get('table',$table);
     }
 
     public function update_tables_modification_microtime(string $sql, int $add_time = 0): void
     {
         $tables = self::get_tables_from_sql($sql);
-        //print $sql.PHP_EOL;
-
         foreach ($tables as $table) {
             self::update_table_modification_microtime($table, $add_time);
         }
     }
 
-    public function add_cached_data(string $sql, array $params, \Countable $query_data, ?int $found_rows = NULL): void
+    //public function add_cached_data(string $sql, array $params, \Countable $query_data, ?int $found_rows = NULL): void
+    public function add_cached_data(string $sql, array $params, iterable $query_data): void
     {
-        if (preg_match('/RAND\s*\(\)/i', $sql) && !self::CACHE_QUERIES_CONTAINING_RAND) {
+        if (preg_match('/RAND\s*\(\)/i', $sql) && !self::CONFIG_RUNTIME['cache_queries_containing_rand']) {
             return;
         }
 
@@ -79,20 +84,21 @@ class QueryCache extends Base
         if (isset($query_data[0])) {
             $columns = count($query_data[0]);
         }
-        if ($rows && $columns && $rows * $columns > self::CACHE_RESULT_MATRICES_UP_TO_ELEMENTS) {
+        if ($rows && $columns && $rows * $columns > self::CONFIG_RUNTIME['cache_result_matrices_up_to_elements']) {
             return;//the result set is too big to be cached
         }
 
-        $cache = framework\services\classes\services::cache();
-
-        $query_key = 'query_' . md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
+        //$query_key = 'query_' . md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
+        $query_key =  md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
         $query_data = [
-            'cached_microtime' => microtime(true),
+            'cached_microtime' => (int) microtime(true) * 1_000_000,
             'data' => $query_data,
-            'found_rows' => $found_rows,
+            //'found_rows' => $found_rows,
         ];
 
-        $cache->cache_value($query_key, $query_data, self::CACHE_TTL);
+        //$this->Cache->add($query_key, $query_data, self::CACHE_TTL);
+        //$this->Cache->add('query', $query_key, $query_data, self::CACHE_TTL);
+        $this->Cache->set('query', $query_key, $query_data);
     }
 
     public function get_cached_data(string $sql, array $params): ?iterable
@@ -100,13 +106,14 @@ class QueryCache extends Base
         $ret = NULL;
         $cache_enabled = TRUE;
 
-        if (TransactionManager::getCurrentTransaction(Transaction::class)) {
-            //there is a current transaction
-            if (!PdoStatement::ENABLE_SELECT_CACHING_DURING_TRANSACTION) {
-                //the caching of select queries during transaction is disabled
-                return $ret;
-            }
-        }
+//TODO - implement
+//        if (TransactionManager::getCurrentTransaction(Transaction::class)) {
+//            //there is a current transaction
+//            if (!PdoStatement::ENABLE_SELECT_CACHING_DURING_TRANSACTION) {
+//                //the caching of select queries during transaction is disabled
+//                return $ret;
+//            }
+//        }
 
         //check is the result of the query already cached - if it is DO NOT execute the query - just set it as executed and later retrieve the cached value in fetch* methods
         //the cache invalidation will be based on parsinge the query and invalidating all queries that contain a table
@@ -124,14 +131,15 @@ class QueryCache extends Base
 
         //queries containing RAND() cant be cached either
         //if (stripos($sql,'rand()') !== FALSE) {
-        if (preg_match('/RAND\s*\(\)/i', $sql)) {
+        if (preg_match('/RAND\s*\(\)/i', $sql) && !self::CONFIG_RUNTIME['cache_queries_containing_rand']) {
             $cache_enabled = FALSE;
         }
 
         if ($cache_enabled) {
-            $query_key = 'query_' . md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
-            $query_data = self::cache()->get_value($query_key);//contains cached microtime
-
+            //$query_key = 'query_' . md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
+            //$query_data = self::cache()->get_value($query_key);//contains cached microtime
+            $query_key = md5($sql) . '|' . md5(ArrayUtil::array_as_string($params));
+            $query_data = $this->Cache->get('query', $query_key);//contains cached microtime
             //check the invalidation times for each individual table
             //if the last time a table has been updated is after thi time then this cached data is no longer valid
             if ($query_data) {
@@ -168,20 +176,5 @@ class QueryCache extends Base
         }
 
         return $tables;
-    }
-
-    public static function &get_instance(): \Guzaba2\Patterns\Interfaces\SingletonInterface
-    {
-        // TODO: Implement get_instance() method.
-    }
-
-    public static function get_instances(): array
-    {
-        // TODO: Implement get_instances() method.
-    }
-
-    public function destroy(): void
-    {
-        // TODO: Implement destroy() method.
     }
 }

@@ -284,7 +284,8 @@ WHERE
         $data = $Connection->prepare($q)->execute([ 'object_uuid' => $uuid])->fetchRow();
 
         if (!count($data)) {
-            throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
+            //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
+            $data = $this->FallbackStore->get_meta_by_uuid( $uuid);
         }
         //$ret['object_id'] = $data['object_id'];
         //$ret['class'] = $data['class_name'];
@@ -302,7 +303,7 @@ WHERE
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
-        $object_last_update_microtime = microtime(TRUE) * 1_000_000;
+        $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
 
 
         $q = "
@@ -908,23 +909,38 @@ WHERE
     {$w_str}
 ";
 
-        if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
-            $queries = [
-                ['query' => $q_data, 'params' => $b],
-                ['query' => $q_count, 'params' => $b]
-            ];
-            list($data, $count) = $Connection->execute_parallel_queries($queries);
+        if ($limit) {
+
+            if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
+                $connection_class = get_class($Connection);
+                unset($CR);//release the connection
+                $queries = [
+                    ['query' => $q_data, 'params' => $b],
+                    ['query' => $q_count, 'params' => $b]
+                ];
+                list($data, $count) = $connection_class::execute_parallel_queries($queries);
+            } else {
+                $Statement = $Connection->prepare($q_data);
+                $Statement->execute($b);
+                $data = $Statement->fetchAll();
+
+                $Statement = $Connection->prepare($q_count);
+                $Statement->execute($b);
+                $count = $Statement->fetchAll();
+            }
+
+            $total_found_rows = $count[0]['total_found_rows'];
+
         } else {
             $Statement = $Connection->prepare($q_data);
             $Statement->execute($b);
             $data = $Statement->fetchAll();
-
-            $Statement = $Connection->prepare($q_count);
-            $Statement->execute($b);
-            $count = $Statement->fetchAll();
+            $total_found_rows = count($data);
         }
 
-        $total_found_rows = $count[0]['total_found_rows'];
+
+
+
 
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));

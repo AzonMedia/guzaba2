@@ -92,8 +92,10 @@ class Pool extends Provider
      */
     public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
     {
+
+        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 //        if (!Coroutine::inCoroutine()) {
-//            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
+//            throw new RunTimeException(sprintf(t::_('cConnections can be obtained from the Pool only in Coroutine context.')));
 //        }
         //check the current scope does it has a connection
 

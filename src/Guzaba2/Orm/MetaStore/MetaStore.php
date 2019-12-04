@@ -32,7 +32,7 @@ abstract class MetaStore extends Base implements MetaStoreInterface
         }
         
         if (count($data) !== count(self::DATA_STRUCT)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided meta contains less keys %s than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT)));
+            throw new InvalidArgumentException(sprintf(t::_('The provided meta contains less keys (%s) than the expected in DATA_STRUCT %s.'), count($data), count(self::DATA_STRUCT)));
         }
     }
 

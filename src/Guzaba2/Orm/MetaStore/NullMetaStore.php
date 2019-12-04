@@ -31,7 +31,8 @@ class NullMetaStore extends MetaStore
      */
     public function get_class_last_update_time(string $class) : ?int
     {
-        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+        //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+        return NULL;
     }
 
     /**
@@ -40,7 +41,8 @@ class NullMetaStore extends MetaStore
      */
     public function get_class_meta_data(string $class) : ?array
     {
-        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+        //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
+        return NULL;
     }
 
     /**
@@ -60,7 +62,7 @@ class NullMetaStore extends MetaStore
      */
     public function get_meta_data(string $class, array $primary_index) : ?array
     {
-        throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index, TRUE)));
+        //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index, TRUE)));
         return NULL;
     }
 
@@ -71,8 +73,7 @@ class NullMetaStore extends MetaStore
     public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
     {
         $key = self::get_key_by_object($ActiveRecord);
-        $data = $this->get_meta_data($key);
-        return $data;
+        return $this->get_meta_data($key);
     }
 
     /**

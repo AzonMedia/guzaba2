@@ -11,6 +11,13 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
 
+//TODO - rework the Meta Store to use the SwooleTableIntCache and keep only the last_update_microtime
+//and remove this class
+
+/**
+ * Class SwooleTable
+ * @package Guzaba2\Orm\MetaStore
+ */
 class SwooleTable extends MetaStore
 {
     protected const CONFIG_DEFAULTS = [
@@ -118,7 +125,6 @@ class SwooleTable extends MetaStore
     public function get_meta_data(string $class, array $primary_index) : ?array
     {
         $key = self::get_key($class, $primary_index);
-        //print 'get '.$key.PHP_EOL;
         $data = $this->SwooleTable->get($key);
         if (!$data) {
             $data = $this->FallbackMetaStore->get_meta_data($class, $primary_index);

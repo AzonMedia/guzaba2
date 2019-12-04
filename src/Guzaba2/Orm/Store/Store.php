@@ -90,6 +90,11 @@ abstract class Store extends Base implements StoreInterface
         throw new RecordNotFoundException(sprintf(t::_('Record of class %s with lookup index %s does not exist.'), $class, $lookup_index));
     }
 
+    protected function throw_not_found_exception_by_uuid(string $uuid) : void
+    {
+        throw new RecordNotFoundException(sprintf(t::_('No record with UUID %s exists'), $uuid ));
+    }
+
     /**
      * @param string $class
      * @throws UnknownRecordTypeException

@@ -20,7 +20,7 @@ interface ActiveRecordInterface
     ];
 
     public const META_TABLE_COLUMNS = [
-        'meta_object_uuid_binary',
+        'meta_object_uuid_binary',//TODO - mysql specific - remove
         'meta_object_uuid',
         'meta_class_name',
         'meta_object_id',

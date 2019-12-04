@@ -19,6 +19,8 @@ interface MetaStoreInterface
         //'updated_from_coroutine_id' => 'int',
     ];
 
+
+
     /**
      * @param string $class
      * @return int|null

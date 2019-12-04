@@ -20,7 +20,7 @@ class RolesHierarchy extends ActiveRecord
 {
 
     protected const CONFIG_DEFAULTS = [
-        'main_table'            => 'users',
+        'main_table'            => 'roles_hierarchy',
 
         'load_in_memory'        => TRUE,
 

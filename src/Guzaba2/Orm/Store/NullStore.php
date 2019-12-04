@@ -45,6 +45,16 @@ class NullStore extends Store implements StoreInterface
         return [];
     }
 
+    /**
+     * Returns class and id of object by uuid
+     * @param  string $uuid
+     * @return array - class and id
+     */
+    public function get_meta_by_uuid(string $uuid) : array
+    {
+        $this->throw_not_found_exception_by_uuid($uuid);
+        return [];
+    }
 
     /**
      * @param string $class

@@ -269,7 +269,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
-
             $this->Store->free_pointer($this);
         }
 
@@ -314,9 +313,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
         }
 
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
-            $this->check_permission('read');
-        }
+//        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
+//            $this->check_permission('read');
+//        }
 
         if (method_exists($this, '_before_read') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
@@ -335,6 +334,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
+        }
+
+        //check the permissions now, not before the record is found as the provided index may be a an array and then the permissions lookup will fail
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
+            $this->check_permission('read');
         }
 
         if (!count($this->meta_data)) {
@@ -549,6 +553,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static final function get_by_uuid(string $uuid) : ActiveRecord
     {
         //$Store = static::OrmStore();
+        /**
+         * Guzaba2\Orm\Store\Sql\Mysql
+         */
         $Store = static::get_service('OrmStore');
         $meta_data = $Store->get_meta_by_uuid($uuid);
         if (!$meta_data) {

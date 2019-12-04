@@ -126,7 +126,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //this is needed because the objects being destroyed may be referring to the $Context of the coroutine which is already destroyed
         //this is to say that there is no guarantee that the $Context object is the very
         \Swoole\Coroutine::defer(function() use ($Context) {
-            Kernel::get_di_container()->coroutine_services_cleanup();
+            //Kernel::get_di_container()->coroutine_services_cleanup();
             //cleanup any remaining objects
             $context_vars = get_object_vars($Context);
             foreach($context_vars as $name => $value) {
@@ -189,44 +189,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         return $Context;
     }
 
-
-    /**
-     * Executes multiple callables in parallel and blocks until all of them are executed.
-     * Returns an indexed array with the return values of the provided callables in the order whcih the callables were provided.
-     * The callables are executed in the current Worker, they are not pushed to a TaskWorker.
-     * @param callable ...$callables
-     * @return array
-     * @throws RunTimeException
-     */
-    public static function executeMulti(callable ...$callables) : array
-    {
-        if (!count($callables)) {
-            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__));
-        }
-
-        foreach ($callables as $callable) {
-            self::create($callable);
-        }
-        $callables_ret = self::awaitSubCoroutines();
-
-        //the return values must be put in the right order
-        $ret = [];
-        foreach ($callables as $callable) {
-            foreach ($callables_ret as $callable_hash => $callable_ret) {
-                if (GeneralUtil::get_callable_hash($callable) === $callable_hash) {
-                    $ret[] = $callable_ret;
-                }
-            }
-        }
-
-        return $ret;
-    }
-
-    public static function executeMultiAsync() : array
-    {
-        
-    }
-
     /**
      * A wrapper for creating coroutines.
      * This wrapper should be always used instead of calling directly \Swoole\Coroutine::create() as this wrapper keeps track of the coroutines hierarchy.
@@ -238,9 +200,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function create($callable, ...$params)
     {
-        if (self::getTotalSubCoroutinesCount(self::getRootCoroutineId()) === self::CONFIG_RUNTIME['max_allowed_subcoroutines']) {
-            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
-        }
+
+        //TODO - this triggers an error - $Context is null in self::getContext() - fix this
+//        if (self::getTotalSubCoroutinesCount(self::getRootCoroutineId()) === self::CONFIG_RUNTIME['max_allowed_subcoroutines']) {
+//            throw new RunTimeException(sprintf(t::_('The maximum allowed number %s of coroutines per request is reached.'), self::CONFIG_RUNTIME['max_allowed_subcoroutines']));
+//        }
 
         // $current_cid = parent::getcid();
 
@@ -275,9 +239,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
             $Context = self::getContext($new_cid);
 
-            \Swoole\Coroutine::defer(function() use ($Context) {
+            \Swoole\Coroutine::defer(function() use ($Context, $ParentContext) {
                 //print_r(array_keys(get_object_vars($Context)));
-                Kernel::get_di_container()->coroutine_services_cleanup();
+                //Kernel::get_di_container()->coroutine_services_cleanup();//it is not possible to trigger the destructors in the right way
+                //even if the references are set to NULL in the right way
                 //cleanup any remaining objects
                 $context_vars = get_object_vars($Context);
                 foreach($context_vars as $name => $value) {
@@ -286,6 +251,16 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     }
                 }
                 $Context->is_destroyed = TRUE;
+
+                //do not remove the finished ones
+//                $cid = \Swoole\Coroutine::getCid();
+//                foreach ($ParentContext->sub_coroutine_ids as $pos => $sub_cid) {
+//                    if ($cid === $sub_cid) {
+//                        unset($ParentContext->sub_coroutine_ids[$pos]);
+//                        break;
+//                    }
+//                }
+//                $ParentContext->sub_coroutine_ids = array_values($ParentContext->sub_coroutine_ids);
             });
         };
 
@@ -411,53 +386,97 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         return $ret;
     }
 
-    /**
-     * Returns the count of all subroutines of the given $cid.
-     * The provided $cid usually is a root coroutine.
-     * @return int
-     */
-    public static function getTotalSubCoroutinesCount(?int $cid = NULL) : int
-    {
-        $cid = $cid ?? parent::getcid();
-        $Function = function (int $cid) use (&$Function) : int {
-            $ret = self::getSubCoroutinesCount($cid);
-            foreach (self::getSubCoroutines($cid) as $sub_coroutine_id) {
-                $ret += $Function($sub_coroutine_id);
-            }
-            return $ret;
-        };
-        return $Function($cid);
-    }
+//    /**
+//     * Returns the count of all subroutines of the given $cid.
+//     * The provided $cid usually is a root coroutine.
+//     * @return int
+//     */
+//    public static function getTotalSubCoroutinesCount(?int $cid = NULL) : int
+//    {
+//        $cid = $cid ?? parent::getcid();
+//        $Function = function (int $cid) use (&$Function) : int {
+//            $ret = self::getSubCoroutinesCount($cid);
+//            foreach (self::getSubCoroutines($cid) as $sub_coroutine_id) {
+//                $ret += $Function($sub_coroutine_id);
+//            }
+//            return $ret;
+//        };
+//        return $Function($cid);
+//    }
+//
+//    /**
+//     * @param int|null $cid
+//     * @return int
+//     * @throws RunTimeException
+//     */
+//    public static function getSubCoroutinesCount(?int $cid = NULL) : int
+//    {
+//        if (!self::inCoroutine()) {
+//            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
+//        }
+//        $cid = $cid ?? self::getcid();
+//        $ret = count(self::getContext($cid)->sub_coroutine_ids);
+//        return $ret;
+//    }
+
+//    /**
+//     * Returns an indexed array with the IDs of the subcoroutines created from the provided $cid
+//     * @param int|null $cid
+//     * @return array
+//     */
+//    public static function getSubCoroutines(?int $cid = NULL) : array
+//    {
+//        if (!self::inCoroutine()) {
+//            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
+//        }
+//
+//        $cid = $cid ?? self::getcid();
+//
+//        $ret = self::getContext($cid)->sub_coroutine_ids;
+//
+//        return $ret;
+//    }
+
 
     /**
-     * @param int|null $cid
-     * @return int
+     * Executes multiple callables in parallel and blocks until all of them are executed.
+     * Returns an indexed array with the return values of the provided callables in the order whcih the callables were provided.
+     * The callables are executed in the current Worker, they are not pushed to a TaskWorker.
+     * @param callable ...$callables
+     * @return array
      * @throws RunTimeException
      */
-    public static function getSubCoroutinesCount(?int $cid = NULL) : int
+    public static function executeMulti(callable ...$callables) : array
     {
-        if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
+        if (!count($callables)) {
+            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__));
         }
-        $cid = $cid ?? self::getcid();
-        $ret = count(self::getContext($cid)->sub_coroutine_ids);
-        return $ret;
-    }
-
-    /**
-     * Returns an indexed array with the IDs of the subcoroutines created from the provided $cid
-     * @param int|null $cid
-     * @return array
-     */
-    public static function getSubCoroutines(?int $cid = NULL) : array
-    {
-        if (!self::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The %s() method can be called only in coroutine context.'), ___METHOD__));
+        $Context = self::getContext();
+        if (!property_exists($Context, self::class)) {
+            $Context->{self::class} = [];
+        }
+        if (!empty($Context->{self::class}['execute_multiple_coroutines'])) {
+            throw new RunTimeException(sprintf(t::_('There is already a %s() running %s coroutines.'), __METHOD__, $Context->{self::class}['execute_multiple_coroutines'] ));
         }
 
-        $cid = $cid ?? self::getcid();
+        $Context->{self::class}['execute_multiple_coroutines'] = count($callables);
 
-        $ret = self::getContext($cid)->sub_coroutine_ids;
+        foreach ($callables as $callable) {
+            self::create($callable);
+        }
+        $callables_ret = self::awaitSubCoroutines();
+
+        //the return values must be put in the right order
+        $ret = [];
+        foreach ($callables as $callable) {
+            foreach ($callables_ret as $callable_hash => $callable_ret) {
+                if (GeneralUtil::get_callable_hash($callable) === $callable_hash) {
+                    $ret[] = $callable_ret;
+                }
+            }
+        }
+
+        unset($Context->{self::class}['execute_multiple_coroutines']);
 
         return $ret;
     }
@@ -469,7 +488,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @param int $timeout
      *
      */
-    public static function awaitSubCoroutines(?int $timeout = NULL) : array
+    private static function awaitSubCoroutines(?int $timeout = NULL) : array
     {
         //print 'Await'.self::getCid().PHP_EOL;
         if ($timeout === NULL) {
@@ -478,19 +497,29 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $cid = parent::getcid();
 
         $Context = self::getContext();
-        //if (isset(self::$coroutines_ids[$cid]['sub_awaited'])) {
-        if (!empty($Context->sub_awaited)) {
-            //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
-            return [];
-        }
+
+//        if (!empty($Context->sub_awaited)) {
+//            //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
+//            return [];
+//        }
         $Channel = $Context->{Channel::class};
 
-        $subcoroutines_count = self::getSubCoroutinesCount($cid);
-        $subcoorutines_arr = self::getSubCoroutines($cid);
+        //$subcoroutines_count = self::getSubCoroutinesCount($cid);
+        //$subcoorutines_arr = self::getSubCoroutines($cid);
         $subcoroutines_completed_arr = [];
-        for ($aa = 0 ; $aa < $subcoroutines_count ; $aa++) {
+        //for ($aa = 0 ; $aa < $subcoroutines_count ; $aa++) {
+        if (empty($Context->{self::class}['execute_multiple_coroutines'])) {
+            throw new RunTimeException(sprintf(t::_('There are not current subcoroutines started.')));
+        }
+
+        $cnt_coroutines_to_await = $Context->{self::class}['execute_multiple_coroutines'];
+        for ($aa = 0 ; $aa < $cnt_coroutines_to_await ; $aa++) {
             $ret = $Channel->pop($timeout);
             if ($ret === FALSE) {
+                /*
+                //print gettype($subcoorutines_arr).' '.gettype($subcoroutines_completed_arr);
+                print_r($subcoorutines_arr);
+                print_r($subcoroutines_completed_arr);
                 $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
                 $unfinished_message_arr = [];
                 foreach ($subcoroutines_unfinished as $unfinished_cid) {
@@ -499,23 +528,19 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 }
                 $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL . implode(PHP_EOL, $unfinished_message_arr));
                 throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
+                */
             //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
                 //print 'rethrow'.PHP_EOL;
                 throw $ret['exception'];
-            //$ret->rethrow();
-                //throw $ret;//the master coroutine needs to abort too
-                //$new_ex = $ret->cloneException();
-                //$ret = NULL;
-                //throw $new_ex;
                 //DO NOT REMOVE THE ABOVE LINE - otherwise the exception may go unnoticed!
             } else {
                 //the coroutine finished successfully
             }
             $subcoroutines_completed_arr[$ret['hash']] = $ret['ret'];//the pop returns the subcoroutine ID
         }
-        $Context->sub_awaited = TRUE;
+        //$Context->sub_awaited = TRUE;
 
         return $subcoroutines_completed_arr;
     }

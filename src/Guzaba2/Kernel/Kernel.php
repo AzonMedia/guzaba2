@@ -889,9 +889,13 @@ BANNER;
     public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
     {
         $Logger = self::get_logger();
+        if (\Swoole\Coroutine::getCid() > 0) {
+            $message = 'Coroutine #'.\Swoole\Coroutine::getCid().': '.$message;
+        }
         if (self::get_http_server()) {
             $message = 'Worker #'.self::get_worker_id().': '.$message;
         }
+
         $Logger->log($level, $message, $context);
         return TRUE;
     }

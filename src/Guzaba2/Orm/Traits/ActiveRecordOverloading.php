@@ -60,8 +60,7 @@ trait ActiveRecordOverloading
     }
 
     /**
-     * The overloading is used so that all the columns/propertys fro mthe database can appear as properties on instance.
-     * The logic of the framework includes handling also of multilanguage and array properties.
+     * The overloading is used so that all the columns/propertys from the database can appear as properties on instance.
      * @param string $property The name of the property that is being accessed
      * @return mixed
      * @throws RunTimeException
@@ -71,13 +70,9 @@ trait ActiveRecordOverloading
      *
      * @example
      * print $page->page_id
-     * print $page->en->page_title
-     * print $blog->blog_tag_id[1];
      *
      * This also supports accessing dynamic properties (properties that are derived from other)
      */
-
-
     public function __set(string $property, /* mixed */ $value) : void
     {
         if ($this->is_read_only()) {

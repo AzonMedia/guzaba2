@@ -84,9 +84,11 @@ class Request extends HandlerBase
             $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
 
 
+
             //very important to stay here!!!
-            Coroutine::awaitSubCoroutines();//await before the response is converted as the response uses end() which pushes the output
+            //Coroutine::awaitSubCoroutines();//await before the response is converted as the response uses end() which pushes the output
             //also if any of the subcoroutines has an uncaught exception this will catch all these and throw an exception so that the master coroutine is also terminated
+            //the above is no longer needed as there is dedicated code for executing subcoroutines Coroutine::executeMulti()
 
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
 

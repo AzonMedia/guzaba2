@@ -138,6 +138,10 @@ class Memory extends Store implements StoreInterface
         //$meta = $ActiveRecord->
 
         // TODO - update the data in the memory store here too
+        //$last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
+        //$this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+        $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
+        $this->data[$class][$lookup_index][$last_update_time] = $all_data;
 
         return $all_data;
     }
@@ -159,8 +163,8 @@ class Memory extends Store implements StoreInterface
             if (isset($this->data[$class][$lookup_index])) {
                 //if found check is it current in MetaStore
                 $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-                //print $last_update_time.'AAA'.PHP_EOL;
-                if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted']) ) {
                     
                     if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                         $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
@@ -186,7 +190,8 @@ class Memory extends Store implements StoreInterface
                     //if found check is it current in MetaStore
                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                     
-                    if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted']) ) {
                         if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                         }
@@ -253,14 +258,9 @@ class Memory extends Store implements StoreInterface
             throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
         }
         $last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
-        //print $last_update_time.'BBB'.PHP_EOL;
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
 
-        //v1
         $uuid = $pointer['meta']['meta_object_uuid'];
-        // $this->data[$class][$uuid] =& $this->data[$class][$lookup_index];
-        //v2 - use a separate UUID index that corresponds to the ID
-        // TODO UUID
         $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
 
         //there can be other versions for the same class & lookup_index
@@ -392,9 +392,17 @@ class Memory extends Store implements StoreInterface
             }
             if ($latest_update_time > $last_update_time) {
                 //then there is a more recent record and this one can be deleted (as it is refcount 0)
+                $this->data[$class][$lookup_index][$last_update_time] = [];
                 unset($this->data[$class][$lookup_index][$last_update_time]);
+                if (!count($this->data[$class][$lookup_index])) { //impossible but just in case
+                    unset($this->data[$class][$lookup_index]);
+                }
             } elseif (!empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted'])) {
+                $this->data[$class][$lookup_index][$last_update_time] = [];
                 unset($this->data[$class][$lookup_index][$last_update_time]);
+                if (!count($this->data[$class][$lookup_index])) {
+                    unset($this->data[$class][$lookup_index]);
+                }
             } else {
                 //leave the record in ormstore for the purpose of caching
             }
@@ -457,6 +465,7 @@ class Memory extends Store implements StoreInterface
             $object_data['is_deleted'] = TRUE;
             //$object_data['meta']['meta_is_deleted'] = TRUE;
         }
+
         //the below should also be correct (see explanation above)
         //$last_version_microtime = array_key_first($this->data[$class][$index]);
         //$this->data[$class][$index][$last_version_microtime]['data'] = [];
@@ -467,27 +476,43 @@ class Memory extends Store implements StoreInterface
         //this will allow GET requests to remain without locking
         //but mandates a check that no WRITE/DELETE occurs in a GET request
         //$this->data[$class][$index][$last_version_microtime]['is_deleted'] = TRUE;
+
+        //$this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
+        $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
+        $class_meta = ['meta_object_create_microtime' => $object_last_update_microtime, 'meta_object_last_update_microtime' => $object_last_update_microtime];
+        $this->MetaStore->set_class_meta_data($class, $class_meta);
     }
 
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
+
         $ret = [];
         //loaded in memory means that ALL records are loaded in memory, not just some (cached)
-        if ($class::is_loaded_in_memory() && array_key_exists($class, $this->data) ) {
-        //if (false) {
+        //this also needs to take into account the meta store class lat update timestamp
+        //if it has been update everything needs to be re-read from the fallback store
+        //if ($class::is_loaded_in_memory() && array_key_exists($class, $this->data) ) {
+        if (false) {
             $time_start_lookup = (double) microtime(TRUE);
-
             //should be initialized ... return the data from memory
             //temp solution - TODO - update to use the indexes - create new keys and references based on the column keys for speed
-            foreach ($this->data[$class] as $lookup_index=>$datum) {
-                foreach ($datum as $last_update_microtime=>$row) {
+            foreach ($this->data[$class] as $lookup_index => $datum) {
+                foreach ($datum as $last_update_microtime => $row) {
+                    if (!empty($row['is_deleted'])) {
+                        continue;
+                    }
                     foreach ($index as $index_key=>$index_value) {
-                        if ($row[$index_key] === $index_value) {
-                            $ret[] = $row;
+                        if ($row['data'][$index_key] !== $index_value) {
+                            break 2;//on the first mismatch we find go onto the next row
                         }
                     }
+                    $ret[] = array_merge($row['meta'], $row['data']);
+//the below does not handle correctly keys with NULL value
+//                    if (count(array_intersect($index, $row['data'])) === count($index)) {
+//                        $ret[] = array_merge($row['meta'], $row['data']);
+//                    }
                 }
             }
+
             $total_found_rows = count($ret);
 
             $time_end_lookup = (double) microtime(TRUE);
@@ -500,11 +525,25 @@ class Memory extends Store implements StoreInterface
 
         } else {
             $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
-            foreach ($ret as $row) {
-                $primary_index = $class::get_index_from_data($row);
-                $lookup_index = self::form_lookup_index($primary_index);
-                $this->data[$class][$lookup_index][$row['meta_object_last_update_microtime']] = $row;
-            }
+//            foreach ($ret as $row) {
+//                $primary_index = $class::get_index_from_data($row);
+//                $lookup_index = self::form_lookup_index($primary_index);
+//                //$this->data[$class][$lookup_index][$row['meta_object_last_update_microtime']] = $row;
+//                $meta = [];
+//                $data = [];
+//                foreach ($row as $column_name => $column_value) {
+//                    if (in_array($column_name, ActiveRecordInterface::META_TABLE_COLUMNS)) {
+//                        $meta[$column_name] = $column_value;
+//                    } else {
+//                        $data[$column_name] = $column_value;
+//                    }
+//                }
+//                if (!$meta['meta_object_create_microtime']) {
+//                    throw new RunTimeException(sprintf(t::_('No meta data found for object of class %s with index %s.'), $class, print_r($primary_index, TRUE) ));
+//                }
+//                $this->data[$class][$lookup_index][$row['meta_object_last_update_microtime']] = ['meta' => $meta, 'data' => $data];
+//                $this->update_meta_data($class, $primary_index, $meta);
+//            }
         }
 
         return $ret;

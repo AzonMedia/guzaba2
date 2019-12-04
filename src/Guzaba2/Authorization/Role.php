@@ -4,6 +4,7 @@
 namespace Guzaba2\Authorization;
 
 
+use Guzaba2\Coroutine\Cache;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Authorization\Rbac\Exceptions\RbacException;
@@ -27,6 +28,10 @@ class Role extends ActiveRecord
 
         'no_permissions'        => TRUE,//the roles do not use permissions
 
+        'services'              => [
+            'ContextCache'
+        ],
+
         'structure' => [
             [
                 'name' => 'object_uuid',
@@ -49,7 +54,9 @@ class Role extends ActiveRecord
                 'primary' => false,
                 'default_value' => '',
             ]
-        ]
+        ],
+
+
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -154,10 +161,16 @@ class Role extends ActiveRecord
     public function get_all_inherited_roles_ids() : array
     {
         $ret = [];
-        $ret[] = $this->get_id();
-        foreach ($this->get_inherited_roles() as $InheritedRole) {
-            $ret[] = $InheritedRole->get_all_inherited_roles_ids();
+        $role_id = $this->get_id();
+        $ret = self::get_service('ContextCache')->get('all_inherited_roles', $role_id);
+        if ($ret === NULL) {
+            $ret[] = $role_id;
+            foreach ($this->get_inherited_roles() as $InheritedRole) {
+                $ret[] = $InheritedRole->get_all_inherited_roles_ids();
+            }
+            self::get_service('ContextCache')->set('all_inherited_roles', $role_id, $ret);
         }
+
         return $ret;
     }
 

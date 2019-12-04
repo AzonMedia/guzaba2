@@ -10,22 +10,22 @@ use Guzaba2\Authorization\Role;
 
 trait ActiveRecordAuthorization
 {
-    public function __call(string $method, array $args) /* mixed */
-    {
-        if (!strpos($method,ActiveRecordInterface::AUTHZ_METHOD_PREFIX)===0) {
-            //throw
-        }
-        $action = substr($method, strlen(ActiveRecordInterface::AUTHZ_METHOD_PREFIX));
-        if (!method_exists($this, $action)) {
-            //throw
-        }
-
-        if (static::uses_service('AuthorizationProvider')) {
-            $this->check_permission($action);
-        }
-
-        return [$this, $action](...$args);
-    }
+//    public function __call(string $method, array $args) /* mixed */
+//    {
+//        if (!strpos($method,ActiveRecordInterface::AUTHZ_METHOD_PREFIX)===0) {
+//            //throw
+//        }
+//        $action = substr($method, strlen(ActiveRecordInterface::AUTHZ_METHOD_PREFIX));
+//        if (!method_exists($this, $action)) {
+//            //throw
+//        }
+//
+//        if (static::uses_service('AuthorizationProvider')) {
+//            $this->check_permission($action);
+//        }
+//
+//        return [$this, $action](...$args);
+//    }
 
     /**
      * Will throw if the current role is not allowed to perform the provided $action on this object

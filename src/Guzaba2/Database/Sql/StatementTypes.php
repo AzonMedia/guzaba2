@@ -1,25 +1,7 @@
 <?php
 declare(strict_types=1);
-/*
- * Guzaba Framework
- * http://framework.guzaba.org
- *
- * This source file is subject to the BSD license that is bundled with this
- * package in the file LICENSE.txt and available also at:
- * http://www.opensource.org/licenses/bsd-license.php
- *
- */
 
-/**
- * @category    Guzaba Framework
- * @package        Database
- * @subpackage    PDO
- * @copyright    Copyright (c) Guzaba Ltd - http://guzaba.com
- * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
- * @author        Vesselin Kenashkov <vesko@webstudiobulgaria.com>
- */
-
-namespace Guzaba2\Database;
+namespace Guzaba2\Database\Sql;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -29,7 +11,7 @@ use Guzaba2\Translator\Translator as t;
 /**
  * This is a helper class. It is only statically accessible. No instances can be created
  */
-final class StatementTypes extends Base
+abstract class StatementTypes extends Base
 {
 
 
