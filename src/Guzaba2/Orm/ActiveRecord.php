@@ -517,11 +517,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //parent::__destruct();
     }
 
+    /**
+     * @return bool
+     */
     public static function has_main_table_defined() : bool
     {
         return isset(static::CONFIG_RUNTIME['main_table']);
     }
 
+    /**
+     * @return string
+     * @throws RunTimeException
+     */
     public static function get_main_table() : string
     {
         if (empty(static::CONFIG_RUNTIME['main_table'])) {
@@ -530,11 +537,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return static::CONFIG_RUNTIME['main_table'];
     }
 
+    /**
+     * @return bool
+     */
     public static function has_structure_defined() : bool
     {
         return isset(static::CONFIG_RUNTIME['structure']);
     }
 
+    /**
+     * @return array
+     */
     public static function get_validation_rules() : array
     {
         $ret = [];
@@ -675,11 +688,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (is_array($this->requested_index)) {
             $ret = $this->requested_index;
         } else {
-            $primary_columns = self::get_primary_index_columns();
-            if (count($primary_columns) > 1) {
-                //TODO - complete
-            }
+            //if scalar has been provided then it is expected this to be the primary column (and this needs to be a single one as well)
+            //there is already a check for that in the constructor
+            $primary_index_columns = self::get_primary_index_columns();
+            $ret = [ $primary_index_columns[0] => $this->requested_index ];
         }
+        return $ret;
     }
 
     /**
@@ -754,6 +768,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return self::$primary_index_columns[$called_class];
     }
 
+    /**
+     * @return array
+     */
     public static function get_columns_data() : array
     {
         $called_class = get_called_class();
@@ -761,6 +778,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return self::$columns_data[$called_class];
     }
 
+    /**
+     * @return bool
+     */
     public static function uses_autoincrement() : bool
     {
         $ret = FALSE;
@@ -866,11 +886,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
             $default_route = static::CONFIG_RUNTIME['route'];
             $ret = [
-                $default_route                            => [
+                $default_route                              => [
                     Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_action_create'],
                 ],
-                $default_route.'/{uuid}'                       => [
+                $default_route.'/{uuid}'                    => [
                     Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
@@ -980,12 +1000,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     //public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
     public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
-        $Store = static::get_service('OrmStore');
-        //static::initialize_columns();
-        $class_name = static::class;
-
-        $data = $Store->get_data_by($class_name, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
-        return $data;
+        return static::get_service(static::class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
     }
 
 //    public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
