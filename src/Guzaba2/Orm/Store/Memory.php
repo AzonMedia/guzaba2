@@ -261,7 +261,7 @@ class Memory extends Store implements StoreInterface
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
 
         $uuid = $pointer['meta']['meta_object_uuid'];
-        $this->uuid_data[$uuid] = ['class_name' => $class, 'primary_index' => $primary_index, 'object_id' => $lookup_index];
+        $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
 
         //there can be other versions for the same class & lookup_index
         //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)

@@ -787,7 +787,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         if (array_key_exists('object_uuid', $index)) {
 
             $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
-            $object_id = $meta_data['object_id'];
+            $object_id = $meta_data['meta_object_id'];
             $w[] = $main_index[0] . ' = :object_id';
             $b['object_id'] = $object_id;
 
