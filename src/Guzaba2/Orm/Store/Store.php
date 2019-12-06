@@ -55,7 +55,7 @@ abstract class Store extends Base implements StoreInterface
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
                 $this->unified_columns_data[$class] = $this->FallbackStore->get_unified_columns_data($class);
             } else {
-                if (! ($class instanceof ActiveRecordInterface)) {
+                if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
                     throw new InvalidArgumentException(sprintf(t::_('The provided $class %s does not implement %s.'), $class, ActiveRecordInterface::class));
                 }
                 $this->unified_columns_data[$class] = $class::get_structure();

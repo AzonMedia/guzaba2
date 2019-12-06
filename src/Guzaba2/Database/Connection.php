@@ -35,4 +35,10 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     }
 
     public abstract function close() : void ;
+
+    public static function get_tprefix() : string
+    {
+        return static::CONFIG_RUNTIME['tprefix'] ?? '';
+    }
+
 }

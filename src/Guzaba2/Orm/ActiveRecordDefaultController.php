@@ -128,6 +128,7 @@ class ActiveRecordDefaultController extends Controller
 
         $primary_index = $this->ActiveRecord::get_primary_index_columns();
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
+        $columns_data = $this->ActiveRecord::get_columns_data();
 
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
@@ -138,6 +139,10 @@ class ActiveRecordDefaultController extends Controller
 
             if (in_array($property_name, $primary_index) && empty($property_value)) {
                 continue;
+            }
+
+            if ($columns_data[$property_name]['php_type'] == "integer") {
+                $property_value = (int) $property_value;
             }
 
             $this->ActiveRecord->{$property_name} = $property_value;
@@ -164,12 +169,18 @@ class ActiveRecordDefaultController extends Controller
     {
         $body_arguments = $this->get_request()->getParsedBody();
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
+        $columns_data = $this->ActiveRecord::get_columns_data();
         foreach ($body_arguments as $property_name=>$property_value) {
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;
             }
+
+            if ($columns_data[$property_name]['php_type'] == "integer") {
+                $property_value = (int) $property_value;
+            }
+
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 

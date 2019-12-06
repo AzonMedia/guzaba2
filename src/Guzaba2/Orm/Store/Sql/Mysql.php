@@ -483,7 +483,7 @@ VALUES
 //                $modified_field_names = $ActiveRecord->get_modified_field_names();
 //            }
 
-            $record_data = $ActiveRecord->get_record_data();
+            // $record_data = $ActiveRecord->get_record_data();
             foreach ($modified_field_names as $field_name) {
                 // $record_data_to_save[$field_name] = $ActiveRecord->record_data[$field_name];
                 // we need to save only the fields that are part of the current shard

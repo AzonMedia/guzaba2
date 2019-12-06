@@ -75,9 +75,9 @@ abstract class ConnectionCoroutine extends Connection
      */
     public function query($collection, array $filter = array(), array $options = array()) : array
     {
-        if (!$this->get_coroutine_id()) {
-            throw new RunTimeException(sprintf(t::_('Attempting to run query to collection "%s" with filter: "%s" on a connection that is not assigned to any coroutine.'), $collection, print_r($filter, TRUE)));
-        }
+        // if (!$this->get_coroutine_id()) {
+        //     throw new RunTimeException(sprintf(t::_('Attempting to run query to collection "%s" with filter: "%s" on a connection that is not assigned to any coroutine.'), $collection, print_r($filter, TRUE)));
+        // }
 
         $data = [];
 
@@ -102,9 +102,9 @@ abstract class ConnectionCoroutine extends Connection
      */
     public function insert(string $collection, array $data)
     {
-        if (!$this->get_coroutine_id()) {
-            throw new RunTimeException(sprintf(t::_('Attempting to run query to collection "%s" with filter: "%s" on a connection that is not assigned to any coroutine.'), $collection, print_r($filter, TRUE)));
-        }
+        // if (!$this->get_coroutine_id()) {
+        //     throw new RunTimeException(sprintf(t::_('Attempting to run query to collection "%s" with filter: "%s" on a connection that is not assigned to any coroutine.'), $collection, print_r($filter, TRUE)));
+        // }
 
         $bulk = new BulkWrite();
 

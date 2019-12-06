@@ -47,17 +47,22 @@ class MongoDB extends Database
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
-                'class_name'         => $class_name,
-                'object_id'     => $object_id
+                'meta_class_name'   => $class_name,
+                'meta_object_id'    => $object_id
             ];
         } else {
             $filter = [
-                'class_name'         => $class_name,
-                'object_uuid'   => $object_id
+                'meta_class_name'   => $class_name,
+                'meta_object_uuid'  => $object_id
             ];
         }
 
         $result = $Connection->query($coll, $filter);
+
+        if (empty($result) && $this->FallbackStore instanceof StructuredStoreInterface) {
+            $result[0] = $this->FallbackStore->get_meta($class_name, $object_id);
+            $this->create_meta_from_array($result[0]);
+        }
 
         return $result[0];
     }
@@ -67,18 +72,20 @@ class MongoDB extends Database
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
         $coll = $Connection::get_tprefix() . self::get_meta_table();
-        $filter = ['object_uuid' => $uuid];
+        $filter = ['meta_object_uuid' => $uuid];
 
-        $data = $Connection->query($coll, $filter);
+        $result = $Connection->query($coll, $filter);
 
-        if (!count($data)) {
+        if (empty($result) && $this->FallbackStore instanceof StructuredStoreInterface) {
+            $result[0] = $this->FallbackStore->get_meta_by_uuid($uuid);
+            $this->create_meta_from_array($result[0]);
+        }
+
+        if (!count($result)) {
             throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
         }
 
-        // $ret['object_id'] = $data[0]['object_id'];
-        // $ret['class'] = $data[0]['class'];
-
-        return $data[0];
+        return $result[0];
     }
 
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : array
@@ -92,13 +99,13 @@ class MongoDB extends Database
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $filter = [
-                'class_name'         => get_class($ActiveRecord),
-                'object_id'     => $ActiveRecord->get_id()
+                'meta_class_name'   => get_class($ActiveRecord),
+                'meta_object_id'    => $ActiveRecord->get_id()
             ];
         } else {
             $filter = [
-                'class_name'         => get_class($ActiveRecord),
-                'object_uuid'   => $ActiveRecord->get_uuid()
+                'meta_class_name'   => get_class($ActiveRecord),
+                'meta_object_uuid'  => $ActiveRecord->get_uuid()
             ];
         }
 
@@ -128,13 +135,13 @@ class MongoDB extends Database
 
         $data = [
             'meta_object_uuid'                   => $uuid,
-            'meta_class_name'                         => get_class($ActiveRecord),
+            'meta_class_name'                    => get_class($ActiveRecord),
             'meta_object_create_microtime'       => $object_create_microtime,
             'meta_object_last_update_microtime'  => $object_create_microtime,
         ];
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $data['object_id'] = $ActiveRecord->get_id();
+            $data['meta_object_id'] = $ActiveRecord->get_id();
         }
 
         $Connection->insert(
@@ -143,6 +150,36 @@ class MongoDB extends Database
         );
 
         return $data;
+    }
+
+    /**
+     * Creates meta data with array param
+     *
+     * @param array $meta_data
+     * @return void
+     * @throws \Exception
+     */
+    protected function create_meta_from_array(array $meta_data) : void
+    {
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $meta_table = $Connection::get_tprefix() . self::get_meta_table();
+
+        $object_create_microtime = (int) microtime(TRUE) * 1000000;
+
+        $data = [
+            'meta_object_uuid'                          => $meta_data['meta_object_uuid'],
+            'meta_class_name'                           => $meta_data['meta_class_name'],
+            'meta_object_id'                            => $meta_data['meta_object_id'],
+            'meta_object_create_microtime'              => $object_create_microtime,
+            'meta_object_last_update_microtime'         => $object_create_microtime,
+            'meta_object_create_transaction_id'         => 0,
+            'meta_object_last_update_transaction_id'    => 0,
+        ];
+
+        $Connection->insert(
+            $meta_table,
+            $data
+        );
     }
 
     /**
@@ -158,7 +195,7 @@ class MongoDB extends Database
             // Saves record in fallback and gets uuid
             //$uuid = $this->FallbackStore->update_record($ActiveRecord);
             $all_data = $this->FallbackStore->update_record($ActiveRecord);
-            $uuid = $all_data['meta']['object_uuid'];
+            $uuid = $all_data['meta']['meta_object_uuid'];
             $record_data = $all_data['data'];
         } elseif ($ActiveRecord->is_new()) {
             $uuid = Uuid::uuid4()->toString();
@@ -186,7 +223,7 @@ class MongoDB extends Database
                 $filter[$field_name] = $record_data[$field_name];
             }
         } else {
-            $filter = ['object_uuid' => $uuid];
+            $filter = ['meta_object_uuid' => $uuid];
             $ActiveRecord->update_primary_index($uuid);
         }
 
@@ -232,13 +269,14 @@ class MongoDB extends Database
                     throw new RunTimeException(sprintf(t::_('The class %s has compound index and can not have meta data.'), $class));
                 }
             } else {
-                $primary_index[0] = $data[0]['object_uuid'];
+                $primary_index[0] = $data[0]['meta_object_uuid'];
             }
 
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
-        } elseif ($this->FallbackStore instanceof StructuredStore) {
+        } elseif ($this->FallbackStore instanceof StructuredStoreInterface) {
             return $this->FallbackStore->get_data_pointer($class, $index);
+            get_data_pointer(string $class, array $index)
         } else {
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
@@ -281,11 +319,16 @@ class MongoDB extends Database
         $uuid = $ActiveRecord->get_uuid();
 
         $Connection->delete($primary_index, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
-        $Connection->delete(['object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
+        $Connection->delete(['meta_object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
     }
 
-    public function &get_data_by(string $class, array $index) : array
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
+        if ($this->FallbackStore instanceof StructuredStoreInterface) {
+            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
+            return $ret;
+        }
+
         /** @var MongoDBConnection $Connection */
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
@@ -296,7 +339,7 @@ class MongoDB extends Database
         $data = $Connection->query($coll, $index);
 
         if (!count($data)) {
-            $this->throw_not_found_exception($class, self::form_lookup_index($index));
+            // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
         return $data;

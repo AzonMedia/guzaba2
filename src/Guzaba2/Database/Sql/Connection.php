@@ -6,10 +6,10 @@ namespace Guzaba2\Database\Sql;
 
 abstract class Connection extends \Guzaba2\Database\Connection
 {
-    public static function get_tprefix() : string
-    {
-        return static::CONFIG_RUNTIME['tprefix'] ?? '';
-    }
+    // public static function get_tprefix() : string
+    // {
+    //     return static::CONFIG_RUNTIME['tprefix'] ?? '';
+    // }
 
     public static function get_database() : string
     {
