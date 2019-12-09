@@ -12,6 +12,7 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 use Guzaba2\Kernel\Kernel;
+use \MongoDB\BSON\Regex;
 
 class MongoDB extends Database
 {    
@@ -134,10 +135,12 @@ class MongoDB extends Database
         $object_create_microtime = (int) microtime(TRUE) * 1000000;
 
         $data = [
-            'meta_object_uuid'                   => $uuid,
-            'meta_class_name'                    => get_class($ActiveRecord),
-            'meta_object_create_microtime'       => $object_create_microtime,
-            'meta_object_last_update_microtime'  => $object_create_microtime,
+            'meta_object_uuid'                          => $uuid,
+            'meta_class_name'                           => get_class($ActiveRecord),
+            'meta_object_create_microtime'              => $object_create_microtime,
+            'meta_object_last_update_microtime'         => $object_create_microtime,
+            'meta_object_create_transaction_id'         => 0,
+            'meta_object_last_update_transaction_id'    => 0,
         ];
 
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -243,6 +246,23 @@ class MongoDB extends Database
     }
 
     /**
+     * @param array $data
+     * @return void
+     * @throws RunTimeException
+     * @throws \Exception
+     */
+    public function create_record(array $data) : array
+    {
+        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
+        $meta_table = $Connection::get_tprefix() . self::get_main_table();
+
+        $Connection->insert(
+            $meta_table,
+            $data
+        );
+    }
+
+    /**
      * Fetch active record data by primary index
      * The Index can have multiple fields
      *
@@ -275,8 +295,10 @@ class MongoDB extends Database
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
         } elseif ($this->FallbackStore instanceof StructuredStoreInterface) {
-            return $this->FallbackStore->get_data_pointer($class, $index);
-            get_data_pointer((string) $class, (array) $index);
+            $data = $this->FallbackStore->get_data_pointer($class, $index);
+
+            $this->create_meta_from_array($data['meta']);
+            $this->create_record($data['data']);
         } else {
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
@@ -335,8 +357,34 @@ class MongoDB extends Database
         // UUID is NEVER provided
 
         $coll = $Connection::get_tprefix() . $class::get_main_table();
+        $options = [];
 
-        $data = $Connection->query($coll, $index);
+        if ($offset > 0) {
+            $options['skip'] = $offset;
+        }
+
+        if ($limit > 0) {
+            $options['limit'] = $limit;
+        }
+
+        if ($sort_by != NULL) {
+            $options['sort'] = [
+                $sort_by => $sort_desc ? -1 : 1
+            ];
+        }
+
+        $search = [
+            "projection" => NULL
+        ];
+        foreach ($index as $field_name=>$field_value) {
+            if ($use_like) {
+                $search[$field_name] = new Regex($field_value);
+            } else {
+                $search[$field_name] = $field_value;
+            }
+        }
+
+        $data = $Connection->query($coll, $search, $options);
 
         if (!count($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
