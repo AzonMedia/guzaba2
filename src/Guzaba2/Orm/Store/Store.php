@@ -21,7 +21,7 @@ abstract class Store extends Base implements StoreInterface
     /**
      * @var StoreInterface|null
      */
-    protected ?StoreInterface $FallbackStore;
+    protected ?StoreInterface $FallbackStore = NULL;
 
     /**
      * Cached structures
