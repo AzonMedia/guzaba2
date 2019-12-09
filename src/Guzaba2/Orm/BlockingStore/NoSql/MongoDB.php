@@ -276,7 +276,7 @@ class MongoDB extends Database
             $ret['data'] = $data[0];
         } elseif ($this->FallbackStore instanceof StructuredStoreInterface) {
             return $this->FallbackStore->get_data_pointer($class, $index);
-            get_data_pointer((string) $class, array $index)
+            get_data_pointer((string) $class, (array) $index)
         } else {
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
