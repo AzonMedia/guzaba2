@@ -295,10 +295,10 @@ class MongoDB extends Database
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
         } elseif ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $data = $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index);
 
-            $this->create_meta_from_array($data['meta']);
-            $this->create_record($data['data']);
+            $this->create_meta_from_array($ret['meta']);
+            $this->create_record($ret['data']);
         } else {
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
