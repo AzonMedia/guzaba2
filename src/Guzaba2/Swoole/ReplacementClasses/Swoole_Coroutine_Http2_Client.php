@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Swoole\Coroutine\Http2;
 
 class Client
