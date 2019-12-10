@@ -3,10 +3,14 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
 
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Authorization\Role;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class Permission
@@ -28,13 +32,47 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'acl_permissions',
-        'route'                 => '/permission',
-        'load_in_memory'        => TRUE,
-
+        'route'                 => '/acl-permission',//no longer possible directly to grant permissions
+        //instead the individual routes for the objects are to be used
+        //'load_in_memory'        => TRUE,//testing
         'no_permissions'    => TRUE,//the permissions records themselves cant use permissions
     ];
 
     protected const CONFIG_RUNTIME = [];
+
+    protected function _before_save() : void
+    {
+        //before creating a Permission record check does the object on which it is created has the appropriate CHOWN permission
+        try {
+            //(new $this->class_name($this->object_id))->check_permission('chmod');
+            (new $this->class_name($this->object_id))->check_permission('grant_permission');
+        } catch (RecordNotFoundException $Exception) {
+            throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
+        }
+
+        try {
+            $Permission = new self( [
+                'role_id'       => $this->role_id,
+                'class_name'    => $this->class_name,
+                'object_id'     => $this->object_id,
+                'action_name'   => $this->action_name,
+            ] );
+            throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
+        } catch (RecordNotFoundException $Exception) {
+
+        }
+
+    }
+
+    protected function _before_delete() : void
+    {
+        try {
+            //(new $this->class_name($this->object_id))->check_permission('chmod');
+            (new $this->class_name($this->object_id))->check_permission('revoke_permission');
+        } catch (RecordNotFoundException $Exception) {
+            throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
+        }
+    }
 
     public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecord
     {
@@ -44,6 +82,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         $Permission->object_id = $ActiveRecord->get_id();
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
+        $Permission->save();
         return $Permission;
     }
 
@@ -59,6 +98,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         $Permission->object_id = NULL;
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
+        $Permission->save();
         return $Permission;
     }
 }

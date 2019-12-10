@@ -6,6 +6,7 @@ namespace Guzaba2\Orm;
 use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Utilities\ArrayUtil;
+use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
@@ -13,7 +14,6 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
-use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
@@ -217,7 +217,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         if (is_scalar($index)) {
             if (ctype_digit((string)$index)) {
-                $index = (int) $index;
+                $index = (int)$index;
                 // if the primary index is compound and the provided $index is a scalar throw an error - this could be a mistake by the developer not knowing that the primary index is compound and providing only one component
                 // providing only one component for the primary index is still supported but needs to be provided as array
                 if (count($primary_columns) === 1) {
@@ -226,7 +226,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     $message = sprintf(t::_('The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
                     throw new InvalidArgumentException($message);
                 }
-            } elseif (strlen((string)$index) === 36) {
+                //} elseif (strlen((string)$index) === 36) {
+            } elseif (GeneralUtil::is_uuid( (string) $index)) {
                 //this is UUID
                 $index = ['object_uuid' => $index];
             } else {
@@ -337,9 +338,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         //check the permissions now, not before the record is found as the provided index may be a an array and then the permissions lookup will fail
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
-            $this->check_permission('read');
-        }
+        $this->check_permission('read');
 
         if (!count($this->meta_data)) {
             throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
@@ -373,13 +372,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
-            if ($this->is_new()) {
-                $this->check_permission('create');
-            } else {
-                $this->check_permission('write');
-            }
+        if ($this->is_new()) {
+            $this->check_permission('create');
+        } else {
+            $this->check_permission('write');
         }
+
 
         if ($this->is_read_only()) {
             throw new RunTimeException(sprintf(t::_('Trying to save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
@@ -395,6 +393,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
             return $this;
+        }
+
+        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
+        //instead the lock levle should be updated (lock reacquired)
+        if ($this->is_new() && static::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+            unset($LR);
         }
 
         //BEGIN ORMTransaction (==ORMDBTransaction)
@@ -414,25 +422,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
-        //self::OrmStore()->update_record($this);
         static::get_service('OrmStore')->update_record($this);
 
-        if (static::is_locking_enabled()) {
-            //self::LockManager()->release_lock('', $LR);
-            static::get_service('LockManager')->release_lock('', $LR);
-        }
-
-
-        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
-        //instead the lock levle should be updated (lock reacquired)
-        if ($this->is_new() && static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-        }
-
-        //new Event($this, '_after_save');
         self::get_service('Events')::create_event($this, '_after_save');
 
         //_after_save() event
@@ -441,8 +432,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_save'], $args);//must return void
         }
 
-
         //COMMIT ORMTransaction
+
+
 
         //reattach the pointer
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
@@ -452,6 +444,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->record_modified_data = [];
 
         $this->is_new_flag = FALSE;
+
+        if (static::is_locking_enabled()) {
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
+        }
 
         return $this;
     }
@@ -478,9 +475,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
-            $this->check_permission('delete');
-        }
+        $this->check_permission('delete');
+
 
         if (method_exists($this, '_before_delete') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
@@ -497,14 +493,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
-        //self::OrmStore()->remove_record($this);
+        //remove any permissions associated with this record
+        $this->delete_permissions();
+        //and only then remove the record
         static::get_service('OrmStore')->remove_record($this);
-        
 
-        if (static::is_locking_enabled()) {
-            //self::LockManager()->release_lock('', $LR);
-            static::get_service('LockManager')->release_lock('', $LR);
-        }
+
+
+
 
         //new Event($this, '_after_delete');
         self::get_service('Events')::create_event($this, '_after_delete');
@@ -512,6 +508,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (method_exists($this, '_after_delete') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_delete'], $args);//must return void
+        }
+
+        if (static::is_locking_enabled()) {
+            //self::LockManager()->release_lock('', $LR);
+            static::get_service('LockManager')->release_lock('', $LR);
         }
 
         //parent::__destruct();
@@ -664,14 +665,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if ($this->record_data) {
             $ret = $this->record_data[$primary_index_columns[0]];//the index should exist
         } else {
-            if (is_array($this->requested_index)) {
-                if (count($this->requested_index) > 1) {
-                    throw new RunTimeException(sprintf(t::_('The instance was instantiated with an array as index with more than one element.')));
-                }
-                $ret = array_key_first($this->requested_index);
-            } else {
-                $ret = $this->requested_index;
-            }
+//            if (is_array($this->requested_index)) {
+//                if (count($this->requested_index) > 1) {
+//                    throw new RunTimeException(sprintf(t::_('The instance was instantiated with an array as index with more than one element.')));
+//                }
+//                $ret = array_key_first($this->requested_index);
+//            } else {
+//                $ret = $this->requested_index;
+//            }
+            $ret = self::INDEX_NEW;
         }
         
         return $ret;
@@ -895,6 +897,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
                 ],
+                $default_route.'/{uuid}/permission'         => [
+                    Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_grant_permission'],
+                    Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_revoke_permission'],
+                ],
+                $default_route.'/class-permission'          => [
+                    Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_grant_class_permission'],
+                    Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_revoke_class_permission'],
+                ],
             ];
         }
         return $ret;
@@ -1032,7 +1042,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     if (
                         strpos($loaded_class, $ns_prefix) === 0
                         && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
+                        //&& !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
+                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class] )
                         && $RClass->isInstantiable()
                     ) {
                         $active_record_classes[$ns_prefix][] = $loaded_class;
@@ -1042,7 +1053,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
             $ret = array_merge($ret, $active_record_classes[$ns_prefix]);
         }
-
         return $ret;
     }
 

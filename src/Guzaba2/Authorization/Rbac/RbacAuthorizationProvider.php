@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Rbac;
 
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
@@ -14,6 +15,42 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
 {
 
     use AuthorizationProviderTrait;
+
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : ?PermissionInterface
+    {
+        //TODO implement
+        return NULL;
+    }
+
+    public function grant_class_permission(Role $Role, string $action, string $class_name) : ?PermissionInterface
+    {
+        //TODO implement
+        return NULL;
+    }
+
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void
+    {
+        //TODO implement
+        return;
+    }
+
+    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void
+    {
+        //TODO implement
+        return;
+    }
+
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void
+    {
+        //TODO implement
+        return;
+    }
+
+    public function delete_class_permissions(string $class_name) : void
+    {
+        //TODO implement
+        return;
+    }
 
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {

@@ -180,7 +180,7 @@ class SourceStream extends Base
         //TODO - replace the below with tokenizer
         $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
         if (strpos($class_without_config_source, '<?php')===0) {
-declare(strict_types=1);
+
             $class_without_config_source = substr($class_without_config_source, 5);
         }
         //before evluating check for parse errors

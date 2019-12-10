@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
 
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
@@ -10,6 +11,7 @@ use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Role;
+use Monolog\Handler\MissingExtensionException;
 
 class AclAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
@@ -23,6 +25,49 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     ];
 
     protected const CONFIG_RUNTIME = [];
+
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : PermissionInterface
+    {
+        return Permission::create($Role, $action, $this);
+    }
+
+    public function grant_class_permission(Role $Role, string $action, string $class_name) : PermissionInterface
+    {
+        return Permission::create_class_permission($Role, $action, $class_name);
+    }
+
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void
+    {
+        (new Permission( [ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] ) )->delete();
+    }
+
+    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void
+    {
+        (new Permission( [ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => $class_name, 'object_id' => NULL ] ) )->delete();
+    }
+
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void
+    {
+        //this will trigger object instantiations
+        $permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id() ] );
+        foreach ($permissions as $Permission) {
+            $Permission->delete();
+        }
+    }
+
+    public function delete_class_permissions(string $class_name) : void
+    {
+        $class_permissions = Permission::get_by( [ 'class_name' => $class_name, 'object_id'=> NULL ] );
+        foreach ($class_permissions as $Permission) {
+            $Permission->delete();
+        }
+    }
+
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
+    {
+        $Role = self::get_service('CurrentUser')->get()->get_role();
+        return $this->role_can($Role, $action, $ActiveRecord);
+    }
 
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {
@@ -56,15 +101,10 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
             }
         }
 
-
         //this will trigger object instantiations
 //        $permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
 //        $class_permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
 //        $permissions = array_merge($permissions, $class_permissions);
-
-
-
-
 
         return $ret;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Authorization;
 
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -41,6 +42,36 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @return bool
      */
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void
+    {
+        return;
+    }
+
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : ?PermissionInterface
+    {
+        return NULL;
+    }
+
+    public function grant_class_permission(Role $Role, string $action, string $class_name) : ?PermissionInterface
+    {
+        return NULL;
+    }
+
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void
+    {
+        return;
+    }
+
+    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void
+    {
+        return;
+    }
+
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void
+    {
+        return;
+    }
+
+    public function delete_class_permissions(string $class_name) : void
     {
         return;
     }
