@@ -42,7 +42,7 @@ abstract class BasicCommand implements CommandInterface
         $class_name = static::get_class_name();
 
         if (null === $command) {
-            return sprintf(t::_('%s - shows details about ORM store(s) - type help %s to see available commands'), $class_name, strtolower($class_name));
+            return sprintf(t::_('%s - shows details about %s - type help %s to see available commands'), $class_name, $class_name, strtolower($class_name));
         } else if (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();
         } else {
