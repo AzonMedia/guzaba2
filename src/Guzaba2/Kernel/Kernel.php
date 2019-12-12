@@ -769,6 +769,38 @@ BANNER;
         return $ret;
     }
 
+
+    /**
+     * Returns an indexed array with classes that match the provided $ns_prefixes and (if provided) are of class/interface $class.
+     * @param array $ns_prefixes
+     * @param string $class
+     * @return array
+     * @throws InvalidArgumentException
+     */
+    public static function get_classes(array $ns_prefixes, string $class = '') : array
+    {
+        $ret = [];
+        if ($class && !class_exists($class) && !interface_exists($class)) {
+            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class));
+        }
+        $loaded_classes = Kernel::get_loaded_classes();
+
+        foreach ($ns_prefixes as $ns_prefix) {
+            foreach ($loaded_classes as $loaded_class) {
+                if ( strpos($loaded_class, $ns_prefix) === 0) {
+                    if ($class) {
+                        if (is_a($loaded_class, $class, TRUE)) {
+                            $ret[] = $loaded_class;
+                        }
+                    } else {
+                        $ret[] = $loaded_class;
+                    }
+                }
+            }
+        }
+        return $ret;
+    }
+
     /**
      * Loads all classes found under the registered autoload paths.
      * @see self::$autoloader_lookup_paths

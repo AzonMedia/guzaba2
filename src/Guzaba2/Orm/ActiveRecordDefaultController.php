@@ -7,7 +7,7 @@ use Guzaba2\Authorization\Role;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
-use Guzaba2\Mvc\Controller;
+use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -25,7 +25,7 @@ use Guzaba2\Kernel\Kernel;
  * The routes are set by the @see ActiveRecord::get_default_routes() and these are to be provided to the Router (merged with the application specific routes).
  * @package Guzaba2\Orm
  */
-class ActiveRecordDefaultController extends Controller
+class ActiveRecordDefaultController extends ActiveRecordController
 {
 
     /**
@@ -40,7 +40,8 @@ class ActiveRecordDefaultController extends Controller
      * @param string|null $class_name This is to be used when working with controllers - then the class name of the actual controller needs to be specified
      * @return ResponseInterface|null
      */
-    public function _init(?string $uuid = NULL, ?string $class_name = NULL) : ?ResponseInterface
+    //public function _init(?string $uuid = NULL, ?string $class_name = NULL) : ?ResponseInterface
+    public function _init(?string $uuid = NULL) : ?ResponseInterface
     {
 
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
@@ -51,10 +52,10 @@ class ActiveRecordDefaultController extends Controller
                 if (!empty($route_meta_data['orm_class'])) {
                     //$this->ActiveRecord = new $route_meta_data['orm_class'](0);
                     $this->ActiveRecord = new $route_meta_data['orm_class']();
-                } elseif ($class_name) {
-                    $this->ActiveRecord = new $class_name();
-                    //trick it so it doesnt access the database
-                    //$this->ActiveRecord = new $class_name($this->get_request());
+//                } elseif ($class_name) { // no need to support this as there is direct access to the permissions thorugh the /permission route
+//                    //$this->ActiveRecord = new $class_name();
+//                    //trick it so it doesnt access the database
+//                    $this->ActiveRecord = new $class_name($this->get_request());
                 } else {
                     $struct = [];
                     $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());

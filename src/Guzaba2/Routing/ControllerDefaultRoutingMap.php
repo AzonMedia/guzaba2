@@ -19,6 +19,7 @@ use Guzaba2\Translator\Translator as t;
  * If a controller in the given path has no routing data it throws an exception.
  * @package Guzaba2\Mvc
  */
+//NOT USED
 class ControllerDefaultRoutingMap extends RoutingMapArray
 {
     /**
@@ -52,9 +53,9 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
         $controller_classes = Controller::get_controller_classes($ns_prefixes);
         foreach ($controller_classes as $loaded_class) {
             $routing = $loaded_class::get_routes();
-            if ($routing === NULL) { //empty array is acceptable though - this may be intentional (for example to skip/disable the controller)
-                throw new RunTimeException(sprintf(t::_('The controller %s has no routing set. Please set the %s::ROUTES constant.'), $loaded_class, $loaded_class));
-            }
+//            if ($routing === NULL) { //empty array is acceptable though - this may be intentional (for example to skip/disable the controller)
+//                throw new RunTimeException(sprintf(t::_('The controller %s has no routing set. Please set the %s::ROUTES constant.'), $loaded_class, $loaded_class));
+//            }
             $routing_map = array_merge($routing_map, $routing);
         }
         parent::__construct($routing_map);
