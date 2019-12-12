@@ -5,6 +5,7 @@ namespace Guzaba2\Mvc;
 
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -60,6 +61,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
     protected string $override_html_content_type = '';
 
+    /**
+     * Multidimensional associative array [$class][$method][0] => ['name' => '', 'type'=>'', 'default_value'=>'']
+     * where default_value is optional and will not be present if there is no default value
+     * @var array
+     */
+    protected static $controllers_arguments = [];
+
     public function __construct(Server $Server, string $override_html_content_type = '')
     {
         
@@ -72,6 +80,34 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $this->Server = $Server;
 
         $this->override_html_content_type = $override_html_content_type;
+    }
+
+    public static function initialize_controller_arguments(array $ns_prefixes) : void
+    {
+        //$ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        $controller_classes = Controller::get_controller_classes($ns_prefixes);
+        foreach ($controller_classes as $class) {
+            foreach ((new \ReflectionClass($class))->getMethods(\ReflectionMethod::IS_PUBLIC) as $RMethod) {
+                if ($RMethod->isConstructor()) {
+                    continue;
+                }
+                if ($RMethod->getDeclaringClass() !== $class) {
+                    continue;//do not validate parent methods
+                }
+                $ordered_parameters = [];
+                foreach ($RMethod->getParameters() as $RParameter) {
+                    if (!($Rtype = $RParameter->getType())) {
+                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $class, $RMethod->getName(), $RParameter->getName() ));
+                    }
+                    $param_data = ['name' => $RParameter->getName(), 'type' => $RParameter->getType()->getName()];
+                    if ($RParameter->isDefaultValueAvailable()) {
+                        $param_data['default_value'] = $RParameter->getDefaultValue();
+                    }
+                    $ordered_parameters[] = $param_data;
+                }
+                self::$controllers_arguments[$class][$RMethod->getName()] = $ordered_parameters;
+            }
+        }
     }
 
     /**
@@ -160,46 +196,55 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
 
         $Response = NULL;
+
         try {
-            $RMethod = new \ReflectionMethod(get_class($Controller), $method);
-            $parameters = $RMethod->getParameters();
-//print_r($parameters);
-            $ordered_parameters = [];
 
-            foreach ($parameters as $key => $parameter) {
-                $argType = $parameter->getType();
+//            $RMethod = new \ReflectionMethod(get_class($Controller), $method);
+//            $parameters = $RMethod->getParameters();
+//
+//            $ordered_parameters = [];
+//
+//            foreach ($parameters as $key => $parameter) {
+//                $argType = $parameter->getType();
+//
+//                if (isset($controller_arguments[$parameter->getName()])) {
+//
+//                    $value = $controller_arguments[$parameter->getName()];
+//                } elseif ($parameter->isDefaultValueAvailable() ) {
+//                    $value = $parameter->getDefaultValue();
+//                } else {
+//                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $parameter->getName(), get_class($Controller), $method ));
+//                }
+//                settype($value, $argType->getName() );
+//                $ordered_parameters[] = $value;
+//                unset($value);
+//            }
 
-                if (isset($controller_arguments[$parameter->getName()])) {
-//print $controller_arguments[$parameter->getName()].PHP_EOL;
-                    $value = $controller_arguments[$parameter->getName()];
-                } elseif ($parameter->isDefaultValueAvailable() ) {
-                    $value = $parameter->getDefaultValue();
+            $ordered_arguments = [];
+            foreach (self::$controllers_arguments[get_class($Controller)][$method] as $param) {
+                if (isset($controller_arguments[$param['name']])) {
+                    $value = $controller_arguments[$param['name']];
+                } elseif (array_key_exists('default_value', $param)) {
+                    $value = $param['default_value'];
                 } else {
-                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $parameter->getName(), get_class($Controller), $method ));
+                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $aram['name'], get_class($Controller), $method ));
                 }
-
-                settype($value, $argType->getName() );
-                $ordered_parameters[] = $value;
-                unset($value);
-
             }
-
-
-            //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
-            $Response = [$Controller, $method](...$ordered_parameters);
+            $Response = [$Controller, $method](...$ordered_arguments);
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
         } catch (PermissionDeniedException $Exception) {
             $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (RunTimeException $Exception) {
-            Kernel::exception_handler($Exception);
+        } catch (InvalidArgumentException | ValidationFailedException $Exception) {
+            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+        } catch (\Throwable $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (InvalidArgumentException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (ValidationFailedException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+        } finally {
+            if (isset($Exception)) {
+                Kernel::exception_handler($Exception);
+            }
         }
         return $Response;
     }

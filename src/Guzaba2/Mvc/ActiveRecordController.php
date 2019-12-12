@@ -92,25 +92,6 @@ implements ControllerInterface
     }
 
     /**
-     * Throws RunTimeException if there are issues with the routes.
-     * @throws RunTimeException
-     */
-    public static function validate_routes() : void
-    {
-        if (!array_key_exists('routes', static::CONFIG_RUNTIME)) {
-            throw new RunTimeException(sprintf(t::_('The controller %s has no CONFIG_RUNTIME[\'routes\'] defined. Every controller must have this defined.'), get_called_class() ));
-        }
-        if (!count(static::CONFIG_RUNTIME['routes'])) {
-            throw new RunTimeException(sprintf(t::_('The controller %s has no routes defined in CONFIG_RUNTIME[\'routes\']. There must be at least one route defined.'), get_called_class() ));
-        }
-        foreach (static::CONFIG_RUNTIME['routes'] as $route => $route_data) {
-            if ($route[0] !== '/') {
-                throw new RunTimeException(sprintf(t::_('The route "%s" of Controller %s seems wrong. All routes must begin with "/".'), $route, get_called_class()));
-            }
-        }
-    }
-
-    /**
      * May be overriden by a child class to provide routing set in an external source like database.
      * Or suppress certain routes based on permissions.
      * This will allow for the routes to be changed without code modification.
@@ -127,40 +108,4 @@ implements ControllerInterface
         return $ret;
     }
 
-    /**
-     * Returns all Controller classes that are loaded by the Kernel in the provided namespace prefixes.
-     * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
-     * @param array $ns_prefixes
-     * @return array
-     */
-    public static function get_controller_classes(array $ns_prefixes) : array
-    {
-        /*
-        $loaded_classes = Kernel::get_loaded_classes();
-        $ret = [];
-        foreach ($ns_prefixes as $ns_prefix) {
-            foreach ($loaded_classes as $loaded_class) {
-                $RClass = new ReflectionClass($loaded_class);
-                if (
-                    strpos($loaded_class, $ns_prefix) === 0
-                    && is_a($loaded_class, ControllerInterface::class, TRUE)
-                    //&& !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
-                    && !in_array($loaded_class, [ActiveRecordController::class, Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class] )
-                    //&& !in_array($loaded_class, [ActiveRecordDefaultController::class, ControllerInterface::class] )
-                    && $RClass->isInstantiable()
-                ) {
-                    $ret[] = $loaded_class;
-                }
-            }
-        }
-        */
-        static $controller_classes = [];
-        $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
-        if (!array_key_exists( $args_hash, $controller_classes ) ) {
-            $classes = Kernel::get_classes($ns_prefixes, ControllerInterface::class);
-            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class]) );
-            $controller_classes[$args_hash] = $classes;
-        }
-        return $controller_classes[$args_hash];
-    }
 }

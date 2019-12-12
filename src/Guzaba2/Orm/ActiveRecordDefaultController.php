@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
@@ -79,6 +80,12 @@ class ActiveRecordDefaultController extends ActiveRecordController
             } catch (RecordNotFoundException $Exception) {
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No object with the provided UUID %s is found.'), $uuid);
+                $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
+                return $Response;
+            } catch (PermissionDeniedException $Exception) {
+                $struct = [];
+                $struct['message'] = sprintf(t::_('You are not allowed to read the object with UUID %s.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
                 $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;

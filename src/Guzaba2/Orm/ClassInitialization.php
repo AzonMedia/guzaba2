@@ -9,7 +9,7 @@ use Guzaba2\Base\Base;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Kernel\Kernel;
 
-class ClassInitialization extends Base implements ClassInitializationInterface
+abstract class ClassInitialization extends Base implements ClassInitializationInterface
 {
     public const INITIALIZATION_METHODS = [
         'initialize_columns',
