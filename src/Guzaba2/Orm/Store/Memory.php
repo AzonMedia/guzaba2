@@ -165,7 +165,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
         //the provided index is array
         //check is the provided array matching the primary index
 
-        if ($primary_index == $class::get_index_from_data($index)) {
+        if ($primary_index = $class::get_index_from_data($index)) {
             
             $lookup_index = self::form_lookup_index($primary_index);
             if (isset($this->data[$class][$lookup_index])) {
@@ -187,7 +187,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                 $this->misses++;
             }
             // TODO UUID
-        } elseif ($uuid == $class::get_uuid_from_data($index)) {
+        } elseif ($uuid = $class::get_uuid_from_data($index)) {
             if (isset($this->uuid_data[$uuid])) {
                 $lookup_index = $this->uuid_data[$uuid]['meta_object_id'];
                 $class_by_uuid = $this->uuid_data[$uuid]['meta_class_name'];
