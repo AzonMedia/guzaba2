@@ -443,16 +443,18 @@ BANNER;
         //if the below is not invoked on Swoole 4.4.12 / PHP 7.4.0 there is an error on the line $ret = $Context->orm_locking_enabled_flag ?? self::$orm_locking_enabled_flag
         //ActiveRecord::disable_locking();
 
-        $output = '';
-        do {
+//        $output = '';
+//        do {
+//
+//            //$output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
+//            //should not depend on the translator (t::_()) or any other code that is additionally autoloaded
+//            $output .= sprintf('Exception %s: %s in %s#%s', get_class($Exception), $Exception->getMessage(), $Exception->getFile(), $Exception->getLine());
+//            $output .= PHP_EOL;
+//            $output .= $Exception->getTraceAsString().PHP_EOL.PHP_EOL;
+//            $Exception = $Exception->getPrevious();
+//        } while ($Exception);
 
-            //$output .= sprintf(t::_('Exception %s: %s in %s#%s'), get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
-            //should not depend on the translator (t::_()) or any other code that is additionally autoloaded
-            $output .= sprintf('Exception %s: %s in %s#%s', get_class($Exception), $Exception->getMessage(), $Exception->getFile(), $Exception->getLine());
-            $output .= PHP_EOL;
-            $output .= $Exception->getTraceAsString().PHP_EOL.PHP_EOL;
-            $Exception = $Exception->getPrevious();
-        } while ($Exception);
+        $output = (string) $Exception;
 
         self::log($output, LogLevel::EMERGENCY);
         //file_put_contents('AAA', $output.PHP_EOL, FILE_APPEND);

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace Swoole\Connection;
 
 class Iterator implements \Iterator, \ArrayAccess, \Countable

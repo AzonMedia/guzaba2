@@ -18,6 +18,8 @@ use Guzaba2\Http\ContentType;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
@@ -113,77 +115,11 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
                 //check if controller has init method
                 $init_method_exists = \method_exists($controller_callable[0], '_init');
-
                 if ($init_method_exists) {
-                    
-                    try {
-                        $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), '_init');
-                        $parameters = $RMethod->getParameters();
-
-                        $ordered_parameters = [];
-
-                        foreach ($parameters as $key => $parameter) {
-                            $argType = $parameter->getType();
-
-                            if (isset($controller_arguments[$parameter->getName()])) {
-                                $value = $controller_arguments[$parameter->getName()];
-                            } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                                $value = $parameter->getDefaultValue();
-                            }
-
-                            if (isset($value)) {
-                                $value = $controller_arguments[$parameter->getName()];
-                                //will throw exception if type missing
-                                //settype($value, (string) $argType);
-                                settype($value, $argType->getName() );
-                                $ordered_parameters[] = $value;
-                                unset($value);
-                            }
-                        }
-
-                        //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
-                        $Response = [$controller_callable[0], '_init'](...$ordered_parameters);
-                    } catch (InterruptControllerException $Exception) {
-                        $Response = $Exception->getResponse();
-                    }
-
+                    $Response = self::execute_controller_method($controller_callable[0], '_init', $controller_arguments);
                 }
-
                 if (empty($Response)) { //if the _init function hasnt returned any response... it may return response due an error, in the normal case the actual action should be invoked
-                    try {
-                        $RMethod = new \ReflectionMethod(get_class($controller_callable[0]), $controller_callable[1]);
-                        $parameters = $RMethod->getParameters();
-                        $ordered_parameters = [];
-
-                        foreach ($parameters as $key => $parameter) {
-                            $argType = $parameter->getType();
-
-                            if (isset($controller_arguments[$parameter->getName()])) {
-                                $value = $controller_arguments[$parameter->getName()];
-                            } elseif ($parameter->isDefaultValueAvailable() && ! isset($controller_arguments[$parameter->getName()])) {
-                                $value = $parameter->getDefaultValue();
-                            }
-
-                            if (isset($value)) {
-                                $value = $controller_arguments[$parameter->getName()];
-                                //will throw exception if type missing
-                                //settype($value, (string) $argType);
-                                settype($value, $argType->getName() );
-
-                                $ordered_parameters[] = $value;
-                                unset($value);
-                            }
-                        }
-
-                        $controller_callable[0]->check_permission($controller_callable[1]);
-                        $Response = $controller_callable(...$ordered_parameters);
-                    } catch (InterruptControllerException $Exception) {
-                        $Response = $Exception->getResponse();
-                    } catch (PermissionDeniedException $Exception) {
-                        $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
-                        $Response = $Response->withHeader('data-origin','orm-specific');
-                    }
-
+                    $Response = self::execute_controller_method($controller_callable[0], $controller_callable[1], $controller_arguments);
                 }
 
                 $Body = $Response->getBody();
@@ -200,18 +136,16 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     //return the response as it is - it is already a stream and should contain all the needed headers
                 }
 
-
-
                 //TODO add cleanup code that unsets all properties set on the child controller
                 
                 return $Response;
-            } elseif (is_object($controller_callable)) {
-                //Closure or class with __invoke
+            } elseif (is_object($controller_callable) || is_string($controller_callable)) {
+                //Closure or object of class with __invoke or function name
                 $Response = $controller_callable($Request);
                 return $Response;
-            } elseif (is_string($controller_callable)) {
-                $Response = $controller_callable($Request);
-                return $Response;
+//            } elseif (is_string($controller_callable)) {
+//                $Response = $controller_callable($Request);
+//                return $Response;
             } else {
                 throw new LogicException(sprintf(t::_('An unsupported type "%s" for controller_callable encountered.'), gettype($controller_callable)));
             }
@@ -220,6 +154,54 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         }
 
         return $Handler->handle($Request);
+    }
+
+    private function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
+    {
+
+        $Response = NULL;
+        try {
+            $RMethod = new \ReflectionMethod(get_class($Controller), $method);
+            $parameters = $RMethod->getParameters();
+//print_r($parameters);
+            $ordered_parameters = [];
+
+            foreach ($parameters as $key => $parameter) {
+                $argType = $parameter->getType();
+
+                if (isset($controller_arguments[$parameter->getName()])) {
+//print $controller_arguments[$parameter->getName()].PHP_EOL;
+                    $value = $controller_arguments[$parameter->getName()];
+                } elseif ($parameter->isDefaultValueAvailable() ) {
+                    $value = $parameter->getDefaultValue();
+                } else {
+                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $parameter->getName(), get_class($Controller), $method ));
+                }
+
+                settype($value, $argType->getName() );
+                $ordered_parameters[] = $value;
+                unset($value);
+
+            }
+
+
+            //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
+            $Response = [$Controller, $method](...$ordered_parameters);
+        } catch (InterruptControllerException $Exception) {
+            $Response = $Exception->getResponse();
+        } catch (PermissionDeniedException $Exception) {
+            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
+        } catch (RecordNotFoundException $Exception) {
+            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
+        } catch (RunTimeException $Exception) {
+            Kernel::exception_handler($Exception);
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
+        } catch (InvalidArgumentException $Exception) {
+            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+        } catch (ValidationFailedException $Exception) {
+            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+        }
+        return $Response;
     }
 
     protected function json_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface

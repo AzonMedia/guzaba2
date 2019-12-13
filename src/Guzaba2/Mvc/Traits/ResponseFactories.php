@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Guzaba2\Mvc\Traits;
 
@@ -67,6 +68,15 @@ trait ResponseFactories
 //            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
 //        }
         $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], new Structured($structure));
+        return $Response;
+    }
+
+    public static function get_structured_servererror_response(array $structure = []) : ResponseInterface
+    {
+//        if (!$structure) {
+//            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
+//        }
+        $Response = new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], new Structured($structure));
         return $Response;
     }
 

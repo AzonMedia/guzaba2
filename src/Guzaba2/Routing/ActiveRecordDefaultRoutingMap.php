@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Guzaba2\Routing;
 
@@ -46,8 +47,11 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
         $routing_map = [];
         $routing_meta_data = [];
         $active_record_classes = ActiveRecord::get_active_record_classes($this->ns_prefixes);
+
         foreach ($active_record_classes as $loaded_class) {
+
             $routing = $loaded_class::get_routes();
+
             //the models may not define route as not every controller is expected to be directly manageable through the API
 //                    if ($routing === NULL) {
 //                        throw new RunTimeException(sprintf(t::_('The model %s has no routing set.'), $loaded_class));

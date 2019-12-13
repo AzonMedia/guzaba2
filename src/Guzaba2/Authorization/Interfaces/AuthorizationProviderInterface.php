@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Interfaces;
 
+use Guzaba2\Authorization\Acl\Permission;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Role;
@@ -39,8 +41,59 @@ interface AuthorizationProviderInterface
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void ;
 
     /**
+     * Grants a new object permission.
+     * Returns the newly created permission record or NULL if does not implement permissions.
+     * @param Role $Role
+     * @param string $action
+     * @param ActiveRecordInterface $ActiveRecord
+     * @return PermissionInterface
+     */
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : ?PermissionInterface ;
+
+    /**
+     * Grants a new class permission.
+     * Returns the newly created permission record or NULL if does not implement permissions.
+     * @param Role $Role
+     * @param string $action
+     * @param string $class_name
+     * @return PermissionInterface
+     */
+    public function grant_class_permission(Role $Role, string $action, string $class_name) : ?PermissionInterface ;
+
+    /**
+     * Revokes an object permission.
+     * @param Role $Role
+     * @param string $action
+     * @param ActiveRecordInterface $ActiveRecord
+     */
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void ;
+
+    /**
+     * Revokes a class permission.
+     * @param Role $Role
+     * @param string $action
+     * @param string $class_name
+     */
+    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void ;
+
+    /**
+     * Removes all permission records for the provided object.
+     * To be used when the object is deleted.
+     * @param ActiveRecordInterface $ActiveRecord
+     */
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void ;
+
+    /**
+     * Removes all permission records for the provided class.
+     * @param string $class_name
+     */
+    public function delete_class_permissions(string $class_name) : void ;
+
+    /**
      * Returns the class names of the ActiveRecord classes used by the Authorization implementation.
      * @return array
      */
     public static function get_used_active_record_classes() : array ;
+
+
 }

@@ -24,6 +24,7 @@ use Guzaba2\Base\Traits\ContextAware;
 use Guzaba2\Base\Exceptions\Traits\ExceptionPropertyModification;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
+use Guzaba2\Translator\Translator as t;
 use Throwable;
 
 /**
@@ -49,6 +50,8 @@ abstract class BaseException extends \Exception
     use ContextAware;
     use ExceptionPropertyModification;
 
+    public const ERROR_REFERENCE_BASE_URL = 'http://error-reference.guzaba.org/error/';
+
     //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
     /**
      * @var \Throwable
@@ -66,59 +69,56 @@ abstract class BaseException extends \Exception
 
     //private static $is_in_clone_flag = FALSE;
 
-    private $is_cloned_flag = FALSE;
+    private bool $is_cloned_flag = FALSE;
 
     // properties that contain additional debug info follow
     /**
      * The execution ID @see kernel::get_execution_id()
      * @var int
      */
-    protected $execution_id = 0;
+    private $execution_id = 0;
 
     /**
      * How much time was spent until this exception was created
      * @var float
      */
-    protected $execution_time = 0;
+    private $execution_time = 0;
 
 
-    protected $execution_details = [
+    private $execution_details = [
         'temporary_roles' => [] ,
         'temporary_privileges' => [],
         'subject_id' => 0,
         'active_environment_vars' => []
     ];
 
-    protected $executionContext = NULL;
+    //private $session_subject_id = 0;//this may be different from the execution context subject_id (may be temporarily substituted)
 
-    protected $session_subject_id = 0;//this may be different from the execution context subject_id (may be temporarily substituted)
+    protected int $microtime_created;
 
-    protected $time_created = 0;
-    protected $microtime_created = 0;
-
-    /**
-     *
-     * @var int
-     */
-    protected $memory_usage = 0;
-
-    /**
-     *
-     * @var int
-     */
-    protected $real_memory_usage = 0;
-
-    /**
-     *
-     * @var int
-     */
-    protected $peak_memory_usage = 0;
-
-    /**
-     *
-     * @var int
-     */
-    protected $real_peak_memory_usage = 0;
+//    /**
+//     *
+//     * @var int
+//     */
+//    protected int $memory_usage;
+//
+//    /**
+//     *
+//     * @var int
+//     */
+//    protected int $real_memory_usage;
+//
+//    /**
+//     *
+//     * @var int
+//     */
+//    protected int $peak_memory_usage;
+//
+//    /**
+//     *
+//     * @var int
+//     */
+//    protected int $real_peak_memory_usage;
 
     protected $load_average = [];
 
@@ -130,33 +130,24 @@ abstract class BaseException extends \Exception
 
     protected $created_in_coroutine_id = 0;
 
+    protected ?string $uuid = NULL;
+
     /**
      * The constructor calls first the constructor of tha parent class and then its own code.
      * @param string $message
      * @param int $code
      * @param Throwable|null $previous
      */
-    public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL)
+    public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL, ?string $uuid = NULL)
     {
 
         parent::__construct($message, $code, $previous);
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
 
-        //self::$executionProfile->increment_value('cnt_guzaba_exceptions_created', 1);
+        $this->microtime_created = (int) microtime(TRUE) * 1_000_000;
 
-        if (is_object($code)) { //because of a bug in the logic there could be a case where an object was supplied instead of integer
-            $code = 0;
-        }
-        $code = (int) $code;//there was an error that provides code as float and this triggers a fatal error "Wrong parameters for Exception([string $exception [, long $code [, Exception $previous = NULL]]])"
-        //$message = (string) $message;
-
-
-        list($usec, $sec) = explode(" ", microtime());
-        $this->time_created = (int) $sec;
-        $this->microtime_created = ((float)$usec + (float)$sec) ;
-
-
+        $this->uuid = $uuid;
 
 
         //TODO - reenable the below code
@@ -232,10 +223,40 @@ abstract class BaseException extends \Exception
 //        }
     }
 
+    public function __toString() : string
+    {
+        $ret = '';
+        $Exception = $this;
+        do {
+            $ret .= sprintf(t::_('%s %s in %s#%s.'), get_class($this), $this->getMessage(), $this->getFile(), $this->getLine() ).PHP_EOL;
+            $uuid = $this->getUUID();
+            if ($uuid) {
+                $ref_url = static::getErrorReferenceBaseUrl().$uuid;
+                $ret .= sprintf(t::_('Error details: %s'), $ref_url).PHP_EOL;
+            }
+            $ret .= t::_('Stack Trace:').PHP_EOL;
+            $ret .= $this->getTraceAsString().PHP_EOL;
+            $Exception = $Exception->getPrevious();
+        } while ($Exception);
+
+        return $ret;
+    }
+
     public function _before_change_context() : void
     {
         $this->context_changed_flag = TRUE;
         // self::unset_all_static();
+    }
+
+    //this should be component based
+    public function getUUID() : ?string
+    {
+        return $this->uuid;
+    }
+
+    public static function getErrorReferenceBaseUrl() : ?string
+    {
+        return static::ERROR_REFERENCE_BASE_URL;
     }
 
     public function getDebugData()
@@ -336,10 +357,10 @@ abstract class BaseException extends \Exception
 
     public function getTimeCreated() : int
     {
-        return $this->time_created;
+        return $this->microtime_created / 1_000_000;
     }
 
-    public function getMicrotimeCreated() : float
+    public function getMicrotimeCreated() : int
     {
         return $this->microtime_created;
     }

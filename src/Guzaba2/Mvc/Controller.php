@@ -31,7 +31,7 @@ use Guzaba2\Mvc\Traits\ResponseFactories;
  * @package Guzaba2\Mvc
  */
 //abstract class Controller extends ActiveRecord
-abstract class Controller extends ActiveRecord
+class Controller extends ActiveRecord //shouldnt be really instantiated
 //it is possible to inherit ActiveRecord but this causes names collisions (and possible other issues with properties)
 //abstract class Controller extends Base
 implements ControllerInterface
@@ -41,6 +41,7 @@ implements ControllerInterface
         'main_table'            => 'controllers',
         'route'                 => '/controller',
         //'structure' => []//TODO add structure
+        'controllers_use_db'    => FALSE,
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -64,7 +65,11 @@ implements ControllerInterface
     {
         $this->Request = $Request;
         if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated
-            parent::__construct( ['controller_class' => get_class($this)] );
+            if (!empty(self::CONFIG_RUNTIME['controllers_use_db'])) {
+                parent::__construct( ['controller_class' => get_class($this)] );
+            } else {
+                parent::__construct( 0 );
+            }
         } else { //it remains as a new record meaning no "read" permission will be checked
             parent::__construct( 0 );
         }
@@ -101,6 +106,9 @@ implements ControllerInterface
                 }
             }
         }
+        if (!$ret) {
+            $ret = parent::get_routes();
+        }
         return $ret;
     }
 
@@ -122,7 +130,8 @@ implements ControllerInterface
                     && is_a($loaded_class, ControllerInterface::class, TRUE)
                     //&& !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class, ControllerWithAuthorization::class] )
                     && !in_array($loaded_class, [Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class] )
-                    && $RClass->isInstantiable()
+                    //&& !in_array($loaded_class, [ActiveRecordDefaultController::class, ControllerInterface::class] )
+                    //&& $RClass->isInstantiable()
                 ) {
                     $ret[] = $loaded_class;
                 }

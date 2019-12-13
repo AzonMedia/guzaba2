@@ -14,9 +14,11 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
+use Guzaba2\Cache\Interfaces\CacheInterface;
+use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Psr\Log\LogLevel;
 
-class Memory extends Store implements StoreInterface
+class Memory extends Store implements StoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
         'max_rows'                      => 100000,
@@ -59,6 +61,10 @@ class Memory extends Store implements StoreInterface
         */
     ];
 
+    protected $cache_enabled;
+    protected $hits;
+    protected $misses;
+
     // TODO UUID
     protected $uuid_data = [];
 
@@ -67,6 +73,8 @@ class Memory extends Store implements StoreInterface
         parent::__construct();
 
         $this->FallbackStore = $FallbackStore ?? new NullStore();
+        $this->hits = 0;
+        $this->misses = 0;
 
         if ($MetaStore) {
             $this->MetaStore = $MetaStore;
@@ -170,10 +178,13 @@ class Memory extends Store implements StoreInterface
                         $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                     }
                     $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                    $this->hits++;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                     Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
+            } else {
+                $this->misses++;
             }
             // TODO UUID
         } elseif ($uuid = $class::get_uuid_from_data($index)) {
@@ -196,12 +207,15 @@ class Memory extends Store implements StoreInterface
                             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                        $this->hits++;
                         $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $pointer;
-                   }
+                    }
                 }
-           }
+            } else {
+                $this->misses++;
+            }
         } elseif (array_key_exists($class, $this->data)) {
             //do a search in the available memory objects....
 
@@ -225,6 +239,7 @@ class Memory extends Store implements StoreInterface
                                 $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                             }
                             $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                            $this->hits++;
                             $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                             Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
                             return $pointer;
@@ -554,4 +569,64 @@ class Memory extends Store implements StoreInterface
 //        $ret = $this->FallbackStore->get_data_count_by($class, $index, $use_like);
 //        return $ret;
 //    }
+
+    public function enable_caching() : void
+    {
+        $this->cache_enabled = TRUE;
+    }
+
+    public function disable_caching() : void
+    {
+        $this->cache_enabled = FALSE;
+    }
+
+    public function clear_cache() : void
+    {
+        $this->data = [];
+    }
+
+    public function get_hits() : int
+    {
+        return $this->hits;
+    }
+
+    public function get_misses() : int
+    {
+        return $this->misses;
+    }
+
+    public function get_hits_percentage() : double {
+        $ret = 0.0;
+        $hits = $this->get_hits();
+        $misses = $this->get_misses();
+        $total = $hits + $misses;
+
+        if (0 != $total) {
+            $ret = (double) ($hits / $total * 100.0);
+        }
+
+        return $ret;
+    }
+
+    public function reset_hits() : void
+    {
+        $this->hits = 0;
+    }
+
+    public function reset_misses() : void
+    {
+        $this->misses = 0;
+    }
+
+    public function reset_stats() : void
+    {
+        $this->reset_hits();
+        $this->reset_misses();
+    }
+
+    public function reset_all()
+    {
+        $this->clear_cache();
+        $this->reset_stats();
+    }
 }

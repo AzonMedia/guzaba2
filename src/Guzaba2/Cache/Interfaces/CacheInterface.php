@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Guzaba2\Cache\Interfaces;
 
@@ -28,4 +29,11 @@ interface CacheInterface
     public function get(string $prefix, string $key) /* mixed */ ;
 
     public function exists(string $prefix, string $key) : bool ;
+    /*
+    public function enable_caching() : void;
+
+    public function disable_caching() : void;
+
+    public function clear_cache() : void;
+    */
 }

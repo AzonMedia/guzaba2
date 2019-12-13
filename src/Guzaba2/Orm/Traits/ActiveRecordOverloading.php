@@ -76,7 +76,7 @@ trait ActiveRecordOverloading
     public function __set(string $property, /* mixed */ $value) : void
     {
         if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
+            throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
         }
 
 //read_only is set in constructor() if method is GET

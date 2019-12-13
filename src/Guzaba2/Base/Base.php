@@ -68,25 +68,9 @@ abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesS
      */
     public function __set(string $property, /* mixed */ $value): void
     {
-        //throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time. The other case is to access a non initialized typed property.'), get_class($this), __CLASS__));
-        //when typed properties are used this can be triggered not only on undefined property but also when setting a typed property that was not initialized
-        //for example public string $dir;//not initialized - setting it with $obj->dir will trigger __set()
-        //the correct is public string $dir = '';
         $class = get_class($this);
-        //if (property_exists($class, $property)) {
-        //Bug https://bugs.php.net/bug.php?id=78226 is now fixed and there is no longer need of this check
-        if (false) {
-            //throw new RunTimeException(sprintf(t::_('Attempting to set a dynamic uninitialized typed property $%s on an instance of class %s. All typed properties must be initialized'), $property, $class));
-            //can not throw an exception here as the object properties can not be initializen on declaration and will go thorugh the overloading
-            if (is_object($value)) {
-                $this->{$property} = $value;
-            } else {
-                throw new RunTimeException(sprintf(t::_('Attempting to set a dynamic uninitialized typed property $%s on an instance of class %s. All typed properties must be initialized'), $property, $class));
-            }
-
-        } else {
-            throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time.'), get_class($this), __CLASS__));
-        }
-
+        //if running on PHP 7.4.0 RC4 or lower see bug:
+        // https://bugs.php.net/bug.php?id=78226
+        throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time.'), get_class($this), __CLASS__), 0, NULL, 'f8d21186-d6cd-4bb7-ad56-10bb3e1a3381' );
     }
 }

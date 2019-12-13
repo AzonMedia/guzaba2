@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 
 namespace Guzaba2\Authorization;
@@ -101,30 +102,6 @@ class Role extends ActiveRecord
 
     }
 
-    /**
-     * Grants a role (this role inherits the provided role).
-     * Returns the new RolePermission object of created relation.
-     * @param Permission $Permission
-     * @return ActiveRecord
-     */
-    public function grant_permission(PermissionInterface $Permission) : ActiveRecord
-    {
-        return RolePermission::create($this, $Permission);
-    }
-
-    /**
-     * @param Permission $Permission
-     */
-    public function revoke_permission(PermissionInterface $Permission): void
-    {
-        try {
-            $RolePermission = new RolePermission(['role_id' => $this->get_index(), 'permission_id' => $Permission->get_id()]);
-        } catch (RecordNotFoundException $Exception) {
-            throw new RbacException(sprintf(t::_('The role %s does not have permission %s.'), $this->role_name, $Permission->permision_name));
-        }
-        $RoleRoles->delete();
-    }
-
     public function get_roles_tree(): array
     {
         $ret = [];
@@ -162,13 +139,13 @@ class Role extends ActiveRecord
     {
         $ret = [];
         $role_id = $this->get_id();
-        $ret = self::get_service('ContextCache')->get('all_inherited_roles', $role_id);
+        $ret = self::get_service('ContextCache')->get('all_inherited_roles', (string) $role_id);
         if ($ret === NULL) {
             $ret[] = $role_id;
             foreach ($this->get_inherited_roles() as $InheritedRole) {
                 $ret[] = $InheritedRole->get_all_inherited_roles_ids();
             }
-            self::get_service('ContextCache')->set('all_inherited_roles', $role_id, $ret);
+            self::get_service('ContextCache')->set('all_inherited_roles', (string) $role_id, $ret);
         }
 
         return $ret;

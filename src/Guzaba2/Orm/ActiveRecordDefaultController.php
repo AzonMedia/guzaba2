@@ -3,12 +3,14 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
+use Guzaba2\Authorization\Role;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Mvc\Controller;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Http\Method;
 use http\Exception\InvalidArgumentException;
@@ -35,9 +37,10 @@ class ActiveRecordDefaultController extends Controller
      * Instantiates the ActiveRecord object.
      * May return Response if there is an error.
      * @param string|null $uuid
+     * @param string|null $class_name This is to be used when working with controllers - then the class name of the actual controller needs to be specified
      * @return ResponseInterface|null
      */
-    public function _init(?string $uuid = NULL) : ?ResponseInterface
+    public function _init(?string $uuid = NULL, ?string $class_name = NULL) : ?ResponseInterface
     {
 
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
@@ -46,10 +49,15 @@ class ActiveRecordDefaultController extends Controller
             if ($this->get_request()->getMethodConstant() === Method::HTTP_POST) {
                 //means a new record is to be created
                 if (!empty($route_meta_data['orm_class'])) {
-                    $this->ActiveRecord = new $route_meta_data['orm_class'](0);
+                    //$this->ActiveRecord = new $route_meta_data['orm_class'](0);
+                    $this->ActiveRecord = new $route_meta_data['orm_class']();
+                } elseif ($class_name) {
+                    $this->ActiveRecord = new $class_name();
+                    //trick it so it doesnt access the database
+                    //$this->ActiveRecord = new $class_name($this->get_request());
                 } else {
                     $struct = [];
-                    $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class.'), $this->get_request()->getUri()->getPath());
+                    $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
                     $Response = parent::get_structured_badrequest_response($struct);
                     $Response = $Response->withHeader('data-origin','orm-specific');
                     return $Response;
@@ -152,7 +160,14 @@ class ActiveRecordDefaultController extends Controller
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
-        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'created' ];
+        $struct = [
+            'message'   => $message,
+            //'class'     => get_class($this->ActiveRecord),
+            //'id'        => $id,
+            //'uuid'      => $uuid,
+            'operation' => 'create',
+        ];
+        $struct += self::form_object_struct($this->ActiveRecord);
         //$Response = self::get_structured_ok_response( $struct );
         $Response = new Response(StatusCode::HTTP_CREATED, [], new Structured($struct));
         return $Response;
@@ -188,7 +203,13 @@ class ActiveRecordDefaultController extends Controller
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord) );
-        $struct = [ 'message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'updated' ];
+        $struct = [
+            'message' => $message,
+            //'id' => $id,
+            //'uuid' => $uuid,
+            'operation' => 'update'
+        ];
+        $struct += self::form_object_struct($this->ActiveRecord);
         $Response = self::get_structured_ok_response( $struct );
         return $Response;
 
@@ -201,13 +222,145 @@ class ActiveRecordDefaultController extends Controller
      */
     public function crud_action_delete(string $uuid) : ResponseInterface
     {
-        $uuid = $this->ActiveRecord->get_uuid();
-        $id = $this->ActiveRecord->get_id();
-        $this->ActiveRecord->delete();
-        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $id, $uuid, get_class($this->ActiveRecord) );
-        $Response = parent::get_structured_ok_response( ['message' => $message, 'id' => $id, 'uuid' => $uuid, 'operation' => 'deleted'] );
+        //$uuid = $this->ActiveRecord->get_uuid();
+        //$id = $this->ActiveRecord->get_id();
 
+        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid(), get_class($this->ActiveRecord) );
+        $struct = [
+            'message'       => $message,
+            //'id'            => $id,
+            //'uuid'          => $uuid,
+            'operation'     => 'delete'
+        ];
+        $struct += self::form_object_struct($this->ActiveRecord);
+        $this->ActiveRecord->delete();
+        $Response = parent::get_structured_ok_response( $struct );
         return $Response;
+    }
+
+    public function crud_grant_permission(string $role_uuid, string $action_name) : ResponseInterface
+    {
+        $Role = new Role($role_uuid);
+        $Permission = $this->ActiveRecord->grant_permission($Role, $action_name);
+        if ($Permission) {
+            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was granted.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid() );
+            $struct = [
+                'message'           => $message,
+//                'class'             => get_class($this->ActiveRecord),
+//                'id'                => $this->ActiveRecord->get_id(),
+//                'uuid'              => $this->ActiveRecord->get_uuid(),
+                'operation'         => 'grant_permission',
+                //'action'    => $action,
+                //'role_uuid' => $role_uuid,
+                'permission_id'     => $Permission->get_id(),
+                'permission_uuid'   => $Permission->get_uuid(),
+
+            ];
+        } else {
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+//                'class'             => get_class($this->ActiveRecord),
+//                'id'                => $this->ActiveRecord->get_id(),
+//                'uuid'              => $this->ActiveRecord->get_uuid(),
+                'operation'         => 'grant_permission',
+            ];
+        }
+        $struct += self::form_object_struct($this->ActiveRecord);
+        $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    public function crud_grant_class_permission(string $role_uuid, string $action_name) : ResponseInterface
+    {
+        $Role = new Role($role_uuid);
+        $Permission = $this->ActiveRecord->grant_class_permission($Role, $action_name);
+        if ($Permission) {
+            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was granted.'), $action_name, get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                'operation'         => 'grant_permission',
+                'permission_id'     => $Permission->get_id(),
+                'permission_uuid'   => $Permission->get_uuid(),
+
+            ];
+        } else {
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                'operation'         => 'grant_permission',
+            ];
+        }
+        $struct += self::form_object_struct($this->ActiveRecord);
+        $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    public function crud_revoke_permission(string $role_uuid, string $action_name): ResponseInterface
+    {
+        $Role = new Role($role_uuid);
+        $this->ActiveRecord->revoke_permission($Role, $action_name);
+        if ( $this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions() ) {
+            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was revoked.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid() );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                //'id'                => $this->ActiveRecord->get_id(),
+                //'uuid'              => $this->ActiveRecord->get_uuid(),
+                'operation'         => 'revoke_permission',
+
+            ];
+        } else {
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                //'id'                => $this->ActiveRecord->get_id(),
+                //'uuid'              => $this->ActiveRecord->get_uuid(),
+                'operation'         => 'revoke_permission',
+            ];
+        }
+        $struct += self::form_object_struct($this->ActiveRecord);
+        $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    public function crud_revoke_class_permission() : ResponseInterface
+    {
+        $Role = new Role($role_uuid);
+        $this->ActiveRecord->revoke_class_permission($Role, $action_name);
+        if ( $this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions() ) {
+            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was revoked.'), $action_name, get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                'operation'         => 'revoke_permission',
+
+            ];
+        } else {
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $struct = [
+                'message'           => $message,
+                //'class'             => get_class($this->ActiveRecord),
+                'operation'         => 'revoke_permission',
+            ];
+        }
+        $struct += self::form_object_struct($this->ActiveRecord);
+        $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    private static function form_object_struct(ActiveRecordInterface $ActiveRecord) : array
+    {
+        $ret = [];
+        $ret['class'] = get_class($ActiveRecord);
+        if (!$ActiveRecord->is_new()) {
+            $ret['id'] = $ActiveRecord->get_id();
+            $ret['uuid'] = $ActiveRecord->get_uuid();
+        }
+        return $ret;
     }
 
     public function __destruct()
