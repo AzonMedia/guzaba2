@@ -307,8 +307,8 @@ class Memory extends Store implements StoreInterface
      */
     public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
     {
-        //at this stage the object has gone through get_data_pointer() (even if it was new it should be all test)
-        //so the MetaStore should have the correct data
+        // called in so the MetaStore contains the correct data
+        $this->get_data_pointer($class, $primary_index);
         $lookup_index = self::form_lookup_index($primary_index);
         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
         if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
