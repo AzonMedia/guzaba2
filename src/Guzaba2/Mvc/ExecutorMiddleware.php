@@ -82,6 +82,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $this->override_html_content_type = $override_html_content_type;
     }
 
+    /**
+     * Keeps in static cache the data of all controllers parameters to avoid using Reflection during runtime.
+     * @param array $ns_prefixes
+     * @throws ClassValidationException
+     * @throws \ReflectionException
+     */
     public static function initialize_controller_arguments(array $ns_prefixes) : void
     {
         //$ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
@@ -111,8 +117,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     }
 
     /**
-     *
-     *
+     * Checks the permissions (if applicable) and executes the controller.
+     * If there is view it also executes the view.
      * @param ServerRequestInterface $Request
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface

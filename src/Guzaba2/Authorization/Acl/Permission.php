@@ -50,6 +50,17 @@ class Permission extends ActiveRecord implements PermissionInterface
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
 
+        if (!class_exists($this->class_name)) {
+            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
+        }
+        if (!method_exists($this->class_name, $this->method_name)) {
+            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
+        }
+        if ( ! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic() ) {
+            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The method %s::%s is not public. The methods to which permissions are granted/associated must be public.'), $this->class_name, $this->action_name));
+        }
+
+        //TODO - may add locking here that is released in after_save
         try {
             $Permission = new self( [
                 'role_id'       => $this->role_id,
@@ -59,7 +70,7 @@ class Permission extends ActiveRecord implements PermissionInterface
             ] );
             throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
         } catch (RecordNotFoundException $Exception) {
-
+            //no duplicates
         }
 
     }
@@ -74,6 +85,16 @@ class Permission extends ActiveRecord implements PermissionInterface
         }
     }
 
+    /**
+     * @param Role $Role
+     * @param string $action
+     * @param ActiveRecordInterface $ActiveRecord
+     * @param string $permission_description
+     * @return ActiveRecord
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     */
     public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecord
     {
         $Permission = new self();
@@ -87,8 +108,17 @@ class Permission extends ActiveRecord implements PermissionInterface
     }
 
     /**
-     * This is a permission valid for all objects from the given class. Liek a privilege.
+     * This is a permission valid for all objects from the given class.
+     * To be used for "create" action on models and the controller actions.
+     * Or it can be used like a privilege to grant the $action on all objects of the given $class_name.
+     * @param Role $Role
+     * @param string $action
+     * @param string $class_name
+     * @param string $permission_description
      * @return ActiveRecord
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
     public static function create_class_permission(Role $Role, string $action, string $class_name, string $permission_description='') : ActiveRecord
     {
