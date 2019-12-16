@@ -20,11 +20,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 class StatementCoroutine extends Statement implements StatementInterface
 {
 
-    /**
-     * The result
-     * @var array
-     */
-    private ?array $rows = NULL;
+    //private $rows = [];
 
     public function execute(array $parameters = [], bool $disable_sql_cache = FALSE) : self
     {
@@ -149,9 +145,10 @@ class StatementCoroutine extends Statement implements StatementInterface
 
         if ($ret === FALSE) {
             $this->handle_error();//will throw exception
-        } elseif (is_array($ret)) { //in fact Swoole\Coroutine\Mysql\Statement::execute() returns the data (and cant be fetched with fetchAll()...
-            $this->rows = $ret;
         }
+//        elseif (is_array($ret)) { //Swoole\Coroutine\Mysql\Statement::execute() returns the data when fetch_mode = FALSE
+//            $this->rows = $ret;
+//        }
         $this->is_executed_flag = TRUE;
 
         return $this;
@@ -190,8 +187,6 @@ class StatementCoroutine extends Statement implements StatementInterface
                 $QueryCache->add_cached_data($sql, $this->params, $ret);
             }
         }
-
-
 
         return $ret;
     }

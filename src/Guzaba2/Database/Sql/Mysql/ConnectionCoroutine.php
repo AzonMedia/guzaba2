@@ -18,6 +18,7 @@ use Guzaba2\Translator\Translator as t;
 /**
  * Class ConnectionCoroutine
  * Because Swoole\Corotuine\Mysql\Statement does not support binding parameters by name, but only by position this class addresses this.
+ * The Coroutine/Mysql connection is always initialized with strict_mode = TRUE and fetch_mode = TRUE (meaning
  * @package Guzaba2\Database\Sql\Mysql
  */
 abstract class ConnectionCoroutine extends Connection
