@@ -21,9 +21,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Database\Exceptions;
 
-/**
- * A generic exception for all database related exceptions.
- */
 class SQLParsingException extends DatabaseException
 {
 }

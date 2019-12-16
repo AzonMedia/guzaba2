@@ -7,11 +7,12 @@ use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Role;
-use Monolog\Handler\MissingExtensionException;
+use Guzaba2\Translator\Translator as t;
 
 class AclAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
@@ -61,6 +62,20 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         foreach ($class_permissions as $Permission) {
             $Permission->delete();
         }
+    }
+
+
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    {
+        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] );
+    }
+
+    public function get_permissions_by_class(string $class_name) : iterable
+    {
+        if (!class_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('')));
+        }
+        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => NULL ] );
     }
 
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool

@@ -93,11 +93,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         //$ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
         $controller_classes = Controller::get_controller_classes($ns_prefixes);
         foreach ($controller_classes as $class) {
+
             foreach ((new \ReflectionClass($class))->getMethods(\ReflectionMethod::IS_PUBLIC) as $RMethod) {
                 if ($RMethod->isConstructor()) {
                     continue;
                 }
-                if ($RMethod->getDeclaringClass() !== $class) {
+                if ($RMethod->getDeclaringClass()->getName() !== $class) {
                     continue;//do not validate parent methods
                 }
                 $ordered_parameters = [];

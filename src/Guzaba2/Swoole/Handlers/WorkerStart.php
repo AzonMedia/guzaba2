@@ -6,6 +6,7 @@ namespace Guzaba2\Swoole\Handlers;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Database\ConnectionMonitor;
+use Monolog\Handler\StreamHandler;
 
 /**
  * Class WorkerStart
@@ -25,7 +26,9 @@ class WorkerStart extends HandlerBase
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
         //$this->HttpServer->set_worker_id($worker_id);
-        
+
+        self::register_log_handler($worker_id);
+
         \Swoole\Coroutine::create(function () {
             $ConnectionMonitor = new ConnectionMonitor();
             $ConnectionMonitor->monitor();
@@ -41,6 +44,27 @@ class WorkerStart extends HandlerBase
         
         Kernel::$Watchdog->checkin($Server, $worker_id);
         Kernel::$Watchdog->check($worker_id);
+    }
+
+    /**
+     * Register a new log handler for this worker.
+     * This will work only if there is main file logger.
+     * The worker log is put in the same directory as the main log with name worker_XX.txt
+     * @param int $worker_id
+     * @throws \Exception
+     */
+    private static function register_log_handler(int $worker_id) : void
+    {
+        $Logger = Kernel::get_logger();
+        $MainLogFileHandler = Kernel::get_main_log_file_handler();
+        if ($MainLogFileHandler !== NULL) {
+            $log_level = $Logger::getLevelName($MainLogFileHandler->getLevel());
+            $worker_log_file = dirname($MainLogFileHandler->getUrl()).'/worker_'.$worker_id.'.txt';
+            $Formatter = $MainLogFileHandler->getFormatter();
+            $StdoutHandler = new StreamHandler($worker_log_file, $log_level);
+            $StdoutHandler->setFormatter($Formatter);
+            $Logger->pushHandler($StdoutHandler);
+        }
     }
 
     public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void

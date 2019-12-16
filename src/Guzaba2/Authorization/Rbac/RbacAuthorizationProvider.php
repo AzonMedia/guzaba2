@@ -52,6 +52,16 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
         return;
     }
 
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    {
+        return [];
+    }
+
+    public function get_permissions_by_class(string $class_name) : iterable
+    {
+        return [];
+    }
+
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {
         $ret = FALSE;

@@ -90,6 +90,20 @@ interface AuthorizationProviderInterface
     public function delete_class_permissions(string $class_name) : void ;
 
     /**
+     * Returns all permissions for the given ActiveRecord object.
+     * @param ActiveRecordInterface|null $ActiveRecord
+     * @return iterable
+     */
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable ;
+
+    /**
+     * Returns all permissions for the given ActiveRecord class.
+     * @param string $class_name
+     * @return iterable
+     */
+    public function get_permissions_by_class(string $class_name) : iterable ;
+
+    /**
      * Returns the class names of the ActiveRecord classes used by the Authorization implementation.
      * @return array
      */

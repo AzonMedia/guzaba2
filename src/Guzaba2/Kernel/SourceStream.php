@@ -178,7 +178,15 @@ class SourceStream extends Base
         $ns_arr = explode('\\', $class_name);
         $class_name_without_ns = array_pop($ns_arr);
         //TODO - replace the below with tokenizer
-        $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+        if (strpos($class_source, 'abstract class') !== FALSE) {
+            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+        } else {
+            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'abstract class '.$class_name_without_ns.'_without_config', $class_source);
+        }
+        //TODO - improve this - replace with tokenized
+        //handle self::class
+        $class_without_config_source = str_replace('self::class', '\'\\'.$class_name.'\'', $class_without_config_source);
+
         if (strpos($class_without_config_source, '<?php')===0) {
 
             $class_without_config_source = substr($class_without_config_source, 5);

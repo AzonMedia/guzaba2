@@ -176,7 +176,8 @@ class StatementCoroutine extends Statement implements StatementInterface
             $ret = $this->cached_query_data['data'];
             $from_cache = TRUE;
         } else {
-            $ret = $this->rows;
+            //$ret = $this->rows;
+            $ret = $this->NativeStatement->fetchAll();
             if ($ret === NULL) {
                 throw new QueryException($this, 0, 0, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error ), $this->get_query(), $this->get_params() );
             }

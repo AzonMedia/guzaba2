@@ -34,7 +34,11 @@ abstract class ConnectionCoroutine extends Connection
     public function connect() : void
     {
         $this->NativeConnection = new \Swoole\Coroutine\Mysql();
-        $ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
+
+        //$ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
+        $config = array_merge( ['strict_mode' => TRUE, 'fetch_mode' => TRUE ], static::CONFIG_RUNTIME);
+        $ret = $this->NativeConnection->connect($config);
+
         if (!$ret) {
             throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->NativeConnection->connect_errno, $this->NativeConnection->connect_error));
         }

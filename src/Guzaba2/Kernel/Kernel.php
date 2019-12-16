@@ -31,6 +31,7 @@ use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
 //use Guzaba2\Database\Connection;
+use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
@@ -407,6 +408,63 @@ BANNER;
         return self::$Logger;
     }
 
+    public static function get_main_log_file() : ?string
+    {
+        $ret = NULL;
+        $handlers = self::get_logger()->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $url;
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    /**
+     * Returns the log level as string as per LogLevel
+     * @return string
+     */
+    public static function get_log_level() : ?string
+    {
+        $ret = NULL;
+        $Logger = self::get_logger();
+        $handlers = $Logger->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $Logger::getLevelName($Handler->getLevel());
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    public static function get_main_log_file_handler() : ?StreamHandler
+    {
+        $ret = NULL;
+        $Logger = self::get_logger();
+        $handlers = $Logger->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $Handler;
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
     public static function dump(/* mixed */ $var) : void
     {
         $frame = StackTraceUtil::get_stack_frame(2);
@@ -559,7 +617,7 @@ BANNER;
             // todo fix padding
             $message = sprintf('[%.4f %s] %s', $microtime_diff, $worker_str, $message);
         }
-        $handlers = self::$Logger->getHandlers();
+        $handlers = self::get_logger()->getHandlers();
         foreach ($handlers as $Handler) {
             if ($Handler instanceof StreamHandler) {
                 $url = $Handler->getUrl();
@@ -668,9 +726,6 @@ BANNER;
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\n==============================\nClass: {$real_class_name}\n");
 
                 $registry_config = self::$Registry->get_class_config_values($real_class_name);
-//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
-//                    print_r($registry_config);
-//                }
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
@@ -697,9 +752,8 @@ BANNER;
                         };
                     }
                 }
-//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
-//                    print_r($runtime_config);
-//                }
+
+
 
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, TRUE));
                 // the word FINAL is required here as it announces for final write in the file, when "return" is added
@@ -787,6 +841,9 @@ BANNER;
 
         foreach ($ns_prefixes as $ns_prefix) {
             foreach ($loaded_classes as $loaded_class) {
+                if (strpos($loaded_class, '_without_config') !== FALSE) {
+                    continue;
+                }
                 if ( strpos($loaded_class, $ns_prefix) === 0) {
                     if ($class) {
                         if (is_a($loaded_class, $class, TRUE)) {

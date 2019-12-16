@@ -585,7 +585,6 @@ ON DUPLICATE KEY UPDATE
 
     public function &get_data_pointer(string $class, array $index) : array
     {
-
         $data = $this->get_data_by($class, $index);
 
         if (count($data)) {
@@ -725,8 +724,12 @@ WHERE `meta_object_uuid` = '{$uuid}'
      */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
+
+
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
+
+
 
         //lookup in DB
 
@@ -765,7 +768,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         //otherwise the loaded object will be mising properties
         //but these can be loaded on request
         //so if we
-        
+
         $table_name = $class::get_main_table();
         //the main table must be always loaded
         $j[$class::get_main_table()] = $Connection::get_tprefix().$class::get_main_table();//if it gets assigned multiple times it will overwrite it
@@ -774,7 +777,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         //if($this->is_ownership_table($table_name)){
             
         //}
-        
+
         
         $main_index = $class::get_primary_index_columns();
         //$index = [$main_index[0] => $index];
@@ -909,6 +912,8 @@ WHERE
     {$w_str}
 ";
 
+
+
         if ($limit) {
 
             if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
@@ -945,6 +950,7 @@ WHERE
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
+
 
         return $data;
 

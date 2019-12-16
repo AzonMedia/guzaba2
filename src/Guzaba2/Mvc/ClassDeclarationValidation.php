@@ -71,7 +71,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
                 if ($RMethod->isConstructor()) {
                     continue;
                 }
-                if ($RMethod->getDeclaringClass() !== $loaded_class) {
+                if ($RMethod->getDeclaringClass()->getName() !== $loaded_class) {
                     continue;//do not validate parent methods
                 }
                 foreach ($RMethod->getParameters() as $RParameter) {

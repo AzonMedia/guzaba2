@@ -176,6 +176,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         parent::__construct();
 
+
+
+        if (strpos(get_class($this),'Test') !== FALSE) {
+            //print_r(static::CONFIG_RUNTIME);
+            //print_r(static::CONFIG_DEFAULTS);
+        }
+
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
@@ -242,6 +249,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
+
+
         if (isset($index[$primary_columns[0]]) && $index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
         //the new records are not referencing the OrmStore
@@ -249,7 +258,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         } else {
 
             $this->read($index);
+
+
         }
+
     }
 
     /**
@@ -310,6 +322,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     protected function read(/* int|string|array */ $index) : void
     {
 
+
+
         if (!is_string($index) && !is_int($index) && !is_array($index)) {
             throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
         }
@@ -325,6 +339,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         self::get_service('Events')::create_event($this, '_before_read');
 
+
+
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $pointer['data'];
@@ -336,6 +352,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
         }
+
+
 
         //check the permissions now, not before the record is found as the provided index may be a an array and then the permissions lookup will fail
         $this->check_permission('read');
@@ -365,6 +383,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $args = func_get_args();
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
+
+
     }
 
     public function save() : ActiveRecordInterface
