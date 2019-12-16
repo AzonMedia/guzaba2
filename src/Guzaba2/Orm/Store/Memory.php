@@ -639,7 +639,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
 
     private function start_cleanup_timer() : void
     {
-        if (null === self::$timer_id || (!Timer::exists(self::$timer_id))) {
+        if (null === self::$timer_id || (!\Swoole\Timer::exists(self::$timer_id))) {
             $cleanup = function () {
                 if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
                     // cleanup
