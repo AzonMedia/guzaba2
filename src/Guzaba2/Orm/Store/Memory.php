@@ -66,6 +66,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
     ];
 
     protected $cache_enabled;
+    protected $total_count;
     protected $hits;
     protected $misses;
 
@@ -77,6 +78,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
         parent::__construct();
 
         $this->FallbackStore = $FallbackStore ?? new NullStore();
+        $this->total_count = 0;
         $this->hits = 0;
         $this->misses = 0;
 
@@ -632,18 +634,19 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
     {
         $this->clear_cache();
         $this->reset_stats();
+        //$this->start_cleanup_timer();
     }
 
-    private function start_cleanup_timer()
+    private function start_cleanup_timer() : void
     {
         if (null === self::$timer_id || (!Timer::exists(self::$timer_id))) {
             $cleanup = function () {
-                if (count($this->data) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100)) {
+                if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
                     // cleanup
                 }
             };
 
-            self::$timer_id = \Swoole\Timer::tick(10000, $cleanup);
+            self::$timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILISECONDS, $cleanup);
         }
     }
 }
