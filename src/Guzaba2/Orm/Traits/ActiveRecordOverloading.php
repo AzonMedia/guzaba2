@@ -435,8 +435,8 @@ trait ActiveRecordOverloading
 
 
     /**
-     * It is invoked on @see save()
-     * save() provides the record_data array as first argument
+     * It is invoked on @see write()
+     * write() provides the record_data array as first argument
      * Checks for properties that are empty ==='' and if the property is int or float converts it as follows:
      * - if the column is nullable sets to NULL
      * - if the column has a default values it sets it to the default value

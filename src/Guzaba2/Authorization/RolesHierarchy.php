@@ -43,7 +43,7 @@ class RolesHierarchy extends ActiveRecord
         $RoleRoles = new self();
         $RoleRoles->role_id = $Role->get_id();
         $RoleRoles->inherited_role_id = $InheritedRole->get_id();
-        $RoleRoles->save();
+        $RoleRoles->write();
         return $RoleRoles;
     }
 }

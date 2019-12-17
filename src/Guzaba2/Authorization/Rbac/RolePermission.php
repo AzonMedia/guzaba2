@@ -38,7 +38,7 @@ class RolePermission extends ActiveRecord
         $RolePermission = new self();
         $RolePermission->role_id = $Role->get_id();
         $RolePermission->permission_id = $Permission->get_id();
-        $RolePermission->save();
+        $RolePermission->write();
         return $RolePermission;
     }
 }

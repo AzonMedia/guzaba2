@@ -12,6 +12,7 @@ use Guzaba2\Mvc\Traits\ResponseFactories;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class Controller
@@ -24,6 +25,8 @@ abstract class Controller extends Base implements ControllerInterface
 
     private RequestInterface $Request;
 
+    private ResponseInterface $Response;
+
     public function __construct(RequestInterface $Request)
     {
         $this->Request = $Request;
@@ -35,6 +38,24 @@ abstract class Controller extends Base implements ControllerInterface
     public function get_request() : ?RequestInterface
     {
         return $this->Request;
+    }
+
+    /**
+     * To be used when an event needs to preset the response.
+     * @param ResponseInterface $Response
+     */
+    public function set_response(ResponseInterface $Response) : void
+    {
+        $this->Response = $Response;
+    }
+
+    /**
+     * Returns the response as it may be
+     * @return ResponseInterface|null
+     */
+    public function get_response() : ?ResponseInterface
+    {
+        return $this->Response;
     }
 
     /**

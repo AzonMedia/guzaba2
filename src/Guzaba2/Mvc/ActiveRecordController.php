@@ -54,6 +54,8 @@ implements ControllerInterface
      */
     private ?RequestInterface $Request = NULL;
 
+    private ?ResponseInterface $Response = NULL;
+
     /**
      * Controller constructor.
      * Allows for initialization with NULL in case it needs to be used as an ActiveRecord instance and not as a controller.
@@ -89,6 +91,24 @@ implements ControllerInterface
     public function get_request() : ?RequestInterface
     {
         return $this->Request;
+    }
+
+    /**
+     * To be used when an event needs to preset the response.
+     * @param ResponseInterface $Response
+     */
+    public function set_response(ResponseInterface $Response) : void
+    {
+        $this->Response = $Response;
+    }
+
+    /**
+     * Returns the response as it may be
+     * @return ResponseInterface|null
+     */
+    public function get_response() : ?ResponseInterface
+    {
+        return $this->Response;
     }
 
     /**

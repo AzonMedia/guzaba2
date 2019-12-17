@@ -38,7 +38,7 @@ class Operation extends ActiveRecord
         $Operation->class_name = get_class($Object);
         $Operation->object_id = $Ojbect->get_id();//depending on the store this may return the primary key or the UUID
         $Operation->operation_description = $operation_description;
-        $Operation->save();
+        $Operation->write();
         return $Operation;
     }
 
@@ -53,7 +53,7 @@ class Operation extends ActiveRecord
         $Operation->class_name = $class_name;
         $Operation->object_id = NULL;
         $Operation->operation_description = $operation_description;
-        $Operation->save();
+        $Operation->write();
         return $Operation;
     }
 }

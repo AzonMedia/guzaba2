@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Wrappers;
 
 
-class File
+use Guzaba2\Base\Base;
+
+abstract class File extends Base
 {
 
 }

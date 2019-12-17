@@ -133,7 +133,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
     }
 
     /**
-     * Validates the CRUD hooks (_before_save(), _after_delete() etc).
+     * Validates the CRUD hooks (_before_write(), _after_delete() etc).
      * These must be protected and return void
      */
     public static function validate_crud_hooks(array $ns_prefixes) : void

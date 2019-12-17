@@ -164,7 +164,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 
-        $this->ActiveRecord->save();
+        $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
@@ -207,7 +207,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 
-        $this->ActiveRecord->save();
+        $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord) );

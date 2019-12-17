@@ -16,7 +16,7 @@ interface ActiveRecordInterface
 
     public const CRUD_HOOKS = [
         '_before_read', '_after_read',
-        '_before_save', '_after_save',
+        '_before_write', '_after_write',
         '_before_delete', '_after_delete',
     ];
 
@@ -45,7 +45,7 @@ interface ActiveRecordInterface
 
     //public function read() : void;
 
-    public function save() : ActiveRecordInterface;
+    public function write() : ActiveRecordInterface;
 
     public function delete() : void;
 

@@ -71,7 +71,7 @@ class Role extends ActiveRecord
     {
         $Role = new self();
         $Role->role_name = $name;
-        $Role->save();
+        $Role->write();
         return $Role;
     }
 

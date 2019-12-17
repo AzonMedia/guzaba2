@@ -42,6 +42,15 @@ use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 class ExecutorMiddleware extends Base implements MiddlewareInterface
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Events',
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+
     /**
      * To be used when the Body of the Response is of type Structured
      */
@@ -201,32 +210,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
     private function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
     {
-
         $Response = NULL;
-
         try {
-
-//            $RMethod = new \ReflectionMethod(get_class($Controller), $method);
-//            $parameters = $RMethod->getParameters();
-//
-//            $ordered_parameters = [];
-//
-//            foreach ($parameters as $key => $parameter) {
-//                $argType = $parameter->getType();
-//
-//                if (isset($controller_arguments[$parameter->getName()])) {
-//
-//                    $value = $controller_arguments[$parameter->getName()];
-//                } elseif ($parameter->isDefaultValueAvailable() ) {
-//                    $value = $parameter->getDefaultValue();
-//                } else {
-//                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $parameter->getName(), get_class($Controller), $method ));
-//                }
-//                settype($value, $argType->getName() );
-//                $ordered_parameters[] = $value;
-//                unset($value);
-//            }
-
             $ordered_arguments = [];
             foreach (self::$controllers_arguments[get_class($Controller)][$method] as $param) {
                 if (isset($controller_arguments[$param['name']])) {
@@ -234,10 +219,26 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 } elseif (array_key_exists('default_value', $param)) {
                     $value = $param['default_value'];
                 } else {
-                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $aram['name'], get_class($Controller), $method ));
+                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $param['name'], get_class($Controller), $method ));
                 }
             }
+            //because the Response is immutable it needs to be passed around instead of modified...
+            self::get_service('Events')::create_event($Controller, '_before_'.$method);
+            //no need to do get_response() - instead of that if the execution needs to be interrupted throw InterruptControllerException
+            //if (!($Response = $Controller->get_response())) { //if the _before_method events have not produced a response call the method
             $Response = [$Controller, $method](...$ordered_arguments);
+            $Controller->set_response($Response);
+            self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
+            $Response = $Controller->get_response();//the _after_ events may have changed the Response
+            //}
+
+//            //as the events/hooks work only with Structured body and the structure there can be passed by reference there is no need to pass around the response
+//            //its bosy->struct can be just changed
+//            //of course for any other type of response body this will not work.
+//            self::get_service('Events')::create_event($Controller, '_before_'.$method);
+//            $Response = [$Controller, $method](...$ordered_arguments);
+//            self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
+
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
         } catch (PermissionDeniedException $Exception) {
@@ -249,7 +250,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } catch (\Throwable $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
         } finally {
-            if (isset($Exception)) {
+            if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
                 Kernel::exception_handler($Exception);
             }
         }

@@ -30,7 +30,7 @@ class Structured extends Base implements StreamInterface
 
     protected $is_readable_flag = TRUE;
 
-    protected $is_seekable_flag = FALSE;
+    protected $is_seekable_flag = TRUE;
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 

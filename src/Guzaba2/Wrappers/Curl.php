@@ -5,7 +5,7 @@ namespace Guzaba2\Wrappers;
 
 use Guzaba2\Base\Base;
 
-class Curl extends Base
+abstract class Curl extends Base
 {
 
 }

@@ -8,7 +8,7 @@ use Guzaba2\Orm\Exceptions\ValidationFailedException;
 trait ActiveRecordValidation
 {
     /**
-     * Disables the validation (@see activerecordValidation::validate()) that is invoked on save().
+     * Disables the validation (@see activerecordValidation::validate()) that is invoked on write().
      * This will also bypass the validation hooks like _before_validate.
      * By defaults this is enabled.
      */
@@ -18,7 +18,7 @@ trait ActiveRecordValidation
     }
 
     /**
-     * Enables the validation (activerecordValidation::validate()) that is invoked on save()
+     * Enables the validation (activerecordValidation::validate()) that is invoked on write()
      * By defaults this is enabled.
      * @return void
      */

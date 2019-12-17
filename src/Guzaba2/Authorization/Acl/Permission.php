@@ -40,7 +40,7 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected const CONFIG_RUNTIME = [];
 
-    protected function _before_save() : void
+    protected function _before_write() : void
     {
         //before creating a Permission record check does the object on which it is created has the appropriate CHOWN permission
         try {
@@ -103,7 +103,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         $Permission->object_id = $ActiveRecord->get_id();
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
-        $Permission->save();
+        $Permission->write();
         return $Permission;
     }
 
@@ -128,7 +128,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         $Permission->object_id = NULL;
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
-        $Permission->save();
+        $Permission->write();
         return $Permission;
     }
 }

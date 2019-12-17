@@ -387,7 +387,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     }
 
-    public function save() : ActiveRecordInterface
+    public function write() : ActiveRecordInterface
     {
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
@@ -400,7 +400,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
+            throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
         }
 
 //read_only is set in constructor() if method is GET
@@ -427,14 +427,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
-        //_before_save() event
-        if (method_exists($this, '_before_save') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_before_save'], $args);//must return void
+            call_user_func_array([$this,'_before_write'], $args);//must return void
         }
 
-        //new Event($this, '_before_save');
-        self::get_service('Events')::create_event($this, '_before_save');
+        self::get_service('Events')::create_event($this, '_before_write');
 
         if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
@@ -444,12 +442,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         static::get_service('OrmStore')->update_record($this);
 
-        self::get_service('Events')::create_event($this, '_after_save');
+        self::get_service('Events')::create_event($this, '_after_write');
 
-        //_after_save() event
-        if (method_exists($this, '_after_save') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_after_save'], $args);//must return void
+            call_user_func_array([$this,'_after_write'], $args);//must return void
         }
 
         //COMMIT ORMTransaction
