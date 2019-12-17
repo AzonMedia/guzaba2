@@ -19,9 +19,31 @@ class WorkerStart extends HandlerBase
 {
 
     /**
+     * Will be NULL if $enable_debug_ports = FALSE
      * @var
      */
-    protected $SwooleDebugger;
+    private ?Debugger $SwooleDebugger = NULL;
+
+    private bool $enable_debug_ports = FALSE;
+
+    private int $base_debug_port = Debugger::DEFAULT_BASE_DEBUG_PORT;
+
+    public function __construct(\Guzaba2\Http\Server $HttpServer, bool $enable_debug_ports = FALSE, int $base_debug_port = Debugger::DEFAULT_BASE_DEBUG_PORT)
+    {
+        parent::__construct($HttpServer);
+        $this->enable_debug_ports = $enable_debug_ports;
+        $this->base_debug_port = $base_debug_port;
+    }
+
+    public function debug_ports_enabled() : bool
+    {
+        return $this->enable_debug_ports;
+    }
+
+    public function get_base_debug_port() : int
+    {
+        return $this->base_debug_port;
+    }
 
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
@@ -34,11 +56,12 @@ class WorkerStart extends HandlerBase
             $ConnectionMonitor->monitor();
         });
 
-        if (Debugger::is_enabled()) {
+        //if (Debugger::is_enabled()) {
+        if ($this->enable_debug_ports) {
             $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic();
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
 
-            $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $worker_id, $Debugger);
+            $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $worker_id, $Debugger, $this->base_debug_port);
             //after the server is started print here will not print anything - it seems the output is redirected
         }
         

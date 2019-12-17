@@ -98,7 +98,7 @@ class Server extends \Guzaba2\Http\Server
 
     ];
 
-    protected const SWOOLE_DEFAULTS = [
+    public const SWOOLE_DEFAULTS = [
         'host'              => '0.0.0.0',
         'port'              => 8081,
         'dispatch_mode'     => SWOOLE_PROCESS,//SWOOLE_PROCESS or SWOOLE_BASE
@@ -107,20 +107,26 @@ class Server extends \Guzaba2\Http\Server
     /**
      * @var \Swoole\Http\Server
      */
-    protected \Swoole\Http\Server $SwooleHttpServer;
+    private \Swoole\Http\Server $SwooleHttpServer;
 
     protected string $host = self::SWOOLE_DEFAULTS['host'];
 
     protected int $port = self::SWOOLE_DEFAULTS['port'];
 
-    protected int $dispatch_mode = self::SWOOLE_DEFAULTS['dispatch_mode'];
+    private int $dispatch_mode = self::SWOOLE_DEFAULTS['dispatch_mode'];
 
     protected array $options = [];
 
     /**
+     * Associative array of event=>callable for the various handlers
+     * @var array
+     */
+    private array $handlers = [];
+
+    /**
      * @var int
      */
-    protected int $worker_id = -1;//0 is a valid worker id
+    private int $worker_id = -1;//0 is a valid worker id
 
 
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
@@ -134,8 +140,6 @@ class Server extends \Guzaba2\Http\Server
         }
 
         $this->options = $options;
-
-
 
 
         parent::__construct($this->host, $this->port, $this->options);//TODO - sock type needed?
@@ -190,12 +194,17 @@ class Server extends \Guzaba2\Http\Server
         //TODO - add option for setting the timezone of the application, and time format
         Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s at %s %s').PHP_EOL, $this->host, $this->port, date('Y-m-d H:i:s'), date_default_timezone_get() ));
 
-
-        $debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
-        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
-
         if (!empty($this->options['document_root'])) {
             Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
+        }
+
+        //$debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
+        //Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
+        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s'), $this->options['worker_num'], $this->options['task_worker_num'] ).PHP_EOL );
+        $WorkerStartHandler = $this->get_handler('WorkerStart');
+        if ($WorkerStartHandler->debug_ports_enabled()) {
+            $base_port = $WorkerStartHandler->get_base_debug_port();
+            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->options['worker_num']).PHP_EOL);
         }
         if (!empty($this->options['open_http2_protocol'])) {
             Kernel::printk(sprintf(t::_('HTTP2 enabled')).PHP_EOL);
@@ -206,7 +215,7 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['daemonize'])) {
             Kernel::printk(sprintf(t::_('DEAMONIZED, log file: %s'), $this->options['log_file']).PHP_EOL);
         }
-        Kernel::printk(sprintf(t::_('End of startup messages. Swoole server is now serving requests')).PHP_EOL );
+        Kernel::printk(sprintf(t::_('End of startup messages. Swoole server is now serving requests.')).PHP_EOL );
         Kernel::printk(PHP_EOL);
     }
 
@@ -217,7 +226,26 @@ class Server extends \Guzaba2\Http\Server
 
     public function on(string $event_name, callable $callable) : void
     {
+        $this->handlers[$event_name] = $callable;
         $this->SwooleHttpServer->on($event_name, $callable);
+    }
+
+    /**
+     * The event name is case insensitive.
+     * @param string $event_name
+     * @return callable|null
+     */
+    public function get_handler(string $event_name) : ?callable
+    {
+        //return $this->handlers[$event_name] ?? NULL;
+        $ret = NULL;
+        foreach ($this->handlers as $handler_name=>$callable) {
+            if (strtolower($handler_name)===strtolower($event_name)) {
+                $ret = $callable;
+                break;
+            }
+        }
+        return $ret;
     }
 
     public function __call(string $method, array $args) /* mixed */
@@ -284,9 +312,10 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
             throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable.'), $options['ssl_cert_file']));
         }
-        if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
-            throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
-        }
+        //since Swoole 4.4.14 this is supported
+        //if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
+        //    throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
+        //}
 
         if (!empty($options['daemonize']) && empty($options['log_file'])) {
             throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));

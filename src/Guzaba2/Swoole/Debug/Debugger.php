@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole\Debug;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Server;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Kernel\Kernel;
 
@@ -15,55 +16,60 @@ use Guzaba2\Kernel\Kernel;
 class Debugger extends Base
 {
     protected const CONFIG_DEFAULTS = [
-        'enabled'   => TRUE,
-        'base_port' => 10000,//on this port the first worker will listen
+        //'enabled'   => TRUE,
+        //'base_port' => 10000,//on this port the first worker will listen
         'prompt'    => '{WORKER_ID}>>> ',
     ];
 
     protected const CONFIG_RUNTIME = [];
 
+    public const DEFAULT_BASE_DEBUG_PORT = 10_000;
+
+    private int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT;
+
     /**
      * @var \Guzaba2\Http\Server
      */
-    protected $HttpServer;
+    private Server $HttpServer;
 
     /**
      * @var \Swoole\Coroutine\Server
      */
-    protected $DebugServer;
+    private \Swoole\Coroutine\Server $DebugServer;
 
     /**
      * @var \Azonmedia\Debug\Interfaces\DebuggerInterface
      */
-    protected $Debugger;
+    private \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger;
 
     /**
      * @var int
      */
-    protected $worker_id;
+    private int $worker_id;
 
     /**
      * @var array
      */
-    protected $prompt_stack = [];
+    protected array $prompt_stack = [];
 
-    public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger)
+    public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
     //public function __construct(?\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger)
     {
         parent::__construct();
 
-        if (!self::is_enabled()) {
-            return;
-        }
+//        if (!self::is_enabled()) {
+//            return;
+//        }
 
         $this->HttpServer = $HttpServer;
         $this->worker_id = $worker_id;
         $this->Debugger = $Debugger;
+        $this->base_debug_port = $base_debug_port;
 
         $this->set_prompt($this->substitute_prompt_vars(self::CONFIG_RUNTIME['prompt']));
 
         //ob_implicit_flush();
-        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), self::get_worker_port($worker_id), FALSE);
+        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($worker_id), FALSE);
 //        $server->handle(function (Swoole\Coroutine\Server\Connection $conn) use ($server) {
 //            while(true) {
 //                $data = $conn->recv();
@@ -105,11 +111,6 @@ class Debugger extends Base
         };
         $this->DebugServer->handle($Function);
         $this->DebugServer->start();
-    }
-
-    public static function get_base_port() : int
-    {
-        return self::CONFIG_RUNTIME['base_port'];
     }
 
     protected function substitute_prompt_vars(string $prompt) : string
@@ -157,13 +158,13 @@ class Debugger extends Base
         }
     }
 
-    public static function is_enabled() : bool
-    {
-        return self::CONFIG_RUNTIME['enabled'];
-    }
+//    public static function is_enabled() : bool
+//    {
+//        return self::CONFIG_RUNTIME['enabled'];
+//    }
 
-    public static function get_worker_port(int $worker_id) : int
+    public function get_worker_port(int $worker_id) : int
     {
-        return self::CONFIG_RUNTIME['base_port'] + $worker_id;
+        return $this->base_debug_port + $worker_id;
     }
 }
