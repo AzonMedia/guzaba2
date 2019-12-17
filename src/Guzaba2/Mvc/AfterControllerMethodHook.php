@@ -36,6 +36,11 @@ abstract class AfterControllerMethodHook extends Base implements AfterController
         return $this->process($this->Response);
     }
 
+    public static function get_vue_namespace() : string
+    {
+
+    }
+
 //    public function get_response(): ResponseInterface
 //    {
 //        return $this->Response;
