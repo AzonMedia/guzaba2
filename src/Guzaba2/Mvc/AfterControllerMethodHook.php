@@ -15,6 +15,14 @@ use Psr\Http\Message\ResponseInterface;
 abstract class AfterControllerMethodHook extends Base implements AfterControllerMethodHookInterface
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services' => [
+            'Events',
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     use ResponseFactories;
 
     private ResponseInterface $Response;
@@ -38,7 +46,19 @@ abstract class AfterControllerMethodHook extends Base implements AfterController
 
     public static function get_vue_namespace() : string
     {
+        $called_class = get_called_class();
 
+    }
+    
+    public static function register_hook(string $controller_class_name, string $event_name, string $hook_class) : void
+    {
+        $Callback = static function(Event $Event)  use ($hook_class): void
+        {
+            $Controller = $Event->get_subject();
+            $Controller->set_response( (new $hook_class($Controller->get_response()))() );
+        };
+        $Events = self::get_service('Events');
+        $Events->add_class_callback($controller_class_name, $event_name, $Callback);
     }
 
 //    public function get_response(): ResponseInterface

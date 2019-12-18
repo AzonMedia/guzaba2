@@ -100,7 +100,8 @@ abstract class Controller extends Base implements ControllerInterface
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
         if (!array_key_exists( $args_hash, $controller_classes ) ) {
             $classes = Kernel::get_classes($ns_prefixes, ControllerInterface::class);
-            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class]) );
+            //$classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class]) );
+            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ControllerInterface::class]) );
             $controller_classes[$args_hash] = $classes;
         }
         return $controller_classes[$args_hash];

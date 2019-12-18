@@ -75,7 +75,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * where default_value is optional and will not be present if there is no default value
      * @var array
      */
-    protected static $controllers_arguments = [];
+    protected static $controllers_params = [];
 
     public function __construct(Server $Server, string $override_html_content_type = '')
     {
@@ -121,7 +121,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
                     $ordered_parameters[] = $param_data;
                 }
-                self::$controllers_arguments[$class][$RMethod->getName()] = $ordered_parameters;
+                self::$controllers_params[$class][$RMethod->getName()] = $ordered_parameters;
             }
         }
     }
@@ -213,7 +213,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $Response = NULL;
         try {
             $ordered_arguments = [];
-            foreach (self::$controllers_arguments[get_class($Controller)][$method] as $param) {
+            foreach (self::$controllers_params[get_class($Controller)][$method] as $param) {
                 if (isset($controller_arguments[$param['name']])) {
                     $value = $controller_arguments[$param['name']];
                 } elseif (array_key_exists('default_value', $param)) {
@@ -221,13 +221,17 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 } else {
                     throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $param['name'], get_class($Controller), $method ));
                 }
+                settype($value, $param['type']);
+                $ordered_arguments[] = $value;
             }
             //because the Response is immutable it needs to be passed around instead of modified...
             self::get_service('Events')::create_event($Controller, '_before_'.$method);
             //no need to do get_response() - instead of that if the execution needs to be interrupted throw InterruptControllerException
             //if (!($Response = $Controller->get_response())) { //if the _before_method events have not produced a response call the method
             $Response = [$Controller, $method](...$ordered_arguments);
-            $Controller->set_response($Response);
+            if ($Response) {
+                $Controller->set_response($Response);
+            }
             self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
             $Response = $Controller->get_response();//the _after_ events may have changed the Response
             //}
