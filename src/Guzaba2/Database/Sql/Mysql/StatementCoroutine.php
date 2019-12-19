@@ -20,7 +20,12 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 class StatementCoroutine extends Statement implements StatementInterface
 {
 
-    //private $rows = [];
+    /**
+     * Used when fetch_mode = FALSE (this is the default).
+     * When fetch_mode = FALSE the data if fetched immediately on execution and stored instead of being fetched with fetchAll().
+     * @var array
+     */
+    private $rows = [];
 
     public function execute(array $parameters = [], bool $disable_sql_cache = FALSE) : self
     {
@@ -149,6 +154,9 @@ class StatementCoroutine extends Statement implements StatementInterface
 //        elseif (is_array($ret)) { //Swoole\Coroutine\Mysql\Statement::execute() returns the data when fetch_mode = FALSE
 //            $this->rows = $ret;
 //        }
+        if (!$this->Connection->get_fetch_mode()) { //IF fetch_mode === FALSE
+            $this->rows = $ret;
+        }
         $this->is_executed_flag = TRUE;
 
         return $this;
@@ -173,8 +181,12 @@ class StatementCoroutine extends Statement implements StatementInterface
             $ret = $this->cached_query_data['data'];
             $from_cache = TRUE;
         } else {
-            //$ret = $this->rows;
-            $ret = $this->NativeStatement->fetchAll();
+            if ($this->Connection->get_fetch_mode()) { //in fetch_mode = TRUE the data needs to be manually fetched
+                $ret = $this->NativeStatement->fetchAll();
+            } else { //default is fetch_mode = FALSE
+                $ret = $this->rows;
+            }
+
             if ($ret === NULL) {
                 throw new QueryException($this, 0, 0, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error ), $this->get_query(), $this->get_params() );
             }

@@ -22,6 +22,8 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
      */
     protected object $NativeStatement;
 
+    protected Connection $Connection;
+
     /**
      * The SQL query
      * @var string
@@ -44,10 +46,11 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
      * @param string $query
      * @param array $expected_parameters Contains the names of the expected parameters as parsed during statement preparation. Swoole\Statement does not support named parameters but only "?".
      */
-    public function __construct(object $NativeStatement, string $query, array $expected_parameters = [])
+    public function __construct(object $NativeStatement, Connection $Connection, string $query, array $expected_parameters = [])
     {
         parent::__construct();
         $this->NativeStatement = $NativeStatement;
+        $this->Connection = $Connection;
         $this->query = $query;
 
         $this->expected_parameters = $expected_parameters;
@@ -63,6 +66,11 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
 
     public abstract function fetch_row(string $column_name = '') /* mixed */ ;
 
+    public function get_connection() : Connection
+    {
+        return $this->Connection;
+    }
+    
     public function getQuery() : string
     {
         return $this->get_query();

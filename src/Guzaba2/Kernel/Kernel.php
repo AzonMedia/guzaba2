@@ -301,9 +301,9 @@ BANNER;
      */
     public static function set_di_container(ContainerInterface $Container) : void
     {
-        $Container->initialize();
-        self::printk(sprintf('All global services are initialized').PHP_EOL);
         self::$Container = $Container;
+        //$Container->initialize();
+        //self::printk(sprintf('All global services are initialized.').PHP_EOL);
     }
 
     public static function get_di_container() : ?ContainerInterface

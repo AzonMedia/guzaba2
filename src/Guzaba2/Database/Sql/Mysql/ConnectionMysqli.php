@@ -27,7 +27,7 @@ abstract class ConnectionMysqli extends Connection
 
     public function prepare(string $query) : StatementInterface
     {
-        $Statement = $this->prepare_statement($query, StatementMysqli::class);
+        $Statement = $this->prepare_statement($query, StatementMysqli::class, $this);
         return $Statement;
     }
 

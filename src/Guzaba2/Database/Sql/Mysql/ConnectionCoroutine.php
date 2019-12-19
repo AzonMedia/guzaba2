@@ -24,6 +24,18 @@ use Guzaba2\Translator\Translator as t;
 abstract class ConnectionCoroutine extends Connection
 {
 
+    public const SUPPORTED_OPTIONS = [
+        'host',
+        'user',
+        'password',
+        'database',
+        'port',
+        'timeout',
+        'charset',
+        'strict_type',
+        'fetch_mode',
+    ];
+
     //public function __construct(array $options)
     public function __construct()
     {
@@ -37,7 +49,13 @@ abstract class ConnectionCoroutine extends Connection
         $this->NativeConnection = new \Swoole\Coroutine\Mysql();
 
         //$ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
-        $config = array_merge( ['strict_mode' => TRUE, 'fetch_mode' => TRUE ], static::CONFIG_RUNTIME);
+        //$config = array_merge( ['strict_mode' => TRUE, 'fetch_mode' => TRUE ], static::CONFIG_RUNTIME);
+        //let the fetch_mode to be configurable
+        $config = ['strict_type' => TRUE];//but strict_type must be always TRUE
+        if (!array_key_exists('fetch_mode', static::CONFIG_RUNTIME)) {
+            $config['fetch_mode'] = FALSE;//better to be false by default as having it to true allows for a connection to be returned to the pool without all the data to have been fetched.
+        }
+        $config = array_merge(static::CONFIG_RUNTIME, $config);
         $ret = $this->NativeConnection->connect($config);
 
         if (!$ret) {
@@ -45,12 +63,17 @@ abstract class ConnectionCoroutine extends Connection
         }
     }
 
+    public function get_fetch_mode() : bool
+    {
+        return $this->NativeConnection->serverInfo['fetch_mode'];
+    }
+
     public function prepare(string $query) : StatementInterface
     {
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
-        $Statement = $this->prepare_statement($query, StatementCoroutine::class);
+        $Statement = $this->prepare_statement($query, StatementCoroutine::class, $this);
         return $Statement;
     }
 
