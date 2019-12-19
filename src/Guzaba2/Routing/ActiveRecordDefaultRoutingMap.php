@@ -12,6 +12,7 @@ use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
+use Guzaba2\Mvc\Interfaces\ControllerInterface;
 
 
 class ActiveRecordDefaultRoutingMap extends RoutingMapArray
@@ -57,15 +58,20 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 //                        throw new RunTimeException(sprintf(t::_('The model %s has no routing set.'), $loaded_class));
 //                    }
             if ($routing) {
-                if ($api_route_prefix) {
+                //if ($api_route_prefix) {
+                if (is_a($loaded_class, ControllerInterface::class, TRUE)) {
+                    //skip
+                } else {
                     $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
+                    $routing_map = array_merge($routing_map, $routing);
+                    $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
                 }
-                $routing_map = array_merge($routing_map, $routing);
-                $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
+
             }
 
 
         }
+
         parent::__construct($routing_map, $routing_meta_data);
     }
 

@@ -51,7 +51,7 @@ implements ControllerInterface
     /**
      * @var RequestInterface
      */
-    private ?RequestInterface $Request;
+    private ?RequestInterface $Request = NULL;
 
     /**
      * Controller constructor.
@@ -61,16 +61,17 @@ implements ControllerInterface
      * @param RequestInterface $Request
      */
     //public function __construct(RequestInterface $Request)
-    public function __construct(?RequestInterface $Request = NULL)
+    //public function __construct(?RequestInterface $Request = NULL)
+    public function __construct( /* int|null|Request */ $Request = NULL)
     {
-        $this->Request = $Request;
-        if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated
+        if ($Request === NULL || is_int($Request)) { //it is accessed as ActiveRecord and then it needs to be instantiated
             if (!empty(self::CONFIG_RUNTIME['controllers_use_db'])) {
                 parent::__construct( ['controller_class' => get_class($this)] );
             } else {
                 parent::__construct( 0 );
             }
         } else { //it remains as a new record meaning no "read" permission will be checked
+            $this->Request = $Request;
             parent::__construct( 0 );
         }
 
