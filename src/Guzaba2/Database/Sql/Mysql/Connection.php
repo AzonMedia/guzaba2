@@ -66,8 +66,6 @@ abstract class Connection extends TransactionalConnection
 
     public abstract function prepare(string $query) : StatementInterface ;
 
-    public abstract function connect() : void;
-
     public function close() : void
     {
         $this->NativeConnection->close();

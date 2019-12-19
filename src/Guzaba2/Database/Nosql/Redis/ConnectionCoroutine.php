@@ -13,15 +13,15 @@ use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Kernel\Exceptions\ErrorException;
 use Guzaba2\Translator\Translator as t;
+use Swoole\Coroutine\Redis;
 
 /**
  * Class ConnectionCoroutine
  * @package Guzaba2\Database\Nosql\Redis
  *
- * Methods pinting to \Swoole\Coroutine\Redis
+ * Methods forwarded to \Swoole\Coroutine\Redis
  *
  * @method __destruct()
- * @method connect($host, $port, $serialize)
  * @method getAuth()
  * @method getDBNum()
  * @method getOptions()
@@ -186,44 +186,71 @@ use Guzaba2\Translator\Translator as t;
  */
 abstract class ConnectionCoroutine extends Connection
 {
-    protected const CONFIG_DEFAULTS = [
-        'host' => 'redis',
-        'port' => '6379',
-        'timeout' => 1.5,
-        'password' => '',
-        'database' => 0,
-        'options' => [
-            // returns saved arrays properly
-            'compatibility_mode' => true
-        ],
-        'expiry_time' => null
-    ];
+//    protected const CONFIG_DEFAULTS = [
+//        'host' => 'redis',
+//        'port' => '6379',
+//        'timeout' => 1.5,
+//        'password' => '',
+//        'database' => 0,
+//        'options' => [
+//            // returns saved arrays properly
+//            'compatibility_mode' => true
+//        ],
+//        'expiry_time' => null
+//    ];
+//
+//    protected const CONFIG_RUNTIME = [];
 
-    protected const CONFIG_RUNTIME = [];
+    public const SUPPORTED_OPTIONS = [
+        'host',
+        'port',
+        'timeout',
+        'password',
+        'database',
+        'options',
+        'expiry_time',
+    ];
 
     /**
      * @var \Swoole\Coroutine\Redis
      */
-    protected $RedisCo;
+    protected Redis $RedisCo;
 
     /**
      * ConnectionCoroutine constructor.
      * @throws ConnectionException
      */
-    public function __construct()
+    public function __construct(array $options)
     {
         parent::__construct();
 
-        $this->RedisCo = new \Swoole\Coroutine\Redis(static::CONFIG_RUNTIME);
-        $this->RedisCo->setOptions(static::CONFIG_RUNTIME['options']);
-        $this->RedisCo->connect(static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port']);
+        $this->connect($options);
+    }
 
-        if (static::CONFIG_RUNTIME['password']) {
-            $this->RedisCo->auth(static::CONFIG_RUNTIME['password']);
+    //the redis method is connect($host, $port, $serialize)
+    private function connect(array $options) : void
+    {
+        static::validate_options($options);
+
+//        $this->RedisCo = new \Swoole\Coroutine\Redis(static::CONFIG_RUNTIME);
+//        $this->RedisCo->setOptions(static::CONFIG_RUNTIME['options']);
+//        $this->RedisCo->connect(static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port']);
+//
+//        if (static::CONFIG_RUNTIME['password']) {
+//            $this->RedisCo->auth(static::CONFIG_RUNTIME['password']);
+//        }
+        $this->options = $options;
+
+        $this->RedisCo = new \Swoole\Coroutine\Redis($options);
+        $this->RedisCo->setOptions($options['options']);
+        $this->RedisCo->connect($options['host'], (int) $options['port']);
+
+        if ($options['password']) {
+            $this->RedisCo->auth($options['password']);
         }
 
         if (! $this->RedisCo->connected) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port'], $this->RedisCo->errCode, $this->RedisCo->errMsg));
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), $options['host'], $options['port'], $this->RedisCo->errCode, $this->RedisCo->errMsg));
         }
     }
 

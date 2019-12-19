@@ -19,10 +19,19 @@ use Guzaba2\Kernel\Kernel;
 abstract class ConnectionMysqli extends Connection
 {
 
-    public function __construct()
+    public const SUPPORTED_OPTIONS = [
+        'host',
+        'user',
+        'password',
+        'database',
+        'port',
+        'socket',
+    ];
+
+    public function __construct(array $options)
     {
         parent::__construct();
-        $this->connect();
+        $this->connect($options);
     }
 
     public function prepare(string $query) : StatementInterface
@@ -31,8 +40,12 @@ abstract class ConnectionMysqli extends Connection
         return $Statement;
     }
 
-    public function connect() : void
+    private function connect(array $options) : void
     {
+        static::validate_options($options);
+
+        $this->options = $options;
+        /*
         $ret = $this->NativeConnection = new \mysqli(
             static::CONFIG_RUNTIME['host'],
             static::CONFIG_RUNTIME['user'],
@@ -40,6 +53,15 @@ abstract class ConnectionMysqli extends Connection
             static::CONFIG_RUNTIME['database'],
             static::CONFIG_RUNTIME['port'],
             static::CONFIG_RUNTIME['socket']
+        );
+        */
+        $ret = $this->NativeConnection = new \mysqli(
+            $options['host'],
+            $options['user'],
+            $options['password'],
+            $options['database'],
+            (int) $options['port'],
+            $options['socket'],
         );
 
         if (!$ret) {

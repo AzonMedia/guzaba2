@@ -10,6 +10,14 @@ interface ConnectionInterface extends ResourceInterface
 {
     public function close() : void;
 
+    /**
+     * Returns an associative array with the used connection options.
+     * @return array
+     */
+    public function get_options() : array ;
+
+    public static function get_supported_options() : array ;
+
     //public function free() : void;
 
     /*
