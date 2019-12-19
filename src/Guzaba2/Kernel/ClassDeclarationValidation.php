@@ -18,6 +18,7 @@ class ClassDeclarationValidation implements ClassDeclarationValidationInterface
 
     public const VALIDATION_METHODS = [
         'validate_config_constants',
+//        'check_source',
     ];
 
     public static function run_all_validations(): array
@@ -51,6 +52,52 @@ class ClassDeclarationValidation implements ClassDeclarationValidationInterface
                 }
             }
 
+        }
+    }
+
+    /**
+     * @throws ClassValidationException
+     */
+    public static function check_source(): void
+    {
+        $loaded_paths = Kernel::get_loaded_paths();
+        // Check for == and != operator
+        foreach ($loaded_paths as $file_path) {
+            $fp = fopen($file_path, "r");
+            $lineNumber = 1;
+            while ($line = fgets($fp)) {
+                // TODO figure out what to do with multirow comments
+                if (strpos(trim($line), '//') !== 0 && strpos($line, '==') !== false) {
+                    if (preg_match('/[^=!]==[^=]/', $line)) {
+                        throw new ClassValidationException(sprintf('Not strict equal comparison operator (==) found in %s on line %d', $file_path, $lineNumber));
+                    }
+                }
+
+                if (strpos(trim($line), '//') !== 0 && strpos($line, '!=') !== false) {
+                    if (preg_match('/!=[^=]/', $line)) {
+                        throw new ClassValidationException(sprintf('Not strict not equal comparison operator (!=) found in %s on line %d', $file_path, $lineNumber));
+                    }
+                }
+                $lineNumber++;
+            }
+            fclose($fp);
+        }
+
+        // Check for strict types
+        foreach ($loaded_paths as $file_path) {
+            $fp = fopen($file_path, "r");
+            while ($line = fgets($fp)) {
+                $lineWoSpaces = str_replace(' ', '', $line);
+                if (strpos($lineWoSpaces, 'declare(strict_types=1);') !== false) {
+                    break;
+                }
+
+                if (strpos($lineWoSpaces, 'namespace') === 0) {
+                    throw new ClassValidationException(sprintf('Missing strict types declaration in %s', $file_path));
+                }
+
+            }
+            fclose($fp);
         }
     }
 }
