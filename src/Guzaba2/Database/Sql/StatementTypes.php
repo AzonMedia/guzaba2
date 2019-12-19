@@ -216,12 +216,12 @@ abstract class StatementTypes extends Base
         $sql = trim($sql);
 
         //if the first line begins with a comment - remove it (remove all lines starting with -- )
-        if ($sql[0] == '-' && $sql[1] == '-') {
+        if ($sql[0] === '-' && $sql[1] === '-') {
             $sql = trim(substr($sql, strpos($sql, PHP_EOL)));
         }
 
         //if the first character is ( check what is the next one)
-        if ($sql[0] == '(') {
+        if ($sql[0] === '(') {
             $sql = trim(substr($sql, 1));
         }
 
@@ -254,7 +254,7 @@ abstract class StatementTypes extends Base
         $this_statement_type = self::getStatementType($sql);
         if ($this_statement_type !== NULL) {
             foreach (self::STATEMENT_TYPE_GROUP_MAP as $statement_type => $statement_group) {
-                if ($this_statement_type == $statement_type) {
+                if ($this_statement_type === $statement_type) {
                     $ret = $statement_group;
                     break;
                 }
@@ -269,13 +269,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isSelectStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_SELECT;
+        return self::getStatementType($sql) === self::STATEMENT_TYPE_SELECT;
     }
 
     /**
@@ -284,13 +281,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isInsertStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_INSERT;
+        return self::getStatementType($sql) === self::STATEMENT_TYPE_INSERT;
     }
 
     /**
@@ -300,13 +294,10 @@ abstract class StatementTypes extends Base
      * @todo fix missing const
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isReplaceStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_REPLACE;
+        return self::getStatementType($sql) === self::STATEMENT_TYPE_REPLACE;
     }
 
     /**
@@ -315,13 +306,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isUpdateStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_UPDATE;
+        return self::getStatementType($sql) === self::STATEMENT_TYPE_UPDATE;
     }
 
     /**
@@ -330,13 +318,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDeleteStatement(string $sql): bool
     {
-        return self::getStatementType($sql) == self::STATEMENT_TYPE_DELETE;
+        return self::getStatementType($sql) === self::STATEMENT_TYPE_DELETE;
     }
 
     /**
@@ -345,13 +330,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDQLStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_DQL;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_DQL;
     }
 
     /**
@@ -360,13 +342,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDMLStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_DML;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_DML;
     }
 
     /**
@@ -375,13 +354,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDDLStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_DDL;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_DDL;
     }
 
     /**
@@ -390,13 +366,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDCLStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_DCL;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_DCL;
     }
 
     /**
@@ -405,13 +378,10 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isDALStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_DAL;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_DAL;
     }
 
     /**
@@ -420,12 +390,9 @@ abstract class StatementTypes extends Base
      * @return bool
      *
      * @throws SQLParsingException
-     * @since 0.7.4
-     * @created 26.10.2018
-     * @author vesko@azonmedia.com
      */
     public static function isTCLStatement(string $sql): bool
     {
-        return self::getStatementGroup($sql) == self::STATEMENT_GROUP_TCL;
+        return self::getStatementGroup($sql) === self::STATEMENT_GROUP_TCL;
     }
 }

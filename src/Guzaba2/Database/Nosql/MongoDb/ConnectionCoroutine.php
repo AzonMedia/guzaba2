@@ -25,6 +25,7 @@ use Guzaba2\Database\Exceptions\ConnectionException;
  * Because Swoole\Corotuine\Mysql\Statement does not support binding parameters by name, but only by position this class addresses this.
  * @package Guzaba2\Database\Sql\Mysql
  */
+//DO NOT USED - not completed - this is not a coroutine class
 abstract class ConnectionCoroutine extends Connection
 {
 //    protected const CONFIG_DEFAULTS = [
@@ -67,7 +68,7 @@ abstract class ConnectionCoroutine extends Connection
 //        } else {
 //            $options = sprintf("mongodb://%s:%s/%s", self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], self::CONFIG_RUNTIME['database']);
 //        }
-        if ($options['username'] != '' && $options['password'] !== '') {
+        if ($options['username'] !== '' && $options['password'] !== '') {
             $options = sprintf("mongodb://%s:%s@%s:%s/%s", $options['username'], $options['password'], $options['host'], $options['port'], $options['database']);
         } else {
             $options = sprintf("mongodb://%s:%s/%s", $options['host'], $options['port'], $options['database']);

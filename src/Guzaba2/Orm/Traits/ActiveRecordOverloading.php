@@ -324,7 +324,7 @@ trait ActiveRecordOverloading
     private function assign_property_value($property, $value) : void
     {
         $property_type = static::get_property_type($property, $is_nullable);
-        if ($property_type != gettype($value)) {
+        if ($property_type !== gettype($value)) {
             if ($is_nullable && is_null($value)) {
                 //if there is type mismatch it will be still OK if the value is NULL and the column is nullable
                 $this->record_data[$property] = $value;
@@ -333,22 +333,22 @@ trait ActiveRecordOverloading
                 $this->record_data[$property] = $this->_cast($property_type, $value);
             //also we should always allow INT to be set on FLOAT column but not the reverse - a FLOAT to be set to an INT column
                 //$value is the value being set, $property_type is the type of the column
-            } elseif (gettype($value)=='double' && $property_type=='integer') {
+            } elseif (gettype($value) === 'double' && $property_type === 'integer') {
                 //this is allowed
                 $this->record_data[$property] = $this->_cast($property_type, $value);
-            //} else if (gettype($value)=='integer' && $property_type=='double') {//no need to explicitly have a case for this as it will go into the section below
+            //} else if (gettype($value) === 'integer' && $property_type === 'double') {//no need to explicitly have a case for this as it will go into the section below
             } else {
                 //casting is needed
                 if (self::CAST_PROPERTIES_ON_ASSIGNMENT) {
 
                     //check if a nonnumeric string is assigned to an integer or double
-                    if (gettype($value)=='string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
+                    if (gettype($value) === 'string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value !== '') { //empty string is treated like 0
                         //we should allow $500 and convert it to 500
-                        if ($value[0]=='$') {
+                        if ($value[0] === '$') {
                             $value = substr($value, 1);
                         }
                         //also 1,200.50 should be converted to 1200.50
-                        if (strpos($value, ',')!==FALSE) {
+                        if (strpos($value, ',') !== FALSE) {
                             $value = str_replace(',', '', $value);
                         }
 
@@ -356,7 +356,7 @@ trait ActiveRecordOverloading
                     }
 
                     //after the transformations above lets check again...
-                    if (gettype($value)=='string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value!='') { //empty string is treated like 0
+                    if (gettype($value) === 'string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value !== '') { //empty string is treated like 0
                         $message = sprintf(t::_('Trying to assign a string nonnumeric value "%s" to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $property_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
@@ -365,7 +365,7 @@ trait ActiveRecordOverloading
                             throw new RunTimeException($message);
                         }
                         //we cant allow a string that parses to float (like "1.5") to be cast and assigned to an int
-                    } elseif (gettype($value)=='string' && in_array($property_type, ['integer','int']) && strpos($value, '.')!==FALSE && $value!='') { //empty string is treated like 0
+                    } elseif (gettype($value) === 'string' && in_array($property_type, ['integer','int']) && strpos($value, '.') !== FALSE && $value !== '') { //empty string is treated like 0
                         $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $property_type);
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
@@ -373,7 +373,7 @@ trait ActiveRecordOverloading
                             //this will be thrown even if THROW_EXCEPTION_ON_PROPERTY_CAST=FALSE because it is a major issue
                             throw new RunTimeException($message);
                         }
-                    } elseif (!is_array($value) && $property_type=='array') {
+                    } elseif (!is_array($value) && $property_type === 'array') {
                         $message = sprintf(t::_('Trying to assign a non array type "%s" to an array property "%s" of an instance of class "%s".'), gettype($value), $property, get_class($this));
                         if (self::ADD_VALIDATION_ERROR_ON_PROPERTY_CAST) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
@@ -454,25 +454,25 @@ trait ActiveRecordOverloading
         $columns_data = static::get_columns_data();
 
         foreach ($data_arr as $field_name=>$field_value) {
-            if ($field_value==='') {
+            if ($field_value === '') {
                 // there is no value - lets see what it has to be
                 // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
                 // look for the field
                 //for ($aa = 0; $aa < count($columns_data); $aa++) {
                 foreach ($columns_data as $column_name => $columns_datum) {
-                    if ($columns_datum['name'] == $field_name) {
-                        if ($columns_datum['php_type'] == 'string') {
+                    if ($columns_datum['name'] === $field_name) {
+                        if ($columns_datum['php_type'] === 'string') {
                             // this is OK - a string can be empty
-                        } elseif ($columns_datum['php_type'] == 'int' || $columns_datum['php_type'] == 'float') {
+                        } elseif ($columns_datum['php_type'] === 'int' || $columns_datum['php_type'] === 'float' || $columns_datum['php_type'] === 'double') {
                             // check the default value - the default value may be set to NULL in the table cache but if the column is not NULL-able this means that there is no default value
                             // in this case we need to set it to 0
                             // even if the column is NULLable but threre is default value we must use the default value
 
-                            if ($columns_datum['default_value']!==null) {
+                            if ($columns_datum['default_value'] !== NULL) {
                                 //we have a default value and we must use it
                                 $data_arr[$field_name] = $columns_datum['default_value'];
                             } elseif ($columns_datum['nullable']) {
-                                $data_arr[$field_name] = null;
+                                $data_arr[$field_name] = NULL;
                             } else {
                                 $data_arr[$field_name] = 0;
                             }
@@ -482,18 +482,18 @@ trait ActiveRecordOverloading
                         break;// we found our column
                     }
                 }
-            } elseif ($field_value===NULL) {
+            } elseif ($field_value === NULL) {
                 // we need to check does the column support this type
                 // if it doesnt we need to cast it to 0 or ''
                 // look for the field
                 /*
                 for ($aa = 0; $aa < count($columns_data); $aa++) {
-                    if ($columns_data[$aa]['name'] == $field_name) {
+                    if ($columns_data[$aa]['name'] === $field_name) {
                         if (!$columns_data[$aa]['nullable']) { // the column does not support NULL but the value is null
                             // we will need to cast it
-                            if ($columns_data[$aa]['php_type'] == 'string') {
+                            if ($columns_data[$aa]['php_type'] === 'string') {
                                 $data_arr[$field_name] = '';
-                            } elseif ($columns_data[$aa]['php_type'] == 'int' || $columns_data[$aa]['php_type'] == 'float') {
+                            } elseif ($columns_data[$aa]['php_type'] === 'int' || $columns_data[$aa]['php_type'] === 'float') {
                                 $data_arr[$field_name] = 0;
                             } else {
                                 // ignore for now - let it throw an error
@@ -505,10 +505,12 @@ trait ActiveRecordOverloading
                 */
                 if (!$columns_data[$field_name]['nullable']) { // the column does not support NULL but the value is null
                     // we will need to cast it
-                    if ($columns_data[$field_name]['php_type'] == 'string') {
+                    if ($columns_data[$field_name]['php_type'] === 'string') {
                         $data_arr[$field_name] = '';
-                    } elseif ($columns_data[$field_name]['php_type'] == 'int' || $columns_data[$field_name]['php_type'] == 'float') {
+                    } elseif ($columns_data[$field_name]['php_type'] === 'int') {
                         $data_arr[$field_name] = 0;
+                    } elseif( $columns_data[$field_name]['php_type'] === 'float' || $columns_data[$field_name]['php_type'] === 'double') {
+                        $data_arr[$field_name] = 0.0;
                     } else {
                         // ignore for now - let it throw an error
                     }

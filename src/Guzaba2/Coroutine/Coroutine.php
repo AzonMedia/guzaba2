@@ -382,7 +382,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $parent_cid = 0;
         do {
             $parent_cid = self::getPcid($cid);
-        } while ($parent_cid != -1);
+        } while ($parent_cid !== -1);
         $ret = $cid;
         return $ret;
     }
