@@ -104,6 +104,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function init(?RequestInterface $Request) : void
     {
+        if (self::getPcid() > 0) {
+            throw new RunTimeException(sprintf(t::_('%s() can not be called on sub-coroutine.'), __METHOD__));
+        }
         $Context = self::getContext();//this will properly initialize the context
         //$Context->Request = $Request;
 

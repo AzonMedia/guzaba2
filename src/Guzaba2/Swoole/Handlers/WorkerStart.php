@@ -18,6 +18,14 @@ use Monolog\Handler\StreamHandler;
 class WorkerStart extends HandlerBase
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Events',
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     /**
      * Will be NULL if $enable_debug_ports = FALSE
      * @var
@@ -48,6 +56,7 @@ class WorkerStart extends HandlerBase
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
         //$this->HttpServer->set_worker_id($worker_id);
+        self::get_service('Events')->create_event($this, '_after_start');
 
         self::register_log_handler($worker_id);
 

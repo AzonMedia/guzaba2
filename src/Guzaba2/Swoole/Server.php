@@ -19,6 +19,14 @@ use Guzaba2\Translator\Translator as t;
 class Server extends \Guzaba2\Http\Server
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Events',
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     /**
      * @see https://www.swoole.co.uk/docs/modules/swoole-server/configuration
      * @see https://wiki.swoole.com/wiki/page/274.html
@@ -182,8 +190,10 @@ class Server extends \Guzaba2\Http\Server
         $this->print_server_start_messages();
 
         //just before the server is started enable the coroutine hooks (not earlier as these will be in place but we will not be in coroutine cotext yet and this will trigger an error - for example when exec() is used)
+        self::get_service('Events')->create_event($this, '_before_start');
         \Swoole\Runtime::enableCoroutine(TRUE);//we will be running everything in coroutine context and makes sense to enable all hooks
         $this->SwooleHttpServer->start();
+        //self::get_service('Events')->create_event($this, '_after_start');//no code is being executed after the server is started... the next code that is being executed is in the worker start or Start handler
     }
 
     private function print_server_start_messages() : void

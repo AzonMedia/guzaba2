@@ -18,7 +18,7 @@ use Guzaba2\Kernel\Kernel;
  * TODO - add protection from recursion
  * @package Guzaba2\Event
  */
-class Events extends Base implements EventsInterface, \Azonmedia\Di\Interfaces\CoroutineDependencyInterface
+class Events extends Base implements EventsInterface
 {
 
     private array $object_callbacks = [];

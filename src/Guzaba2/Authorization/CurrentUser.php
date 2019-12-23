@@ -13,7 +13,7 @@ use Guzaba2\Coroutine\Coroutine;
  * The current User is stored in the Coroutine Context.
  * @package Guzaba2\Authorization
  */
-class CurrentUser extends Base implements \Azonmedia\Di\Interfaces\CoroutineDependencyInterface
+class CurrentUser extends Base
 //\Azonmedia\Patterns\Interfaces\WrapperInterface
 {
 

@@ -11,6 +11,7 @@ use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Swoole\Handlers\WorkerStart;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
@@ -25,6 +26,7 @@ class Memory extends Store implements StoreInterface
         'services'      => [
             'OrmMetaStore',
             'Apm',
+            'Events',
         ]
     ];
 
@@ -74,6 +76,26 @@ class Memory extends Store implements StoreInterface
             //$this->MetaStore = self::OrmMetaStore();
             $this->MetaStore = static::get_service('OrmMetaStore');
         }
+
+        $ServerInstance = \Swoole\Server::getInstance();
+        if ($ServerInstance) {
+            //\Swoole\Timer::tick(1_000, function(){ print 'timer'; });
+            //start the timer
+            $this->register_cleanup_timer();
+        } else {
+            self::get_service('Events')->add_class_callback(WorkerStart::class, '_after_start', [$this, 'register_cleanup_timer']);
+        }
+
+    }
+
+    public function register_cleanup_timer() : void
+    {
+        //\Swoole\Timer::tick(1_000, [$this, 'cleanup'] );
+    }
+
+    public function cleanup() : void
+    {
+        //print 'cleanup';
     }
 
     /**
