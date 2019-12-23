@@ -190,7 +190,7 @@ BANNER;
         'time_cached_dql_statements'            => 0,
 
         //counter added in pdoStatement::fetchAllAsArray()
-        'time_fetching_data'					=> 0,//to measure fetchAll and similar
+        'time_fetching_data'					=> 0,//to measure fetchAll and similar - see swoole\mysql fetch_mode - if FALSE then the fetch is done as part of the execute()
 
         //counter added in pdoStatement::execute()
         'cnt_dml_statements'                    => 0,
@@ -216,6 +216,24 @@ BANNER;
         'time_nosql_read_statements'            => 0,
         'cnt_nosql_write_statements'            => 0,
         'time_nosql_write_statements'           => 0,
+
+        'cnt_api_requests'                      => 0,//curl
+        'time_api_requests'                     => 0,
+
+        'cnt_file_reads'                        => 0,
+        'time_file_reads'                       => 0,
+        'cnt_file_writes'                       => 0,
+        'time_file_writes'                      => 0,
+
+        'cnt_acquired_locks'					=> 0,
+        'time_acquired_locks'					=> 0,
+
+        'time_in_transactions'                  => 0,
+        'time_in_commits'                       => 0,
+
+        'cnt_master_transctions'                => 0,//this is also the number of commits
+        'cnt_nested_transactions'               => 0,
+
     ];
 
     private function __construct()

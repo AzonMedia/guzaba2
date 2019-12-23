@@ -198,7 +198,11 @@ class StatementCoroutine extends Statement implements StatementInterface
             $from_cache = TRUE;
         } else {
             if ($this->Connection->get_fetch_mode()) { //in fetch_mode = TRUE the data needs to be manually fetched
+                $Apm = self::get_service('Apm');
+                $exec_start_time = microtime(TRUE);
                 $ret = $this->NativeStatement->fetchAll();
+                $exec_end_time = microtime(TRUE);
+                $Apm->increment_value('time_fetching_data', $exec_end_time - $exec_start_time);
             } else { //default is fetch_mode = FALSE
                 $ret = $this->rows;
             }
