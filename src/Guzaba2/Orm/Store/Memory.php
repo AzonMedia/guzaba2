@@ -505,6 +505,19 @@ class Memory extends Store implements StoreInterface
         $this->MetaStore->set_class_meta_data($class, $class_meta);
     }
 
+    /**
+     * Currently relies on the fallback store.
+     * @param string $class
+     * @param array $index
+     * @param int $offset
+     * @param int $limit
+     * @param bool $use_like
+     * @param string|null $sort_by
+     * @param bool $sort_desc
+     * @param int|null $total_found_rows
+     * @return iterable
+     * @throws RunTimeException
+     */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
     {
 

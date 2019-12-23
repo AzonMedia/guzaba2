@@ -170,6 +170,54 @@ BANNER;
 
     private static float $init_microtime;
 
+    public const APM_DATA_STRUCTURE = [
+        'worker_id'                             => 0,
+        'coroutine_id'                          => 0,
+        'execution_start_microtime'             => 0,
+        'execution_end_microtime'               => 0,
+        'cnt_used_connections'                  => 0,
+        'time_used_connections'                 => 0,//for all connections - for how long the connection was held
+        'time_waiting_for_connection'           => 0,//waiting time to obtain connection from the Pool
+        'cnt_total_current_coroutines'          => 0,
+        'cnt_subcoroutines'                     => 0,
+        'memory_store_time'                     => 0,//time for lookups in memory store
+
+        'cnt_dql_statements'                    => 0,
+        'time_dql_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_cached_dql_statements'             => 0,
+        'time_cached_dql_statements'            => 0,
+
+        //counter added in pdoStatement::fetchAllAsArray()
+        'time_fetching_data'					=> 0,//to measure fetchAll and similar
+
+        //counter added in pdoStatement::execute()
+        'cnt_dml_statements'                    => 0,
+        'time_dml_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_ddl_statements'                    => 0,
+        'time_ddl_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_dcl_statements'                    => 0,
+        'time_dcl_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_dal_statements'                    => 0,
+        'time_dal_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_tcl_statements'                    => 0,//these usually are not issued directly but by using PDO's methods... so the PDO::beginTransction and PDO::commit are wrapped to add to this number
+        'time_tcl_statements'                   => 0,
+
+        'cnt_nosql_read_statements'             => 0,
+        'time_nosql_read_statements'            => 0,
+        'cnt_nosql_write_statements'            => 0,
+        'time_nosql_write_statements'           => 0,
+    ];
+
     private function __construct()
     {
     }

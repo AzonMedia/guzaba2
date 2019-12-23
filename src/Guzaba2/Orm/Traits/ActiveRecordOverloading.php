@@ -50,7 +50,7 @@ trait ActiveRecordOverloading
         if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];
         } else {
-            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property/property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
@@ -106,7 +106,7 @@ trait ActiveRecordOverloading
         }
 
         if (!array_key_exists($property, $this->record_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property/property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
         $old_value = $this->record_data[$property];

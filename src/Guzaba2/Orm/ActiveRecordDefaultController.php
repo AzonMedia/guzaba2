@@ -44,28 +44,22 @@ class ActiveRecordDefaultController extends ActiveRecordController
     //public function _init(?string $uuid = NULL, ?string $class_name = NULL) : ?ResponseInterface
     public function _init(?string $uuid = NULL) : ?ResponseInterface
     {
-
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
 
         if (!$uuid) {
-            if ($this->get_request()->getMethodConstant() === Method::HTTP_POST) {
-                //means a new record is to be created
-                if (!empty($route_meta_data['orm_class'])) {
-                    //$this->ActiveRecord = new $route_meta_data['orm_class'](0);
-                    $this->ActiveRecord = new $route_meta_data['orm_class']();
-//                } elseif ($class_name) { // no need to support this as there is direct access to the permissions thorugh the /permission route
-//                    //$this->ActiveRecord = new $class_name();
-//                    //trick it so it doesnt access the database
-//                    $this->ActiveRecord = new $class_name($this->get_request());
-                } else {
-                    $struct = [];
-                    $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
-                    $Response = parent::get_structured_badrequest_response($struct);
-                    $Response = $Response->withHeader('data-origin','orm-specific');
-                    return $Response;
-                }
 
-            } elseif ($this->get_request()->getMethodConstant() !== Method::HTTP_OPTIONS) {
+            if (empty($route_meta_data['orm_class'])) {
+                $struct = [];
+                //$struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
+                $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class.'), $this->get_request()->getUri()->getPath());
+                $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
+                return $Response;
+            }
+
+            if ( in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ] , TRUE)  ) {
+                $this->ActiveRecord = new $route_meta_data['orm_class']();
+            } else {
                 //manipulation of an existing record is requested but no UUID is provided
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No UUID provided.'));
@@ -357,6 +351,14 @@ class ActiveRecordDefaultController extends ActiveRecordController
         }
         $struct += self::form_object_struct($this->ActiveRecord);
         $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    //TODO implement pagination
+    public function list(int $offset = 0, int $limit = 0) : ResponseInterface
+    {
+        $data = $this->ActiveRecord::get_data_by([]);
+        $Response = parent::get_structured_ok_response($data);
         return $Response;
     }
 

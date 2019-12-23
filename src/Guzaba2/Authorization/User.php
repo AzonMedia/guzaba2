@@ -20,7 +20,7 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
-        'route'                     => '/user',
+        'route'                     => '/users',
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,

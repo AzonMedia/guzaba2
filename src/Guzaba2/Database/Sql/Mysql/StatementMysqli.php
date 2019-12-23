@@ -37,7 +37,7 @@ class StatementMysqli extends Statement implements StatementInterface
         if (count($position_parameters)) {
             $this->NativeStatement->bind_param(self::get_types_for_binding($position_parameters), ...$position_parameters);
         }
-
+        
         $ret = $this->NativeStatement->execute();
         if ($ret === FALSE) {
             $this->handle_error();//will throw exception

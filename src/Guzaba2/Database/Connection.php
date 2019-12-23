@@ -16,7 +16,8 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
-            'ConnectionFactory'
+            'ConnectionFactory',
+            'Apm',
         ]
     ];
 

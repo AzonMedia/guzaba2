@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Database\Sql\Mysql;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Exceptions\ParameterException;
 use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Exceptions\DeadlockException;
@@ -40,26 +41,34 @@ class StatementCoroutine extends Statement implements StatementInterface
         $this->disable_sql_cache_flag = $disable_sql_cache;
         $start_time = microtime(true);
 
+
         $sql = $this->get_query();
+
+        $statement_group_str = $this->get_statement_group_as_string();
+        if ($statement_group_str === NULL) {
+            throw new RunTimeException(sprintf(t::_('The statement for query %s can not be determined of which type is (DQL, DML etc...).'), $sql));
+        }
 
         if (self::uses_service('QueryCache')) {
             /**
              * @var QueryCache
              */
             $QueryCache = self::get_service('QueryCache');
-            if ($this->isDQLStatement()) {
+            if ($this->is_dql_statement()) {
+                $exec_start_time = microtime(TRUE);
                 $cached_query_data = $QueryCache->get_cached_data($sql, $this->params);
+                $exec_end_time = microtime(TRUE);
                 if ($cached_query_data) {
                     $this->cached_query_data = $cached_query_data;
                     $this->is_executed_flag = true;
-                    //$end_time = microtime(true);
-                    //self::execution_profile()->increment_value('cnt_cached_dql_statements', 1);
-                    ///self::execution_profile()->increment_value('time_cached_dql_statements', $end_time - $start_time);
+                    $Apm = self::get_service('Apm');
+                    $Apm->increment_value('cnt_cached_dql_statements', 1);
+                    $Apm->increment_value('time_cached_dql_statements', $exec_end_time - $exec_start_time);
                     return $this;
                 } else {
                     //not found in the cache => proceed
                 }
-            } elseif ($this->isDMLStatement()) {
+            } elseif ($this->is_dml_statement()) {
 
                 //self::$query_cache->update_tables_modification_microtime($sql);
                 //this is to be updated after the query is actually executed
@@ -80,12 +89,19 @@ class StatementCoroutine extends Statement implements StatementInterface
 //                    self::$query_cache->update_tables_modification_microtime($sql, self::UPDATE_QUERY_CACHE_LOCK_TIMEOUT);
 //                }
                 $QueryCache->update_tables_modification_microtime($sql, self::CONFIG_RUNTIME['update_query_cache_lock_timeout']);
+            } else {
+                //ignore
             }
         }
 
         $position_parameters = $this->convert_to_position_parameters($this->params);
 
+        $exec_start_time = microtime(TRUE);
         $ret = $this->NativeStatement->execute($position_parameters);
+        $exec_end_time = microtime(TRUE);
+        $Apm = self::get_service('Apm');
+        $Apm->increment_value('cnt_'.strtolower($statement_group_str).'_statements', 1);
+        $Apm->increment_value('time_'.strtolower($statement_group_str).'_statements', $exec_end_time - $exec_start_time);
 
 //        if ($current_transaction || $current_db_transaction) {
 //            $this->disable_sql_cache = TRUE;
@@ -94,7 +110,7 @@ class StatementCoroutine extends Statement implements StatementInterface
 
         if ( self::uses_service('QueryCache') && !$this->is_sql_cache_disabled() ) {
             $QueryCache = self::get_service('QueryCache');
-            if ($this->isDMLStatement()) {
+            if ($this->is_dml_statement()) {
 //                $current_transaction = framework\transactions\classes\transactionManager::getCurrentTransaction(framework\database\classes\transaction2::class);
 //
 //                if ($current_transaction && self::INVALIDATE_SELECT_CACHE_ON_COMMIT) {

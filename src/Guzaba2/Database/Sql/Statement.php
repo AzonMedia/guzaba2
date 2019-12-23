@@ -17,7 +17,8 @@ abstract class Statement extends Base implements StatementInterface
         'update_query_cache_lock_timeout'       => 120,//in seconds
 
         'services'      => [
-            'QueryCache'//if set means enable caching
+            'QueryCache',//if set means enable caching
+            'Apm',
         ],
     ];
 
@@ -76,10 +77,10 @@ abstract class Statement extends Base implements StatementInterface
      * Returns NULL if the statement type is not recognized.
      * @return int|NULL
      */
-    public function getStatementType() : ?int
+    public function get_statement_type() : ?int
     {
         $sql = $this->get_query();
-        return StatementTypes::getStatementType($sql);
+        return StatementTypes::get_statement_type($sql);
     }
 
     /**
@@ -88,119 +89,134 @@ abstract class Statement extends Base implements StatementInterface
      * Returns NULL is the statement type or group are not recognized.
      * @return int|NULL
      */
-    public function getStatementGroup() : ?int
+    public function get_statement_group() : ?int
     {
         $sql = $this->get_query();
-        return StatementTypes::getStatementGroup($sql);
+        return StatementTypes::get_statement_group($sql);
+    }
+
+
+    /**
+     * Returns the statement group type as string ('DQL','DML')
+     * @return string|null
+     */
+    public function get_statement_group_as_string() : ?string
+    {
+        $ret = NULL;
+        $statement_group_type = $this->get_statement_group();
+        if ($statement_group_type) {
+            $ret = StatementTypes::STATEMENT_GROUP_MAP[$statement_group_type];
+        }
+        return $ret;
     }
 
     /**
      * Returns whether this is a Select statement
      * @return bool
      */
-    public function isSelectStatement() : bool
+    public function is_select_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isSelectStatement($sql);
+        return StatementTypes::is_select_statement($sql);
     }
 
     /**
      * Returns whether this is a Insert statement
      * @return bool
      */
-    public function isInsertStatement() : bool
+    public function is_insert_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isInsertStatement($sql);
+        return StatementTypes::is_insert_statement($sql);
     }
 
     /**
      * Returns whether this is a Replace statement
      * @return bool
      */
-    public function isReplaceStatement() : bool
+    public function is_replace_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isReplaceStatement($sql);
+        return StatementTypes::is_replace_statement($sql);
     }
 
     /**
      * Returns whether this is a Update statement
      * @return bool
      */
-    public function isUpdateStatement() : bool
+    public function is_update_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isUpdateStatement($sql);
+        return StatementTypes::is_update_statement($sql);
     }
 
     /**
      * Returns whether this is a Delete statement
      * @return bool
      */
-    public function isDeleteStatement() : bool
+    public function is_delete_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDeleteStatement($sql);
+        return StatementTypes::is_delete_statement($sql);
     }
 
     /**
      * Returns whether this is a DQL statement
      * @return bool
      */
-    public function isDQLStatement() : bool
+    public function is_dql_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDQLStatement($sql);
+        return StatementTypes::is_dql_statement($sql);
     }
 
     /**
      * Returns whether this is a DML statement
      * @return bool
      */
-    public function isDMLStatement() : bool
+    public function is_dml_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDMLStatement($sql);
+        return StatementTypes::is_dml_statement($sql);
     }
 
     /**
      * Returns whether this is a DDL statement
      * @return bool
      */
-    public function isDDLStatement() : bool
+    public function is_ddl_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDDLStatement($sql);
+        return StatementTypes::is_ddl_statement($sql);
     }
 
     /**
      * Returns whether this is a DCL statement
      * @return bool
      */
-    public function isDCLStatement() : bool
+    public function is_dcl_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDCLStatement($sql);
+        return StatementTypes::is_dcl_statement($sql);
     }
 
     /**
      * Returns whether this is a DAL statement
      * @return bool
      */
-    public function isDALStatement() : bool
+    public function is_dal_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isDALStatement($sql);
+        return StatementTypes::is_dal_statement($sql);
     }
 
     /**
      * Returns whether this is a TCL statement
      * @return bool
      */
-    public function isTCLStatement() : bool
+    public function is_tcl_statement() : bool
     {
         $sql = $this->get_query();
-        return StatementTypes::isTCLStatement($sql);
+        return StatementTypes::is_tcl_statement($sql);
     }
 }
