@@ -21,9 +21,10 @@ use Psr\Log\LogLevel;
 class Memory extends Store implements StoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
-        'max_rows'                      => 100000,
-        'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
-        'cleanup_percentage_records'    => 20,//the percentage of records to be removed
+        'max_rows'                      => 1,
+        'cleanup_at_percentage_usage'   => 95, //when the cleanup should be triggered
+        'cleanup_percentage_records'    => 20, //the percentage of records to be removed
+        'cleanup_expiration_time'       => 300, // 5 minutes in seconds
         'services'      => [
             'OrmMetaStore',
             'Apm',
@@ -170,7 +171,6 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
     {
         //the provided index is array
         //check is the provided array matching the primary index
-
         if ($primary_index = $class::get_index_from_data($index)) {
             
             $lookup_index = self::form_lookup_index($primary_index);
@@ -186,11 +186,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                     $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                     $this->hits++;
                     $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                    $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                     Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                     return $pointer;
                 }
-            } else {
-                $this->misses++;
             }
             // TODO UUID
         } elseif ($uuid = $class::get_uuid_from_data($index)) {
@@ -214,13 +213,12 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                         $this->hits++;
+                        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                         $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $pointer;
                     }
                 }
-            } else {
-                $this->misses++;
             }
         } elseif (array_key_exists($class, $this->data)) {
             //do a search in the available memory objects....
@@ -246,6 +244,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                             }
                             $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                             $this->hits++;
+                            $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                             $pointer =& $this->data[$class][$lookup_index][$last_update_time];
                             Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
                             return $pointer;
@@ -255,9 +254,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             }
 
             $time_end_lookup = (double) microtime(TRUE);
-            $memory_looukp_time = $time_end_lookup - $time_start_lookup;
+            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
 
-            if (self::has_service('Apm') && abs($memory_looukp_time) > Kernel::MICROTIME_EPS )  {
+            if (self::has_service('Apm') && abs($memory_lookup_time) > Kernel::MICROTIME_EPS )  {
                 $Apm = self::get_service('Apm');
                 $Apm->increment_value('memory_store_time', $memory_time);
             }
@@ -267,6 +266,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             //proceed to the fallback store
         }
 
+        $this->misses++;
         $pointer =& $this->FallbackStore->get_data_pointer($class, $index);
 
         $primary_index = $class::get_index_from_data($pointer['data']);//the primary index has to be available here
@@ -280,6 +280,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
         }
         $last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
         $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+        $this->total_count++;
 
         $uuid = $pointer['meta']['meta_object_uuid'];
         $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
@@ -292,6 +293,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
         }
         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
         //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
         foreach ($this->data[$class][$lookup_index] as $previous_update_time=>$data) {
             if ($data['refcount'] === 0) {
@@ -329,7 +331,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
     public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
     {
         // called in so the MetaStore contains the correct data
-        $this->get_data_pointer($class, $primary_index);
+        //$this->get_data_pointer($class, $primary_index);
         $lookup_index = self::form_lookup_index($primary_index);
         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
         if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
@@ -537,11 +539,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             $total_found_rows = count($ret);
 
             $time_end_lookup = (double) microtime(TRUE);
-            $memory_looukp_time = $time_end_lookup - $time_start_lookup;
+            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
 
-            if (self::has_service('Apm') && abs($memory_looukp_time) > Kernel::MICROTIME_EPS )  {
+            if (self::has_service('Apm') && abs($memory_lookup_time) > Kernel::MICROTIME_EPS )  {
                 $Apm = self::get_service('Apm');
-                $Apm->increment_value('memory_store_time', $memory_looukp_time);
+                $Apm->increment_value('memory_store_time', $memory_lookup_time);
             }
 
         } else {
@@ -593,11 +595,15 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
 
     public function get_hits() : int
     {
+        // !!!!!!FIXME!!!!!! remove start timer
+        $this->start_cleanup_timer();
         return $this->hits;
     }
 
     public function get_misses() : int
     {
+        // !!!!!!FIXME!!!!!! - remove start timer
+        $this->start_cleanup_timer();
         return $this->misses;
     }
 
@@ -634,15 +640,27 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
     {
         $this->clear_cache();
         $this->reset_stats();
-        //$this->start_cleanup_timer();
+        $this->start_cleanup_timer();
     }
 
     private function start_cleanup_timer() : void
     {
         if (null === self::$timer_id || (!\Swoole\Timer::exists(self::$timer_id))) {
             $cleanup = function () {
+                Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
                 if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
                     // cleanup
+                    foreach ($this->data as $class => $class_data) {
+                        foreach ($class_data as $object => $object_data) {
+                            foreach ($object_data as $last_update_time => $data) {
+                                $time = (double) microtime(TRUE);
+                                if ($data['refcount'] == 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
+                                    // !!!!!!!FIXME!!!!!
+                                    unset($this->data[$class][$object]);
+                                }
+                            }
+                        }
+                    }
                 }
             };
 
