@@ -72,7 +72,7 @@ class OrmStoreInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
                     break;
                 case 'get ormstore hits percentage' :
-                    $ret .= sprintf(t::_('%s (%s): %s%%'), $class_name, $command, $command_ret);
+                    $ret .= sprintf(t::_('%s (%s): %.2f%%'), $class_name, $command, (double) $command_ret);
                     break;
                 case 'get ormstore misses' :
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
