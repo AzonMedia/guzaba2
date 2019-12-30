@@ -192,9 +192,9 @@ class Memory extends Store implements StoreInterface
                         $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                     }
                     $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-                    $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                    $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                     Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
-                    return $pointer;
+                    return $_pointer;
                 }
             }
             // TODO UUID
@@ -218,9 +218,9 @@ class Memory extends Store implements StoreInterface
                             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-                        $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                        $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
-                        return $pointer;
+                        return $_pointer;
                    }
                 }
            }
@@ -247,9 +247,9 @@ class Memory extends Store implements StoreInterface
                                 $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                             }
                             $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-                            $pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                            $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                             Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
-                            return $pointer;
+                            return $_pointer;
                         }
                     }
                 }
@@ -268,26 +268,26 @@ class Memory extends Store implements StoreInterface
             //proceed to the fallback store
         }
 
-        $pointer =& $this->FallbackStore->get_data_pointer($class, $index);
+        $_pointer =& $this->FallbackStore->get_data_pointer($class, $index);
 
-        $primary_index = $class::get_index_from_data($pointer['data']);//the primary index has to be available here
+        $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
         $lookup_index = self::form_lookup_index($primary_index);
         if (!$primary_index) {
             throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
         }
 
-        if (!isset($pointer['meta']['meta_object_last_update_microtime'])) {
+        if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
             throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
         }
-        $last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+        $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
+        $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
 
-        $uuid = $pointer['meta']['meta_object_uuid'];
+        $uuid = $_pointer['meta']['meta_object_uuid'];
         $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
 
         //there can be other versions for the same class & lookup_index
         //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
-        $this->update_meta_data($class, $primary_index, $pointer['meta']);
+        $this->update_meta_data($class, $primary_index, $_pointer['meta']);
 
         if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
@@ -518,7 +518,7 @@ class Memory extends Store implements StoreInterface
      * @return iterable
      * @throws RunTimeException
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$_total_found_rows = NULL) : iterable
     {
 
         $ret = [];
@@ -548,7 +548,7 @@ class Memory extends Store implements StoreInterface
                 }
             }
 
-            $total_found_rows = count($ret);
+            $_total_found_rows = count($ret);
 
             $time_end_lookup = (double) microtime(TRUE);
             $memory_looukp_time = $time_end_lookup - $time_start_lookup;
@@ -559,7 +559,7 @@ class Memory extends Store implements StoreInterface
             }
 
         } else {
-            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
+            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $_total_found_rows);
 //            foreach ($ret as $row) {
 //                $primary_index = $class::get_index_from_data($row);
 //                $lookup_index = self::form_lookup_index($primary_index);

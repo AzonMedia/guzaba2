@@ -1178,13 +1178,6 @@ BANNER;
 
             //TODO - he below is a very primitive check - needs to be improved and use tokenizer
             if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== FALSE) {
-
-//                if ($class_name === 'GuzabaPlatform\Platform\Application\MysqlConnection') {
-//                    print '==================================';
-//                    print file_get_contents(SourceStream::PROTOCOL.'://'.$class_path);
-//                    print '==================================';
-//                }
-
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
             } else {
@@ -1192,6 +1185,7 @@ BANNER;
             }
         } catch (\Throwable $exception) {
             //print '==================='.PHP_EOL;
+
             print 'ERROR IN CLASS GENERATION'.PHP_EOL;
             print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
             //print '==================='.PHP_EOL;

@@ -458,7 +458,6 @@ trait ActiveRecordOverloading
                 // there is no value - lets see what it has to be
                 // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
                 // look for the field
-                //for ($aa = 0; $aa < count($columns_data); $aa++) {
                 foreach ($columns_data as $column_name => $columns_datum) {
                     if ($columns_datum['name'] === $field_name) {
                         if ($columns_datum['php_type'] === 'string') {
@@ -486,23 +485,6 @@ trait ActiveRecordOverloading
                 // we need to check does the column support this type
                 // if it doesnt we need to cast it to 0 or ''
                 // look for the field
-                /*
-                for ($aa = 0; $aa < count($columns_data); $aa++) {
-                    if ($columns_data[$aa]['name'] === $field_name) {
-                        if (!$columns_data[$aa]['nullable']) { // the column does not support NULL but the value is null
-                            // we will need to cast it
-                            if ($columns_data[$aa]['php_type'] === 'string') {
-                                $data_arr[$field_name] = '';
-                            } elseif ($columns_data[$aa]['php_type'] === 'int' || $columns_data[$aa]['php_type'] === 'float') {
-                                $data_arr[$field_name] = 0;
-                            } else {
-                                // ignore for now - let it throw an error
-                            }
-                        }
-                        break;// we found our column
-                    }
-                }
-                */
                 if (!$columns_data[$field_name]['nullable']) { // the column does not support NULL but the value is null
                     // we will need to cast it
                     if ($columns_data[$field_name]['php_type'] === 'string') {
