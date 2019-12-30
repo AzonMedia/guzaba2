@@ -51,7 +51,7 @@ abstract class ConnectionMysqli extends Connection
             static::CONFIG_RUNTIME['user'],
             static::CONFIG_RUNTIME['password'],
             static::CONFIG_RUNTIME['database'],
-            static::CONFIG_RUNTIME['port'],
+            (int) static::CONFIG_RUNTIME['port'],
             static::CONFIG_RUNTIME['socket']
         );
         */
