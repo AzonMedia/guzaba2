@@ -22,7 +22,7 @@ use Psr\Log\LogLevel;
 class Memory extends Store implements StoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
-        'max_rows'                      => 10000,
+        'max_rows'                      => 100000,
         'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
         'cleanup_percentage_records'    => 20,//the percentage of records to be removed
         'cleanup_expiration_time'       => 300,// 5 minutes in seconds
