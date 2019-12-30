@@ -1115,9 +1115,11 @@ BANNER;
             if (strpos($class_name, $namespace_base) === 0) {
 
                 if ($namespace_base === self::FRAMEWORK_NAME) {
-                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', $class_name).'.php');
+                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', $class_name).'.php';
+                    $class_path = realpath($formed_class_path);
                 } else {
-                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php');
+                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php';
+                    $class_path = realpath($formed_class_path);
                 }
 
                 if ($class_path && is_readable($class_path)) {
@@ -1144,9 +1146,11 @@ BANNER;
 
                 } else {
                     //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                    $message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
+                    //$message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
+                    //$message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $formed_class_path);
                     //throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-                    self::exception_handler(new \Guzaba2\Kernel\Exceptions\AutoloadException($message));
+                    //self::exception_handler(new \Guzaba2\Kernel\Exceptions\AutoloadException($message));
+                    //there are paths that are served by the Composer autoloader and are still part of the GuzabaPlatform... do not throw an exception here... leave the next autoloader
                 }
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
@@ -1186,8 +1190,8 @@ BANNER;
         } catch (\Throwable $exception) {
             //print '==================='.PHP_EOL;
 
-            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
-            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
+            self::printk('ERROR IN CLASS GENERATION'.PHP_EOL);
+            self::printk($exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString().PHP_EOL);
             //print '==================='.PHP_EOL;
         }
 

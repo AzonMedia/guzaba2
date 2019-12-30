@@ -6,6 +6,7 @@ namespace Guzaba2\Mvc;
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Event\Event;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Mvc\Interfaces\AfterControllerMethodHookInterface;
 use Guzaba2\Mvc\Traits\ResponseFactories;
