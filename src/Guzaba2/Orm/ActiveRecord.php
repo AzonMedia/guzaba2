@@ -319,7 +319,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return array_merge( $this->get_property_data(), $this->get_meta_data() );
     }
 
-    protected function read(/* int|string|array */ $index) : void
+    public function read(/* int|string|array */ $index) : void
     {
 
 

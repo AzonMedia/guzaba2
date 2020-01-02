@@ -53,11 +53,13 @@ class Permission extends ActiveRecord implements PermissionInterface
         if (!class_exists($this->class_name)) {
             throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
         }
-        if (!method_exists($this->class_name, $this->method_name)) {
+        if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create' ) {
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
         }
-        if ( ! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic() ) {
-            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The method %s::%s is not public. The methods to which permissions are granted/associated must be public.'), $this->class_name, $this->action_name));
+        if ( $this->action_name !== 'create') {
+            if (! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic() ) {
+                throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The method %s::%s is not public. The methods to which permissions are granted/associated must be public.'), $this->class_name, $this->action_name));
+            }
         }
 
         //TODO - may add locking here that is released in after_save

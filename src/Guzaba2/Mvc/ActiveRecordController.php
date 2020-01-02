@@ -52,7 +52,8 @@ implements ControllerInterface
     /**
      * @var RequestInterface
      */
-    private ?RequestInterface $Request = NULL;
+    // private ?RequestInterface $Request = NULL;
+    private $Request = NULL;
 
     private ?ResponseInterface $Response = NULL;
 
@@ -64,7 +65,7 @@ implements ControllerInterface
      * @param RequestInterface $Request
      */
     //public function __construct(RequestInterface $Request)
-    public function __construct(?RequestInterface $Request = NULL)
+    public function __construct($Request = NULL)
     {
         $this->Request = $Request;
 //        if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated

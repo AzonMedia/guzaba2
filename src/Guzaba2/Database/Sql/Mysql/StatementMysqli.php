@@ -29,6 +29,13 @@ class StatementMysqli extends Statement implements StatementInterface
             $this->params = $parameters;
         }
 
+        $sql = $this->get_query();
+
+        $statement_group_str = $this->get_statement_group_as_string();
+        if ($statement_group_str === NULL) {
+            throw new RunTimeException(sprintf(t::_('The statement for query %s can not be determined of which type is (DQL, DML etc...).'), $sql));
+        }
+
         $position_parameters = $this->convert_to_position_parameters($this->params);
 
         //mysqli does not support arguments provided to execute()
@@ -37,11 +44,18 @@ class StatementMysqli extends Statement implements StatementInterface
         if (count($position_parameters)) {
             $this->NativeStatement->bind_param(self::get_types_for_binding($position_parameters), ...$position_parameters);
         }
-        
+
+        $exec_start_time = microtime(TRUE);
+
         $ret = $this->NativeStatement->execute();
         if ($ret === FALSE) {
             $this->handle_error();//will throw exception
         }
+
+        $exec_end_time = microtime(TRUE);
+        $Apm = self::get_service('Apm');
+        $Apm->increment_value('cnt_'.strtolower($statement_group_str).'_statements', 1);
+        $Apm->increment_value('time_'.strtolower($statement_group_str).'_statements', $exec_end_time - $exec_start_time);
 
         return $this;
     }

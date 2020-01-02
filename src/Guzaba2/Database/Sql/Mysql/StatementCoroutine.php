@@ -39,8 +39,6 @@ class StatementCoroutine extends Statement implements StatementInterface
             $this->params = $parameters;
         }
         $this->disable_sql_cache_flag = $disable_sql_cache;
-        $start_time = microtime(true);
-
 
         $sql = $this->get_query();
 

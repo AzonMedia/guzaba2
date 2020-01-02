@@ -267,7 +267,18 @@ abstract class ConnectionCoroutine extends Connection
             throw new \BadMethodCallException(sprintf(t::_('Method %s, dooesn\'t exist in class %s'), $name, get_class($this->RedisCo)));
         }
 
-        return call_user_func_array([$this->RedisCo, $name], $arguments);
+        $statement_str = StatementTypes::get_statement_type($name);
+
+        $exec_start_time = microtime(TRUE);
+
+        $ret = call_user_func_array([$this->RedisCo, $name], $arguments);
+
+        $exec_end_time = microtime(TRUE);
+        $Apm = self::get_service('Apm');
+        $Apm->increment_value('cnt_nosql_'.strtolower($statement_str).'_statements', 1);
+        $Apm->increment_value('time_nosql_'.strtolower($statement_str).'_statements', $exec_end_time - $exec_start_time);
+
+        return $ret;
     }
 
     /**
