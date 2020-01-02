@@ -28,7 +28,7 @@ abstract class BasicCommand implements CommandInterface
 
     public static function handles_commands() : string
     {
-        $ret = sprintf(t::_('%s avilable commands:%s'), static::get_class_name(), PHP_EOL);
+        $ret = sprintf(t::_('%s available commands:%s'), static::get_class_name(), PHP_EOL);
 
         foreach (static::$commands as $k => $v) {
             $ret = sprintf(t::_('%s%s%s'), $ret, $k, PHP_EOL);
