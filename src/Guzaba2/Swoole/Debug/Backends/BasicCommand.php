@@ -37,11 +37,11 @@ abstract class BasicCommand implements CommandInterface
         return $ret;
     }
 
-    public static function help(?string $command = null) : string
+    public static function help(?string $command = NULL) : string
     {
         $class_name = static::get_class_name();
 
-        if (null === $command) {
+        if (NULL === $command) {
             return sprintf(t::_('%s - shows details about %s - type help %s to see available commands'), $class_name, $class_name, strtolower($class_name));
         } else if (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();

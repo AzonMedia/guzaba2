@@ -67,7 +67,8 @@ class WorkerStart extends HandlerBase
 
         //if (Debugger::is_enabled()) {
         if ($this->enable_debug_ports) {
-            $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic();
+            //pass all paths there classes implementing CommandInterface exist
+            $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic( Debugger::get_debug_command_classes() );
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
 
             $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $worker_id, $Debugger, $this->base_debug_port);

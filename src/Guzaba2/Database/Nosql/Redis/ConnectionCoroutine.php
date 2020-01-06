@@ -267,6 +267,7 @@ abstract class ConnectionCoroutine extends Connection
             throw new \BadMethodCallException(sprintf(t::_('Method %s, dooesn\'t exist in class %s'), $name, get_class($this->RedisCo)));
         }
 
+
         $statement_str = StatementTypes::get_statement_type($name);
 
         $exec_start_time = microtime(TRUE);
@@ -279,6 +280,7 @@ abstract class ConnectionCoroutine extends Connection
         $Apm->increment_value('time_nosql_'.strtolower($statement_str).'_statements', $exec_end_time - $exec_start_time);
 
         return $ret;
+
     }
 
     /**

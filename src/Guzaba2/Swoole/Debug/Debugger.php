@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug;
 
+use Azonmedia\Debug\Interfaces\CommandInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Server;
 use Guzaba2\Translator\Translator as t;
@@ -52,14 +53,16 @@ class Debugger extends Base
      */
     protected array $prompt_stack = [];
 
+    /**
+     * Debugger constructor.
+     * @param Server $HttpServer
+     * @param int $worker_id
+     * @param \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger
+     * @param int $base_debug_port
+     */
     public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
-    //public function __construct(?\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger)
     {
         parent::__construct();
-
-//        if (!self::is_enabled()) {
-//            return;
-//        }
 
         $this->HttpServer = $HttpServer;
         $this->worker_id = $worker_id;
@@ -158,13 +161,60 @@ class Debugger extends Base
         }
     }
 
-//    public static function is_enabled() : bool
-//    {
-//        return self::CONFIG_RUNTIME['enabled'];
-//    }
-
+    /**
+     * Returns the debug port for the given worker.
+     * @param int $worker_id
+     * @return int
+     */
     public function get_worker_port(int $worker_id) : int
     {
         return $this->base_debug_port + $worker_id;
+    }
+
+//    /**
+//     * Returns all dirs where there are debug commands classes.
+//     * @return array
+//     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+//     */
+//    public static function get_debug_command_classes_dirs() : array
+//    {
+//        $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+//        $command_classes = Kernel::get_classes($ns_prefixes, CommandInterface::class);
+//        $command_dir_paths = [];
+//        foreach ($command_classes as $command_class) {
+//            $command_class_path = Kernel::get_class_path($command_class);
+//            $dir_path = dirname($command_class_path);
+//            if (!in_array($dir_path, $command_dir_paths, TRUE)) {
+//                $command_dir_paths[] = $dir_path;
+//            }
+//        }
+//        return $command_dir_paths;
+//    }
+
+    /**
+     * Returns an assocaitive array with all debug command classes
+     * @return array
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    public static function get_debug_command_classes() : array
+    {
+        $ret = [];
+        $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        $classes = Kernel::get_classes($ns_prefixes, CommandInterface::class);
+        foreach ($classes as $class) {
+            if ((new \ReflectionClass($class))->isInstantiable()) {
+                $ret[] = $class;
+            }
+        }
+        //also get all classes from Azomedia\Debug namespace
+        $package_base_path = dirname( ( new \ReflectionClass(\Azonmedia\Debug\Debugger::class))->getFileName() );//azonmedia/debug is a dependency so should exist...
+        $basic_commands_path = $package_base_path.'/Backends/BasicCommands';
+        $files = glob($basic_commands_path.'/*.php');
+        foreach ($files as $file) {
+            require_once($file);
+            $class = 'Azonmedia\\Debug\\Backends\\BasicCommands\\'.basename($file,'.php');
+            $ret[] = $class;
+        }
+        return $ret;
     }
 }

@@ -71,10 +71,10 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
                 case 'get qcache misses' :
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
                     break;
-                case  'reset qcache stats' :
+                case 'reset qcache stats' :
                     $ret .= sprintf(t::_('%s (%s): stats are reset.'), $class_name, $command);
                     break;
-                case  'reset query cache' :
+                case 'reset query cache' :
                     $ret .= sprintf(t::_('%s (%s): ormstore is reset.'), $class_name, $command);
                     break;
                 default :

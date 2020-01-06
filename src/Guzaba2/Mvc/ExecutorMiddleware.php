@@ -219,7 +219,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 } elseif (array_key_exists('default_value', $param)) {
                     $value = $param['default_value'];
                 } else {
-                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $param['name'], get_class($Controller), $method ));
+                    //TODO add function parameters in the error message.
+                    throw new InvalidArgumentException(sprintf(t::_('No value provided for parameter $%s on %s::%s().'), $param['name'], get_class($Controller), $method ));
                 }
                 settype($value, $param['type']);
                 $ordered_arguments[] = $value;

@@ -22,6 +22,7 @@ use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
+use Composer\Util\Platform;
 use Guzaba2\Application\Application;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -121,7 +122,7 @@ BANNER;
     /**
      * @var array
      */
-    protected static array $loaded_paths = [];
+    //protected static array $loaded_paths = [];
 
     /**
      * Additional places where the autoloader should look.
@@ -368,7 +369,7 @@ BANNER;
     public static function set_di_container(ContainerInterface $Container) : void
     {
         self::$Container = $Container;
-        //$Container->initialize();
+        $Container->initialize();
         //self::printk(sprintf('All global services are initialized.').PHP_EOL);
     }
 
@@ -557,8 +558,9 @@ BANNER;
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
+     * @param NULL|int $exit_code If int exit code is provided this will terminate the program/worker
      */
-    public static function exception_handler(\Throwable $Exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
+    public static function exception_handler(\Throwable $Exception, ?int $exit_code = NULL): void
     {
 
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
@@ -891,7 +893,7 @@ BANNER;
 
 
     /**
-     * Returns an indexed array with classes that match the provided $ns_prefixes and (if provided) are of class/interface $class.
+     * Returns an associative array with path=>class that match the provided $ns_prefixes and (if provided) are of class/interface $class.
      * @param array $ns_prefixes
      * @param string $class
      * @return array
@@ -906,17 +908,17 @@ BANNER;
         $loaded_classes = Kernel::get_loaded_classes();
 
         foreach ($ns_prefixes as $ns_prefix) {
-            foreach ($loaded_classes as $loaded_class) {
+            foreach ($loaded_classes as $class_path => $loaded_class) {
                 if (strpos($loaded_class, '_without_config') !== FALSE) {
                     continue;
                 }
                 if ( strpos($loaded_class, $ns_prefix) === 0) {
                     if ($class) {
                         if (is_a($loaded_class, $class, TRUE)) {
-                            $ret[] = $loaded_class;
+                            $ret[$class_path] = $loaded_class;
                         }
                     } else {
-                        $ret[] = $loaded_class;
+                        $ret[$class_path] = $loaded_class;
                     }
                 }
             }
@@ -1027,15 +1029,40 @@ BANNER;
         return $initialization_classes;
     }
 
+    /**
+     * Returns the classes loaded through Kernel::autoload().
+     * Returns an associative array with $class_path=>$class_name
+     * @return array
+     */
     public static function get_loaded_classes() : array
     {
         return self::$loaded_classes;
     }
 
-    public static function get_loaded_paths() : array
+    /**
+     * Returns the path of the provided class if the class was loaded through Kernel::autoload().
+     * Otherwise returns NULL.
+     * @param string $class_name
+     * @return string|null
+     * @throws InvalidArgumentException
+     */
+    public static function get_class_path(string $class_name) : ?string
     {
-        return self::$loaded_paths;
+        if (!class_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf('No class %s exists.', $class_name));
+        }
+        $ret = array_search($class_name, self::$loaded_classes);
+        if ($ret === FALSE) {
+            //throw new InvalidArgumentException(sprintf('The provided class %s is not loaded through the Kernel::autoload().', $class_name));
+            $ret = NULL;
+        }
+        return $ret;
     }
+
+//    public static function get_loaded_paths() : array
+//    {
+//        return self::$loaded_paths;
+//    }
 
     /**
      * Logs a message using the default logger
@@ -1130,8 +1157,9 @@ BANNER;
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
                     self::initialize_class($class_name);
-                    self::$loaded_classes[] = $class_name;
-                    self::$loaded_paths[] = $class_path;
+                    //self::$loaded_classes[] = $class_name;
+                    //self::$loaded_paths[] = $class_path;
+                    self::$loaded_classes[$class_path] = $class_name;
                     $ret = TRUE;
 
                     $parent_class = get_parent_class($class_name);
