@@ -63,7 +63,6 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
     protected array $known_classes = [];
 
     protected $cache_enabled;
-    protected $total_count;
     protected $hits;
     protected $misses;
 
@@ -77,7 +76,6 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
         $this->connection_class = $connection_class;
         $this->no_coroutine_connection_class = $no_coroutine_connection_class;
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
-        $this->total_count = 0;
         $this->hits = 0;
         $this->misses = 0;
     }
