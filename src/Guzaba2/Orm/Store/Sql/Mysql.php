@@ -1132,7 +1132,10 @@ WHERE
 
     public function reset_all()
     {
+        /*
+        TODO
         $this->clear_cache();
         $this->reset_stats();
+        */
     }
 }
