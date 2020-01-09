@@ -33,7 +33,7 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
         $class_name = self::get_class_name();
 
         $tok = strtok($command, ' ');
-        if (0 === strcasecmp('help', $tok)) {
+        if (0 === strcasecmp('help', $tok) || 0 === strcasecmp($class_name, $tok)) {
             $help_command = preg_replace("/^(\w+\s)/", "", $command);
             if ($this->can_handle($help_command) || 0 === strcasecmp($class_name, $help_command)) {
                 $ret = self::help($help_command);
@@ -44,10 +44,10 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
         }
 
         if ($this->can_handle($command)) {
-            $ret = 'Cache Store details:'.PHP_EOL;
+            $ret = 'Query Cache Store details:'.PHP_EOL;
             $structure = [];
-            //$OrmStore = self::OrmStore();
-            $QueryCacheStore = Kernel::get_service('Cache');
+
+            $QueryCacheStore = Kernel::get_service('MysqlOrmStore');
             $PrimaryQueryCacheStore = $QueryCacheStore;
             do {
                 Kernel::log(get_class($QueryCacheStore), LogLevel::INFO);
@@ -59,7 +59,7 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
             $command_ret = call_user_func_array([ $PrimaryQueryCacheStore, self::$commands[$command]['method'] ], []);
             $ret .= implode(' --> ', $structure) . PHP_EOL;
             switch ($command) {
-                case 'show ormstore' :
+                case 'show query cache' :
                     $ret .= print_r($command_ret, TRUE);
                     break;
                 case 'get qcache hits' :
@@ -75,7 +75,7 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
                     $ret .= sprintf(t::_('%s (%s): stats are reset.'), $class_name, $command);
                     break;
                 case 'reset query cache' :
-                    $ret .= sprintf(t::_('%s (%s): ormstore is reset.'), $class_name, $command);
+                    $ret .= sprintf(t::_('%s (%s): query cache is reset.'), $class_name, $command);
                     break;
                 default :
                     // error
