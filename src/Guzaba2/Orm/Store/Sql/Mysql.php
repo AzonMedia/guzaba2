@@ -14,6 +14,7 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
+use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
@@ -24,7 +25,7 @@ use Ramsey\Uuid\Uuid;
 
 
 
-class Mysql extends Database implements StructuredStoreInterface
+class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta'
@@ -61,6 +62,11 @@ class Mysql extends Database implements StructuredStoreInterface
      */
     protected array $known_classes = [];
 
+    protected $cache_enabled;
+    protected $total_count;
+    protected $hits;
+    protected $misses;
+
     public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
         parent::__construct();
@@ -71,6 +77,9 @@ class Mysql extends Database implements StructuredStoreInterface
         $this->connection_class = $connection_class;
         $this->no_coroutine_connection_class = $no_coroutine_connection_class;
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
+        $this->total_count = 0;
+        $this->hits = 0;
+        $this->misses = 0;
     }
 
     public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
@@ -597,7 +606,9 @@ ON DUPLICATE KEY UPDATE
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
+            $this->hits++;
         } else {
+            $this->misses--;
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
@@ -1080,4 +1091,48 @@ WHERE
 
 //    }
 
+    public function get_hits() : int
+    {
+        return $this->hits;
+    }
+
+    public function get_misses() : int
+    {
+        return $this->misses;
+    }
+
+    public function get_hits_percentage() : float {
+        $ret = 0.0;
+        $hits = $this->get_hits();
+        $misses = $this->get_misses();
+        $total = $hits + $misses;
+
+        if (0 != $total) {
+            $ret = (float) ($hits / $total * 100.0);
+        }
+
+        return $ret;
+    }
+
+    public function reset_hits() : void
+    {
+        $this->hits = 0;
+    }
+
+    public function reset_misses() : void
+    {
+        $this->misses = 0;
+    }
+
+    public function reset_stats() : void
+    {
+        $this->reset_hits();
+        $this->reset_misses();
+    }
+
+    public function reset_all()
+    {
+        $this->clear_cache();
+        $this->reset_stats();
+    }
 }
