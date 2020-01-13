@@ -9,8 +9,8 @@ use Psr\Http\Message\ResponseInterface;
 interface ControllerInterface
 {
     public function get_request() : ?RequestInterface ;
-    public function set_response(ResponseInterface $Response) : void ;
-    public function get_response() : ?ResponseInterface ;
+    //public function set_response(ResponseInterface $Response) : void ;
+    //public function get_response() : ?ResponseInterface ;
     public static function get_routes() : ?iterable ;
     //public function redirect();
 }

@@ -226,16 +226,20 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $ordered_arguments[] = $value;
             }
             //because the Response is immutable it needs to be passed around instead of modified...
-            self::get_service('Events')::create_event($Controller, '_before_'.$method);
+            $Event = self::get_service('Events')::create_event($Controller, '_before_'.$method, $ordered_arguments, NULL);
+            $ordered_arguments = $Event->get_event_return() ?? $ordered_arguments;
             //no need to do get_response() - instead of that if the execution needs to be interrupted throw InterruptControllerException
             //if (!($Response = $Controller->get_response())) { //if the _before_method events have not produced a response call the method
             $Response = [$Controller, $method](...$ordered_arguments);
-            if ($Response) {
-                $Controller->set_response($Response);
-            }
-            self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
-            $Response = $Controller->get_response();//the _after_ events may have changed the Response
+            //if ($Response) {
+            //    $Controller->set_response($Response);
             //}
+            //self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
+            //$Response = $Controller->get_response();//the _after_ events may have changed the Response
+            //}
+            //$Response = self::get_service('Events')::create_event($Controller, '_after_'.$method, [], $Response) ?? $Response;//these can replace the response too (to append it)
+            $Event = self::get_service('Events')::create_event($Controller, '_after_'.$method, [], $Response);
+            $Response = $Event->get_event_return() ?? $Response;
 
 //            //as the events/hooks work only with Structured body and the structure there can be passed by reference there is no need to pass around the response
 //            //its bosy->struct can be just changed

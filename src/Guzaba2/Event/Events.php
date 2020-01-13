@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Event;
 
+use Azonmedia\Utilities\ArrayUtil;
+use Azonmedia\Utilities\DebugUtil;
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -48,9 +50,11 @@ class Events extends Base implements EventsInterface
      * @param string $event_name
      * @return EventInterface
      */
-    public static function create_event(ObjectInternalIdInterface $Subject, string $event_name) : EventInterface
+    public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) : EventInterface
+    //public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) /* mixed */
     {
-        return new Event($Subject, $event_name);
+        //return (new Event($Subject, $event_name, $arguments, $return_value))->get_event_return();
+        return new Event($Subject, $event_name, $arguments, $return_value);
     }
 
     /**
@@ -162,13 +166,14 @@ class Events extends Base implements EventsInterface
      */
     public function get_class_callbacks(string $class, string $event_name = '') : array
     {
+
         $event_callbacks = [];
         $classes = array_merge([$class], Kernel::get_class_all_parents($class));
-        foreach ($classes as $class) {
+        foreach ($classes as $lookup_class) {
             if ($event_name) {
-                $event_callbacks = array_merge($event_callbacks, $this->class_callbacks[$class][$event_name] ?? [], $this->class_callbacks[$class]['*'] ?? []);
+                $event_callbacks = array_merge($event_callbacks, $this->class_callbacks[$lookup_class][$event_name] ?? [], $this->class_callbacks[$lookup_class]['*'] ?? []);
             } else {
-                $event_callbacks = array_merge($event_callbacks, $this->class_callbacks[$class] ?? []);
+                $event_callbacks = array_merge($event_callbacks, $this->class_callbacks[$lookup_class] ?? []);
             }
         }
         return $event_callbacks;

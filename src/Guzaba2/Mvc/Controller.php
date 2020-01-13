@@ -5,8 +5,11 @@ namespace Guzaba2\Mvc;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Event\Event;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Mvc\Interfaces\AfterControllerMethodHookInterface;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Mvc\Traits\ResponseFactories;
 use Guzaba2\Orm\ActiveRecordDefaultController;
@@ -21,11 +24,20 @@ use Psr\Http\Message\ResponseInterface;
  */
 abstract class Controller extends Base implements ControllerInterface
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'services' => [
+            'Events',
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     use ResponseFactories;
 
     private RequestInterface $Request;
 
-    private ResponseInterface $Response;
+    //private ResponseInterface $Response;
 
     public function __construct(RequestInterface $Request)
     {
@@ -105,5 +117,35 @@ abstract class Controller extends Base implements ControllerInterface
             $controller_classes[$args_hash] = $classes;
         }
         return $controller_classes[$args_hash];
+    }
+
+
+    public static function register_after_hook(string $controller_class_name, string $event_name, callable $hook_callable) : void
+    {
+
+        //TODO add a check on the callable signature - must accept a single ResponseInterface argument and return ResponseInterface
+
+        $Events = self::get_service('Events');
+        $Callback = static function(Event $Event) use ($Events, $hook_callable) : ResponseInterface
+        {
+
+            $arguments = [ $Event->get_return_value() ];
+
+            if (is_array($hook_callable)) {
+                $BeforeEvent = $Events::create_event($hook_callable[0], '_before_'.$hook_callable[1], [$Event->get_return_value()], NULL );
+                $arguments = $BeforeEvent->get_event_return();
+            }
+
+            $HookResponse = $hook_callable(...$arguments);
+
+            if (is_array($hook_callable)) {
+                $AfterEvent = $Events::create_event($hook_callable[0], '_after_'.$hook_callable[1], [], $HookResponse);
+                $HookResponse = $AfterEvent->get_event_return() ?? $HookResponse;
+            }
+
+            return $HookResponse;
+        };
+
+        $Events->add_class_callback($controller_class_name, $event_name, $Callback);
     }
 }

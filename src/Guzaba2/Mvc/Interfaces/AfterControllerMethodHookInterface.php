@@ -10,5 +10,5 @@ interface AfterControllerMethodHookInterface
 {
     //public function get_response() : ResponseInterface ;
 
-    public function process(ResponseInterface $Response) : ResponseInterface ;
+    //public function process(ResponseInterface $Response) : ResponseInterface ;
 }
