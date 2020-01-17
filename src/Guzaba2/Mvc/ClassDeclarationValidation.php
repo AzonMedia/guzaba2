@@ -9,6 +9,7 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
 
 abstract class ClassDeclarationValidation extends Base implements ClassDeclarationValidationInterface
@@ -42,6 +43,12 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
     {
         $active_record_classes = Controller::get_controller_classes($ns_prefixes);
         foreach ($active_record_classes as $loaded_class) {
+            if ($loaded_class === ActiveRecordDefaultController::class) {
+                continue;
+            }
+            if ( ! (new ReflectionClass($loaded_class))->isInstantiable() ) {
+                continue;
+            }
             $routes = $loaded_class::get_routes();
             if ($routes === NULL) {
                 throw new ClassValidationException(sprintf(t::_('The controller %s has no CONFIG_RUNTIME[\'routes\'] defined. Every controller must have this defined.'), $loaded_class ));

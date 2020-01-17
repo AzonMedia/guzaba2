@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
+use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
 
 trait SupportsConfig
 {
-    private static bool $is_configured_flag = FALSE;
+    //private static bool $is_configured_flag = FALSE;
+
+    public static function has_runtime_configuration() : bool
+    {
+        $called_class = get_called_class();
+        //return defined($called_class.'::CONFIG_RUNTIME');
+        $RClass = new ReflectionClass($called_class);
+        return $RClass->hasOwnConstant('CONFIG_RUNTIME');
+    }
 
     /**
      * To be invoked only by the Kernel

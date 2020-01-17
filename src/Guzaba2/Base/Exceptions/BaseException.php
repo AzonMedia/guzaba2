@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Exceptions;
 
+use Azonmedia\Utilities\GeneralUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
 use Guzaba2\Base\Traits\StaticStore;
@@ -24,6 +25,7 @@ use Guzaba2\Base\Traits\ContextAware;
 use Guzaba2\Base\Exceptions\Traits\ExceptionPropertyModification;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Throwable;
 
@@ -50,7 +52,7 @@ abstract class BaseException extends \Exception
     use ContextAware;
     use ExceptionPropertyModification;
 
-    public const ERROR_REFERENCE_BASE_URL = 'http://error-reference.guzaba.org/error/';
+    //public const ERROR_REFERENCE_DEFAULT_URL = 'http://error-reference.guzaba.org/error/';
 
     //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
     /**
@@ -142,12 +144,19 @@ abstract class BaseException extends \Exception
     {
 
         parent::__construct($message, $code, $previous);
+
+        if ($uuid && !GeneralUtil::is_uuid($uuid)) {
+            Kernel::log(sprintf('The provided UUID %s to the exception is not a valid UUID. The provided UUID will be ignored.', $uuid));
+        } else {
+            $this->uuid = $uuid;
+        }
+
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
 
         $this->microtime_created = (int) microtime(TRUE) * 1_000_000;
 
-        $this->uuid = $uuid;
+
 
 
         //TODO - reenable the below code
@@ -230,9 +239,13 @@ abstract class BaseException extends \Exception
         do {
             $ret .= sprintf(t::_('%s %s in %s#%s.'), get_class($this), $this->getMessage(), $this->getFile(), $this->getLine() ).PHP_EOL;
             $uuid = $this->getUUID();
-            if ($uuid) {
-                $ref_url = static::getErrorReferenceBaseUrl().$uuid;
-                $ret .= sprintf(t::_('Error details: %s'), $ref_url).PHP_EOL;
+            $component_name = $this->getErrorComponentName();
+            if ($component_name) {
+                $ret .= sprintf(t::_('Error in component: %s'), $component_name ).PHP_EOL;
+            }
+            $error_url = $this->getErrorReferenceUrl();
+            if ($error_url) {
+                $ret .= sprintf(t::_('Error reference: %s'), $error_url).PHP_EOL;
             }
             $ret .= t::_('Stack Trace:').PHP_EOL;
             $ret .= $this->getTraceAsString().PHP_EOL;
@@ -254,9 +267,51 @@ abstract class BaseException extends \Exception
         return $this->uuid;
     }
 
-    public static function getErrorReferenceBaseUrl() : ?string
+    public function getErrorReferenceUrl() : ?string
     {
-        return static::ERROR_REFERENCE_BASE_URL;
+        $ret = NULL;
+        $base_url = $this->getErrorReferenceBaseUrl();
+        $uuid = $this->getUUID();
+        if ($base_url && $uuid) {
+            $ret = $base_url.$uuid;
+        }
+        return $ret;
+    }
+
+    public function getErrorReferenceBaseUrl() : ?string
+    {
+        $ret = NULL;
+        $reg_paths = Kernel::get_registered_autoloader_paths();
+        $component_class = $this->getErrorComponentClass();
+        if ($component_class && class_exists($component_class)) {
+            $ret = $component_class::get_error_reference_url();
+        }
+        return $ret;
+    }
+
+    public function getErrorComponentClass() : ?string
+    {
+        $ret = NULL;
+        $reg_paths = Kernel::get_registered_autoloader_paths();
+        foreach ($this->getTrace() as $frame) {
+            if (!empty($frame['class'])) {
+                $ret = Kernel::get_component_by_class($frame['class']);
+                if ($ret) {
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    public function getErrorComponentName() : ?string
+    {
+        $ret = NULL;
+        $component_class = $this->getErrorComponentClass();
+        if ($component_class) {
+            $ret = $component_class::get_name().' ('.$component_class::get_composer_package_name().')';
+        }
+        return $ret;
     }
 
     public function getDebugData()

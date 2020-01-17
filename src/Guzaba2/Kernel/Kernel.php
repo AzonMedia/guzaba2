@@ -583,14 +583,7 @@ BANNER;
         $output = (string) $Exception;
 
         self::log($output, LogLevel::EMERGENCY);
-        //file_put_contents('AAA', $output.PHP_EOL, FILE_APPEND);
-        //self::logtofile($output);
-        //die($output);
-        //print $output;
-        //die(1);//kill that worker
-        //why kill the whole worker... why not just terminate the coroutine/request
-        //in fact this code will be used only before the server is started
-        //print $output.PHP_EOL;//the logger is used instead
+
         if ($exit_code !== NULL) {
             die($exit_code);
         } else {
@@ -727,6 +720,23 @@ BANNER;
         return self::$autoloader_lookup_paths;
     }
 
+    /**
+     * Returns the Component class based on a provided class
+     * @param string $class
+     * @return string|null
+     */
+    public static function get_component_by_class(string $class) : ?string
+    {
+        $ret = NULL;
+        foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix=>$path) {
+            if (strpos($class, $ns_prefix) === 0) {
+                $ret = $ns_prefix.'\\Component';
+                break 1;
+            }
+        }
+        return $ret;
+    }
+
     public static function namespace_base_is_registered(string $namespace_base): bool
     {
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
@@ -753,6 +763,7 @@ BANNER;
     public static function get_runtime_configuration(string $class_name) : array
     {
         $runtime_config = [];
+
         $RClass = new ReflectionClass($class_name);
 
         if ($RClass->implementsInterface(ConfigInterface::class)) {
@@ -938,36 +949,6 @@ BANNER;
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path=>$match) {
-
-                //print $path.' ';
-                /*
-                $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
-                if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
-
-
-
-                    $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
-
-//                    if (strpos($class, 'CachingMiddleware') !== FALSE) {
-//                        print 'GGGGGGGGGGGGGGGGGG';
-//                    }
-
-                    //we also need to check again already included files
-                    //as including a certain file may trigger the autoload and load other classes that will be included a little later
-                    $included_files = get_included_files();
-                    if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
-                        //skip this file - it is already included
-                        continue;
-                    }
-                    //print 'OK'.PHP_EOL;
-                    class_exists($class);//this will trigger the autoloader if the class doesnt already exist
-                    //self::autoloader($class);//an explicit call will trigger an error if the class is already loaded
-                } else {
-                    //print 'NOOOO'.PHP_EOL;
-                    print $path.' '.$ns_with_forward_slash.PHP_EOL;
-                }
-                */
-
 
                 $class_name = str_replace($autoload_lookup_path, '', $path);
                 $class_name = str_replace('\\\\','\\', $class_name);
@@ -1196,8 +1177,6 @@ BANNER;
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
-        //print $class_path.' '.$class_name.PHP_EOL;
-
         $ret = NULL;
 
         try {
@@ -1215,11 +1194,9 @@ BANNER;
                 $ret = require_once($class_path);
             }
         } catch (\Throwable $exception) {
-            //print '==================='.PHP_EOL;
 
             self::printk('ERROR IN CLASS GENERATION'.PHP_EOL);
             self::printk($exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString().PHP_EOL);
-            //print '==================='.PHP_EOL;
         }
 
 

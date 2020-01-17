@@ -899,7 +899,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_routes() : ?iterable
     {
         $ret = NULL;
-        if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+        $called_class = get_called_class();
+        //if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+        if ($called_class::has_runtime_configuration() && array_key_exists('route', static::CONFIG_RUNTIME)) {
             if (static::CONFIG_RUNTIME['route'][0] !== '/') {
                 throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class() ));
             }
@@ -1049,30 +1051,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function get_active_record_classes(array $ns_prefixes) : array
     {
-//        static $active_record_classes = [];
-//
-//        $ret = [];
-//        foreach ($ns_prefixes as $ns_prefix) {
-//            if (!array_key_exists($ns_prefix, $active_record_classes)) {
-//                $active_record_classes[$ns_prefix] = [];
-//                $loaded_classes = Kernel::get_loaded_classes();
-//                foreach ($loaded_classes as $loaded_class) {
-//                    $RClass = new ReflectionClass($loaded_class);
-//                    if (
-//                        strpos($loaded_class, $ns_prefix) === 0
-//                        && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-//                        //&& !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
-//                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class] )
-//                        && $RClass->isInstantiable()
-//                    ) {
-//                        $active_record_classes[$ns_prefix][] = $loaded_class;
-//                    }
-//                }
-//
-//            }
-//            $ret = array_merge($ret, $active_record_classes[$ns_prefix]);
-//        }
-//        return $ret;
         static $active_record_classes = [];
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
         if (!array_key_exists( $args_hash, $active_record_classes ) ) {
