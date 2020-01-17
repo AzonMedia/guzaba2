@@ -29,11 +29,18 @@ class ClassDeclarationValidation implements ClassDeclarationValidationInterface
         return self::VALIDATION_METHODS;
     }
 
+    /**
+     * Validates CONFIG_DEFAULTS and CONFIG_RUNTIME. If a class has one of these has to have the other too.
+     * @throws ClassValidationException
+     * @throws \ReflectionException
+     */
     public static function validate_config_constants() : void
     {
         $loaded_classes = Kernel::get_loaded_classes();
+
         foreach ($loaded_classes as $loaded_class) {
             $RClass = new ReflectionClass($loaded_class);
+
             //if (defined($loaded_class.'::CONFIG_DEFAULTS') xor !defined($loaded_class.'::CONFIG_RUNTIME') ) {
             if ( $RClass->hasOwnConstant('CONFIG_DEFAULTS') && ! $RClass->hasOwnConstant('CONFIG_RUNTIME') ) {
                 throw new ClassValidationException(sprintf('The class %s defines CONFIG_DEFAULTS but does not define CONFIG_RUNTIME.', $loaded_class));

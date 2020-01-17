@@ -144,7 +144,9 @@ class Server extends \Guzaba2\Http\Server
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
 
         if ($options['worker_num'] === NULL) {
-            $options['worker_num'] = swoole_cpu_num() * 2;
+            //$options['worker_num'] = swoole_cpu_num() * 2;
+            //TODO - https://github.com/AzonMedia/guzaba2/issues/22
+            $options['worker_num'] = swoole_cpu_num();
         }
 
         $this->options = $options;

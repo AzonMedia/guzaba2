@@ -756,8 +756,7 @@ BANNER;
         $RClass = new ReflectionClass($class_name);
 
         if ($RClass->implementsInterface(ConfigInterface::class)) {
-
-
+            
             //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
                 $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
