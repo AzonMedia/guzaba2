@@ -210,6 +210,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
     private function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
     {
+
         $Response = NULL;
         try {
             $ordered_arguments = [];
@@ -251,13 +252,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
         } catch (PermissionDeniedException $Exception) {
-            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (RecordNotFoundException $Exception) {
-            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (InvalidArgumentException | ValidationFailedException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (\Throwable $Exception) {
-            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } finally {
             if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
                 Kernel::exception_handler($Exception);
@@ -270,7 +271,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $StructuredBody = $Response->getBody();
         $structure = $StructuredBody->getStructure();
-        $json_string = json_encode($structure);
+        $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
         $StreamBody = new Stream(NULL, $json_string);
         $Response = $Response->
             withBody($StreamBody)->

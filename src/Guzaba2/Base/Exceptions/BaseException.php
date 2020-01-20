@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Exceptions;
 
+use Azonmedia\Packages\Packages;
 use Azonmedia\Utilities\GeneralUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
@@ -45,12 +46,12 @@ use Throwable;
  * @see self::get_current_exception()
  * @see Transactions\transaction::get_interrupting_exception()
  */
-abstract class BaseException extends \Exception
+abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 {
     use SupportsObjectInternalId;
     //use StaticStore;
     use ContextAware;
-    use ExceptionPropertyModification;
+    //use ExceptionPropertyModification;
 
     //public const ERROR_REFERENCE_DEFAULT_URL = 'http://error-reference.guzaba.org/error/';
 
@@ -96,7 +97,6 @@ abstract class BaseException extends \Exception
 
     //private $session_subject_id = 0;//this may be different from the execution context subject_id (may be temporarily substituted)
 
-    protected int $microtime_created;
 
 //    /**
 //     *
@@ -143,21 +143,14 @@ abstract class BaseException extends \Exception
     public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL, ?string $uuid = NULL)
     {
 
-        parent::__construct($message, $code, $previous);
-
-        if ($uuid && !GeneralUtil::is_uuid($uuid)) {
-            Kernel::log(sprintf('The provided UUID %s to the exception is not a valid UUID. The provided UUID will be ignored.', $uuid));
-        } else {
-            $this->uuid = $uuid;
-        }
+        parent::__construct($message, $code, $previous, $uuid);
+        
 
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
 
-        $this->microtime_created = (int) microtime(TRUE) * 1_000_000;
-
-
-
+            
+        
 
         //TODO - reenable the below code
         //$db = framework\database\classes\connection1::get_instance();
@@ -241,11 +234,11 @@ abstract class BaseException extends \Exception
             $uuid = $this->getUUID();
             $component_name = $this->getErrorComponentName();
             if ($component_name) {
-                $ret .= sprintf(t::_('Error in component: %s'), $component_name ).PHP_EOL;
+                $ret .= sprintf(t::_('Component: %s'), $component_name ).PHP_EOL;
             }
             $error_url = $this->getErrorReferenceUrl();
             if ($error_url) {
-                $ret .= sprintf(t::_('Error reference: %s'), $error_url).PHP_EOL;
+                $ret .= sprintf(t::_('ERROR REFERENCE: %s'), $error_url).PHP_EOL;
             }
             $ret .= t::_('Stack Trace:').PHP_EOL;
             $ret .= $this->getTraceAsString().PHP_EOL;
@@ -255,75 +248,52 @@ abstract class BaseException extends \Exception
         return $ret;
     }
 
+    /**
+     * @overrides
+     * @return string|null
+     */
+    public function getErrorComponentClass() : ?string
+    {
+        $ret = NULL;
+        $Packages = new Packages(Packages::get_application_composer_file_path());
+        foreach ($this->getTrace() as $frame) {
+            if (!empty($frame['class'])) {
+                //Guzaba2 has no psr-4 loader so it needs to be checked explicitly
+                if (strpos($frame['class'], 'Guzaba2\\') === 0) {
+                    $ret = 'Guzaba2\\Component';
+                    break;
+                } else {
+                    $Package = $Packages->get_package_by_class($frame['class']);
+                    if ($Package) {
+                        $package_ns = Packages::get_package_namespace($Package);
+                        $component_class = $package_ns.'Component';
+                        if (class_exists($component_class)) {
+                            $ret = $component_class;
+                            break;
+                        }
+                    }
+                }
+
+            }
+        }
+        return $ret;
+    }
+
+    public function getPrettyMessage() : string
+    {
+        $message = $this->getMessage();
+        $component = $this->getErrorComponentName() ?? t::_('Unknown');
+        $ref_url = $this->getErrorReferenceUrl();
+        return sprintf(t::_('%s "%s" in module %s %s'), get_class($this), $message, $component, $ref_url);
+    }
+
     public function _before_change_context() : void
     {
         $this->context_changed_flag = TRUE;
         // self::unset_all_static();
     }
 
-    //this should be component based
-    public function getUUID() : ?string
-    {
-        return $this->uuid;
-    }
 
-    public function getErrorReferenceUrl() : ?string
-    {
-        $ret = NULL;
-        $base_url = $this->getErrorReferenceBaseUrl();
-        $uuid = $this->getUUID();
-        if ($base_url && $uuid) {
-            $ret = $base_url.$uuid;
-        }
-        return $ret;
-    }
-
-    public function getErrorReferenceBaseUrl() : ?string
-    {
-        $ret = NULL;
-        $reg_paths = Kernel::get_registered_autoloader_paths();
-        $component_class = $this->getErrorComponentClass();
-        if ($component_class && class_exists($component_class)) {
-            $ret = $component_class::get_error_reference_url();
-        }
-        return $ret;
-    }
-
-    public function getErrorComponentClass() : ?string
-    {
-        $ret = NULL;
-        $reg_paths = Kernel::get_registered_autoloader_paths();
-        foreach ($this->getTrace() as $frame) {
-            if (!empty($frame['class'])) {
-                $ret = Kernel::get_component_by_class($frame['class']);
-                if ($ret) {
-                    break;
-                }
-            }
-        }
-        return $ret;
-    }
-
-    public function getErrorComponentName() : ?string
-    {
-        $ret = NULL;
-        $component_class = $this->getErrorComponentClass();
-        if ($component_class) {
-            $ret = $component_class::get_name().' ('.$component_class::get_composer_package_name().')';
-        }
-        return $ret;
-    }
-
-    public function getDebugData()
-    {
-        $ret =
-            time().' '.date('Y-m-d H:i:s').PHP_EOL.
-            $this->getMessage().':'.$this->getCode().PHP_EOL.
-            $this->getFile().':'.$this->getLine().PHP_EOL;
-        //.
-        // print_r(k::simplify_trace($this->getTrace()), TRUE);//NOVERIFY
-        return $ret;
-    }
 
     /**
      * @return \Guzaba2\Transactions\Transaction|null
@@ -502,151 +472,5 @@ abstract class BaseException extends \Exception
         }
     }
 
-    /**
-     * Returns an array of messages from this exception and all previous exceptions (if there are such)
-     * The first message is from this exception, the second is from its previous exception, and so on...
-     * @return array Array of strings (error messages)
-     */
-    public function getAllMessages() : array
-    {
-        $messages = [];
-        $exception = $this;
-        do {
-            $messages[] = $exception->getMessage().' ';
-            $exception = $exception->getPrevious();
-        } while ($exception);
-        return $messages;
-    }
 
-    /**
-     * Returns an array of messages from this exception and all previous exceptions (if there are such)
-     * The first message is from this exception, the second is from its previous exception, and so on...
-     * @return string A concatenated string of all error messages;.
-     */
-    public function getAllMessagesAsString() : string
-    {
-        // $message = implode(' ', $this->getAllMessagesAsArray());
-        $message = ' ';
-        return $message;
-    }
-
-    /**
-     * Returns the caller using the internal debug_backtrace() function.
-     * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
-     * @return array
-     */
-    protected function _get_caller($level=1)
-    {
-        $trace_arr = debug_backtrace();
-        return $trace_arr[$level+1];
-    }
-
-    /**
-     * Returns the caller class using the internal debug_backtrace() function.
-     * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
-     * @return string
-     */
-    protected function _get_caller_class($level=1)
-    {
-        //$caller_arr = $this->_get_caller($level);
-        $trace_arr = debug_backtrace(0);
-        $caller_arr = $trace_arr[$level+1];
-        if (!isset($caller_arr['class'])) {
-            $trace = debug_backtrace();
-            // throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_class() can not be used.'), $trace[1]['class'], $trace[1]['function']));
-        }
-        return $caller_arr['class'];
-    }
-
-    /**
-     * Returns the caller method using the internal debug_backtrace() function.
-     * @param int $level $level=1 means the parent caller, 2 means the parent of the parent call and so on
-     * @return string
-     */
-    protected function _get_caller_method($level=1)
-    {
-        //$caller_arr = $this->_get_caller($level);
-        $trace_arr = debug_backtrace(0);
-        $caller_arr = $trace_arr[$level+1];
-        if (!isset($caller_arr['function'])) {
-            $trace = debug_backtrace();
-            // throw new framework\base\exceptions\runTimeException(sprintf(t::_('%s::%s is not called from class and _get_caller_method() can not be used.'), $trace[1]['class'], $trace[1]['function']));
-        }
-        return $caller_arr['function'];
-    }
-
-
-
-
-    public static function setPreviousExceptionStatic(\Throwable $exception, \Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
-    {
-        // if ($previous instanceof framework\base\interfaces\traceInfo) {
-        //     $previous = $previous->getAsException();
-        // }
-
-
-        self::setPropertyStatic($exception, 'previous', $previous);
-    }
-
-    /**
-     * This allows a previous exception to be set on an existing exception (this can be set only during the construction)
-     * This is to be used to set traceException as a previous exception to an existing one.
-     * But we will not be limiting the signature only to the traceException
-     *
-     * If the provided argument is traceInfoObject not a traceException (these two classes implement traceInfo) then the traceInfoObject will be converted to traceException
-     *
-     * @param framework\base\interfaces\traceInfo $exception
-     */
-    //public function setPreviousException(\Throwable $previous) : void
-    public function setPreviousException(\Guzaba2\Base\Interfaces\TraceInfoInterface $previous) : void
-    {
-        /*
-        $reflection = new \ReflectionClass($this);
-        while( ! $reflection->hasProperty('previous') ) {
-            $reflection = $reflection->getParentClass();
-        }
-        $prop = $reflection->getProperty('previous');
-        $prop->setAccessible(true);
-        $prop->setValue($this, $previous);
-        $prop->setAccessible(false);
-        */
-        // if ($previous instanceof framework\base\interfaces\traceInfo) {
-        //     $previous = $previous->getAsException();
-        // }
-
-
-        $this->setProperty('previous', $previous);
-    }
-
-    public static function prependAsFirstExceptionStatic(\Throwable $exception, \Throwable $FirstException) : void
-    {
-        $CurrentFirstException = self::getFirstExceptionStatic($exception);
-        self::setPreviousExceptionStatic($CurrentFirstException, $FirstException);
-    }
-
-    public function prependAsFirstException(\Throwable $FirstException) : void
-    {
-        self::prependAsFirstExceptionStatic($this, $FirstException);
-    }
-
-    /**
-     * The first exception of a chain of previous exceptions.
-     *
-     */
-    public static function getFirstExceptionStatic(\Throwable $exception) : \Throwable
-    {
-        do {
-            $previous_exception = $exception->getPrevious();
-            if ($previous_exception) {
-                $exception = $previous_exception;
-            }
-        } while ($previous_exception);
-
-        return $exception;
-    }
-
-    public function getFirstException() : \Throwable
-    {
-        return self::getFirstExceptionStatic($this);
-    }
 }

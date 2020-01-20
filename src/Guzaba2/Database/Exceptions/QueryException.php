@@ -122,7 +122,7 @@ class QueryException extends DatabaseException
      *
      * @return string Additional debug data regarding the bound parameters.
      */
-    public function getDebugData()
+    public function getDebugData() : string
     {
         return $this->debugdata;
     }
