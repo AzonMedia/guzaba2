@@ -126,7 +126,6 @@ implements ControllerInterface
         } else {
             $ret = parent::get_routes();
         }
-        print get_called_class().' '.gettype($ret).PHP_EOL;
         return $ret;
     }
 
