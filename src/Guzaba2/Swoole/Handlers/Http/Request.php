@@ -4,9 +4,12 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole\Handlers\Http;
 
 use Azonmedia\PsrToSwoole\PsrToSwoole;
+use Guzaba2\Application\Application;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Body\Structured;
+use Guzaba2\Http\ContentType;
 use Guzaba2\Http\Method;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Response;
@@ -148,9 +151,21 @@ class Request extends HandlerBase
                 Kernel::log($slow_message, LogLevel::DEBUG);
             }
 
-
-            $message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
-            Kernel::log($message, LogLevel::INFO);
+            $message = '';
+            if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK ) {
+                //on failure print additional information if found
+                if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
+                    $PsrResponse->getBody()->rewind();
+                    $contents = $PsrResponse->getBody()->getContents();
+                    $PsrResponse->getBody()->rewind();
+                    $message = json_decode($contents)->message ?? '';
+                }
+                if ($message) {
+                    $message = ' ('.$message.')';
+                }
+            }
+            $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            Kernel::log($log_message, LogLevel::INFO);
         }
     }
 

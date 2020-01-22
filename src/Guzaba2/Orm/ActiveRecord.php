@@ -909,12 +909,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $ret = [
                 $default_route                              => [
                     //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
-                    Method::HTTP_OPTIONS                        => [ActiveRecordDefaultController::class, 'options'],
+                    //Method::HTTP_OPTIONS                        => [ActiveRecordDefaultController::class, 'options'],
                     Method::HTTP_GET                            => [ActiveRecordDefaultController::class, 'list'],
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_action_create'],
                 ],
                 $default_route.'/{uuid}'                    => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
+                    //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
+                    Method::HTTP_GET                           => [ActiveRecordDefaultController::class, 'crud_action_read'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
                 ],

@@ -22,14 +22,27 @@ class CurrentUser extends Base
     //private ?UserInterface $User = NULL;
     private UserInterface $User;
 
+    private string $default_user_uuid;
+
     //It may be reworked to accept $index and $class arguments and to create the instance only if needed
     //if only the $index is needed by the application then there is no need to create instance.
     public function __construct(UserInterface $User)
     //public function __construct( /* mixed */ $user_id, string $user_class)
     {
         $this->User = $User;
+        $this->default_user_uuid = $User->get_uuid();
         //$this->user_id = $user_id;
         //$this->user_class = $user_class;
+    }
+
+    /**
+     * Returns the default user UUID.
+     * This UUID is set in the constructor of CurrentUser
+     * @return string
+     */
+    public function get_default_user_uuid() : string
+    {
+        return $this->default_user_uuid;
     }
 
     public function __destruct()
