@@ -22,6 +22,7 @@ use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
+use Composer\Util\Platform;
 use Guzaba2\Application\Application;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -31,6 +32,7 @@ use Guzaba2\Base\TraceInfoObject;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Coroutine\Coroutine;
 //use Guzaba2\Database\Connection;
+use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
@@ -120,7 +122,7 @@ BANNER;
     /**
      * @var array
      */
-    protected static array $loaded_paths = [];
+    //protected static array $loaded_paths = [];
 
     /**
      * Additional places where the autoloader should look.
@@ -168,6 +170,72 @@ BANNER;
     public static Watchdog $Watchdog;
 
     private static float $init_microtime;
+
+    public const APM_DATA_STRUCTURE = [
+        'worker_id'                             => 0,
+        'coroutine_id'                          => 0,
+        'execution_start_microtime'             => 0,
+        'execution_end_microtime'               => 0,
+        'cnt_used_connections'                  => 0,
+        'time_used_connections'                 => 0,//for all connections - for how long the connection was held
+        'time_waiting_for_connection'           => 0,//waiting time to obtain connection from the Pool
+        'cnt_total_current_coroutines'          => 0,
+        'cnt_subcoroutines'                     => 0,
+        'memory_store_time'                     => 0,//time for lookups in memory store
+
+        'cnt_dql_statements'                    => 0,
+        'time_dql_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_cached_dql_statements'             => 0,
+        'time_cached_dql_statements'            => 0,
+
+        //counter added in pdoStatement::fetchAllAsArray()
+        'time_fetching_data'					=> 0,//to measure fetchAll and similar - see swoole\mysql fetch_mode - if FALSE then the fetch is done as part of the execute()
+
+        //counter added in pdoStatement::execute()
+        'cnt_dml_statements'                    => 0,
+        'time_dml_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_ddl_statements'                    => 0,
+        'time_ddl_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_dcl_statements'                    => 0,
+        'time_dcl_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_dal_statements'                    => 0,
+        'time_dal_statements'                   => 0,
+
+        //counter added in pdoStatement::execute()
+        'cnt_tcl_statements'                    => 0,//these usually are not issued directly but by using PDO's methods... so the PDO::beginTransction and PDO::commit are wrapped to add to this number
+        'time_tcl_statements'                   => 0,
+
+        'cnt_nosql_read_statements'             => 0,
+        'time_nosql_read_statements'            => 0,
+        'cnt_nosql_write_statements'            => 0,
+        'time_nosql_write_statements'           => 0,
+
+        'cnt_api_requests'                      => 0,//curl
+        'time_api_requests'                     => 0,
+
+        'cnt_file_reads'                        => 0,
+        'time_file_reads'                       => 0,
+        'cnt_file_writes'                       => 0,
+        'time_file_writes'                      => 0,
+
+        'cnt_acquired_locks'					=> 0,
+        'time_acquired_locks'					=> 0,
+
+        'time_in_transactions'                  => 0,
+        'time_in_commits'                       => 0,
+
+        'cnt_master_transctions'                => 0,//this is also the number of commits
+        'cnt_nested_transactions'               => 0,
+
+    ];
 
     private function __construct()
     {
@@ -300,9 +368,9 @@ BANNER;
      */
     public static function set_di_container(ContainerInterface $Container) : void
     {
-        $Container->initialize();
-        self::printk(sprintf('All global services are initialized').PHP_EOL);
         self::$Container = $Container;
+        $Container->initialize();
+        //self::printk(sprintf('All global services are initialized.').PHP_EOL);
     }
 
     public static function get_di_container() : ?ContainerInterface
@@ -407,11 +475,68 @@ BANNER;
         return self::$Logger;
     }
 
+    public static function get_main_log_file() : ?string
+    {
+        $ret = NULL;
+        $handlers = self::get_logger()->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $url;
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    /**
+     * Returns the log level as string as per LogLevel
+     * @return string
+     */
+    public static function get_log_level() : ?string
+    {
+        $ret = NULL;
+        $Logger = self::get_logger();
+        $handlers = $Logger->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $Logger::getLevelName($Handler->getLevel());
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
+    public static function get_main_log_file_handler() : ?StreamHandler
+    {
+        $ret = NULL;
+        $Logger = self::get_logger();
+        $handlers = $Logger->getHandlers();
+        foreach ($handlers as $Handler) {
+            if ($Handler instanceof StreamHandler) {
+                $url = $Handler->getUrl();
+
+                if ($url && $url[0] === '/') { //skip php://output
+                    $ret = $Handler;
+                    break;
+                }
+            }
+        }
+        return $ret;
+    }
+
     public static function dump(/* mixed */ $var) : void
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
-        $str = print_r($var, TRUE);
+        $str = var_dump($var, TRUE);
         if ($frame) {
             $str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
         }
@@ -433,8 +558,9 @@ BANNER;
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
      * @param \Throwable $exception
+     * @param NULL|int $exit_code If int exit code is provided this will terminate the program/worker
      */
-    public static function exception_handler(\Throwable $Exception, ?int $exit_code = self::EXIT_GENERAL_ERROR): void
+    public static function exception_handler(\Throwable $Exception, ?int $exit_code = NULL): void
     {
 
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
@@ -457,14 +583,7 @@ BANNER;
         $output = (string) $Exception;
 
         self::log($output, LogLevel::EMERGENCY);
-        //file_put_contents('AAA', $output.PHP_EOL, FILE_APPEND);
-        //self::logtofile($output);
-        //die($output);
-        //print $output;
-        //die(1);//kill that worker
-        //why kill the whole worker... why not just terminate the coroutine/request
-        //in fact this code will be used only before the server is started
-        //print $output.PHP_EOL;//the logger is used instead
+
         if ($exit_code !== NULL) {
             die($exit_code);
         } else {
@@ -559,7 +678,7 @@ BANNER;
             // todo fix padding
             $message = sprintf('[%.4f %s] %s', $microtime_diff, $worker_str, $message);
         }
-        $handlers = self::$Logger->getHandlers();
+        $handlers = self::get_logger()->getHandlers();
         foreach ($handlers as $Handler) {
             if ($Handler instanceof StreamHandler) {
                 $url = $Handler->getUrl();
@@ -601,6 +720,23 @@ BANNER;
         return self::$autoloader_lookup_paths;
     }
 
+    /**
+     * Returns the Component class based on a provided class
+     * @param string $class
+     * @return string|null
+     */
+    public static function get_component_by_class(string $class) : ?string
+    {
+        $ret = NULL;
+        foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix=>$path) {
+            if (strpos($class, $ns_prefix) === 0) {
+                $ret = $ns_prefix.'\\Component';
+                break 1;
+            }
+        }
+        return $ret;
+    }
+
     public static function namespace_base_is_registered(string $namespace_base): bool
     {
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
@@ -627,11 +763,11 @@ BANNER;
     public static function get_runtime_configuration(string $class_name) : array
     {
         $runtime_config = [];
+
         $RClass = new ReflectionClass($class_name);
 
         if ($RClass->implementsInterface(ConfigInterface::class)) {
-
-
+            
             //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
                 $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
@@ -668,9 +804,6 @@ BANNER;
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\n==============================\nClass: {$real_class_name}\n");
 
                 $registry_config = self::$Registry->get_class_config_values($real_class_name);
-//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
-//                    print_r($registry_config);
-//                }
 
                 foreach ($default_config as $key_name=>$key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
@@ -697,9 +830,8 @@ BANNER;
                         };
                     }
                 }
-//                if ($real_class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
-//                    print_r($runtime_config);
-//                }
+
+
 
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, TRUE));
                 // the word FINAL is required here as it announces for final write in the file, when "return" is added
@@ -769,6 +901,41 @@ BANNER;
         return $ret;
     }
 
+
+    /**
+     * Returns an associative array with path=>class that match the provided $ns_prefixes and (if provided) are of class/interface $class.
+     * @param array $ns_prefixes
+     * @param string $class
+     * @return array
+     * @throws InvalidArgumentException
+     */
+    public static function get_classes(array $ns_prefixes, string $class = '') : array
+    {
+        $ret = [];
+        if ($class && !class_exists($class) && !interface_exists($class)) {
+            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class));
+        }
+        $loaded_classes = Kernel::get_loaded_classes();
+
+        foreach ($ns_prefixes as $ns_prefix) {
+            foreach ($loaded_classes as $class_path => $loaded_class) {
+                if (strpos($loaded_class, '_without_config') !== FALSE) {
+                    continue;
+                }
+                if ( strpos($loaded_class, $ns_prefix) === 0) {
+                    if ($class) {
+                        if (is_a($loaded_class, $class, TRUE)) {
+                            $ret[$class_path] = $loaded_class;
+                        }
+                    } else {
+                        $ret[$class_path] = $loaded_class;
+                    }
+                }
+            }
+        }
+        return $ret;
+    }
+
     /**
      * Loads all classes found under the registered autoload paths.
      * @see self::$autoloader_lookup_paths
@@ -782,36 +949,6 @@ BANNER;
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path=>$match) {
-
-                //print $path.' ';
-                /*
-                $ns_with_forward_slash = str_replace('\\', '/', $namespace_base);
-                if (($pos = strpos($path, $ns_with_forward_slash)) !== FALSE) {
-
-
-
-                    $class = str_replace(['/','.php'], ['\\',''], substr($path, $pos));
-
-//                    if (strpos($class, 'CachingMiddleware') !== FALSE) {
-//                        print 'GGGGGGGGGGGGGGGGGG';
-//                    }
-
-                    //we also need to check again already included files
-                    //as including a certain file may trigger the autoload and load other classes that will be included a little later
-                    $included_files = get_included_files();
-                    if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
-                        //skip this file - it is already included
-                        continue;
-                    }
-                    //print 'OK'.PHP_EOL;
-                    class_exists($class);//this will trigger the autoloader if the class doesnt already exist
-                    //self::autoloader($class);//an explicit call will trigger an error if the class is already loaded
-                } else {
-                    //print 'NOOOO'.PHP_EOL;
-                    print $path.' '.$ns_with_forward_slash.PHP_EOL;
-                }
-                */
-
 
                 $class_name = str_replace($autoload_lookup_path, '', $path);
                 $class_name = str_replace('\\\\','\\', $class_name);
@@ -872,15 +1009,40 @@ BANNER;
         return $initialization_classes;
     }
 
+    /**
+     * Returns the classes loaded through Kernel::autoload().
+     * Returns an associative array with $class_path=>$class_name
+     * @return array
+     */
     public static function get_loaded_classes() : array
     {
         return self::$loaded_classes;
     }
 
-    public static function get_loaded_paths() : array
+    /**
+     * Returns the path of the provided class if the class was loaded through Kernel::autoload().
+     * Otherwise returns NULL.
+     * @param string $class_name
+     * @return string|null
+     * @throws InvalidArgumentException
+     */
+    public static function get_class_path(string $class_name) : ?string
     {
-        return self::$loaded_paths;
+        if (!class_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf('No class %s exists.', $class_name));
+        }
+        $ret = array_search($class_name, self::$loaded_classes);
+        if ($ret === FALSE) {
+            //throw new InvalidArgumentException(sprintf('The provided class %s is not loaded through the Kernel::autoload().', $class_name));
+            $ret = NULL;
+        }
+        return $ret;
     }
+
+//    public static function get_loaded_paths() : array
+//    {
+//        return self::$loaded_paths;
+//    }
 
     /**
      * Logs a message using the default logger
@@ -960,9 +1122,11 @@ BANNER;
             if (strpos($class_name, $namespace_base) === 0) {
 
                 if ($namespace_base === self::FRAMEWORK_NAME) {
-                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', $class_name).'.php');
+                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', $class_name).'.php';
+                    $class_path = realpath($formed_class_path);
                 } else {
-                    $class_path = realpath($lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php');
+                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php';
+                    $class_path = realpath($formed_class_path);
                 }
 
                 if ($class_path && is_readable($class_path)) {
@@ -973,8 +1137,9 @@ BANNER;
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
                     self::initialize_class($class_name);
-                    self::$loaded_classes[] = $class_name;
-                    self::$loaded_paths[] = $class_path;
+                    //self::$loaded_classes[] = $class_name;
+                    //self::$loaded_paths[] = $class_path;
+                    self::$loaded_classes[$class_path] = $class_name;
                     $ret = TRUE;
 
                     $parent_class = get_parent_class($class_name);
@@ -989,9 +1154,11 @@ BANNER;
 
                 } else {
                     //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
-                    $message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
+                    //$message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
+                    //$message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $formed_class_path);
                     //throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-                    self::exception_handler(new \Guzaba2\Kernel\Exceptions\AutoloadException($message));
+                    //self::exception_handler(new \Guzaba2\Kernel\Exceptions\AutoloadException($message));
+                    //there are paths that are served by the Composer autoloader and are still part of the GuzabaPlatform... do not throw an exception here... leave the next autoloader
                 }
             } else {
                 //this autoloader can not serve this request - skip this class and leave to the next autoloader (probably Composer) to load it
@@ -1010,8 +1177,6 @@ BANNER;
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
-        //print $class_path.' '.$class_name.PHP_EOL;
-
         $ret = NULL;
 
         try {
@@ -1023,23 +1188,15 @@ BANNER;
 
             //TODO - he below is a very primitive check - needs to be improved and use tokenizer
             if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== FALSE) {
-
-//                if ($class_name === 'GuzabaPlatform\Platform\Application\MysqlConnection') {
-//                    print '==================================';
-//                    print file_get_contents(SourceStream::PROTOCOL.'://'.$class_path);
-//                    print '==================================';
-//                }
-
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
                 $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
             } else {
                 $ret = require_once($class_path);
             }
         } catch (\Throwable $exception) {
-            //print '==================='.PHP_EOL;
-            print 'ERROR IN CLASS GENERATION'.PHP_EOL;
-            print $exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString();
-            //print '==================='.PHP_EOL;
+
+            self::printk('ERROR IN CLASS GENERATION'.PHP_EOL);
+            self::printk($exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString().PHP_EOL);
         }
 
 

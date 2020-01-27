@@ -35,7 +35,7 @@ abstract class Connection extends TransactionalConnection
      */
     protected $original_query = '';
 
-    protected function prepare_statement(string $query, string $statement_class) : StatementInterface
+    protected function prepare_statement(string $query, string $statement_class, Connection $Connection) : StatementInterface
     {
         if (!class_exists($statement_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $statement_class does not exist.'), $statement_class));
@@ -60,13 +60,11 @@ abstract class Connection extends TransactionalConnection
             }
         }
 
-        $Statement = new $statement_class($NativeStatement, $query, $expected_parameters);
+        $Statement = new $statement_class($NativeStatement, $Connection, $query, $expected_parameters);
         return $Statement;
     }
 
     public abstract function prepare(string $query) : StatementInterface ;
-
-    public abstract function connect() : void;
 
     public function close() : void
     {

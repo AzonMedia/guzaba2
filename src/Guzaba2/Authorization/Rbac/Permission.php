@@ -24,7 +24,7 @@ class Permission extends ActiveRecord
     {
         $Permission = new self();
         $Permission->permission_name = $permission_name;
-        $Permission->save();
+        $Permission->write();
         return $Permission;
     }
 

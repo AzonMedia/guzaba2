@@ -1,9 +1,7 @@
 <?php
 declare(strict_types=1);
 
-
 namespace Guzaba2\Orm;
-
 
 use Azonmedia\Reflection\Reflection;
 use Azonmedia\Reflection\ReflectionClass;
@@ -13,7 +11,7 @@ use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 use Guzaba2\Kernel\Kernel;
-use Guzaba2\Mvc\Controller;
+use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 use Guzaba2\Translator\Translator as t;
@@ -23,7 +21,7 @@ use Guzaba2\Translator\Translator as t;
  * Contains methods used to validate all ActiveRecord classes
  * @package Guzaba2\Orm
  */
-class ClassDeclarationValidation extends Base implements ClassDeclarationValidationInterface
+abstract class ClassDeclarationValidation extends Base implements ClassDeclarationValidationInterface
 {
 
     public const VALIDATION_METHODS = [
@@ -135,7 +133,7 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
     }
 
     /**
-     * Validates the CRUD hooks (_before_save(), _after_delete() etc).
+     * Validates the CRUD hooks (_before_write(), _after_delete() etc).
      * These must be protected and return void
      */
     public static function validate_crud_hooks(array $ns_prefixes) : void
@@ -188,7 +186,7 @@ class ClassDeclarationValidation extends Base implements ClassDeclarationValidat
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
             $RClass = new ReflectionClass($active_record_class);
-            if (is_a($active_record_class, Controller::class, TRUE)) {
+            if (is_a($active_record_class, ActiveRecordController::class, TRUE)) {
                 continue;//as the Controller is now also an ActiveRecord this check needs to be suppressed. These are expected to have properties.
             }
             if (count($RClass->getOwnDynamicProperties())) {

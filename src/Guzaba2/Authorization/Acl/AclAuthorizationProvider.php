@@ -7,11 +7,12 @@ use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Role;
-use Monolog\Handler\MissingExtensionException;
+use Guzaba2\Translator\Translator as t;
 
 class AclAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
@@ -63,10 +64,30 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         }
     }
 
+
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    {
+        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] );
+    }
+
+    public function get_permissions_by_class(string $class_name) : iterable
+    {
+        if (!class_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('')));
+        }
+        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => NULL ] );
+    }
+
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
     {
         $Role = self::get_service('CurrentUser')->get()->get_role();
         return $this->role_can($Role, $action, $ActiveRecord);
+    }
+
+    public function current_role_can_on_class(string $action, string $class): bool
+    {
+        $Role = self::get_service('CurrentUser')->get()->get_role();
+        return $this->role_can_on_class($Role, $action, $string);
     }
 
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
@@ -105,6 +126,23 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 //        $permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
 //        $class_permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
 //        $permissions = array_merge($permissions, $class_permissions);
+
+        return $ret;
+    }
+
+    /**
+     * @param Role $Role
+     * @param string $action
+     * @param string $class
+     * @return bool
+     */
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    {
+        $ret = FALSE;
+
+        $roles_ids = $Role->get_all_inherited_roles_ids();
+        $class_permissions = Permission::get_data_by( [ 'class_name' => $class, 'object_id'=> NULL, 'action_name' => $action] );
+        $ret = self::check_permissions($roles_ids, $class_permissions);
 
         return $ret;
     }

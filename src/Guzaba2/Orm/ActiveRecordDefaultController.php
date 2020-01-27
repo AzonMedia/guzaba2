@@ -3,11 +3,12 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
-use Guzaba2\Mvc\Controller;
+use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -25,8 +26,16 @@ use Guzaba2\Kernel\Kernel;
  * The routes are set by the @see ActiveRecord::get_default_routes() and these are to be provided to the Router (merged with the application specific routes).
  * @package Guzaba2\Orm
  */
-class ActiveRecordDefaultController extends Controller
+class ActiveRecordDefaultController extends ActiveRecordController
 {
+
+    protected const CONFIG_DEFAULTS = [
+        'route'                 => '/admin/crud-operations',
+        //'structure' => []//TODO add structure
+        //'controllers_use_db'    => FALSE,
+    ];
+
+    protected const CONFIG_RUNTIME = [];
 
     /**
      * @var ActiveRecord
@@ -37,33 +46,37 @@ class ActiveRecordDefaultController extends Controller
      * Instantiates the ActiveRecord object.
      * May return Response if there is an error.
      * @param string|null $uuid
-     * @param string|null $class_name This is to be used when working with controllers - then the class name of the actual controller needs to be specified
+     * @param string|null $class_name
      * @return ResponseInterface|null
      */
-    public function _init(?string $uuid = NULL, ?string $class_name = NULL) : ?ResponseInterface
+    public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL) : ?ResponseInterface
+    //public function _init(?string $uuid = NULL) : ?ResponseInterface
     {
-
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
 
         if (!$uuid) {
-            if ($this->get_request()->getMethodConstant() === Method::HTTP_POST) {
-                //means a new record is to be created
-                if (!empty($route_meta_data['orm_class'])) {
-                    //$this->ActiveRecord = new $route_meta_data['orm_class'](0);
-                    $this->ActiveRecord = new $route_meta_data['orm_class']();
-                } elseif ($class_name) {
-                    $this->ActiveRecord = new $class_name();
-                    //trick it so it doesnt access the database
-                    //$this->ActiveRecord = new $class_name($this->get_request());
-                } else {
-                    $struct = [];
-                    $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
-                    $Response = parent::get_structured_badrequest_response($struct);
-                    $Response = $Response->withHeader('data-origin','orm-specific');
-                    return $Response;
-                }
 
-            } elseif ($this->get_request()->getMethodConstant() !== Method::HTTP_OPTIONS) {
+            if ($crud_class_name) {
+                if (strpos($crud_class_name, '-')) {
+                    $crud_class_name = str_replace('-','\\', $crud_class_name);
+                }
+            } elseif (!empty($route_meta_data['orm_class'])) {
+                $crud_class_name = $route_meta_data['orm_class'];
+            }
+
+            if (!$crud_class_name) {
+                $struct = [];
+                $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
+                //$struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class.'), $this->get_request()->getUri()->getPath());
+                $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
+                return $Response;
+            }
+
+            if ( in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ] , TRUE)  ) {
+                //$this->ActiveRecord = new $route_meta_data['orm_class']();
+                $this->ActiveRecord = new $crud_class_name();
+            } else {
                 //manipulation of an existing record is requested but no UUID is provided
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No UUID provided.'));
@@ -78,6 +91,12 @@ class ActiveRecordDefaultController extends Controller
             } catch (RecordNotFoundException $Exception) {
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No object with the provided UUID %s is found.'), $uuid);
+                $Response = parent::get_structured_badrequest_response($struct);
+                $Response = $Response->withHeader('data-origin','orm-specific');
+                return $Response;
+            } catch (PermissionDeniedException $Exception) {
+                $struct = [];
+                $struct['message'] = sprintf(t::_('You are not allowed to read the object with UUID %s.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
                 $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;
@@ -125,8 +144,7 @@ class ActiveRecordDefaultController extends Controller
 
         //because this method handles multiple types of records the expected params can not be listed in the method signature
         $body_arguments = $this->get_request()->getParsedBody();
-        //print_r($body_arguments);
-        //print gettype($body_arguments['object_id']);
+
         if ($body_arguments === NULL) {
             $struct = [];
             $struct['message'] = sprintf(t::_('The provided request could not be parsed.'));
@@ -135,11 +153,16 @@ class ActiveRecordDefaultController extends Controller
         }
 
         $primary_index = $this->ActiveRecord::get_primary_index_columns();
+        //Kernel::dump($body_arguments);
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
+        //Kernel::dump($body_arguments);
         $columns_data = $this->ActiveRecord::get_columns_data();
 
         foreach ($body_arguments as $property_name=>$property_value) {
-            if (!$this->ActiveRecord::has_property($property_name)) {
+            if ($property_name === 'crud_class_name') {
+                continue;
+            }
+            if (!$this->ActiveRecord::has_property($property_name) ) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;
@@ -149,14 +172,10 @@ class ActiveRecordDefaultController extends Controller
                 continue;
             }
 
-            if ($columns_data[$property_name]['php_type'] == "integer") {
-                $property_value = (int) $property_value;
-            }
-
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 
-        $this->ActiveRecord->save();
+        $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
@@ -186,6 +205,9 @@ class ActiveRecordDefaultController extends Controller
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
         $columns_data = $this->ActiveRecord::get_columns_data();
         foreach ($body_arguments as $property_name=>$property_value) {
+            if ($property_name === 'crud_class_name') {
+                continue;
+            }
             if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
@@ -199,7 +221,7 @@ class ActiveRecordDefaultController extends Controller
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 
-        $this->ActiveRecord->save();
+        $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
         $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord) );
@@ -349,6 +371,14 @@ class ActiveRecordDefaultController extends Controller
         }
         $struct += self::form_object_struct($this->ActiveRecord);
         $Response = parent::get_structured_ok_response($struct);
+        return $Response;
+    }
+
+    //TODO implement pagination
+    public function list(int $offset = 0, int $limit = 0) : ResponseInterface
+    {
+        $data = $this->ActiveRecord::get_data_by([]);
+        $Response = parent::get_structured_ok_response($data);
         return $Response;
     }
 

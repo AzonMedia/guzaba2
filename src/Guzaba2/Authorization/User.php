@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
-use Azonmedia\Di\Interfaces\CoroutineDependencyInterface;
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Orm\ActiveRecord;
@@ -13,16 +12,15 @@ use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 /**
  * Class User
  * @package Guzaba2\Authorization\Rbac
- * It MUST implement the CoroutineDependencyInterface as otherwise the DefaultCurrentUser will persist between the requests
  * @property user_id
  * @property role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
  */
-class User extends ActiveRecord implements UserInterface, CoroutineDependencyInterface
+class User extends ActiveRecord implements UserInterface
 {
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
-        'route'                     => '/user',
+        'route'                     => '/users',
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,
@@ -128,7 +126,7 @@ class User extends ActiveRecord implements UserInterface, CoroutineDependencyInt
 
     }
 
-    protected function _before_save() : void
+    protected function _before_write() : void
     {
         if ($this->is_new()) {
             //a new primary role needs to be created for this user

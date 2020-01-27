@@ -26,6 +26,15 @@ trait ActiveRecordAuthorization
         return;
     }
 
+    public static function check_class_permission(string $action) : void
+    {
+        $class = get_called_class();
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+            static::get_service('AuthorizationProvider')->check_class_permission($action, $class );
+        }
+        return;
+    }
+
     /**
      * The current role if the primary role of the CurrentUser.
      * @param string $action
@@ -34,6 +43,12 @@ trait ActiveRecordAuthorization
     public function current_role_can(string $action) : bool
     {
         return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can($action, $this) : TRUE;
+    }
+
+    public static function current_role_can_on_class(string $action) : bool
+    {
+        $class = get_called_class();
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can_on_class($action, $class) : TRUE;
     }
 
     /**

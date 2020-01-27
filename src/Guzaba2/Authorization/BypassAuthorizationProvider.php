@@ -23,6 +23,11 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
         return TRUE;
     }
 
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    {
+        return TRUE;
+    }
+
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord
      * @param string $action
@@ -30,6 +35,11 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @return bool
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool
+    {
+        return TRUE;
+    }
+
+    public function current_role_can_on_class(string $action, string $class) : bool
     {
         return TRUE;
     }
@@ -42,6 +52,11 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @return bool
      */
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void
+    {
+        return;
+    }
+
+    public function check_class_permission(string $action, string $class) : void
     {
         return;
     }
@@ -74,6 +89,16 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
     public function delete_class_permissions(string $class_name) : void
     {
         return;
+    }
+
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    {
+        return [];
+    }
+
+    public function get_permissions_by_class(string $class_name) : iterable
+    {
+        return [];
     }
 
     public static function get_used_active_record_classes() : array

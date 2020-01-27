@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Database;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Coroutine\Coroutine;
@@ -15,9 +16,12 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
-            'ConnectionFactory'
+            'ConnectionFactory',
+            'Apm',
         ]
     ];
+
+    protected array $options;
 
     protected const CONFIG_RUNTIME = [];
 
@@ -35,11 +39,33 @@ abstract class Connection extends GenericResource implements ConnectionInterface
         //or have a separate flag $is_connected_flag
     }
 
-    public abstract function close() : void ;
+    public function get_options() : array
+    {
+        return $this->options;
+    }
 
+    /**
+     * Returns table prefix.
+     * @return string
+     */
     public static function get_tprefix() : string
     {
         return static::CONFIG_RUNTIME['tprefix'] ?? '';
+    }
+    
+    public static function validate_options(array $options) : void
+    {
+        $called_class = get_called_class();
+        foreach ($options as $key=>$value) {
+            if (!in_array($key, static::get_supported_options() )) {
+                throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, get_called_class(), implode(', ', static::get_supported_options() ) ));
+            }
+        }
+    }
+
+    public static function get_supported_options(): array
+    {
+        return static::SUPPORTED_OPTIONS;
     }
 
 }

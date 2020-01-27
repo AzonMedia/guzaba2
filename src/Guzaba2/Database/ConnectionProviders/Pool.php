@@ -105,9 +105,11 @@ class Pool extends Provider
             $Connection = $Context->{Resources::class}->get_resource($connection_class);//may return NULL
         }
 
+
         //no connection assigned to the current coroutine was found - assign a new one
         if (empty($Connection)) {
             $Connection = $this->get_new_connection($connection_class);
+
         }
 
         $Connection->increment_scope_counter();
@@ -237,6 +239,7 @@ class Pool extends Provider
         }
         if (Coroutine::inCoroutine()) {
             if (!array_key_exists($connection_class, $this->available_connections)) {
+                //TODO - add an option these to be initialized at server startup
                 $this->initialize_connections($connection_class);
             }
             // increment the time for waiting for free connection

@@ -28,7 +28,7 @@ class PermissionOperation extends ActiveRecord
         $PermissionOperation = new self();
         $PermissionOperation->permission_id = $Permission->get_id();
         $PermissionOperation->operation_id = $Operation->get_id();
-        $PermissionOperation->save();
+        $PermissionOperation->write();
         return $PermissionOperation;
     }
 }

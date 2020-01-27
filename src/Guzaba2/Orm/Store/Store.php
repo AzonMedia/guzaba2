@@ -135,7 +135,8 @@ abstract class Store extends Base implements StoreInterface
         $primary_index_columns = $class::get_primary_index_columns();
         $primary_index_data = self::parse_lookup_index($lookup_index);
         $primary_index = [];
-        for ($aa=0; $aa<count($primary_index_columns); $aa++) {
+        $primary_index_columns_count = count($primary_index_columns);
+        for ($aa=0; $aa<$primary_index_columns_count; $aa++) {
             $primary_index[$primary_index_columns[$aa]] = $primary_index_data[$aa];
         }
         return $primary_index;

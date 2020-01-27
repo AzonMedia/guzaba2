@@ -5,6 +5,8 @@ namespace Guzaba2\Mvc;
 
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\BaseException;
+use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -41,6 +43,15 @@ use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 class ExecutorMiddleware extends Base implements MiddlewareInterface
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Events',
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+
     /**
      * To be used when the Body of the Response is of type Structured
      */
@@ -60,6 +71,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
     protected string $override_html_content_type = '';
 
+    /**
+     * Multidimensional associative array [$class][$method][0] => ['name' => '', 'type'=>'', 'default_value'=>'']
+     * where default_value is optional and will not be present if there is no default value
+     * @var array
+     */
+    protected static $controllers_params = [];
+
     public function __construct(Server $Server, string $override_html_content_type = '')
     {
         
@@ -75,8 +93,43 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     }
 
     /**
-     *
-     *
+     * Keeps in static cache the data of all controllers parameters to avoid using Reflection during runtime.
+     * @param array $ns_prefixes
+     * @throws ClassValidationException
+     * @throws \ReflectionException
+     */
+    public static function initialize_controller_arguments(array $ns_prefixes) : void
+    {
+        //$ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        $controller_classes = Controller::get_controller_classes($ns_prefixes);
+        foreach ($controller_classes as $class) {
+
+            foreach ((new \ReflectionClass($class))->getMethods(\ReflectionMethod::IS_PUBLIC) as $RMethod) {
+                if ($RMethod->isConstructor()) {
+                    continue;
+                }
+                if ($RMethod->getDeclaringClass()->getName() !== $class) {
+                    continue;//do not validate parent methods
+                }
+                $ordered_parameters = [];
+                foreach ($RMethod->getParameters() as $RParameter) {
+                    if (!($Rtype = $RParameter->getType())) {
+                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $class, $RMethod->getName(), $RParameter->getName() ));
+                    }
+                    $param_data = ['name' => $RParameter->getName(), 'type' => $RParameter->getType()->getName()];
+                    if ($RParameter->isDefaultValueAvailable()) {
+                        $param_data['default_value'] = $RParameter->getDefaultValue();
+                    }
+                    $ordered_parameters[] = $param_data;
+                }
+                self::$controllers_params[$class][$RMethod->getName()] = $ordered_parameters;
+            }
+        }
+    }
+
+    /**
+     * Checks the permissions (if applicable) and executes the controller.
+     * If there is view it also executes the view.
      * @param ServerRequestInterface $Request
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface
@@ -84,6 +137,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
+
+        $requested_content_type = $Request->getContentType();
+        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
+            $requested_content_type = $this->override_html_content_type;
+        }
+        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
 
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
@@ -98,16 +157,16 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                             $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true) );
                             $Body = new Structured( [ 'message' => $message ] );
                             $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
-
+                            $Response = [$this, $type_handler]($Request, $Response);
                             return $Response;
                         }
 
                         $controller_arguments += $body_params;
                     } else {
-                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received.'), $Request->getMethod() );
+                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod() , count($body_params) );
                         $Body = new Structured( [ 'message' => $message ] );
                         $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
-
+                        $Response = [$this, $type_handler]($Request, $Response);
                         return $Response;
                     }
 
@@ -124,13 +183,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
-                    $requested_content_type = $Request->getContentType();
-
-                    if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
-                        $requested_content_type = $this->override_html_content_type;
-                    }
-                    $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
-
                     $Response = [$this, $type_handler]($Request, $Response);
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
@@ -161,45 +213,58 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
         $Response = NULL;
         try {
-            $RMethod = new \ReflectionMethod(get_class($Controller), $method);
-            $parameters = $RMethod->getParameters();
-//print_r($parameters);
-            $ordered_parameters = [];
-
-            foreach ($parameters as $key => $parameter) {
-                $argType = $parameter->getType();
-
-                if (isset($controller_arguments[$parameter->getName()])) {
-//print $controller_arguments[$parameter->getName()].PHP_EOL;
-                    $value = $controller_arguments[$parameter->getName()];
-                } elseif ($parameter->isDefaultValueAvailable() ) {
-                    $value = $parameter->getDefaultValue();
+            $ordered_arguments = [];
+            foreach (self::$controllers_params[get_class($Controller)][$method] as $param) {
+                if (isset($controller_arguments[$param['name']])) {
+                    $value = $controller_arguments[$param['name']];
+                } elseif (array_key_exists('default_value', $param)) {
+                    $value = $param['default_value'];
                 } else {
-                    throw new RunTimeException(sprintf(t::_('No value provided for parameter %s on %s::%s().'), $parameter->getName(), get_class($Controller), $method ));
+                    //TODO add function parameters in the error message.
+                    throw new InvalidArgumentException(sprintf(t::_('No value provided for parameter $%s on %s::%s().'), $param['name'], get_class($Controller), $method ));
                 }
-
-                settype($value, $argType->getName() );
-                $ordered_parameters[] = $value;
-                unset($value);
-
+                settype($value, $param['type']);
+                $ordered_arguments[] = $value;
             }
+            //because the Response is immutable it needs to be passed around instead of modified...
+            $Event = self::get_service('Events')::create_event($Controller, '_before_'.$method, $ordered_arguments, NULL);
+            $ordered_arguments = $Event->get_event_return() ?? $ordered_arguments;
+            //no need to do get_response() - instead of that if the execution needs to be interrupted throw InterruptControllerException
+            //if (!($Response = $Controller->get_response())) { //if the _before_method events have not produced a response call the method
+            $Response = [$Controller, $method](...$ordered_arguments);
+            //if ($Response) {
+            //    $Controller->set_response($Response);
+            //}
+            //self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
+            //$Response = $Controller->get_response();//the _after_ events may have changed the Response
+            //}
+            //$Response = self::get_service('Events')::create_event($Controller, '_after_'.$method, [], $Response) ?? $Response;//these can replace the response too (to append it)
+            $Event = self::get_service('Events')::create_event($Controller, '_after_'.$method, [], $Response);
+            $Response = $Event->get_event_return() ?? $Response;
 
+//            //as the events/hooks work only with Structured body and the structure there can be passed by reference there is no need to pass around the response
+//            //its bosy->struct can be just changed
+//            //of course for any other type of response body this will not work.
+//            self::get_service('Events')::create_event($Controller, '_before_'.$method);
+//            $Response = [$Controller, $method](...$ordered_arguments);
+//            self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
 
-            //\call_user_func_array([$controller_callable[0], '_init'], $ordered_parameters);
-            $Response = [$Controller, $method](...$ordered_parameters);
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
         } catch (PermissionDeniedException $Exception) {
-            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (RecordNotFoundException $Exception) {
-            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (RunTimeException $Exception) {
-            Kernel::exception_handler($Exception);
-            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (InvalidArgumentException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
-        } catch (ValidationFailedException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getMessage() ] );
+            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getPrettyMessage() ] );
+        } catch (InvalidArgumentException | ValidationFailedException $Exception) {
+            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getPrettyMessage()]);
+        } catch (BaseException $Exception) {
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] );
+        } catch (\Throwable $Exception) {
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] ); //no getPrettyMessage() here
+        } finally {
+            if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
+                Kernel::exception_handler($Exception);
+            }
         }
         return $Response;
     }
@@ -208,7 +273,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $StructuredBody = $Response->getBody();
         $structure = $StructuredBody->getStructure();
-        $json_string = json_encode($structure);
+        $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
         $StreamBody = new Stream(NULL, $json_string);
         $Response = $Response->
             withBody($StreamBody)->

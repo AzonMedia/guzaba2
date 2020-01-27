@@ -475,7 +475,6 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                 $this->getBody()->rewind();
                 $request_type = $this->getContentType();
                 switch ($request_type) {
-
                     case ContentType::TYPE_HTML:
                         throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
                         break;
@@ -491,7 +490,6 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                     case ContentType::TYPE_YAML:
                         throw new NotImplementedException(sprintf('Parsing a YAML request body is not implemented.'));
                         break;
-
                     case ContentType::TYPE_TEXT:
                     default:
                         throw new NotImplementedException(sprintf('Parsing a TEXT request body is not implemented.'));

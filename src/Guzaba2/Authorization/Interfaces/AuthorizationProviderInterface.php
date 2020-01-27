@@ -23,6 +23,8 @@ interface AuthorizationProviderInterface
      */
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool ;
 
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool ;
+
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord.
      * @param string $action
@@ -30,6 +32,8 @@ interface AuthorizationProviderInterface
      * @return bool
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool ;
+
+    public function current_role_can_on_class(string $action, string $class) : bool ;
 
     /**
      * Checks can the provided $role perform the $action on the object $ActiveRecord and if cant a PermissionDeniedException is thrown.
@@ -39,6 +43,8 @@ interface AuthorizationProviderInterface
      * @return bool
      */
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void ;
+
+    public function check_class_permission(string $action, string $class_name) : void ;
 
     /**
      * Grants a new object permission.
@@ -88,6 +94,20 @@ interface AuthorizationProviderInterface
      * @param string $class_name
      */
     public function delete_class_permissions(string $class_name) : void ;
+
+    /**
+     * Returns all permissions for the given ActiveRecord object.
+     * @param ActiveRecordInterface|null $ActiveRecord
+     * @return iterable
+     */
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable ;
+
+    /**
+     * Returns all permissions for the given ActiveRecord class.
+     * @param string $class_name
+     * @return iterable
+     */
+    public function get_permissions_by_class(string $class_name) : iterable ;
 
     /**
      * Returns the class names of the ActiveRecord classes used by the Authorization implementation.

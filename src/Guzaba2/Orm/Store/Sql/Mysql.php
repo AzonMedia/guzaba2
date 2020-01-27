@@ -14,6 +14,7 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
+use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
@@ -24,7 +25,7 @@ use Ramsey\Uuid\Uuid;
 
 
 
-class Mysql extends Database implements StructuredStoreInterface
+class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta'
@@ -61,6 +62,10 @@ class Mysql extends Database implements StructuredStoreInterface
      */
     protected array $known_classes = [];
 
+    protected $cache_enabled;
+    protected $hits;
+    protected $misses;
+
     public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
         parent::__construct();
@@ -71,6 +76,8 @@ class Mysql extends Database implements StructuredStoreInterface
         $this->connection_class = $connection_class;
         $this->no_coroutine_connection_class = $no_coroutine_connection_class;
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
+        $this->hits = 0;
+        $this->misses = 0;
     }
 
     public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
@@ -585,7 +592,6 @@ ON DUPLICATE KEY UPDATE
 
     public function &get_data_pointer(string $class, array $index) : array
     {
-
         $data = $this->get_data_by($class, $index);
 
         if (count($data)) {
@@ -598,7 +604,9 @@ ON DUPLICATE KEY UPDATE
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             $ret['data'] = $data[0];
+            $this->hits++;
         } else {
+            $this->misses--;
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
 
@@ -725,8 +733,12 @@ WHERE `meta_object_uuid` = '{$uuid}'
      */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
+
+
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
+
+
 
         //lookup in DB
 
@@ -765,7 +777,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         //otherwise the loaded object will be mising properties
         //but these can be loaded on request
         //so if we
-        
+
         $table_name = $class::get_main_table();
         //the main table must be always loaded
         $j[$class::get_main_table()] = $Connection::get_tprefix().$class::get_main_table();//if it gets assigned multiple times it will overwrite it
@@ -774,7 +786,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         //if($this->is_ownership_table($table_name)){
             
         //}
-        
+
         
         $main_index = $class::get_primary_index_columns();
         //$index = [$main_index[0] => $index];
@@ -831,20 +843,19 @@ WHERE `meta_object_uuid` = '{$uuid}'
         $select_arr = [];
 
         foreach ($j as $table_alias=>$full_table_name) {
-
             //and the class_id & object_id are moved to the WHERE CLAUSE
             if ($table_alias == $table_name) {
                 //do not add ON clause - this is the table containing the primary index and the first shard
                 $on_str = "";
-            } elseif ($table_alias == 'ownership_table') {
-                $on_arr = [];
-
-                $on_arr[] = "ownership_table.class_id = :class_id";
-                $b['class_id'] = static::_class_id;
-
-                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
-
-                $on_str = "ON ".implode(" AND ", $on_arr);
+//            } elseif ($table_alias == 'ownership_table') {
+//                $on_arr = [];
+//
+//                $on_arr[] = "ownership_table.class_id = :class_id";
+//                $b['class_id'] = static::_class_id;
+//
+//                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
+//
+//                $on_str = "ON ".implode(" AND ", $on_arr);
             } else {
                 $on_arr = [];
                 foreach ($main_index as $column_name) {
@@ -863,6 +874,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         unset($w);
         $select_str = implode(PHP_EOL."\t".", ", $select_arr);
         unset($select_arr);
+
 
         // GET meda data
         $select_str .= "
@@ -909,6 +921,7 @@ WHERE
     {$w_str}
 ";
 
+
         if ($limit) {
 
             if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
@@ -945,6 +958,7 @@ WHERE
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
+
 
         return $data;
 
@@ -1074,4 +1088,51 @@ WHERE
 
 //    }
 
+    public function get_hits() : int
+    {
+        return $this->hits;
+    }
+
+    public function get_misses() : int
+    {
+        return $this->misses;
+    }
+
+    public function get_hits_percentage() : float {
+        $ret = 0.0;
+        $hits = $this->get_hits();
+        $misses = $this->get_misses();
+        $total = $hits + $misses;
+
+        if (0 != $total) {
+            $ret = (float) ($hits / $total * 100.0);
+        }
+
+        return $ret;
+    }
+
+    public function reset_hits() : void
+    {
+        $this->hits = 0;
+    }
+
+    public function reset_misses() : void
+    {
+        $this->misses = 0;
+    }
+
+    public function reset_stats() : void
+    {
+        $this->reset_hits();
+        $this->reset_misses();
+    }
+
+    public function reset_all()
+    {
+        /*
+        TODO
+        $this->clear_cache();
+        $this->reset_stats();
+        */
+    }
 }

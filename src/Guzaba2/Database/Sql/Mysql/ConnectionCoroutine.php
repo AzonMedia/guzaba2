@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Database\Sql\Mysql;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\ConnectionFactory;
@@ -18,26 +19,70 @@ use Guzaba2\Translator\Translator as t;
 /**
  * Class ConnectionCoroutine
  * Because Swoole\Corotuine\Mysql\Statement does not support binding parameters by name, but only by position this class addresses this.
+ * The Coroutine/Mysql connection is always initialized with strict_mode = TRUE and fetch_mode = TRUE (meaning
  * @package Guzaba2\Database\Sql\Mysql
  */
 abstract class ConnectionCoroutine extends Connection
 {
 
-    //public function __construct(array $options)
-    public function __construct()
+    /**
+     * The supported options by \Swoole\Coroutine\Mysql()
+     */
+    public const SUPPORTED_OPTIONS = [
+        'host',
+        'user',
+        'password',
+        'database',
+        'port',
+        'timeout',
+        'charset',
+        'strict_type',
+        'fetch_mode',
+    ];
+
+    public function __construct(array $options)
     {
         parent::__construct();
-
-        $this->connect();
+        $this->connect($options);
     }
 
-    public function connect() : void
+    private function connect(array $options) : void
     {
         $this->NativeConnection = new \Swoole\Coroutine\Mysql();
-        $ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
+
+        //$ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
+        //$config = array_merge( ['strict_mode' => TRUE, 'fetch_mode' => TRUE ], static::CONFIG_RUNTIME);
+        //let the fetch_mode to be configurable
+        $config = ['strict_type' => TRUE];//but strict_type must be always TRUE
+        $config = array_merge($options, $config);
+        static::validate_options($options);
+        $this->options = $config;
+        //$config = array_filter($config, fn(string $key) : bool => in_array($key, self::SUPPORTED_OPTIONS), ARRAY_FILTER_USE_KEY );
+//        foreach ($config as $key=>$value) {
+//            if (!in_array($key, self::SUPPORTED_OPTIONS)) {
+//                throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, \Swoole\Coroutine\Mysql::class, implode(', ', self::SUPPORTED_OPTIONS) ));
+//            }
+//        }
+        if (!array_key_exists('fetch_mode', $config)) {
+            $config['fetch_mode'] = FALSE;//better to be false by default as having it to true allows for a connection to be returned to the pool without all the data to have been fetched.
+        }
+
+        $ret = $this->NativeConnection->connect($config);
+
         if (!$ret) {
             throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->NativeConnection->connect_errno, $this->NativeConnection->connect_error));
         }
+    }
+
+//    public function get_options() : array
+//    {
+//        return $this->NativeConnection->serverInfo ?? [];
+//    }
+
+    public function get_fetch_mode() : bool
+    {
+        //return $this->NativeConnection->serverInfo['fetch_mode'];
+        return $this->get_options()['fetch_mode'];
     }
 
     public function prepare(string $query) : StatementInterface
@@ -45,7 +90,7 @@ abstract class ConnectionCoroutine extends Connection
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
-        $Statement = $this->prepare_statement($query, StatementCoroutine::class);
+        $Statement = $this->prepare_statement($query, StatementCoroutine::class, $this);
         return $Statement;
     }
 

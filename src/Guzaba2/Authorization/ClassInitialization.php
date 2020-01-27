@@ -37,7 +37,7 @@ class ClassInitialization extends Base implements ClassInitializationInterface
         {
             $ContextCache->delete('all_inherited_roles');
         };
-        $Events->add_class_callback(RolesHierarchy::class, '_after_save', $Callback);
+        $Events->add_class_callback(RolesHierarchy::class, '_after_write', $Callback);
         $Events->add_class_callback(RolesHierarchy::class, '_after_delete', $Callback);
     }
 

@@ -9,12 +9,16 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;
+use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
-use Guzaba2\Mvc\Interfaces\ControllerInterface;
 
-
+/**
+ * Class ActiveRecordDefaultRoutingMap
+ * @package Guzaba2\Routing
+ * As the Controllers are also ActiveRecords this handles the controllers too (no need to use the ControllerDefaultRoutingMap)
+ */
 class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 {
     /**
@@ -29,7 +33,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      */
     private array $processed_models = [];
 
-    private string $api_route_prefix = '';
+    //private string $route_prefix = '';
     /**
      * ActiveRecordDefaultRoutingMap constructor.
      * Goes thorugh the provided namespace prefixes will be walked through and all models will have their routing extracted.
@@ -37,13 +41,13 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      * @param array $ns_prefixes
      */
-    public function __construct(array $ns_prefixes, string $api_route_prefix = '')
+    public function __construct(array $ns_prefixes /* , string $route_prefix = '' */ )
     {
         if (!$ns_prefixes) {
             throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__ ));
         }
         $this->ns_prefixes = $ns_prefixes;
-        $this->api_route_prefix = $api_route_prefix;
+        //$this->route_prefix = $route_prefix;
 
         $routing_map = [];
         $routing_meta_data = [];
@@ -53,19 +57,24 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 
             $routing = $loaded_class::get_routes();
 
-            //the models may not define route as not every controller is expected to be directly manageable through the API
-//                    if ($routing === NULL) {
-//                        throw new RunTimeException(sprintf(t::_('The model %s has no routing set.'), $loaded_class));
-//                    }
             if ($routing) {
-                //if ($api_route_prefix) {
-                if (is_a($loaded_class, ControllerInterface::class, TRUE)) {
-                    //skip
-                } else {
-                    $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
-                    $routing_map = array_merge($routing_map, $routing);
-                    $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
-                }
+
+//                //if ($api_route_prefix) {
+//                if (is_a($loaded_class, ControllerInterface::class, TRUE)) {
+//                    //skip
+//                } else {
+//                    $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
+//                    $routing_map = array_merge($routing_map, $routing);
+//                    $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
+//                }
+
+
+//                if ($route_prefix) {
+//                    $routing = ArrayUtil::prefix_keys($routing, $this->route_prefix);
+//                }
+
+                $routing_map = array_merge($routing_map, $routing);
+                $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
 
             }
 

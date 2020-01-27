@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug;
 
+use Azonmedia\Debug\Interfaces\CommandInterface;
 use Guzaba2\Base\Base;
+use Guzaba2\Http\Server;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Kernel\Kernel;
 
@@ -15,55 +17,62 @@ use Guzaba2\Kernel\Kernel;
 class Debugger extends Base
 {
     protected const CONFIG_DEFAULTS = [
-        'enabled'   => TRUE,
-        'base_port' => 10000,//on this port the first worker will listen
+        //'enabled'   => TRUE,
+        //'base_port' => 10000,//on this port the first worker will listen
         'prompt'    => '{WORKER_ID}>>> ',
     ];
 
     protected const CONFIG_RUNTIME = [];
 
+    public const DEFAULT_BASE_DEBUG_PORT = 10_000;
+
+    private int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT;
+
     /**
      * @var \Guzaba2\Http\Server
      */
-    protected $HttpServer;
+    private Server $HttpServer;
 
     /**
      * @var \Swoole\Coroutine\Server
      */
-    protected $DebugServer;
+    private \Swoole\Coroutine\Server $DebugServer;
 
     /**
      * @var \Azonmedia\Debug\Interfaces\DebuggerInterface
      */
-    protected $Debugger;
+    private \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger;
 
     /**
      * @var int
      */
-    protected $worker_id;
+    private int $worker_id;
 
     /**
      * @var array
      */
-    protected $prompt_stack = [];
+    protected array $prompt_stack = [];
 
-    public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger)
-    //public function __construct(?\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger)
+    /**
+     * Debugger constructor.
+     * @param Server $HttpServer
+     * @param int $worker_id
+     * @param \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger
+     * @param int $base_debug_port
+     */
+    public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
     {
         parent::__construct();
-
-        if (!self::is_enabled()) {
-            return;
-        }
 
         $this->HttpServer = $HttpServer;
         $this->worker_id = $worker_id;
         $this->Debugger = $Debugger;
+        $this->base_debug_port = $base_debug_port;
 
         $this->set_prompt($this->substitute_prompt_vars(self::CONFIG_RUNTIME['prompt']));
 
         //ob_implicit_flush();
-        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), self::get_worker_port($worker_id), FALSE);
+        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($worker_id), FALSE);
 //        $server->handle(function (Swoole\Coroutine\Server\Connection $conn) use ($server) {
 //            while(true) {
 //                $data = $conn->recv();
@@ -105,11 +114,6 @@ class Debugger extends Base
         };
         $this->DebugServer->handle($Function);
         $this->DebugServer->start();
-    }
-
-    public static function get_base_port() : int
-    {
-        return self::CONFIG_RUNTIME['base_port'];
     }
 
     protected function substitute_prompt_vars(string $prompt) : string
@@ -157,13 +161,60 @@ class Debugger extends Base
         }
     }
 
-    public static function is_enabled() : bool
+    /**
+     * Returns the debug port for the given worker.
+     * @param int $worker_id
+     * @return int
+     */
+    public function get_worker_port(int $worker_id) : int
     {
-        return self::CONFIG_RUNTIME['enabled'];
+        return $this->base_debug_port + $worker_id;
     }
 
-    public static function get_worker_port(int $worker_id) : int
+//    /**
+//     * Returns all dirs where there are debug commands classes.
+//     * @return array
+//     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+//     */
+//    public static function get_debug_command_classes_dirs() : array
+//    {
+//        $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+//        $command_classes = Kernel::get_classes($ns_prefixes, CommandInterface::class);
+//        $command_dir_paths = [];
+//        foreach ($command_classes as $command_class) {
+//            $command_class_path = Kernel::get_class_path($command_class);
+//            $dir_path = dirname($command_class_path);
+//            if (!in_array($dir_path, $command_dir_paths, TRUE)) {
+//                $command_dir_paths[] = $dir_path;
+//            }
+//        }
+//        return $command_dir_paths;
+//    }
+
+    /**
+     * Returns an assocaitive array with all debug command classes
+     * @return array
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    public static function get_debug_command_classes() : array
     {
-        return self::CONFIG_RUNTIME['base_port'] + $worker_id;
+        $ret = [];
+        $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        $classes = Kernel::get_classes($ns_prefixes, CommandInterface::class);
+        foreach ($classes as $class) {
+            if ((new \ReflectionClass($class))->isInstantiable()) {
+                $ret[] = $class;
+            }
+        }
+        //also get all classes from Azomedia\Debug namespace
+        $package_base_path = dirname( ( new \ReflectionClass(\Azonmedia\Debug\Debugger::class))->getFileName() );//azonmedia/debug is a dependency so should exist...
+        $basic_commands_path = $package_base_path.'/Backends/BasicCommands';
+        $files = glob($basic_commands_path.'/*.php');
+        foreach ($files as $file) {
+            require_once($file);
+            $class = 'Azonmedia\\Debug\\Backends\\BasicCommands\\'.basename($file,'.php');
+            $ret[] = $class;
+        }
+        return $ret;
     }
 }

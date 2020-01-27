@@ -23,7 +23,7 @@ class Role extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'roles',
-        'route'                 => '/role',
+        'route'                 => '/roles',
 
         //'load_in_memory'        => TRUE,
 
@@ -71,7 +71,7 @@ class Role extends ActiveRecord
     {
         $Role = new self();
         $Role->role_name = $name;
-        $Role->save();
+        $Role->write();
         return $Role;
     }
 

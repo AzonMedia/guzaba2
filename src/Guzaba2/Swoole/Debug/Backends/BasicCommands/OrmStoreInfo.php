@@ -39,7 +39,7 @@ class OrmStoreInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
         $class_name = self::get_class_name();
 
         $tok = strtok($command, ' ');
-        if (0 === strcasecmp('help', $tok)) {
+        if (0 === strcasecmp('help', $tok) || 0 === strcasecmp($class_name, $tok)) {
             $help_command = preg_replace("/^(\w+\s)/", "", $command);
             if ($this->can_handle($help_command) || 0 === strcasecmp($class_name, $help_command)) {
                 $ret = self::help($help_command);
@@ -72,7 +72,7 @@ class OrmStoreInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
                     break;
                 case 'get ormstore hits percentage' :
-                    $ret .= sprintf(t::_('%s (%s): %s%%'), $class_name, $command, $command_ret);
+                    $ret .= sprintf(t::_('%s (%s): %.2f%%'), $class_name, $command, (double) $command_ret);
                     break;
                 case 'get ormstore misses' :
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);

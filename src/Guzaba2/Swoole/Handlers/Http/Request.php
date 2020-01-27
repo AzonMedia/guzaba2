@@ -4,9 +4,12 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole\Handlers\Http;
 
 use Azonmedia\PsrToSwoole\PsrToSwoole;
+use Guzaba2\Application\Application;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Body\Structured;
+use Guzaba2\Http\ContentType;
 use Guzaba2\Http\Method;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\Response;
@@ -14,6 +17,8 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Server;
 use Guzaba2\Swoole\SwooleToGuzaba;
+use Guzaba2\Translator\Translator as t;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LogLevel;
 use Throwable;
 
@@ -34,9 +39,11 @@ class Request extends HandlerBase
     protected iterable $middlewares = [];
 
     /**
-     * @var Response
+     * @var ResponseInterface
      */
-    protected $DefaultResponse;
+    protected ResponseInterface $DefaultResponse;
+
+    protected ResponseInterface $ServerErrorResponse;
 
     /**
      * RequestHandler constructor.
@@ -45,18 +52,27 @@ class Request extends HandlerBase
      * @param Response|null $DefaultResponse
      * @throws RunTimeException
      */
-    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL)
+    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL, ?ResponseInterface $ServerErrorResponse = NULL)
     {
         parent::__construct($HttpServer);
 
         $this->middlewares = $middlewares;
 
         if (!$DefaultResponse) {
+            $message = t::_('Content not found or request not understood (routing not configured).');
             $Body = new Stream();
-            $Body->write('Content not found or request not understood (routing not configured).');
-            $DefaultResponse = new Response(StatusCode::HTTP_NOT_FOUND, [], $Body);
+            $Body->write($message);
+            $DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
         }
         $this->DefaultResponse = $DefaultResponse;
+
+        if (!$ServerErrorResponse) {
+            $message = t::_('Internal server/application error occurred.');
+            $Body = new Stream();
+            $Body->write($message);
+            $ServerErrorResponse = (new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
+        }
+        $this->ServerErrorResponse = $ServerErrorResponse;
     }
 
     /**
@@ -77,7 +93,21 @@ class Request extends HandlerBase
             //\Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
             \Guzaba2\Coroutine\Coroutine::init($PsrRequest);
 
-            $FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
+            //TODO - this may be reworked to reroute to a new route (provided in the constructor) instead of providing the actual response in the constructor
+            $DefaultResponse = $this->DefaultResponse;
+            if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+                $DefaultResponse->getBody()->rewind();
+                $structure = ['message' => $DefaultResponse->getBody()->getContents()];
+                $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
+                $StreamBody = new Stream(NULL, $json_string);
+                $DefaultResponse = $DefaultResponse->
+                    withBody($StreamBody)->
+                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
+                    withHeader('Content-Length', (string) strlen($json_string));
+            }
+
+            //$FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
+            $FallbackHandler = new \Guzaba2\Http\RequestHandler($DefaultResponse);//this will produce 404
             $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message
             foreach ($this->middlewares as $Middleware) {
                 $QueueRequestHandler->add_middleware($Middleware);
@@ -109,9 +139,20 @@ class Request extends HandlerBase
 
             Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
 
-            $DefaultResponseBody = new Stream();
-            $DefaultResponseBody->write('Internal server/application error occurred.');
-            $PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
+            //$DefaultResponseBody = new Stream();
+            //$DefaultResponseBody->write('Internal server/application error occurred.');
+            //$PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
+            $PsrResponse = $this->ServerErrorResponse;
+            if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+                $PsrResponse->getBody()->rewind();
+                $structure = ['message' => $PsrResponse->getBody()->getContents()];
+                $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
+                $StreamBody = new Stream(NULL, $json_string);
+                $PsrResponse = $PsrResponse->
+                    withBody($StreamBody)->
+                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
+                    withHeader('Content-Length', (string) strlen($json_string));
+            }
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
 
             //$end_time = microtime(TRUE);
@@ -148,9 +189,21 @@ class Request extends HandlerBase
                 Kernel::log($slow_message, LogLevel::DEBUG);
             }
 
-
-            $message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
-            Kernel::log($message, LogLevel::INFO);
+            $message = '';
+            if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK ) {
+                //on failure print additional information if found
+                if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
+                    $PsrResponse->getBody()->rewind();
+                    $contents = $PsrResponse->getBody()->getContents();
+                    $PsrResponse->getBody()->rewind();
+                    $message = json_decode($contents)->message ?? '';
+                }
+                if ($message) {
+                    $message = ' ('.$message.')';
+                }
+            }
+            $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            Kernel::log($log_message, LogLevel::INFO);
         }
     }
 

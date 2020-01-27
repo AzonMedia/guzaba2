@@ -28,6 +28,11 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
         return TRUE;
     }
 
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    {
+        $ret = TRUE;
+    }
+
     /**
      * @overrides
      * @param string $action
@@ -35,6 +40,11 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @return bool
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool
+    {
+        return TRUE;
+    }
+
+    public function current_role_can_on_class(string $action, string $class) : bool
     {
         return TRUE;
     }

@@ -25,41 +25,58 @@ use Guzaba2\Database\Exceptions\ConnectionException;
  * Because Swoole\Corotuine\Mysql\Statement does not support binding parameters by name, but only by position this class addresses this.
  * @package Guzaba2\Database\Sql\Mysql
  */
+//DO NOT USED - not completed - this is not a coroutine class
 abstract class ConnectionCoroutine extends Connection
 {
-    protected const CONFIG_DEFAULTS = [
-        'host'      => '192.168.0.95',
-        'port'      => 27017,
-        'database'  => 'swoole',
-        'username'  => 'swoole_user',
-        'password'  => 'swoole_password',
-        'tprefix'   => 'guzaba_',
-        'AI_table'  => 'guzaba_autoincrement_counters',
+//    protected const CONFIG_DEFAULTS = [
+//        //'host'      => 'host.or.ip',
+//        //'port'      => 27017,
+//        //'database'  => 'dbname',
+//        //'username'  => 'user',
+//        //'password'  => 'password',
+//        //'AI_table'  => 'guzaba_autoincrement_counters',
+//    ];
+//
+//    protected const CONFIG_RUNTIME = [];
+
+    public const SUPPORTED_OPTIONS = [
+        'host',
+        'port',
+        'database',
+        'username',
+        'password',
+        'AI_table',//not part of mongo connection
     ];
 
-    protected const CONFIG_RUNTIME = [];
+    private Manager $Manager;
 
-    protected $Manager;
-
-    public function __construct()
+    public function __construct(array $options, string $tprefix)
     {
         parent::__construct();
 
-        $this->initialize();
+        $this->connect($options);
     }
 
-    public function initialize()
+    private function connect(array $options)
     {
-        if (self::CONFIG_RUNTIME['username'] != '' && self::CONFIG_RUNTIME['password'] != '') {
-            $options = sprintf("mongodb://%s:%s@%s:%s/%s", self::CONFIG_RUNTIME['username'], self::CONFIG_RUNTIME['password'], self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], self::CONFIG_RUNTIME['database']);
-        } else {
-            $options = sprintf("mongodb://%s:%s/%s", self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], self::CONFIG_RUNTIME['database']);            
-        }
 
+        static::validate_options($options);
+        $this->options = $options;
+
+//        if (self::CONFIG_RUNTIME['username'] != '' && self::CONFIG_RUNTIME['password'] != '') {
+//            $options = sprintf("mongodb://%s:%s@%s:%s/%s", self::CONFIG_RUNTIME['username'], self::CONFIG_RUNTIME['password'], self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], self::CONFIG_RUNTIME['database']);
+//        } else {
+//            $options = sprintf("mongodb://%s:%s/%s", self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], self::CONFIG_RUNTIME['database']);
+//        }
+        if ($options['username'] !== '' && $options['password'] !== '') {
+            $options = sprintf("mongodb://%s:%s@%s:%s/%s", $options['username'], $options['password'], $options['host'], $options['port'], $options['database']);
+        } else {
+            $options = sprintf("mongodb://%s:%s/%s", $options['host'], $options['port'], $options['database']);
+        }
         try {
             $this->Manager = new Manager($options);
-        } catch (\Exception $e) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: %s .'), get_class($this), static::CONFIG_RUNTIME['host'], static::CONFIG_RUNTIME['port'], $e->getMessage()));
+        } catch (\Exception $Exception) {
+            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: %s .'), get_class($this), $options['host'], $options['port'], $Exception->getMessage()));
         }
     }
 
@@ -84,7 +101,8 @@ abstract class ConnectionCoroutine extends Connection
 
         $query = new Query($filter, $options);
 
-        $cursor = $this->Manager->executeQuery(self::CONFIG_RUNTIME['database'] . '.' . $collection, $query);
+        //$cursor = $this->Manager->executeQuery(self::CONFIG_RUNTIME['database'] . '.' . $collection, $query);
+        $cursor = $this->Manager->executeQuery($this->options['database'] . '.' . $collection, $query);
         $cursor->setTypeMap(['root' => 'array', 'document' => 'array']);
 
         $data = array();
@@ -113,12 +131,13 @@ abstract class ConnectionCoroutine extends Connection
             $result = $bulk->insert($data);
 
             $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
-            $r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+            //$r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+            $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
 
-        } catch (MongoDB\Driver\Exception\BulkWriteException $e) {
-            $error_code = $e->getWriteResult()->getWriteErrors()[0]->getCode();
+        } catch (MongoDB\Driver\Exception\BulkWriteException $Exception) {
+            $error_code = $Exception->getWriteResult()->getWriteErrors()[0]->getCode();
 
-            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $e->getMessage()), '', []);
+            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $Exception->getMessage()), '', []);
         }
 
         return $result;
@@ -149,7 +168,8 @@ abstract class ConnectionCoroutine extends Connection
             );
 
             $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
-            $r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+            //$r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+            $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
 
         } catch (MongoDB\Driver\Exception\BulkWriteException $Exception) {
             $error_code = $Exception->getWriteResult()->getWriteErrors()[0]->getCode();
@@ -176,7 +196,8 @@ abstract class ConnectionCoroutine extends Connection
         );
 
         $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
-        $r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+        //$r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
+        $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
     }
 
     public function ping() : bool
@@ -185,10 +206,11 @@ abstract class ConnectionCoroutine extends Connection
         $command = new Command(['ping' => 1]);
 
         try {
-            $cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
+            //$cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
+            $cursor = $this->Manager->executeCommand($this->options['database'], $command);
             $ret = TRUE;
-        } catch (MongoDB\Driver\Exception $e) {
-            throw new RunTimeException($e->getMessage());
+        } catch (MongoDB\Driver\Exception $Exception) {
+            throw new RunTimeException($Exceptions->getMessage());
         }
 
         return $ret;
@@ -202,7 +224,8 @@ abstract class ConnectionCoroutine extends Connection
     public function get_autoincrement_value($collection_name) : int
     {
         $command = new Command([
-            'findandmodify' => self::CONFIG_RUNTIME['AI_table'],
+            //'findandmodify' => self::CONFIG_RUNTIME['AI_table'],
+            'findandmodify' => $this->options['AI_table'],
             'query' => ['_id' => $collection_name],
             'update' => ['$inc' => ['AI' => 1]],
             'new' => TRUE,
@@ -210,7 +233,8 @@ abstract class ConnectionCoroutine extends Connection
             'fields' => ['AI' => 1]
         ]);
 
-        $cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
+        //$cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
+        $cursor = $this->Manager->executeCommand($this->options['database'], $command);
         $cursor->setTypeMap(['root' => 'array', 'document' => 'array']);
         $result = $cursor->toArray()[0];
 

@@ -122,6 +122,7 @@ class SourceStream extends Base
     private static function load_data(string $path) : string
     {
 
+        //print 'load_data: '.$path.PHP_EOL;
 
         if (Kernel::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
@@ -140,23 +141,29 @@ class SourceStream extends Base
 
         foreach (Kernel::get_registered_autoloader_paths() as $ns_base => $autoload_path) {
             if (strpos($path, $autoload_path) !== FALSE) {
-                $class_ns = $ns_base;
+                $class_ns_base = $ns_base;
+                $class_autoload_path = $autoload_path;
+                break;
             }
         }
-        if (empty($class_ns)) {
+        if (empty($class_ns_base)) {
             throw new \RuntimeException(sprintf('The file %s can not be loaded as it is not from whithin a registered autoload path.', $path));
         }
 
-        //print $path.PHP_EOL;
-
-        $ns_pos = strpos( $path, str_replace('\\', '/', $class_ns) );
+        $ns_pos = strpos( $path, str_replace('\\', '/', $class_ns_base) );
         if ($ns_pos) {
             $class_name = substr($path, $ns_pos );
             $class_name = str_replace('/', '\\', $class_name);
             $class_name = str_replace('.php', '', $class_name);
         } else {
-            $class_name = $class_ns.'\\'.basename($path,'.php');
+
+            $class_name = str_replace($class_autoload_path,'',$path);
+            $class_name = str_replace('.php', '', $class_name);
+            $class_name = str_replace('/', '\\', $class_name);
+            $class_name = $class_ns_base.'\\'.$class_name;
         }
+
+
 
 
         //print $class_name.PHP_EOL.PHP_EOL;
@@ -178,7 +185,15 @@ class SourceStream extends Base
         $ns_arr = explode('\\', $class_name);
         $class_name_without_ns = array_pop($ns_arr);
         //TODO - replace the below with tokenizer
-        $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+        if (strpos($class_source, 'abstract class') !== FALSE) {
+            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+        } else {
+            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'abstract class '.$class_name_without_ns.'_without_config', $class_source);
+        }
+        //TODO - improve this - replace with tokenized
+        //handle self::class
+        $class_without_config_source = str_replace('self::class', '\'\\'.$class_name.'\'', $class_without_config_source);
+
         if (strpos($class_without_config_source, '<?php')===0) {
 
             $class_without_config_source = substr($class_without_config_source, 5);

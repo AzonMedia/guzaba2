@@ -22,6 +22,8 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
      */
     protected object $NativeStatement;
 
+    protected Connection $Connection;
+
     /**
      * The SQL query
      * @var string
@@ -44,10 +46,11 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
      * @param string $query
      * @param array $expected_parameters Contains the names of the expected parameters as parsed during statement preparation. Swoole\Statement does not support named parameters but only "?".
      */
-    public function __construct(object $NativeStatement, string $query, array $expected_parameters = [])
+    public function __construct(object $NativeStatement, Connection $Connection, string $query, array $expected_parameters = [])
     {
         parent::__construct();
         $this->NativeStatement = $NativeStatement;
+        $this->Connection = $Connection;
         $this->query = $query;
 
         $this->expected_parameters = $expected_parameters;
@@ -63,6 +66,11 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
 
     public abstract function fetch_row(string $column_name = '') /* mixed */ ;
 
+    public function get_connection() : Connection
+    {
+        return $this->Connection;
+    }
+    
     public function getQuery() : string
     {
         return $this->get_query();
@@ -114,15 +122,15 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
 
     protected function handle_error() : void
     {
-        $error_code = $this->NativeStatement->errno ?? 0;
+        $error_code = (int) $this->NativeStatement->errno ?? 0;
 
-        if ($error_code=='40001') { //deadlock TODO need to check
+        if ($error_code === 40001) { //deadlock TODO need to check
             throw new DeadlockException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE) );
         } else {
-            if ($error_code == '1062') {
+            if ($error_code === 1062) {
                 // duplicate entry
                 throw new DuplicateKeyException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE));
-            } elseif ($error_code == '1452') {
+            } elseif ($error_code === 1452) {
                 // foreign key constraint
                 throw new ForeignKeyConstraintException($this, '', $error_code, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $error_code, $this->NativeStatement->error), $this->get_query(), print_r($this->get_params(),TRUE));
             } else {

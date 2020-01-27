@@ -23,7 +23,13 @@ interface ConfigInterface
     //and the child class must obtain the current runtime configuration of its parent not the initial runtime config that was set by the kernel
     //because of this a method accessible by the kernel is needed
 
+    public static function has_runtime_configuration() : bool ;
+
     public static function get_runtime_configuration() : array ;
 
-    //no need of is_configured_method() as if a class is autoloaded by Kernel then it will always be configured at the time this method is invoked
+    public static function has_config_key(string $key) : bool ;
+
+    public static function get_config_key(string $key) /* mixed */ ;
+
+
 }

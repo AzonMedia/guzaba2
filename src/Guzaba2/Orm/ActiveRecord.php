@@ -176,6 +176,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         parent::__construct();
 
+
+
+        if (strpos(get_class($this),'Test') !== FALSE) {
+            //print_r(static::CONFIG_RUNTIME);
+            //print_r(static::CONFIG_DEFAULTS);
+        }
+
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
@@ -242,6 +249,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
+
+
         if (isset($index[$primary_columns[0]]) && $index[$primary_columns[0]] === self::INDEX_NEW) {
             $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
         //the new records are not referencing the OrmStore
@@ -249,7 +258,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         } else {
 
             $this->read($index);
+
+
         }
+
     }
 
     /**
@@ -307,8 +319,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return array_merge( $this->get_property_data(), $this->get_meta_data() );
     }
 
-    protected function read(/* int|string|array */ $index) : void
+    public function read(/* int|string|array */ $index) : void
     {
+
+
 
         if (!is_string($index) && !is_int($index) && !is_array($index)) {
             throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
@@ -325,6 +339,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         self::get_service('Events')::create_event($this, '_before_read');
 
+
+
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $pointer['data'];
@@ -336,6 +352,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
         }
+
+
 
         //check the permissions now, not before the record is found as the provided index may be a an array and then the permissions lookup will fail
         $this->check_permission('read');
@@ -365,9 +383,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $args = func_get_args();
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
+
+
     }
 
-    public function save() : ActiveRecordInterface
+    public function write() : ActiveRecordInterface
     {
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
@@ -380,7 +400,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
+            throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
         }
 
 //read_only is set in constructor() if method is GET
@@ -407,14 +427,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //BEGIN ORMTransaction (==ORMDBTransaction)
 
-        //_before_save() event
-        if (method_exists($this, '_before_save') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_before_save'], $args);//must return void
+            call_user_func_array([$this,'_before_write'], $args);//must return void
         }
 
-        //new Event($this, '_before_save');
-        self::get_service('Events')::create_event($this, '_before_save');
+        self::get_service('Events')::create_event($this, '_before_write');
 
         if (static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
@@ -424,12 +442,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         static::get_service('OrmStore')->update_record($this);
 
-        self::get_service('Events')::create_event($this, '_after_save');
+        self::get_service('Events')::create_event($this, '_after_write');
 
-        //_after_save() event
-        if (method_exists($this, '_after_save') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
-            call_user_func_array([$this,'_after_save'], $args);//must return void
+            call_user_func_array([$this,'_after_write'], $args);//must return void
         }
 
         //COMMIT ORMTransaction
@@ -882,18 +899,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_routes() : ?iterable
     {
         $ret = NULL;
-        if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+        $called_class = get_called_class();
+        //if (array_key_exists('route', static::CONFIG_RUNTIME)) {
+        if ($called_class::has_runtime_configuration() && array_key_exists('route', static::CONFIG_RUNTIME)) {
             if (static::CONFIG_RUNTIME['route'][0] !== '/') {
                 throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class() ));
             }
             $default_route = static::CONFIG_RUNTIME['route'];
             $ret = [
                 $default_route                              => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
+                    //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],
+                    //Method::HTTP_OPTIONS                        => [ActiveRecordDefaultController::class, 'options'],
+                    Method::HTTP_GET                            => [ActiveRecordDefaultController::class, 'list'],
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_action_create'],
                 ],
                 $default_route.'/{uuid}'                    => [
-                    Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
+                    //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
+                    Method::HTTP_GET                           => [ActiveRecordDefaultController::class, 'crud_action_read'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
                 ],
@@ -1031,29 +1053,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_active_record_classes(array $ns_prefixes) : array
     {
         static $active_record_classes = [];
-
-        $ret = [];
-        foreach ($ns_prefixes as $ns_prefix) {
-            if (!array_key_exists($ns_prefix, $active_record_classes)) {
-                $active_record_classes[$ns_prefix] = [];
-                $loaded_classes = Kernel::get_loaded_classes();
-                foreach ($loaded_classes as $loaded_class) {
-                    $RClass = new ReflectionClass($loaded_class);
-                    if (
-                        strpos($loaded_class, $ns_prefix) === 0
-                        && is_a($loaded_class, ActiveRecordInterface::class, TRUE)
-                        //&& !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class, ActiveRecordController::class] )
-                        && !in_array($loaded_class, [ActiveRecord::class, ActiveRecordInterface::class] )
-                        && $RClass->isInstantiable()
-                    ) {
-                        $active_record_classes[$ns_prefix][] = $loaded_class;
-                    }
-                }
-
-            }
-            $ret = array_merge($ret, $active_record_classes[$ns_prefix]);
+        $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
+        if (!array_key_exists( $args_hash, $active_record_classes ) ) {
+            $classes = Kernel::get_classes($ns_prefixes, ActiveRecordInterface::class);
+            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecord::class, ActiveRecordInterface::class] )  && ( new ReflectionClass($class) )->isInstantiable()  );
+            $active_record_classes[$args_hash] = $classes;
         }
-        return $ret;
+        return $active_record_classes[$args_hash];
     }
 
     public static function is_loaded_in_memory() : bool
