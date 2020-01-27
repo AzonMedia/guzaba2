@@ -23,6 +23,8 @@ interface AuthorizationProviderInterface
      */
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool ;
 
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool ;
+
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord.
      * @param string $action
@@ -30,6 +32,8 @@ interface AuthorizationProviderInterface
      * @return bool
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool ;
+
+    public function current_role_can_on_class(string $action, string $class) : bool ;
 
     /**
      * Checks can the provided $role perform the $action on the object $ActiveRecord and if cant a PermissionDeniedException is thrown.
@@ -39,6 +43,8 @@ interface AuthorizationProviderInterface
      * @return bool
      */
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void ;
+
+    public function check_class_permission(string $action, string $class_name) : void ;
 
     /**
      * Grants a new object permission.
