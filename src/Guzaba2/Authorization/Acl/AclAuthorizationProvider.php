@@ -84,6 +84,12 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         return $this->role_can($Role, $action, $ActiveRecord);
     }
 
+    public function current_role_can_on_class(string $action, string $class): bool
+    {
+        $Role = self::get_service('CurrentUser')->get()->get_role();
+        return $this->role_can_on_class($Role, $action, $string);
+    }
+
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
     {
         $ret = FALSE;
@@ -120,6 +126,23 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 //        $permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
 //        $class_permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
 //        $permissions = array_merge($permissions, $class_permissions);
+
+        return $ret;
+    }
+
+    /**
+     * @param Role $Role
+     * @param string $action
+     * @param string $class
+     * @return bool
+     */
+    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    {
+        $ret = FALSE;
+
+        $roles_ids = $Role->get_all_inherited_roles_ids();
+        $class_permissions = Permission::get_data_by( [ 'class_name' => $class, 'object_id'=> NULL, 'action_name' => $action] );
+        $ret = self::check_permissions($roles_ids, $class_permissions);
 
         return $ret;
     }

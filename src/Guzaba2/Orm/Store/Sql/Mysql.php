@@ -843,20 +843,19 @@ WHERE `meta_object_uuid` = '{$uuid}'
         $select_arr = [];
 
         foreach ($j as $table_alias=>$full_table_name) {
-
             //and the class_id & object_id are moved to the WHERE CLAUSE
             if ($table_alias == $table_name) {
                 //do not add ON clause - this is the table containing the primary index and the first shard
                 $on_str = "";
-            } elseif ($table_alias == 'ownership_table') {
-                $on_arr = [];
-
-                $on_arr[] = "ownership_table.class_id = :class_id";
-                $b['class_id'] = static::_class_id;
-
-                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
-
-                $on_str = "ON ".implode(" AND ", $on_arr);
+//            } elseif ($table_alias == 'ownership_table') {
+//                $on_arr = [];
+//
+//                $on_arr[] = "ownership_table.class_id = :class_id";
+//                $b['class_id'] = static::_class_id;
+//
+//                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
+//
+//                $on_str = "ON ".implode(" AND ", $on_arr);
             } else {
                 $on_arr = [];
                 foreach ($main_index as $column_name) {
@@ -875,6 +874,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         unset($w);
         $select_str = implode(PHP_EOL."\t".", ", $select_arr);
         unset($select_arr);
+
 
         // GET meda data
         $select_str .= "
@@ -920,7 +920,6 @@ FROM
 WHERE
     {$w_str}
 ";
-
 
 
         if ($limit) {

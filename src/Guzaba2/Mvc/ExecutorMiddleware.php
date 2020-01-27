@@ -5,6 +5,7 @@ namespace Guzaba2\Mvc;
 
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -137,6 +138,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {
 
+        $requested_content_type = $Request->getContentType();
+        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
+            $requested_content_type = $this->override_html_content_type;
+        }
+        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
@@ -150,16 +157,16 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                             $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true) );
                             $Body = new Structured( [ 'message' => $message ] );
                             $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
-
+                            $Response = [$this, $type_handler]($Request, $Response);
                             return $Response;
                         }
 
                         $controller_arguments += $body_params;
                     } else {
-                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received.'), $Request->getMethod() );
+                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod() , count($body_params) );
                         $Body = new Structured( [ 'message' => $message ] );
                         $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
-
+                        $Response = [$this, $type_handler]($Request, $Response);
                         return $Response;
                     }
 
@@ -176,13 +183,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
-                    $requested_content_type = $Request->getContentType();
-
-                    if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
-                        $requested_content_type = $this->override_html_content_type;
-                    }
-                    $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
-
                     $Response = [$this, $type_handler]($Request, $Response);
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
@@ -256,9 +256,11 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (InvalidArgumentException | ValidationFailedException $Exception) {
-            $Response = Controller::get_structured_badrequest_response( [ 'message' => $Exception->getPrettyMessage() ] );
-        } catch (\Throwable $Exception) {
+            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getPrettyMessage()]);
+        } catch (BaseException $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] );
+        } catch (\Throwable $Exception) {
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] ); //no getPrettyMessage() here
         } finally {
             if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
                 Kernel::exception_handler($Exception);

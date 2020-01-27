@@ -536,7 +536,7 @@ BANNER;
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
-        $str = print_r($var, TRUE);
+        $str = var_dump($var, TRUE);
         if ($frame) {
             $str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
         }

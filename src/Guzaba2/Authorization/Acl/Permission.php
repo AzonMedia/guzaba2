@@ -44,14 +44,25 @@ class Permission extends ActiveRecord implements PermissionInterface
     {
         //before creating a Permission record check does the object on which it is created has the appropriate CHOWN permission
         try {
-            //(new $this->class_name($this->object_id))->check_permission('chmod');
-            (new $this->class_name($this->object_id))->check_permission('grant_permission');
+            if ($this->object_id === NULL) {
+                $class_name = $this->class_name;
+                $class_name::check_class_permission('grant_permission');
+            } else {
+                //(new $this->class_name($this->object_id))->check_permission('chmod');
+                (new $this->class_name($this->object_id))->check_permission('grant_permission');
+            }
         } catch (RecordNotFoundException $Exception) {
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
 
+        if (!$this->class_name) {
+            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('No class name provided.')));
+        }
         if (!class_exists($this->class_name)) {
             throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
+        }
+        if (!$this->action_name) {
+            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('No action name provided.')));
         }
         if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create' ) {
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
@@ -70,6 +81,8 @@ class Permission extends ActiveRecord implements PermissionInterface
                 'object_id'     => $this->object_id,
                 'action_name'   => $this->action_name,
             ] );
+            print $Permission->role_id.' '.$Permission->class_name.' '.$Permission->object_id.' '.$Permission->action_name.PHP_EOL;
+            print gettype($Permission->object_id).PHP_EOL;
             throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
         } catch (RecordNotFoundException $Exception) {
             //no duplicates
@@ -81,7 +94,13 @@ class Permission extends ActiveRecord implements PermissionInterface
     {
         try {
             //(new $this->class_name($this->object_id))->check_permission('chmod');
-            (new $this->class_name($this->object_id))->check_permission('revoke_permission');
+            if ($this->object_id === NULL) {
+                $class_name = $this->class_name;
+                $class_name::check_class_permission('revoke_permission');
+            } else {
+                (new $this->class_name($this->object_id))->check_permission('revoke_permission');
+            }
+
         } catch (RecordNotFoundException $Exception) {
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
