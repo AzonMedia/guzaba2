@@ -178,9 +178,9 @@ class Request extends HandlerBase
                 $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
             }
             if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
-                $slow_message = __CLASS__.': '.'Slow response to '.$PsrRequest->getMethod().' request detected (more than 5 milliseconds). Dumping APM data:'.PHP_EOL;
+                $slow_message = __CLASS__.': '.'Slow response of '.$time_str.' to '.$PsrRequest->getMethod().' request detected (more than 5 milliseconds). Dumping APM data:'.PHP_EOL;
             } elseif ($served_in_time > 0.050) {
-                $slow_message = __CLASS__.': '.'Slow response to '.$PsrRequest->getMethod().' request detected (more than 50 milliseconds). Dumping APM data:'.PHP_EOL;
+                $slow_message = __CLASS__.': '.'Slow response of '.$time_str.' to '.$PsrRequest->getMethod().' request detected (more than 50 milliseconds). Dumping APM data:'.PHP_EOL;
             } else {
                 //excellent performance !!!
             }

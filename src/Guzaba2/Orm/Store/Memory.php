@@ -309,8 +309,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
         }
 
-        $last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+        $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
+        $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
         $this->total_count++;
 
 

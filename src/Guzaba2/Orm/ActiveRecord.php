@@ -66,6 +66,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     protected const CAST_PROPERTIES_ON_ASSIGNMENT = false;
 
+    protected const STANDARD_ACTIONS = [
+        'create',
+        'read',
+        'write',
+        'delete',
+        'grant_permission',
+        'revoke_permission',
+        'change_owner',
+    ];
+
 
     /**
      * @var StoreInterface
@@ -1074,4 +1084,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $data = $OrmStore->get_data_by($class, []);//get everything
     }
 
+    public static function get_standard_actions() : array
+    {
+        return self::STANDARD_ACTIONS;
+    }
 }

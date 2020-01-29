@@ -42,6 +42,19 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected function _before_write() : void
     {
+        if (!$this->class_name) {
+            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('No class name provided.')));
+        }
+        if (!class_exists($this->class_name)) {
+            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
+        }
+        if (!$this->action_name) {
+            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('No action name provided.')));
+        }
+        if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create' ) {
+            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
+        }
+
         //before creating a Permission record check does the object on which it is created has the appropriate CHOWN permission
         try {
             if ($this->object_id === NULL) {
@@ -55,18 +68,7 @@ class Permission extends ActiveRecord implements PermissionInterface
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
 
-        if (!$this->class_name) {
-            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('No class name provided.')));
-        }
-        if (!class_exists($this->class_name)) {
-            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
-        }
-        if (!$this->action_name) {
-            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('No action name provided.')));
-        }
-        if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create' ) {
-            throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
-        }
+
         if ( $this->action_name !== 'create') {
             if (! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic() ) {
                 throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The method %s::%s is not public. The methods to which permissions are granted/associated must be public.'), $this->class_name, $this->action_name));
