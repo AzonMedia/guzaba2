@@ -13,4 +13,11 @@ interface ControllerInterface
     //public function get_response() : ?ResponseInterface ;
     public static function get_routes() : ?iterable ;
     //public function redirect();
+
+    /**
+     * Returns the actions supported by this controller.
+     * These are all public dynamic methods.
+     * @return array
+     */
+    public static function get_actions() : array ;
 }

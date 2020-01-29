@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Store\Sql;
 
 use Azonmedia\Utilities\ArrayUtil;
+use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
@@ -286,9 +287,9 @@ SELECT
 FROM
     {$Connection::get_tprefix()}{$this::get_meta_table()}
 WHERE
-    meta_object_uuid_binary = UUID_TO_BIN(:object_uuid)";
+    meta_object_uuid_binary = UUID_TO_BIN(:meta_object_uuid)";
 
-        $data = $Connection->prepare($q)->execute([ 'object_uuid' => $uuid])->fetchRow();
+        $data = $Connection->prepare($q)->execute([ 'meta_object_uuid' => $uuid])->fetchRow();
 
         if (!count($data)) {
             //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
@@ -796,12 +797,30 @@ WHERE `meta_object_uuid` = '{$uuid}'
          * If UUID is provided the meta data is searched to find the primary key in order
          * to perform the SELECT operation
          */
-        if (array_key_exists('object_uuid', $index)) {
+        if (array_key_exists('meta_object_uuid', $index)) {
 
-            $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
-            $object_id = $meta_data['meta_object_id'];
-            $w[] = $main_index[0] . ' = :object_id';
-            $b['object_id'] = $object_id;
+
+            if (GeneralUtil::is_uuid( (string) $index['meta_object_uuid'])) {
+                $meta_data = $this->get_meta_by_uuid($index['meta_object_uuid']);
+                $object_id = $meta_data['meta_object_id'];
+                $w[] = $main_index[0] . ' = :object_id';
+                $b['object_id'] = $object_id;
+            } else {
+                //do a like search
+                $w[] = 'meta_object_uuid LIKE :meta_object_uuid';
+                if ($use_like) {
+                    $b['meta_object_uuid'] = '%'.$index['meta_object_uuid'].'%';
+                } else {
+                    //$b['meta_object_uuid'] = $index['meta_object_uuid'];//this is pointless - it is an error
+                    //either provide an exact UUID or $use_like = TRUE
+                    throw new InvalidArgumentException(sprintf(t::_('An invalid/partial UUID "%s" provided and the $use_like argument is set to FALSE.'), $index['meta_object_uuid'] ));
+                }
+
+            }
+
+
+
+
 
         } else {
             foreach ($index as $field_name=>$field_value) {
@@ -810,7 +829,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
                     throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
                 }
 
-                if ($field_name !== 'object_uuid') {
+                if ($field_name !== 'meta_object_uuid') {
                     if (!array_key_exists($field_name, $record_data)) {
                         throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
                     }

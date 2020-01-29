@@ -246,7 +246,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 //} elseif (strlen((string)$index) === 36) {
             } elseif (GeneralUtil::is_uuid( (string) $index)) {
                 //this is UUID
-                $index = ['object_uuid' => $index];
+                //$index = ['object_uuid' => $index];
+                $index = ['meta_object_uuid' => $index];
             } else {
                 throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
             }
@@ -255,6 +256,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         } elseif (is_array($index)) {
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
+            //moved to get_data_by in the store
+//            if (count($index) === 1 && array_key_exists('meta_object_uuid', $index) ) {
+//                if (!GeneralUtil::is_uuid( (string) $index['meta_object_uuid'] )) {
+//                    throw new InvalidArgumentException(sprintf(t::_('An invalid value "%s" (not an UUID) for the meta_object_uuid key in the index is provided for object of class "%s".'), $index['meta_object_uuid'], get_class($this) ));
+//                }
+//            }
         } else {
             throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }

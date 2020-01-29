@@ -16,6 +16,7 @@ use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
+use Guzaba2\Mvc\Traits\ControllerTrait;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -48,6 +49,7 @@ implements ControllerInterface
     protected const CONFIG_RUNTIME = [];
 
     use ResponseFactories;
+    use ControllerTrait;
 
     /**
      * @var RequestInterface
@@ -86,31 +88,23 @@ implements ControllerInterface
 
     }
 
-    /**
-     * @return RequestInterface
-     */
-    public function get_request() : ?RequestInterface
-    {
-        return $this->Request;
-    }
-
-    /**
-     * To be used when an event needs to preset the response.
-     * @param ResponseInterface $Response
-     */
-    public function set_response(ResponseInterface $Response) : void
-    {
-        $this->Response = $Response;
-    }
-
-    /**
-     * Returns the response as it may be
-     * @return ResponseInterface|null
-     */
-    public function get_response() : ?ResponseInterface
-    {
-        return $this->Response;
-    }
+//    /**
+//     * To be used when an event needs to preset the response.
+//     * @param ResponseInterface $Response
+//     */
+//    public function set_response(ResponseInterface $Response) : void
+//    {
+//        $this->Response = $Response;
+//    }
+//
+//    /**
+//     * Returns the response as it may be
+//     * @return ResponseInterface|null
+//     */
+//    public function get_response() : ?ResponseInterface
+//    {
+//        return $this->Response;
+//    }
 
     /**
      * May be overriden by a child class to provide routing set in an external source like database.
