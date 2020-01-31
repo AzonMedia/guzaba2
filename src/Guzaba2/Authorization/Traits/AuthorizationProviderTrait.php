@@ -61,7 +61,7 @@ trait AuthorizationProviderTrait
     {
         if (!$this->current_role_can($action, $ActiveRecord) ) {
             $Role = self::get_service('CurrentUser')->get()->get_role();
-            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform %s() on object %s:%s.'), $Role->role_name, $action, get_class($ActiveRecord), $ActiveRecord->get_id() ));
+            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform %s() on object %s:%s.'), $Role->role_name, $action, get_class($ActiveRecord), $ActiveRecord->get_uuid() ));
         }
     }
 

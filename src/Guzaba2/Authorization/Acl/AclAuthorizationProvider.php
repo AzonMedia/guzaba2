@@ -87,7 +87,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     public function current_role_can_on_class(string $action, string $class): bool
     {
         $Role = self::get_service('CurrentUser')->get()->get_role();
-        return $this->role_can_on_class($Role, $action, $string);
+        return $this->role_can_on_class($Role, $action, $class);
     }
 
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool

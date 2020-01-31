@@ -12,6 +12,7 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
+use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
@@ -315,10 +316,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         parent::__destruct();
     }
 
-    final public function __toString() : string
+    public function __toString() : string
     {
         //return MetaStore::get_key_by_object($this);
-        return $this->as_array();
+        //return $this->as_array();
+        return json_encode($this->as_array(), Structured::getJsonFlags());
     }
 
     /**

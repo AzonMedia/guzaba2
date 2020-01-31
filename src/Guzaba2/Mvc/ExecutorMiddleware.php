@@ -32,6 +32,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
 use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
+use Psr\Log\LogLevel;
+
 //use Guzaba2\Mvc\Interfaces\ControllerWithAuthorizationInterface;
 
 /**
@@ -62,12 +64,14 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         ContentType::TYPE_HTML  => 'html_handler',
     ];
 
-    protected const DEFAULT_TYPE_HANDLER = 'default_handler';
+    protected const DEFAULT_TYPE_HANDLER = 'json_handler';
 
-    /**
-     * @var Server
-     */
-    protected Server $Server;
+    private string $default_handler = self::DEFAULT_TYPE_HANDLER;
+
+//    /**
+//     * @var Server
+//     */
+//    protected Server $Server;
 
     protected string $override_html_content_type = '';
 
@@ -78,18 +82,20 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      */
     protected static $controllers_params = [];
 
-    public function __construct(Server $Server, string $override_html_content_type = '')
+//    public function __construct(Server $Server, string $override_html_content_type = '')
+    public function __construct(string $default_handler = self::DEFAULT_TYPE_HANDLER)
     {
         
-        if ($override_html_content_type && !ContentType::is_valid_content_type($override_html_content_type)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $override_html_content_type argument to %s() is not a valid content type.'), __METHOD__));
-        }
+//        if ($override_html_content_type && !ContentType::is_valid_content_type($override_html_content_type)) {
+//            throw new InvalidArgumentException(sprintf(t::_('The provided $override_html_content_type argument to %s() is not a valid content type.'), __METHOD__));
+//        }
         
         parent::__construct();
+        $this->default_handler = $default_handler;
 
-        $this->Server = $Server;
-
-        $this->override_html_content_type = $override_html_content_type;
+//        $this->Server = $Server;
+//
+//        $this->override_html_content_type = $override_html_content_type;
     }
 
     /**
@@ -139,20 +145,20 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
 
         $requested_content_type = $Request->getContentType();
-        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
-            $requested_content_type = $this->override_html_content_type;
-        }
-        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+
+//        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
+//            $requested_content_type = $this->override_html_content_type;
+//        }
+        //$type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+        //if no content type or unknown content type use the default handler
+        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? $this->default_handler;
 
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
                 $controller_arguments = $Request->getAttribute('controller_arguments') ?? [];
 
-
                 if ($body_params = $Request->getParsedBody()) {
-
-
 
                     if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
                         if ($repeating_arguments = array_intersect($controller_arguments, $body_params)) {
@@ -186,6 +192,11 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
                 $Body = $Response->getBody();
                 if ($Body instanceof Structured) {
+                    //if structured response is returned by the controller and the handler is html_handler, set this to json_handler
+                    if ($type_handler === 'html_handler') {
+                        Kernel::log(sprintf(t::_('The requested content type is "html" (html_handler) while the response body is Structured. Switching to json_handler.')), LogLevel::NOTICE);
+                        $type_handler = 'json_handler';
+                    }
                     $Response = [$this, $type_handler]($Request, $Response);
                 } else {
                     //return the response as it is - it is already a stream and should contain all the needed headers
@@ -211,11 +222,17 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         return $Handler->handle($Request);
     }
 
-    private function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
+    //public function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
+    public function execute_controller_method(ActiveRecordController $Controller, string $method, array $controller_arguments) : ?ResponseInterface
     {
 
         $Response = NULL;
+
         try {
+
+            //checks is there a class permission to execute the given action
+            $Controller::check_class_permission($method);
+
             $ordered_arguments = [];
             foreach (self::$controllers_params[get_class($Controller)][$method] as $param) {
                 if (isset($controller_arguments[$param['name']])) {
@@ -276,7 +293,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $StructuredBody = $Response->getBody();
         $structure = $StructuredBody->getStructure();
-        $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
+        //$json_string = json_encode($structure, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        $json_string = json_encode($structure, Structured::getJsonFlags());
         $StreamBody = new Stream(NULL, $json_string);
         $Response = $Response->
             withBody($StreamBody)->
@@ -285,17 +303,17 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         return $Response;
     }
 
-
-    /**
-     * @param RequestInterface $Request
-     * @param ResponseInterface $Response
-     * @return ResponseInterface
-     * @throws RunTimeException
-     */
-    protected function default_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
-    {
-        return $this->html_handler($Request, $Response);
-    }
+//
+//    /**
+//     * @param RequestInterface $Request
+//     * @param ResponseInterface $Response
+//     * @return ResponseInterface
+//     * @throws RunTimeException
+//     */
+//    protected function default_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+//    {
+//        return $this->html_handler($Request, $Response);
+//    }
 
     protected function html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
@@ -370,7 +388,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             if ($content_type === NULL) {
                 return $this->json_handler($Request, $Response);
             } else {
-                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, print_r($controller_callable, TRUE)));
+                //throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, print_r($controller_callable, TRUE)));
+                $controller_str = Controller::get_controller_callable_as_string($controller_callable);
+                throw new RunTimeException(sprintf(t::_('Unable to return response from the requested content type %s. A structured body response is returned by controller %s but there is no view.'), $content_type, $controller_str));
             }
         }
     }

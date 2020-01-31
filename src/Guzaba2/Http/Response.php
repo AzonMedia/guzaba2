@@ -48,6 +48,12 @@ class Response extends Message implements ResponseInterface
         $this->Body = $Body ?? new Stream();
     }
 
+    public function __toString()
+    {
+        // TODO: Implement __toString() method.
+        return (string) $this->getBody();
+    }
+
     /**
      * Gets the response status code.
      *

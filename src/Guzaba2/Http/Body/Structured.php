@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
 
+use Guzaba2\Application\Application;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
@@ -34,6 +35,8 @@ class Structured extends Base implements StreamInterface
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
+    public const JSON_ENCODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
+
     public function __construct(iterable $structure = [])
     {
         parent::__construct();
@@ -62,12 +65,22 @@ class Structured extends Base implements StreamInterface
     {
         $ret = '';
         if ($this->isReadable()) {
+            $this->rewind();
             $ret = $this->getContents();
         } else {
             throw new RunTimeException(sprintf(t::_('Can not convert this stream to string because it is not readable.')));
         }
 
         return $ret;
+    }
+
+    public static function getJsonFlags() : int
+    {
+        $flags = self::JSON_ENCODE_FLAGS;
+        if (!Application::is_production()) {
+            $flags |= JSON_PRETTY_PRINT;
+        }
+        return $flags;
     }
 
     /**
@@ -246,7 +259,9 @@ class Structured extends Base implements StreamInterface
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
         }
-        $contents = print_r($this->structure, TRUE);
+        //$contents = print_r($this->structure, TRUE);
+        //convert instead to JSON
+        $contents = json_encode($this->structure, self::getJsonFlags());
         return $contents;
     }
 

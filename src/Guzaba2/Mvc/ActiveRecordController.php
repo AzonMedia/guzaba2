@@ -88,6 +88,12 @@ implements ControllerInterface
 
     }
 
+    public function __toString() : string
+    {
+        // TODO: Implement __toString() method.
+        return get_class($this);
+    }
+
 //    /**
 //     * To be used when an event needs to preset the response.
 //     * @param ResponseInterface $Response
@@ -122,5 +128,65 @@ implements ControllerInterface
         }
         return $ret;
     }
+
+    /**
+     * Executes a $method on this class
+     * Returns the response.
+     * @param string $method
+     * @param array $arguments
+     * @return ResponseInterface
+     */
+    public function execute_action(string $method, array $arguments) : ResponseInterface
+    {
+        return (new ExecutorMiddleware())->execute_controller_method($this, $method, $arguments);
+    }
+
+    /**
+     * Executes a $method on this controller that returns a structured response.
+     * Returns the structure (array) of the response.
+     * @param string $method
+     * @param array $arguments
+     * @return array
+     */
+    public function execute_structured_action(string $method, array $arguments) : array
+    {
+        return $this->execute_action($method, $arguments)->getBody()->getStructure();
+    }
+
+    /**
+     * Executes the provided $action on an ActiveRecordController class that returns Structured body Response.
+     * Returns the structure (array) of the response.
+     * @param string $controller_class
+     * @param string $method
+     * @param array $arguments
+     * @return array
+     * @throws InvalidArgumentException
+     */
+    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments) : array
+    {
+        return $this->execute_controller_action($controller_class, $method, $arguments)->getBody()->getStructure();
+    }
+
+    /**
+     * Executes the provided $action on an ActiveRecordController class.
+     * Returns the response from the action.
+     * @param string $controller_class
+     * @param string $method
+     * @param array $arguments
+     * @return ResponseInterface
+     * @throws InvalidArgumentException
+     */
+    public function execute_controller_action(string $controller_class, string $method, array $arguments) : ResponseInterface
+    {
+        if (class_exists($controller_class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %s does not exist.'), $controller_class));
+        }
+        if (is_a($controller_class, ActiveRecordController::class, TRUE)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), ActiveRecordController::class));
+        }
+        $controller_callable = [ new $controller_class($this->get_request()), $method ];
+        return self::execute_controller( $controller_callable, $arguments);
+    }
+
 
 }
