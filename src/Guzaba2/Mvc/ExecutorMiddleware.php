@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
+use Azonmedia\Reflection\ReflectionMethod;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
@@ -241,7 +242,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $value = $param['default_value'];
                 } else {
                     //TODO add function parameters in the error message.
-                    throw new InvalidArgumentException(sprintf(t::_('No value provided for parameter $%s on %s::%s().'), $param['name'], get_class($Controller), $method ));
+                    //$message = sprintf(t::_('No value provided for parameter $%s in %s::%s().'), $param['name'], get_class($Controller), $method );
+                    $message = sprintf(t::_('No value provided for parameter $%s in %s::%s(%s).'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
+                    throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
                 settype($value, $param['type']);
                 $ordered_arguments[] = $value;

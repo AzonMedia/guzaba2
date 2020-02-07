@@ -17,27 +17,33 @@ use Psr\Http\Server\RequestHandlerInterface;
 class RewritingMiddleware extends Base implements MiddlewareInterface
 {
 
-    /**
-     * @var Server
-     */
-    protected $HttpServer;
+//    /**
+//     * @var Server
+//     */
+//    protected $HttpServer;
 
     /**
      * @var RewriterInterface
      */
-    protected $Rewriter;
+    protected RewriterInterface $Rewriter;
 
     /**
      * RewritingMiddleware constructor.
      * @param Server $Server
      * @param RewriterInterface $Rewriter
      */
-    public function __construct(Server $Server, RewriterInterface $Rewriter)
+    //public function __construct(Server $Server, RewriterInterface $Rewriter)
+    public function __construct(RewriterInterface $Rewriter)
     {
         parent::__construct();
-        $this->HttpServer = $Server;
+        //$this->HttpServer = $Server;
 
         $this->Rewriter = $Rewriter;
+    }
+
+    public function get_rewriter() : RewriterInterface
+    {
+        return $this->Rewriter;
     }
 
     /**

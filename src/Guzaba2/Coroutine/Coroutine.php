@@ -63,7 +63,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     protected static int $last_coroutine_id = 0;
 
-    protected static array $registered_coroutine_services = [];
+    //protected static array $registered_coroutine_services = [];
 
     /**
      * To be used for storing static data while not in coroutine context
@@ -76,26 +76,26 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         return self::CONFIG_RUNTIME['enable_complete_backtrace'];
     }
 
-    public static function getRegisteredCoroutineServices() : iterable
-    {
-        return self::$registered_coroutine_services;
-    }
-
-    /**
-     * Registers a new services. Expects the class name of the service to be provied.
-     * If the service is already registered returns FALSE.
-     * @param string $class_name
-     * @return bool
-     */
-    public static function registerCoroutineService(string $class_name) : bool
-    {
-        $ret = FALSE;
-        if (!in_array($class_name, self::$registered_coroutine_services)) {
-            self::$registered_coroutine_services[] = $class_name;
-            $ret = TRUE;
-        }
-        return $ret;
-    }
+//    public static function getRegisteredCoroutineServices() : iterable
+//    {
+//        return self::$registered_coroutine_services;
+//    }
+//
+//    /**
+//     * Registers a new services. Expects the class name of the service to be provied.
+//     * If the service is already registered returns FALSE.
+//     * @param string $class_name
+//     * @return bool
+//     */
+//    public static function registerCoroutineService(string $class_name) : bool
+//    {
+//        $ret = FALSE;
+//        if (!in_array($class_name, self::$registered_coroutine_services)) {
+//            self::$registered_coroutine_services[] = $class_name;
+//            $ret = TRUE;
+//        }
+//        return $ret;
+//    }
 
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
@@ -115,9 +115,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //to make sure there are not collisions the specific class name is used
         $Context->{Request::class} = $Request;
         
-        foreach (self::$registered_coroutine_services as $class_name) {
-            $Context->{$class_name} = new $class_name();
-        }
+//        foreach (self::$registered_coroutine_services as $class_name) {
+//            $Context->{$class_name} = new $class_name();
+//        }
 
         //not really needed as the Apm & Connections object will be destroyed when the Context is destroyed at the end of the coroutine and this will trigger the needed actions.
 //        \Swoole\Coroutine::defer(function() use ($Context) {
@@ -215,7 +215,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //cant use $new_cid = parent::create() because $new_id is obtained at a too later stage
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
-        $WrapperFunction = function (...$params) use ($callable, &$new_cid) : void {
+        $WrapperFunction = static function (...$params) use ($callable, &$new_cid) : void {
             $hash = GeneralUtil::get_callable_hash($callable);
 
             $new_cid = self::getcid();

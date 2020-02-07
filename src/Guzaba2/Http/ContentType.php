@@ -68,11 +68,15 @@ abstract class ContentType
         return $ret;
     }
 
+    /**
+     * @param string $content_type
+     * @return bool
+     */
     public static function is_valid_content_type(string $content_type) : bool
     {
         $ret = FALSE;
         foreach (self::TYPES_MAP as $type_const=>$type_data) {
-            if ($content_type === $type_const) {
+            if (strtolower($content_type) === strtolower($type_const)) {
                 $ret = TRUE;
                 break;
             }
