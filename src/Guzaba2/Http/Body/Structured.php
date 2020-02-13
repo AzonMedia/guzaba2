@@ -35,7 +35,7 @@ class Structured extends Base implements StreamInterface
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
-    public const JSON_ENCODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
+    public const JSON_ENCODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
 
     public function __construct(iterable $structure = [])
     {

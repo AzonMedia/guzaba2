@@ -41,7 +41,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      * @param array $ns_prefixes
      */
-    public function __construct(array $ns_prefixes /* , string $route_prefix = '' */ )
+    public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */ )
     {
         if (!$ns_prefixes) {
             throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__ ));
@@ -56,6 +56,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
         foreach ($active_record_classes as $loaded_class) {
 
             $routing = $loaded_class::get_routes();
+
 
             if ($routing) {
 
@@ -72,6 +73,21 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 //                if ($route_prefix) {
 //                    $routing = ArrayUtil::prefix_keys($routing, $this->route_prefix);
 //                }
+
+                if ($supported_languages) {
+                    //the basic route without language prefix will be always added and will point to the default target language
+                    //here additional routes for each of the supported languages is added
+                    //no need to generate individual URL paths... instead use a {language} var in the path
+//                    foreach ($supported_languages as $supported_language) {
+//                        foreach ($routing as $path => $value) {
+//                            $routing['/'.$supported_language.$path] = $value;
+//                        }
+//                    }
+                    //even if a single language is provided still add additional path as this may be required for other purpose (future proofing)
+                    foreach ($routing as $path => $value) {
+                        $routing['/{language}'.$path] = $value;
+                    }
+                }
 
                 $routing_map = array_merge($routing_map, $routing);
                 $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];

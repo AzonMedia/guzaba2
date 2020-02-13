@@ -49,9 +49,14 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @param string|null $class_name
      * @return ResponseInterface|null
      */
-    public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL) : ?ResponseInterface
+    public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL, ?string $language = NULL) : ?ResponseInterface
     //public function _init(?string $uuid = NULL) : ?ResponseInterface
     {
+
+        if ($language) {
+            t::set_target_language($language);
+        }
+
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
 
         if (!$uuid) {
