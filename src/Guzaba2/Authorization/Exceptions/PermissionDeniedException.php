@@ -5,7 +5,7 @@ namespace Guzaba2\Authorization\Exceptions;
 
 use Guzaba2\Base\Exceptions\BaseException;
 
-class PermissionDeniedException extends BaseException
+class PermissionDeniedException extends \Azonmedia\Exceptions\PermissionDeniedException
 {
 
 }

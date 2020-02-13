@@ -37,7 +37,8 @@ use Guzaba2\Http\Server;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Orm\ActiveRecord;
-use Guzaba2\Translator\Translator as t;
+//use Guzaba2\Translator\Translator as t;
+use Azonmedia\Translator\Translator as t;
 use Guzaba2\Authorization\IpBlackList;
 use Monolog\Handler\StreamHandler;
 use Psr\Container\ContainerInterface;
@@ -169,7 +170,7 @@ BANNER;
      */
     public static Watchdog $Watchdog;
 
-    private static float $init_microtime;
+    private static ?float $init_microtime = NULL;
 
     public const APM_DATA_STRUCTURE = [
         'worker_id'                             => 0,
@@ -245,6 +246,11 @@ BANNER;
     /// PUBLIC METHODS ///
     //////////////////////
 
+    public static function set_init_microtime(float $microtime) : void
+    {
+        self::$init_microtime = $microtime;
+    }
+
     /**
      * @param RegistryInterface $Registry
      * @param LoggerInterface $Logger
@@ -252,7 +258,9 @@ BANNER;
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger): void
     {
 
-        self::$init_microtime = microtime(TRUE);
+        if (self::$init_microtime === NULL) {
+            self::$init_microtime = microtime(TRUE);
+        }
 
         self::$Registry = $Registry;
         self::$Logger = $Logger;
@@ -274,9 +282,9 @@ BANNER;
         //stream_wrapper_register('guzaba.source', SourceStream::class);
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
-        self::print_initialization_messages();
-
         self::$is_initialized_flag = TRUE;
+
+        self::print_initialization_messages();
     }
 
 
@@ -288,10 +296,10 @@ BANNER;
     public static function run(callable $callable, array $options = []) : int
     {
         if (!self::is_initialized()) {
-            throw new \Exception('Kernel is not initialized. Please execute Kernel::initialize() first.');
+            throw new \Exception(t::_('Kernel is not initialized. Please execute Kernel::initialize() first.'));
         }
 
-        self::printk('Kernel::run() invoked').PHP_EOL;
+        self::printk(t::_('Kernel::run() invoked')).PHP_EOL;
         self::printk(PHP_EOL);
 
         $ret = 0;
@@ -309,7 +317,7 @@ BANNER;
             }
             ArrayUtil::validate_array($options, $run_options_validation, $errors);
             if ($errors) {
-                throw new \InvalidArgumentException(sprintf('Kernel options error: %s', implode(' ', $errors) ));
+                throw new \InvalidArgumentException(sprintf(t::_('Kernel options error: %s'), implode(' ', $errors) ));
             }
 
             $options += self::RUN_OPTIONS_DEFAULTS;
@@ -538,7 +546,8 @@ BANNER;
         $str = '';
         $str = var_dump($var, TRUE);
         if ($frame) {
-            $str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
+            //$str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
+            $str .= sprintf(t::_('printed in %s#%s'), $frame['file'], $frame['line'] ).PHP_EOL;
         }
         $str .= PHP_EOL;
         print $str;
@@ -655,12 +664,16 @@ BANNER;
 
     /**
      * Prints a message to the default output of the server (in daemon mode this is redirected to file).
+     * It can be used even if the Kernel is not initialized
      * @param $message
      */
     public static function printk(string $message) : void
     {
         //TODO - would be nice if this can also print to any connected debugger session...
         //better - instead there can be Console sessions attached for these messages (which is different from debug session)
+        if (self::$init_microtime === NULL) {
+            self::$init_microtime = microtime(TRUE);
+        }
 
         if (trim($message)) {
             $microtime = microtime(TRUE);
@@ -668,16 +681,43 @@ BANNER;
             if (self::get_http_server()) {
                 $worker_id = self::get_worker_id();
                 if ($worker_id != -1) {
-                    $worker_str = ' Worker #'.$worker_id;
+                    //$worker_str = ' Worker #'.$worker_id;
+                    $worker_str = ' '.sprintf(t::_('Worker #%s'), $worker_id);
                 } else {
-                    $worker_str = 'Startup';
+                    $worker_str = t::_('Startup');
                 }
             } else {
-                $worker_str = 'Startup';
+                $worker_str = t::_('Startup');
             }
             // todo fix padding
             $message = sprintf('[%.4f %s] %s', $microtime_diff, $worker_str, $message);
         }
+
+        //if the kernel is not yet initialized and the logger is not available
+        //store the messages that are not logged and flush them with the first printk call in which the kernel is initialized
+        static $messages_buffer_arr = [];
+
+        if (self::is_initialized()) {
+            //first flush the buffer
+            foreach ($messages_buffer_arr as $buffered_message) {
+                self::write_to_log($buffered_message);
+                $messages_buffer_arr = [];
+            }
+            self::write_to_log($message);
+        } else {
+            $messages_buffer_arr[] = $message;
+        }
+        print $message;
+    }
+
+    /**
+     * Checks the logger for any handlers that start with / and pushes the provided $message to these.
+     * Returns the number of handlers to which the message was pushed to.
+     * @param string $message
+     */
+    private static function write_to_log(string $message) : int
+    {
+        $ret = 0;
         $handlers = self::get_logger()->getHandlers();
         foreach ($handlers as $Handler) {
             if ($Handler instanceof StreamHandler) {
@@ -685,12 +725,21 @@ BANNER;
 
                 if ($url && $url[0] === '/') { //skip php://output
                     self::file_put_contents($url, $message, \FILE_APPEND);
+                    $ret++;
                 }
             }
         }
-        print $message;
+        return $ret;
     }
 
+    /**
+     * Must be used instead of \file_put_contents() as this method is coroutine aware.
+     * If running in coroutine context it will use \Swoole\Coroutine\System::writeFile() instead.
+     * @param string $file
+     * @param string $contents
+     * @param int $flags
+     * @return int
+     */
     public static function file_put_contents(string $file, string $contents, int $flags = 0) : int
     {
         if (\Swoole\Coroutine::getCid() > 0) {
@@ -1028,8 +1077,11 @@ BANNER;
      */
     public static function get_class_path(string $class_name) : ?string
     {
-        if (!class_exists($class_name)) {
-            throw new InvalidArgumentException(sprintf('No class %s exists.', $class_name));
+//        if (!class_exists($class_name)) {
+//            throw new InvalidArgumentException(sprintf('No class/interface %s exists.', $class_name));
+//        }
+        if ($class && !class_exists($class) && !interface_exists($class)) {
+            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class));
         }
         $ret = array_search($class_name, self::$loaded_classes);
         if ($ret === FALSE) {
@@ -1056,10 +1108,12 @@ BANNER;
     {
         $Logger = self::get_logger();
         if (\Swoole\Coroutine::getCid() > 0) {
-            $message = 'Coroutine #'.\Swoole\Coroutine::getCid().': '.$message;
+            //$message = 'Coroutine #'.\Swoole\Coroutine::getCid().': '.$message;
+            $message = sprintf(t::_('Coroutine #%s: %s'), \Swoole\Coroutine::getCid(), $message );
         }
         if (self::get_http_server()) {
-            $message = 'Worker #'.self::get_worker_id().': '.$message;
+            //$message = 'Worker #'.self::get_worker_id().': '.$message;
+            $message = sprintf(t::_('Process #%s: %s'), self::get_worker_id(), $message );
         }
 
         $Logger->log($level, $message, $context);
@@ -1081,15 +1135,15 @@ BANNER;
         self::printk(self::FRAMEWORK_BANNER);
         self::printk(PHP_EOL);
 
-        Kernel::printk(sprintf('Initialization at: %s %s %s', self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get() ).PHP_EOL);
+        Kernel::printk(sprintf(t::_('Initialization at: %s %s %s'), self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get() ).PHP_EOL);
 
-        Kernel::printk(sprintf(t::_('PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        Kernel::printk(sprintf(t::_('Versions: PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
         Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
 
         self::printk(PHP_EOL);
 
         $registry_backends = self::$Registry->get_backends();
-        $registry_str = 'Registry backends:'.PHP_EOL;
+        $registry_str = t::_('Registry backends:').PHP_EOL;
         foreach ($registry_backends as $RegistryBackend) {
             $registry_str .= str_repeat(' ',4).'- '.get_class($RegistryBackend).PHP_EOL;
         }
@@ -1098,13 +1152,13 @@ BANNER;
 
 
         $handlers = self::$Logger->getHandlers();
-        $error_handlers_str = 'Logger Handlers:'.PHP_EOL;
+        $error_handlers_str = t::_('Logger Handlers:').PHP_EOL;
         foreach ($handlers as $Handler) {
             $error_handlers_str .= str_repeat(' ',4).'- '.get_class($Handler).' : '.$Handler->getUrl().' : '.self::$Logger::getLevelName($Handler->getLevel()).PHP_EOL;
         }
         Kernel::printk($error_handlers_str);
         self::printk(PHP_EOL);
-        self::printk('Kernel is initialized').PHP_EOL;
+        self::printk(t::_('Kernel is initialized')).PHP_EOL;
         self::printk(PHP_EOL);
 
     }

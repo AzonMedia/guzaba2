@@ -227,7 +227,7 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($this->options['daemonize'])) {
             Kernel::printk(sprintf(t::_('DEAMONIZED, log file: %s'), $this->options['log_file']).PHP_EOL);
         }
-        Kernel::printk(sprintf(t::_('End of startup messages. Swoole server is now serving requests.')).PHP_EOL );
+        Kernel::printk(sprintf(t::_('End of startup messages - Swoole server is now serving requests')).PHP_EOL );
         Kernel::printk(PHP_EOL);
     }
 
@@ -319,10 +319,10 @@ class Server extends \Guzaba2\Http\Server
             throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
         }
         if (!empty($options['ssl_cert_file']) && !is_readable($options['ssl_cert_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable.'), $options['ssl_cert_file']));
+            throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
         }
         if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable.'), $options['ssl_cert_file']));
+            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
         }
         //since Swoole 4.4.14 this is supported
         //if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
@@ -333,10 +333,10 @@ class Server extends \Guzaba2\Http\Server
             throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));
         }
         if (!empty($options['daemonize']) && file_exists($options['log_file']) && !is_writable($options['log_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable.'), $options['log_file'] ));
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.'), $options['log_file'] ));
         }
         if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable.'), $options['log_file'] , dirname($options['log_file']) ));
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'] , dirname($options['log_file']) ));
         }
     }
 

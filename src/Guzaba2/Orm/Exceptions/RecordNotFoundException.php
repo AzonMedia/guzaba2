@@ -5,6 +5,6 @@ namespace Guzaba2\Orm\Exceptions;
 
 use Guzaba2\Base\Exceptions\BaseException;
 
-class RecordNotFoundException extends BaseException
+class RecordNotFoundException extends \Azonmedia\Exceptions\RecordNotFoundException
 {
 }

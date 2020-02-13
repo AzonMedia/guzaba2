@@ -1,0 +1,83 @@
+{
+    "package": "guzaba/guzaba2",
+    "source_language": "en",
+    "translations": [
+        {
+            "en": "Initialization at: %s %s %s",
+            "bg": "Инизиализиране в: %s %s %s"
+        },
+        {
+            "en": "Versions: PHP %s, Swoole %s, Guzaba %s",
+            "bg": "Версии: PHP %s, Swoole %s, Guzaba %s"
+        },
+        {
+            "en": "Registry backends:",
+            "bg": "Бекенди на регистъра:"
+        },
+        {
+            "en": "Logger Handlers:",
+            "bg": "Изходи на логъра:"
+        },
+        {
+            "en": "Kernel is initialized",
+            "bg": "Ядрото е инициализирано"
+        },
+        {
+            "en": "Startup",
+            "bg": "Инизиализация"
+        },
+        {
+            "en": "Worker #%s",
+            "bg": "Процес #%s"
+        },
+        {
+            "en": "Kernel::run() invoked",
+            "bg": "Изпълняване на Kernel::run()"
+        },
+        {
+            "en": "Kernel options error: %s",
+            "bg": "Грешка в опциите на ядрото: %s"
+        },
+        {
+            "en": "Kernel is not initialized. Please execute Kernel::initialize() first.'",
+            "bg": "Ядрото не е инициализирано. Моля изпълнете първо Kernel::initialize()."
+        },
+        {
+            "en": "Loaded all classes from:",
+            "bg": "Заредени са всички класове от:"
+        },
+        {
+            "en": "Initializations run:",
+            "bg": "Изпълнени инициализации:"
+        },
+        {
+            "en": "Validations run:",
+            "bg": "Изпълнени валидации:"
+        },
+        {
+            "en": "No Http Server is set (Kernel::set_http_server()).",
+            "bg": "Не е зададен HTTP сървър (Kernel::set_http_server())."
+        },
+        {
+            "en": "There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.",
+            "bg": "Не е зададен контейнер със зависимости (Kernel::set_di_container()). Услугите не могат да се използват."
+        },
+        {
+            "en": "printed in %s#%s",
+            "bg": "отпечатано в %s#%s"
+        },
+        {
+            "en": "Class/interface %s does not exist.",
+            "bg": "Класът/интерфейсът %s не съществува."
+        },
+        {
+            "en": "Coroutine #%s: %s",
+            "bg": "Копроцедура #%s: %s"
+        },
+        {
+            "en": "Process #%s: %s",
+            "bg": "Процес #%s: %s"
+        }
+    ]
+
+}

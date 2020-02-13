@@ -225,28 +225,10 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 //        }
     }
 
-    public function __toString() : string
-    {
-        $ret = '';
-        $Exception = $this;
-        do {
-            $ret .= sprintf(t::_('%s %s in %s#%s.'), get_class($this), $this->getMessage(), $this->getFile(), $this->getLine() ).PHP_EOL;
-            $uuid = $this->getUUID();
-            $component_name = $this->getErrorComponentName();
-            if ($component_name) {
-                $ret .= sprintf(t::_('Component: %s'), $component_name ).PHP_EOL;
-            }
-            $error_url = $this->getErrorReferenceUrl();
-            if ($error_url) {
-                $ret .= sprintf(t::_('ERROR REFERENCE: %s'), $error_url).PHP_EOL;
-            }
-            $ret .= t::_('Stack Trace:').PHP_EOL;
-            $ret .= $this->getTraceAsString().PHP_EOL;
-            $Exception = $Exception->getPrevious();
-        } while ($Exception);
-
-        return $ret;
-    }
+//    public function __toString() : string
+//    {
+//        return self::getCompleteMessage();
+//    }
 
     /**
      * @overrides
@@ -277,14 +259,6 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
             }
         }
         return $ret;
-    }
-
-    public function getPrettyMessage() : string
-    {
-        $message = $this->getMessage();
-        $component = $this->getErrorComponentName() ?? t::_('Unknown');
-        $ref_url = $this->getErrorReferenceUrl();
-        return sprintf(t::_('%s "%s" in module %s %s'), get_class($this), $message, $component, $ref_url);
     }
 
     public function _before_change_context() : void

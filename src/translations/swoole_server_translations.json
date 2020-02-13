@@ -1,0 +1,80 @@
+{
+    "package": "guzaba/guzaba2",
+    "source_language": "en",
+    "translations": [
+        {
+            "en": "Starting Swoole HTTP server on %s:%s at %s %s",
+            "bg": "Стартиране на Swoole HTTP сървър на %s:%s в %s %s"
+        },
+        {
+            "en": "Static serving is enabled and document_root is set to %s",
+            "bg": "Статичното сервиране на съдържание е активно и document_root е зададен на %s"
+        },
+        {
+            "en": "Workers: %s, Task Workers: %s",
+            "bg": "Процеси: %s, Процеси за задачи: %s"
+        },
+        {
+            "en": "Worker debug ports enabled: %s - %s",
+            "bg": "Дебъг портове за процесите са активни: %s - %s"
+        },
+        {
+            "en": "HTTP2 enabled",
+            "bg": "HTTP2 е активен"
+        },
+        {
+            "en": "HTTPS enabled",
+            "bg": "HTTPS е активен"
+        },
+        {
+            "en": "DEAMONIZED, log file: %s",
+            "bg": "ДЕМОНИЗИРАН, лог файл: %s"
+        },
+        {
+            "en": "End of startup messages - Swoole server is now serving requests",
+            "bg": "Край на съобщенията от инициализацията - Swoole сървърът обслужва заявки"
+        },
+        {
+            "en": "Invalid option \"%s\" provided to server configuration.",
+            "bg": ""
+        },
+        {
+            "en": "The Swoole server has the \"document_root\" option set to \"%s\" but the \"enable_static_handler\" is not enabled. To serve static content the \"enable_static_handler\" setting needs to be enabled.",
+            "bg": ""
+        },
+        {
+            "en": "The Swoole server has the \"enable_static_handler\" setting enabled but the \"document_root\" is not configured. To serve static content the \"document_root\" setting needs to be set.",
+            "bg": ""
+        },
+        {
+            "en": "HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.",
+            "bg": ""
+        },
+        {
+            "en": "The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.",
+            "bg": ""
+        },
+        {
+            "en": "The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.",
+            "bg": ""
+        },
+        {
+            "en": "The \"daemonize\" option is set but there is no \"log_file\" option specified.",
+            "bg": ""
+        },
+        {
+            "en": "The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.",
+            "bg": ""
+        },
+        {
+            "en": "The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.",
+            "bg": ""
+        },
+        {
+            "en": "The option %s is not set.",
+            "bg": ""
+        }
+
+    ]
+
+}

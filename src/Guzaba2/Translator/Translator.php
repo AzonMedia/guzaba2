@@ -3,14 +3,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Translator;
 
-use Guzaba2\Base\Base;
-
-class Translator extends Base
+/**
+ * Class Translator
+ * @package Guzaba2\Translator
+ */
+class Translator extends \Azonmedia\Translator\Translator
 {
-    public static function _(string $message) : string
-    {
-        //TODO to be implemented
 
-        return $message;
-    }
 }
