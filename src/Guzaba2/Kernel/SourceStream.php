@@ -18,7 +18,8 @@ use Guzaba2\Translator\Translator as t;
  * It rewrites the CONFIG_RUNTIME constant
  * @package Guzaba2\Kernel
  */
-class SourceStream extends Base
+//class SourceStream extends Base
+class SourceStream
 {
     public $context;
 

@@ -18,17 +18,20 @@ declare(strict_types=1);
 namespace Guzaba2\Base;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Interfaces\BaseInterface;
 use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Interfaces\ContextAwareInterface;
 use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Interfaces\UsesServicesInterface;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
 
-use Guzaba2\Base\Traits\SupportsConfig;
-use Guzaba2\Base\Traits\SupportsObjectInternalId;
-use Guzaba2\Base\Traits\UsesServices;
-use Guzaba2\Base\Traits\StaticStore;
-use Guzaba2\Base\Traits\ContextAware;
+//use Guzaba2\Base\Traits\SupportsConfig;
+//use Guzaba2\Base\Traits\SupportsObjectInternalId;
+//use Guzaba2\Base\Traits\UsesServices;
+//use Guzaba2\Base\Traits\StaticStore;
+//use Guzaba2\Base\Traits\ContextAware;
+use Guzaba2\Base\Traits\BaseTrait;
 
 /**
  * Class Base
@@ -36,13 +39,15 @@ use Guzaba2\Base\Traits\ContextAware;
  * All classes except Kernel and the various exceptions inherit this class.
  * Kernel inherits nothing and the exceptions inherit BaseException
  */
-abstract class Base implements ConfigInterface, ObjectInternalIdInterface, UsesServicesInterface
+abstract class Base implements BaseInterface
 {
-    use SupportsObjectInternalId;
-    use SupportsConfig;
-    use UsesServices;
-    //use StaticStore;//this becomes too expensive to use
-    use ContextAware;
+//    use SupportsObjectInternalId;
+//    use SupportsConfig;
+//    use UsesServices;
+//    //use StaticStore;//this becomes too expensive to use
+//    use ContextAware;
+
+    use BaseTrait;
 
     /**
      * Base constructor.
