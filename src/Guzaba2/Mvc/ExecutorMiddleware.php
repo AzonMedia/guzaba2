@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
+use Azonmedia\Reflection\Reflection;
 use Azonmedia\Reflection\ReflectionMethod;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
@@ -157,11 +158,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
-                $controller_arguments = $Request->getAttribute('controller_arguments') ?? [];
+
+                $controller_arguments = $Request->getAttribute('controller_arguments') ?? []; //in case there are arguments injected by previous middlware like the Routing
 
                 if ($body_params = $Request->getParsedBody()) {
 
                     if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
+
                         if ($repeating_arguments = array_intersect($controller_arguments, $body_params)) {
                             //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
                             $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true) );
@@ -172,6 +175,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                         }
 
                         $controller_arguments += $body_params;
+
                     } else {
                         $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod() , count($body_params) );
                         $Body = new Structured( [ 'message' => $message ] );
@@ -181,6 +185,29 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
 
                 }
+                if ($uploaded_files = $Request->getUploadedFiles()) {
+
+                    if (in_array($Request->getMethodConstant(), [Method::HTTP_POST]) ) {
+
+                        if ($uploaded_files) {
+                            if ($repeating_arguments = array_intersect($controller_arguments, array_keys($uploaded_files))) {
+                                $message = sprintf(t::_('The following arguments are present in both the Uploaded Files and the request BODY or PATH: %s.'), print_r(array_values($repeating_arguments), true));
+                                $Body = new Structured(['message' => $message]);
+                                $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
+                                $Response = [$this, $type_handler]($Request, $Response);
+                                return $Response;
+                            }
+                        }
+                        $controller_arguments += $uploaded_files;
+                    } else {
+                        $message = sprintf(t::_('Bad request. Uploading files is supported only for POST method. %s request was received along with %s arguments.'), $Request->getMethod() , count($body_params) );
+                        $Body = new Structured( [ 'message' => $message ] );
+                        $Response = new Response(StatusCode::HTTP_BAD_REQUEST,[], $Body);
+                        $Response = [$this, $type_handler]($Request, $Response);
+                        return $Response;
+                    }
+                }
+
 
                 //check if controller has init method
                 $init_method_exists = \method_exists($controller_callable[0], '_init');
@@ -246,7 +273,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $message = sprintf(t::_('No value provided for parameter $%s in %s::%s(%s).'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
                     throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
-                settype($value, $param['type']);
+                if (Reflection::isValidType($param['type'])) {
+                    settype($value, $param['type']);
+                }
                 $ordered_arguments[] = $value;
             }
             //because the Response is immutable it needs to be passed around instead of modified...

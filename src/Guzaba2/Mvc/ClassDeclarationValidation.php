@@ -11,6 +11,7 @@ use Guzaba2\Kernel\Interfaces\ClassDeclarationValidationInterface;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Translator\Translator as t;
+use Psr\Http\Message\UploadedFileInterface;
 
 abstract class ClassDeclarationValidation extends Base implements ClassDeclarationValidationInterface
 {
@@ -24,6 +25,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         'float',
         'string',
         'bool',
+        UploadedFileInterface::class
     ];
 
     public static function run_all_validations() : array

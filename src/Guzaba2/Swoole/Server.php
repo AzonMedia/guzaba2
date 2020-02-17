@@ -311,6 +311,17 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($options['document_root']) && empty($options['enable_static_handler'])) {
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $options['document_root']));
         }
+        if (!empty($options['upload_tmp_dir'])) {
+            if (!file_exists($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory,')));
+            }
+            if (!is_dir($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory,')));
+            }
+            if (!is_writeable($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory,')));
+            }
+        }
 
         if (!empty($options['enable_static_handler']) && empty($options['document_root'])) {
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));

@@ -444,10 +444,10 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      * @throws \InvalidArgumentException if an invalid structure is provided.
      */
-    public function withUploadedFiles(array $uploadedFiles) : self
+    public function withUploadedFiles(array $uploaded_files) : self
     {
         $clone = clone $this;
-        $clone->uploaded_files = $uploadedFiles;
+        $clone->uploaded_files = $uploaded_files;
 
         return $clone;
     }
