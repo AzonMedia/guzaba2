@@ -168,25 +168,32 @@ class Request extends HandlerBase
             //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //Kernel::printk($message);
             //when using log() the worker # is always printed
-            $time_str = '';
-            $served_in_time = $end_time - $start_time;
-            if ($served_in_time > 1) {
-                $time_str = round($served_in_time, Kernel::MICROTIME_ROUNDING).' SECONDS';
-            } elseif ($served_in_time > 0.001) {
-                $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000).' MILLISECONDS';
-            } else {
-                $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
-            }
-            if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
-                $slow_message = __CLASS__.': '.'Slow response of '.$time_str.' to '.$PsrRequest->getMethod().' request detected (more than 5 milliseconds). Dumping APM data:'.PHP_EOL;
-            } elseif ($served_in_time > 0.050) {
-                $slow_message = __CLASS__.': '.'Slow response of '.$time_str.' to '.$PsrRequest->getMethod().' request detected (more than 50 milliseconds). Dumping APM data:'.PHP_EOL;
-            } else {
-                //excellent performance !!!
-            }
-            if (!empty($slow_message)) {
-                $slow_message .= (string) self::get_service('Apm');
-                Kernel::log($slow_message, LogLevel::DEBUG);
+
+
+
+            if (Application::is_development()) {
+                $time_str = '';
+                $served_in_time = $end_time - $start_time;
+
+                if ($served_in_time > 1) {
+                    $time_str = round($served_in_time, Kernel::MICROTIME_ROUNDING).' SECONDS';
+                } elseif ($served_in_time > 0.001) {
+                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000).' MILLISECONDS';
+                } else {
+                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
+                }
+
+                if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
+                    $slow_message = __CLASS__ . ': ' . 'Slow response of ' . $time_str . ' to ' . $PsrRequest->getMethod() . ' request detected (more than 5 milliseconds). Dumping APM data:' . PHP_EOL;
+                } elseif ($served_in_time > 0.050) {
+                    $slow_message = __CLASS__ . ': ' . 'Slow response of ' . $time_str . ' to ' . $PsrRequest->getMethod() . ' request detected (more than 50 milliseconds). Dumping APM data:' . PHP_EOL;
+                } else {
+                    //excellent performance !!!
+                }
+                if (!empty($slow_message)) {
+                    $slow_message .= (string)self::get_service('Apm');
+                    Kernel::log($slow_message, LogLevel::DEBUG);
+                }
             }
 
             $message = '';
@@ -202,7 +209,22 @@ class Request extends HandlerBase
                     $message = ' ('.$message.')';
                 }
             }
-            $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
+            $request_str = '';
+            if (Application::is_development()) {
+                if ($PsrResponse->getStatusCode() === StatusCode::HTTP_BAD_REQUEST) {
+                    //on bad requests dump the request
+                    if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+                        $PsrRequest->getBody()->rewind();
+                        $contents = $PsrRequest->getBody()->getContents();
+                        $PsrRequest->getBody()->rewind();
+                        $request_str = $contents;
+                    }
+                }
+                if ($request_str) {
+                    $request_str = ' request: '.$request_str;
+                }
+            }
+            $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().$request_str.PHP_EOL;
             Kernel::log($log_message, LogLevel::INFO);
         }
     }
