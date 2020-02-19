@@ -313,13 +313,13 @@ class Server extends \Guzaba2\Http\Server
         }
         if (!empty($options['upload_tmp_dir'])) {
             if (!file_exists($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory,')));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory.'), $options['upload_tmp_dir'] ));
             }
             if (!is_dir($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory,')));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory.'), $options['upload_tmp_dir'] ));
             }
             if (!is_writeable($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory,')));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory.'), $options['upload_tmp_dir'] ));
             }
         }
 
