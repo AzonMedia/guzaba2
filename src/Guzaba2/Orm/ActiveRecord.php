@@ -602,6 +602,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static final function get_by_uuid(string $uuid) : ActiveRecord
     {
+        if (!GeneralUtil::is_uuid($uuid)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1s is not a valid UUID.'), $uuid));
+        }
         //$Store = static::OrmStore();
         /**
          * Guzaba2\Orm\Store\Sql\Mysql
@@ -609,11 +612,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $Store = static::get_service('OrmStore');
         $meta_data = $Store->get_meta_by_uuid($uuid);
         if (!$meta_data) {
-            throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %s.'), $uuid));
+            throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %1s.'), $uuid));
         }
             
-        $id = $meta_data['meta_object_id'];
-        return new $meta_data['meta_class_name']($id);
+        $object_id = $meta_data['meta_object_id'];
+        return new $meta_data['meta_class_name']($object_id);
     }
 
     public function _before_change_context() : void
@@ -743,6 +746,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         $ret = $this->meta_data['meta_object_uuid'];
         return $ret;
+    }
+
+    public function add_alias() : void
+    {
+
+    }
+
+    public function remove_alias() : void
+    {
+
+    }
+
+    public function has_alias() : bool
+    {
+
     }
 
     /**

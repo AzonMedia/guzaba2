@@ -11,6 +11,7 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Sql\Mysql\Connection;
 use Guzaba2\Database\Sql\Statement;
+use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -29,7 +30,8 @@ use Ramsey\Uuid\Uuid;
 class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface
 {
     protected const CONFIG_DEFAULTS = [
-        'meta_table'    => 'object_meta'
+        'meta_table'    => 'object_meta',
+        'class_table'   => 'classes',
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -67,6 +69,9 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
     protected $hits;
     protected $misses;
 
+    private array $classes_data = [];
+
+
     public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
     {
         parent::__construct();
@@ -79,6 +84,103 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
         $this->hits = 0;
         $this->misses = 0;
+
+        $this->update_classes_data();
+    }
+
+    private function load_classes_data() : void
+    {
+        $Connection = $this->get_connection($CR);
+        $q = "
+SELECT
+    *
+FROM
+    {$Connection::get_tprefix()}{$this::get_class_table()}
+ORDER BY
+    class_name ASC
+        ";
+        $data = $Connection->prepare($q)->execute()->fetchAll();
+        foreach ($data as $record) {
+            $this->classes_data[$record['class_name']] = $record;
+        }
+    }
+
+    private function update_classes_data() : void
+    {
+        $this->load_classes_data();
+        $active_record_classes = ActiveRecord::get_active_record_classes(array_keys(Kernel::get_registered_autoloader_paths()));
+        foreach ($active_record_classes as $class_name) {
+            if (!$this->has_class_data($class_name)) {
+                $this->insert_new_class($class_name);//could be converted to coroutine call but new classes are added rarely and no point optimizing this...
+            }
+        }
+        $this->load_classes_data();//reload the data
+    }
+
+    private function insert_new_class(string $class_name) : void
+    {
+        $Connection = $this->get_connection($CR);
+        $q = "
+INSERT
+INTO
+    {$Connection::get_tprefix()}{$this::get_class_table()}
+    (class_uuid_binary, class_name, class_table)
+VALUES
+    (:class_uuid_binary, :class_name, :class_table)        
+        ";
+
+        $uuid = Uuid::uuid4();
+        $uuid_binary = $uuid->getBytes();
+
+        $b = [
+            'class_uuid_binary' => $uuid_binary,
+            'class_name'        => $class_name,
+            'class_table'       => $class_name::get_main_table(),
+        ];
+        $Connection->prepare($q)->execute($b);
+
+        Kernel::log(sprintf(t::_('%1s: Detected and added a new class %2s with UUID %3s.'), __CLASS__, $class_name, $uuid->getHex()));
+    }
+
+    public function has_class_data(string $class_name) : bool
+    {
+        if (!$class_name) {
+            throw new InvalidArgumentException(sprintf(t::_('No $class_name argument provided.')));
+        }
+        if (!class_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('There is no class %1s.'), $class_name));
+        }
+        return isset($this->classes_data[$class_name]);
+    }
+
+    public function get_class_data(string $class_name) : array
+    {
+        if (!$this->has_class_data($class_name)) {
+            throw new RunTimeException(sprintf(t::_('The Mysql store has no data for class %1s.'), $class_name));
+        }
+        return $this->classes_data[$class_name];
+    }
+
+    public function get_class_name(int $class_id) : ?string
+    {
+        $ret = NULL;
+        foreach ($this->classes_data as $classes_datum) {
+            if ($classes_datum['class_id'] === $class_id) {
+                $ret = $classes_datum['class_name'];
+                break;
+            }
+        }
+        return $ret;
+    }
+
+    public function get_class_id(string $class_name) : ?int
+    {
+        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_id'] : NULL ;
+    }
+
+    public function get_class_uuid(string $class_name) : ?string
+    {
+        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_uuid'] : NULL ;
     }
 
     public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
@@ -212,6 +314,52 @@ WHERE
             }
         }
 
+        //mysql store specific implementation - it uses class_id instead of class_name
+        $has_class_id_column = FALSE;
+        foreach ($ret as &$row) {
+            if ($row['COLUMN_NAME'] === 'class_id') {
+                $has_class_id_column = TRUE;
+                break;
+            }
+        }
+        $has_class_name_column = FALSE;
+        foreach ($ret as &$row) {
+            if ($row['COLUMN_NAME'] === 'class_name') {
+                $has_class_name_column = TRUE;
+                break;
+            }
+        }
+        if ($has_class_id_column && !$has_class_name_column) {
+            $q = "
+SELECT
+    *,
+    '' AS COLUMN_KEY_NAME,
+    '' AS COLUMN_KEY_REFERENCE
+FROM
+    information_schema.COLUMNS
+WHERE
+    TABLE_SCHEMA = :table_schema
+    AND TABLE_NAME = :table_name
+ORDER BY
+    ORDINAL_POSITION ASC
+    ";
+            $s = $Connection->prepare($q);
+            $s->table_schema = $Connection::get_database();
+            $s->table_name = $Connection::get_tprefix().'classes';
+            $classes_columns = $s->execute()->fetchAll();
+            $class_column = [];
+            foreach ($classes_columns as $classes_column) {
+                if ($classes_column['COLUMN_NAME'] === 'class_name') {
+                    $class_column = $classes_column;
+                    break;
+                }
+            }
+            if ($class_column) {
+                //$ret[] = $class_column;
+            }
+
+        }
+
         return $ret;
     }
 
@@ -255,19 +403,40 @@ WHERE
         return self::CONFIG_RUNTIME['meta_table'];
     }
 
+    public static function get_class_table() : string
+    {
+        return self::CONFIG_RUNTIME['class_table'];
+    }
+
     public function get_meta(string $class_name, /* scalar */ $object_id) : array
     {
         $Connection = $this->get_connection($CR);
+//        $q = "
+//SELECT
+//    *
+//FROM
+//    {$Connection::get_tprefix()}{$this::get_meta_table()}
+//WHERE
+//    meta_class_name = :class_name
+//    AND meta_object_id = :object_id
+//        ";
+//        $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
+
+        $class_id = $this->get_class_id($class_name);
+
         $q = "
 SELECT
     *
 FROM
     {$Connection::get_tprefix()}{$this::get_meta_table()}
 WHERE
-    meta_class_name = :class_name
-    AND meta_object_id = :object_id
+    meta_class_id = :meta_class_id
+    AND meta_object_id = :meta_object_id
         ";
-        $data = $Connection->prepare($q)->execute(['class_name' => $class_name, 'object_id' => $object_id])->fetchRow();
+        $data = $Connection->prepare($q)->execute(['meta_class_id' => $class_id, 'meta_object_id' => $object_id])->fetchRow();
+        $data['meta_class_id'] = $class_name;
+        $data['meta_class_uuid'] = $this->get_class_uuid($class_name);
+
         unset($data['meta_object_uuid_binary']);//this is only needed internally for MySQL - this MUST stay removed!
         return $data;
     }
@@ -279,18 +448,24 @@ WHERE
      */
     public function get_meta_by_uuid(string $uuid) : array
     {
+        if (!GeneralUtil::is_uuid($uuid)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1s is not a valid UUID.'), $uuid));
+        }
         $Connection = $this->get_connection($CR);
 
         $q = "
 SELECT 
-    *
+    *,
+    classes.class_name AS meta_class_name 
 FROM
-    {$Connection::get_tprefix()}{$this::get_meta_table()}
+    {$Connection::get_tprefix()}{$this::get_meta_table()} AS meta
+    INNER JOIN {$Connection::get_tprefix()}{$this::get_class_table()} AS classes ON classes.class_id = meta.meta_class_id
 WHERE
     meta_object_uuid_binary = UUID_TO_BIN(:meta_object_uuid)";
 
         $data = $Connection->prepare($q)->execute([ 'meta_object_uuid' => $uuid])->fetchRow();
-
+        unset($data['meta_object_uuid_binary']);
+        unset($data['class_uuid_binary']);
         if (!count($data)) {
             //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
             $data = $this->FallbackStore->get_meta_by_uuid( $uuid);
@@ -314,19 +489,34 @@ WHERE
         $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
 
 
+//        $q = "
+//UPDATE
+//    {$Connection::get_tprefix()}{$meta_table}
+//SET
+//    meta_object_last_update_microtime = :meta_object_last_update_microtime
+//WHERE
+//    meta_class_name = :meta_class_name
+//    AND meta_object_id = :meta_object_id
+//        ";
+//
+//        $params = [
+//            'meta_class_name'                    => get_class($ActiveRecord),
+//            'meta_object_id'                     => $ActiveRecord->get_id(),
+//            'meta_object_last_update_microtime'  => $object_last_update_microtime,
+//        ];
+
         $q = "
 UPDATE
     {$Connection::get_tprefix()}{$meta_table} 
 SET
     meta_object_last_update_microtime = :meta_object_last_update_microtime
 WHERE
-    meta_class_name = :meta_class_name
+    meta_class_id = :meta_class_id
     AND meta_object_id = :meta_object_id
         ";
 
         $params = [
-            //'class_name'                    => str_replace('\\','\\\\',get_class($ActiveRecord)),
-            'meta_class_name'                    => get_class($ActiveRecord),
+            'meta_class_id'                      => $this->get_class_id(get_class($ActiveRecord)),
             'meta_object_id'                     => $ActiveRecord->get_id(),
             'meta_object_last_update_microtime'  => $object_last_update_microtime,
         ];
@@ -344,18 +534,38 @@ WHERE
 
         $uuid = Uuid::uuid4();
         $uuid_binary = $uuid->getBytes(); 
-            
+
+
+//        $q = "
+//INSERT
+//INTO
+//    {$Connection::get_tprefix()}{$meta_table}
+//    (meta_object_uuid_binary, meta_class_name, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
+//VALUES
+//    (:meta_object_uuid_binary, :meta_class_name, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime)
+//        ";
+//
+//        $params = [
+//            'meta_class_name'                    => get_class($ActiveRecord),
+//            'meta_object_id'                     => $ActiveRecord->get_id(),
+//            'meta_object_create_microtime'       => $object_create_microtime,
+//            'meta_object_last_update_microtime'  => $object_create_microtime,
+//            'meta_object_uuid_binary'            => $uuid_binary,
+//            //'object_uuid'                   => $uuid,
+//        ];
+
+
         $q = "
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (meta_object_uuid_binary, meta_class_name, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
+    (meta_object_uuid_binary, meta_class_id, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
 VALUES
-    (:meta_object_uuid_binary, :meta_class_name, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime)
+    (:meta_object_uuid_binary, :meta_class_id, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime)
         ";
 
         $params = [
-            'meta_class_name'                    => get_class($ActiveRecord),
+            'meta_class_id'                      => $this->get_class_id(get_class($ActiveRecord)),
             'meta_object_id'                     => $ActiveRecord->get_id(),
             'meta_object_create_microtime'       => $object_create_microtime,
             'meta_object_last_update_microtime'  => $object_create_microtime,
@@ -380,12 +590,6 @@ VALUES
     {
 
         //BEGIN DB TRANSACTION
-
-
-//        if (method_exists($ActiveRecord, '_before_save') /*&& !$this->check_for_method_recursion('save') && !$this->method_hooks_are_disabled() */) {
-//            $args = func_get_args();
-//            $ret = call_user_func_array([$ActiveRecord,'_before_save'], $args);
-//        }
 
         // basic checks
         //if (!$ActiveRecord->is_new() && !$ActiveRecord->index[$main_index[0]]) {
@@ -420,6 +624,16 @@ VALUES
                     $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
                 } else {
                     $field_names_arr = $ActiveRecord::get_property_names();//this includes the full index
+
+                    //implementation detail of Mysql store
+                    if (
+                        in_array('class_name', $field_names_arr, TRUE)
+                        && $ActiveRecord::has_property('class_id')
+                        && $record_data_to_save['class_name']
+                        && !$record_data_to_save['class_id']
+                    ) {
+                        $record_data_to_save['class_id'] = $this->get_class_id($record_data_to_save['class_name']);
+                    }
 
 //                    if (array_key_exists($main_index[0], $record_data_to_save)) {
 //                        unset($record_data_to_save[$main_index[0]]);
@@ -604,13 +818,27 @@ ON DUPLICATE KEY UPDATE
                 throw new RunTimeException(sprintf(t::_('The class %s has compound index and can not have meta data.'), $class));
             }
             $ret['meta'] = $this->get_meta($class, current($primary_index));
-            $ret['data'] = $data[0];
+            //$data contains also meta data
+            $record_data = [];
+            $sturcutre_data = $this->get_storage_columns_data($class);
+            //print_r($sturcutre_data);
+            $column_names = array_map(fn($column_data) => $column_data['COLUMN_NAME'], $sturcutre_data);
+//            $column_names = [];
+//            foreach ($structure_data as $structure_datum) {
+//                $column_names
+//            }
+            foreach ($data[0] as $column_name=>$column_datum) {
+                if (in_array($column_name, $column_names)) {
+                    $record_data[$column_name] = $column_datum;
+                }
+            }
+            //$ret['data'] = $data[0];
+            $ret['data'] = $record_data;
             $this->hits++;
         } else {
             $this->misses--;
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
-
 
         return $ret;
     }
@@ -637,56 +865,57 @@ ON DUPLICATE KEY UPDATE
         return [];
     }
 
-    protected function create_meta_if_does_not_exist()
-    {
-
-        if ($this->meta_exists) {
-            return true;
-        }
-
-        // TODO can use create table if not exists
-        $Connection = $this->get_connection($CR);
-        $q = "
-SELECT
-    *
-FROM
-    information_schema.tables
-WHERE
-    table_schema = :table_schema
-    AND table_name = :table_name
-LIMIT 1
-        ";
-        $s = $Connection->prepare($q);
-        $s->table_schema = $Connection::get_database();
-        $s->table_name = $Connection::get_tprefix() . static::CONFIG_RUNTIME['meta_table'];
-
-        $ret = $s->execute()->fetchAll();
-
-        if (!empty($ret)) {
-            $this->meta_exists = true;
-            return true;
-        }
-
-        $q = "
-        CREATE TABLE `{$s->table_name}` (
-  `meta_object_uuid_binary` binary(16) NOT NULL,
-  `meta_object_uuid` char(36) GENERATED ALWAYS AS (bin_to_uuid(`meta_object_uuid_binary`)) VIRTUAL NOT NULL,
-  `meta_class_name` varchar(255) NOT NULL,
-  `meta_object_id` bigint(20) UNSIGNED NOT NULL,
-  `meta_object_create_microtime` bigint(16) UNSIGNED NOT NULL,
-  `meta_object_last_update_microtime` bigint(16) UNSIGNED NOT NULL,
-  `meta_object_create_transaction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
-  `meta_object_last_update_transction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
-  PRIMARY KEY (`object_uuid_binary`),
-  CONSTRAINT `class_name` UNIQUE (`class_name`,`object_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-        ";
-        $s = $Connection->prepare($q);
-        $s->execute();
-
-        $this->meta_exists = true;
-    }
+//    protected function create_meta_if_does_not_exist()
+//    {
+//
+//        if ($this->meta_exists) {
+//            return true;
+//        }
+//
+//        // TODO can use create table if not exists
+//        $Connection = $this->get_connection($CR);
+//        $q = "
+//SELECT
+//    *
+//FROM
+//    information_schema.tables
+//WHERE
+//    table_schema = :table_schema
+//    AND table_name = :table_name
+//LIMIT 1
+//        ";
+//        $s = $Connection->prepare($q);
+//        $s->table_schema = $Connection::get_database();
+//        $s->table_name = $Connection::get_tprefix() . static::CONFIG_RUNTIME['meta_table'];
+//
+//        $ret = $s->execute()->fetchAll();
+//
+//        if (!empty($ret)) {
+//            $this->meta_exists = true;
+//            return true;
+//        }
+//
+//        $q = "
+//        CREATE TABLE `{$s->table_name}` (
+//  `meta_object_uuid_binary` binary(16) NOT NULL,
+//  `meta_object_uuid` char(36) GENERATED ALWAYS AS (bin_to_uuid(`meta_object_uuid_binary`)) VIRTUAL NOT NULL,
+//  -- `meta_class_name` varchar(255) NOT NULL,
+//  `meta_class_id` bigint(20) UNSIGNED NOT NULL,
+//  `meta_object_id` bigint(20) UNSIGNED NOT NULL,
+//  `meta_object_create_microtime` bigint(16) UNSIGNED NOT NULL,
+//  `meta_object_last_update_microtime` bigint(16) UNSIGNED NOT NULL,
+//  `meta_object_create_transaction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+//  `meta_object_last_update_transction_id` bigint(20) UNSIGNED NOT NULL DEFAULT '0',
+//  PRIMARY KEY (`object_uuid_binary`),
+//  CONSTRAINT `class_name` UNIQUE (`class_name`,`object_id`)
+//) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+//
+//        ";
+//        $s = $Connection->prepare($q);
+//        $s->execute();
+//
+//        $this->meta_exists = true;
+//    }
 
     /**
      * Removes an active record data from the Store
@@ -735,11 +964,8 @@ WHERE `meta_object_uuid` = '{$uuid}'
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
 
-
         //initialization
         $record_data = self::get_record_structure($this->get_unified_columns_data($class));
-
-
 
         //lookup in DB
 
@@ -818,11 +1044,14 @@ WHERE `meta_object_uuid` = '{$uuid}'
 
             }
 
-
-
-
-
         } else {
+
+            //an implementation detail of MySQL store is to replace class_name lookups to by class_id for performance reasons
+            if (array_key_exists('class_name', $index) && $class::has_property('class_id')) {
+                $index['class_id'] = $this->get_class_id($index['class_name']);
+                unset($index['class_name']);
+            }
+
             foreach ($index as $field_name=>$field_value) {
                 if (!is_string($field_name)) {
                     //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
@@ -896,9 +1125,10 @@ WHERE `meta_object_uuid` = '{$uuid}'
 
 
         // GET meda data
+        //, meta.meta_class_name
         $select_str .= "
             , meta.meta_object_uuid
-            , meta.meta_class_name
+            , meta.meta_class_id
             , meta.meta_object_id
             , meta.meta_object_create_microtime
             , meta.meta_object_last_update_microtime
@@ -908,15 +1138,19 @@ WHERE `meta_object_uuid` = '{$uuid}'
 
         // JOIN meta data
         $meta_table = $Connection::get_tprefix().$this::get_meta_table();
+        $class_table = $Connection::get_tprefix().$this::get_class_table();
+        // -- meta.meta_class_name = :meta_class_name
         $meta_str = " 
 LEFT JOIN 
     `{$meta_table}` as `meta` 
-ON 
-    meta.meta_object_id = {$table_name}.{$main_index[0]} 
-AND
-    meta.meta_class_name = :meta_class_name
+    ON 
+        meta.meta_object_id = {$table_name}.{$main_index[0]} 
+    AND
+        meta.meta_class_id = :meta_class_id
+        
 ";
-        $b['meta_class_name'] = $class;
+        //$b['meta_class_name'] = $class;
+        $b['meta_class_id'] = $this->get_class_id($class);
 
         $q_data = "
 SELECT
@@ -977,135 +1211,20 @@ WHERE
         if (empty($data)) {
             // $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
-
+        $class_uuid = $this->get_class_uuid($class);
+        $add_class_name = $class::has_property('class_name') && $class::has_property('class_id');
+        foreach ($data as &$record) {
+            $record['meta_class_name'] = $class;
+            $record['meta_class_uuid'] = $class_uuid;
+            if ($add_class_name && array_key_exists('class_id', $record) && !array_key_exists('class_name', $record)) {
+                $record['class_name'] = $this->get_class_name($record['class_id']);
+            }
+        }
 
         return $data;
 
     }
 
-   /**
-    * Returns all results matching criteria
-    * @param  string $class class name
-    * @param  array  $index [$column => $value]
-    * @param  int $offset
-    * @param  int $limit
-    * @return array  dataset
-    */
-//    public function get_data_count_by(string $class, array $index, bool $use_like = FALSE) : int
-//    {
-//        //initialization
-//        $record_data = self::get_record_structure($this->get_unified_columns_data($class));
-
-//        $Connection = $this->get_connection($CR);
-
-//        $j = [];//an array containing all the tables that need to be INNER JOINED
-//        $w = [];//array containing the where clauses
-//        $b = [];//associative array with the variables that must have values bound
-
-//        $table_name = $class::get_main_table();
-//        //the main table must be always loaded
-//        $j[$class::get_main_table()] = $Connection::get_tprefix().$class::get_main_table();//if it gets assigned multiple times it will overwrite it
-//        //as it may happen the WHERE index provided to get_instance to be from other shards
-
-//        $main_index = $class::get_primary_index_columns();
-
-//        /**
-//         * If UUID is provided the meta data is searched to find the primary key in order
-//         * to perform the SELECT operation
-//         */
-//        if (array_key_exists('object_uuid', $index)) {
-
-//            $meta_data = $this->get_meta_by_uuid($index['object_uuid']);
-//            $object_id = $meta_data['object_id'];
-
-//            $w[] = $main_index[0] . ' = :object_id';
-//            $b['object_id'] = $object_id;
-
-//        } else {
-
-//            foreach ($index as $field_name=>$field_value) {
-//                if (!is_string($field_name)) {
-//                    //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
-//                    throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
-//                }
-
-//                if ($field_name !== 'object_uuid') {
-//                    if (!array_key_exists($field_name, $record_data)) {
-//                        throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
-//                    }
-//                }
-
-//                $j[$table_name] = $Connection::get_tprefix().$table_name;
-
-//                if (is_null($field_value)) {
-//                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} NULL";
-//                } else {
-//                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value, $use_like)} :{$field_name}";
-//                    if ($use_like && is_string($field_value)) {
-//                        $b[$field_name] = "%".$field_value."%";
-//                    } else {
-//                        $b[$field_name] = $field_value;
-//                    }
-//                }
-//            } //end foreach
-
-//            if (empty($w)) {
-//                $w[] = "1";
-//            }
-//        }
-//        //here we join the tables and load only the data from the joined tables
-//        //this means that some tables / properties will not be loaded - these will be loaded on request
-//        //$j_str = implode(" INNER JOIN ", $j);//cant do this way as now we use keys
-//        //the key is the alias of the table, the value is the real full name of the table (including the prefix)
-//        $j_alias_arr = [];
-
-//        foreach ($j as $table_alias=>$full_table_name) {
-
-//            //and the class_id & object_id are moved to the WHERE CLAUSE
-//            if ($table_alias == $table_name) {
-//                //do not add ON clause - this is the table containing the primary index and the first shard
-//                $on_str = "";
-//            } elseif ($table_alias == 'ownership_table') {
-//                $on_arr = [];
-
-//                $on_arr[] = "ownership_table.class_id = :class_id";
-//                $b['class_id'] = static::_class_id;
-
-//                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
-
-//                $on_str = "ON ".implode(" AND ", $on_arr);
-//            } else {
-//                $on_arr = [];
-//                foreach ($main_index as $column_name) {
-//                    $on_arr[] = "{$table_alias}.{$column_name} = {$table_name}.{$column_name}";
-//                }
-//                $on_str = "ON ".implode(" AND ", $on_arr);
-//            }
-//            $j_alias_arr[] = "`{$full_table_name}` AS `{$table_alias}` {$on_str}";
-//            //$this->data_is_loaded_from_tables[] = $table_alias;
-//        }
-
-//        $j_str = implode(PHP_EOL."\t"."LEFT JOIN ", $j_alias_arr);//use LEFT JOIN as old record will have no data in the new shards
-//        unset($j, $j_alias_arr);
-//        $w_str = implode(" AND ", $w);
-//        unset($w);
-
-//        $q = "
-// SELECT
-// COUNT(*) as num_rows
-// FROM
-// {$j_str}
-// WHERE
-// {$w_str}
-// ";
-
-//        $Statement = $Connection->prepare($q);
-//        $Statement->execute($b);
-//        $data = $Statement->fetchRow('num_rows');
-
-//        return $data;
-
-//    }
 
     public function get_hits() : int
     {

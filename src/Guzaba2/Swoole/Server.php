@@ -327,7 +327,7 @@ class Server extends \Guzaba2\Http\Server
             throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
         }
         if (!empty($options['open_http2_protocol']) && (empty($options['ssl_cert_file']) || empty($options['ssl_key_file']))) {
-            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set.')));
+            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set. You can also try to start the application server with --enable-ssl.')));
         }
         if (!empty($options['ssl_cert_file']) && !is_readable($options['ssl_cert_file'])) {
             throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));

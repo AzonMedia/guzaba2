@@ -25,6 +25,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         'float',
         'string',
         'bool',
+        'array',
         UploadedFileInterface::class
     ];
 
