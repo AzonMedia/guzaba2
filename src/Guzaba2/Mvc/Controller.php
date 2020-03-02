@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Mvc;
 
 use Azonmedia\Utilities\ArrayUtil;
+use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -29,6 +30,7 @@ abstract class Controller extends Base implements ControllerInterface
     protected const CONFIG_DEFAULTS = [
         'services' => [
             'Events',
+            'AuthorizationProvider',
         ],
     ];
 
@@ -111,7 +113,7 @@ abstract class Controller extends Base implements ControllerInterface
      * @param array $ns_prefixes
      * @return array
      */
-    public static function get_controller_classes(array $ns_prefixes) : array
+    public static function get_controller_classes(array $ns_prefixes = []) : array
     {
         /*
         $loaded_classes = Kernel::get_loaded_classes();
@@ -132,6 +134,9 @@ abstract class Controller extends Base implements ControllerInterface
             }
         }
         */
+        if (!$ns_prefixes) {
+            $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        }
         static $controller_classes = [];
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
         if (!array_key_exists( $args_hash, $controller_classes ) ) {
@@ -141,6 +146,27 @@ abstract class Controller extends Base implements ControllerInterface
             $controller_classes[$args_hash] = $classes;
         }
         return $controller_classes[$args_hash];
+    }
+
+    /**
+     * Returns the Controller classes that are loaded by the Kernel in the provided namespace prefixes (or all loaded classes if no $ns_prefixes is provided) that have at least one action that can be performed by the provided $Role
+     * @param Role $Role
+     * @param array $ns_prefixes
+     * @return array
+     */
+    public static function get_controller_classes_role_can_perform(Role $Role, array $ns_prefixes = []) : array
+    {
+        $ret = [];
+        if (!$ns_prefixes) {
+            $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
+        }
+        $controllers = self::get_controller_classes($ns_prefixes);
+        foreach ($controllers as $controller) {
+            if (count($controller::get_actions_role_can_perform($Role))) {
+                $ret[] = $controller;
+            }
+        }
+        return $ret;
     }
 
 

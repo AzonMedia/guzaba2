@@ -1115,4 +1115,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         return self::STANDARD_ACTIONS;
     }
+
+    public static function data_to_collection(array $data) : ActiveRecordCollection
+    {
+        return new ActiveRecordCollection(get_called_class(), $data);
+    }
 }

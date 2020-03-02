@@ -7,6 +7,7 @@ namespace Guzaba2\Mvc\Traits;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Reflection\ReflectionFunction;
 use Azonmedia\Reflection\ReflectionMethod;
+use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Mvc\ExecutorMiddleware;
@@ -28,6 +29,7 @@ trait ControllerTrait
     //========================= STATIC METHODS ============================
 
     /**
+     * Returns an array of strings (action/method names)
      * @return array
      * @throws \ReflectionException
      */
@@ -39,6 +41,26 @@ trait ControllerTrait
         foreach ($RClass->getOwnMethods(\ReflectionMethod::IS_PUBLIC) as $RMethod) {
             if (!$RMethod->isStatic() && $RMethod->getName()[0] !== '_') {
                 $ret[] = $RMethod->getName();
+            }
+        }
+        return $ret;
+    }
+
+    /**
+     * Returns the actions on this class that can be performed by $Role
+     * @param Role $Role
+     * @return array
+     * @throws \ReflectionException
+     */
+    public static function get_actions_role_can_perform(Role $Role) : array
+    {
+        $ret = [];
+        $class = get_called_class();
+        $actions = self::get_actions();
+        $AuthorizationProvider = self::get_service('AuthorizationProvider');
+        foreach ($actions as $action) {
+            if ($AuthorizationProvider->role_can_on_class($Role, $action, $class)) {
+                $ret[] = $action;
             }
         }
         return $ret;
