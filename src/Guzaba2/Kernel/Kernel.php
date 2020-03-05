@@ -958,11 +958,14 @@ BANNER;
      * @return array
      * @throws InvalidArgumentException
      */
-    public static function get_classes(array $ns_prefixes, string $class = '') : array
+    public static function get_classes(array $ns_prefixes = [], string $class = '') : array
     {
         $ret = [];
+        if (!$ns_prefixes) {
+            $ns_prefixes = array_keys(self::get_registered_autoloader_paths());
+        }
         if ($class && !class_exists($class) && !interface_exists($class)) {
-            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class));
+            throw new InvalidArgumentException(sprintf('Class/interface %1s does not exist.', $class));
         }
         $loaded_classes = Kernel::get_loaded_classes();
 

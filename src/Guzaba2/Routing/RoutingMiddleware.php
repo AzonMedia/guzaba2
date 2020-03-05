@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Routing;
 
 use Azonmedia\Routing\Interfaces\RouterInterface;
+use Azonmedia\Routing\Router;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Server;
 use Psr\Http\Message\ResponseInterface;
@@ -47,6 +48,11 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
         $this->HttpServer = $HttpServer;
 
         $this->Router = $Router;
+    }
+
+    public function get_router() : RouterInterface
+    {
+        return $this->Router;
     }
 
     /**
