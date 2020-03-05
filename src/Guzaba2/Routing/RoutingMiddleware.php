@@ -50,6 +50,10 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
         $this->Router = $Router;
     }
 
+    /**
+     * Returns the router
+     * @return RouterInterface
+     */
     public function get_router() : RouterInterface
     {
         return $this->Router;
