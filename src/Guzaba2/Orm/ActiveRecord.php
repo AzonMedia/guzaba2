@@ -1001,7 +1001,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
-     * Returns
+     * Returns the last old value
      * @param string $property
      * @throws RunTimeException
      */
