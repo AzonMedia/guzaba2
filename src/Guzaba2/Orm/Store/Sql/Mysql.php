@@ -505,11 +505,14 @@ WHERE
 //            'meta_object_last_update_microtime'  => $object_last_update_microtime,
 //        ];
 
+        $CurrentUser = self::get_service('CurrentUser');
+        $role_id = $CurrentUser->get()->get_role()->get_id();
         $q = "
 UPDATE
     {$Connection::get_tprefix()}{$meta_table} 
 SET
-    meta_object_last_update_microtime = :meta_object_last_update_microtime
+    meta_object_last_update_microtime = :meta_object_last_update_microtime,
+    meta_object_last_update_role_id = :meta_object_last_update_role_id
 WHERE
     meta_class_id = :meta_class_id
     AND meta_object_id = :meta_object_id
@@ -519,6 +522,7 @@ WHERE
             'meta_class_id'                      => $this->get_class_id(get_class($ActiveRecord)),
             'meta_object_id'                     => $ActiveRecord->get_id(),
             'meta_object_last_update_microtime'  => $object_last_update_microtime,
+            'meta_object_last_update_role_id'    => $role_id,
         ];
 
         $Statement = $Connection->prepare($q);
@@ -554,14 +558,15 @@ WHERE
 //            //'object_uuid'                   => $uuid,
 //        ];
 
-
+        $CurrentUser = self::get_service('CurrentUser');
+        $role_id = $CurrentUser->get()->get_role()->get_id();
         $q = "
 INSERT
 INTO
     {$Connection::get_tprefix()}{$meta_table}
-    (meta_object_uuid_binary, meta_class_id, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime)
+    (meta_object_uuid_binary, meta_class_id, meta_object_id, meta_object_create_microtime, meta_object_last_update_microtime, meta_object_create_role_id, meta_object_last_update_role_id)
 VALUES
-    (:meta_object_uuid_binary, :meta_class_id, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime)
+    (:meta_object_uuid_binary, :meta_class_id, :meta_object_id, :meta_object_create_microtime, :meta_object_last_update_microtime, :meta_object_create_role_id, :meta_object_last_update_role_id)
         ";
 
         $params = [
@@ -570,6 +575,8 @@ VALUES
             'meta_object_create_microtime'       => $object_create_microtime,
             'meta_object_last_update_microtime'  => $object_create_microtime,
             'meta_object_uuid_binary'            => $uuid_binary,
+            'meta_object_create_role_id'         => $role_id,
+            'meta_object_last_update_role_id'    => $role_id,
             //'object_uuid'                   => $uuid,
         ];
 
@@ -784,11 +791,16 @@ ON DUPLICATE KEY UPDATE
 
 
         if ($ActiveRecord->is_new()) {
-            $uuid = $this->create_meta($ActiveRecord);
-
+            if ($ActiveRecord::uses_meta()) {
+                //$uuid = $this->create_meta($ActiveRecord);
+                $this->create_meta($ActiveRecord);
+            }
         } else {
-            $this->update_meta($ActiveRecord);
-            $uuid = $ActiveRecord->get_uuid();
+            if ($ActiveRecord::uses_meta()) {
+                $this->update_meta($ActiveRecord);
+                //$uuid = $ActiveRecord->get_uuid();
+            }
+
         }
         //$ret = array_merge($record_data, $this->get_meta());
 
@@ -800,14 +812,44 @@ ON DUPLICATE KEY UPDATE
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
         //return $uuid;
-        $ret = ['data' => $record_data, 'meta' => $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() )];
+        $ret = ['data' => $record_data, 'meta' => $ActiveRecord::uses_meta() ? $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() ) : [] ];
 
         return $ret;
     }
 
     public function &get_data_pointer(string $class, array $index) : array
     {
-        $data = $this->get_data_by($class, $index);
+        if (array_key_exists('<', $index)) {
+            if (!$index['<']) {
+                //throw
+            }
+            //check column exists
+        }
+        if (array_key_exists('>', $index)) {
+            if (!$index['>']) {
+                //throw
+            }
+            //check column exists
+        }
+        if (array_key_exists('<', $index) && array_key_exists('>', $index)) {
+            if ($index['<'] === $index['>']) {
+                throw new InvalidArgumentException(sprintf(t::_('Both sorting keys "<" and ">" are provided and both use the same column %1s.'), $index['<'] ));
+            }
+        }
+        $sort_by = NULL;
+        $sort_desc = FALSE;
+        if (array_key_exists('<', $index)) {
+            $sort_by = $index['<'];
+            $sort_desc = FALSE;
+            unset($index['<']);
+        }
+        if (array_key_exists('>', $index)) {
+            $sort_by = $index['>'];
+            $sort_desc = TRUE;
+            unset($index['>']);
+        }
+        //string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL
+        $data = $this->get_data_by($class, $index, 0, 0, FALSE, $sort_by, $sort_desc);
 
         if (count($data)) {
             $primary_index = $class::get_index_from_data($data[0]);

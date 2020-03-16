@@ -94,7 +94,8 @@ trait ActiveRecordOverloading
 
         //instead of unhooking we need to rehook it to a new version called "0" until saved
         //if this is a new object then we do not really need (or can) hook as there is no yet primary index
-        if (!$this->is_modified() && !$this->is_new()) {
+        //if (!$this->is_modified() && !$this->is_new()) {
+        if (self::uses_meta() && !$this->is_modified() && !$this->is_new()) {
             //if this is the first modification (and is not a new object - the new objects are not hooked)
             //then a new revision "0" needs to be created in the store and the record to be hooked to it
             //this is needed instead of just keeping the changes local in the object in case the same object is created in another scope in the code

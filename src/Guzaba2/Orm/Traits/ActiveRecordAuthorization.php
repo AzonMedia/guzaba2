@@ -8,6 +8,7 @@ use Azonmedia\Reflection\ReflectionMethod;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Orm\Interfaces\ActiveRecordHistoryInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\Role;
@@ -71,7 +72,7 @@ trait ActiveRecordAuthorization
      */
     public static function uses_permissions() : bool
     {
-        return empty(static::CONFIG_RUNTIME['no_permissions']);
+        return empty(static::CONFIG_RUNTIME['no_permissions']) && !is_a(get_called_class(), ActiveRecordHistoryInterface::class, TRUE);
     }
 
     /**

@@ -174,8 +174,12 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
         // TODO - update the data in the memory store here too
         //$last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
         //$this->data[$class][$lookup_index][$last_update_time] =& $pointer;
-        $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+        if ($ActiveRecord::uses_meta()) {
+            $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
+            $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+        } else {
+            //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+        }
 
         return $all_data;
     }
@@ -248,7 +252,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
         } elseif (array_key_exists($class, $this->data)) {
             //do a search in the available memory objects....
 
-            $time_start_lookup = (double) microtime(TRUE);
+            //$time_start_lookup = (double) microtime(TRUE);
 
             foreach ($this->data[$class] as $lookup_index=>$records) {
                 foreach ($records as $update_time=>$record) {
@@ -281,13 +285,13 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                 }
             }
 
-            $time_end_lookup = (double) microtime(TRUE);
-            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
-
-            if (self::has_service('Apm') && abs($memory_lookup_time) > Kernel::MICROTIME_EPS )  {
-                $Apm = self::get_service('Apm');
-                $Apm->increment_value('memory_store_time', $memory_time);
-            }
+//            $time_end_lookup = (double) microtime(TRUE);
+//            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
+//
+//            if (self::has_service('Apm') && abs($memory_lookup_time) > Kernel::MICROTIME_EPS )  {
+//                $Apm = self::get_service('Apm');
+//                $Apm->increment_value('memory_store_time', $memory_lookup_time);
+//            }
 
         } else {
             //no primary index provided and no local data for this class
@@ -305,14 +309,12 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
             throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
         }
 
+        if (!$class::uses_meta()) { //do not store the objects of classes that do not use meta
+            return $_pointer;
+        }
         if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
             throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
         }
-
-        $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
-        $this->total_count++;
-
 
         $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
         $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
@@ -349,12 +351,15 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
                 $meta[$key_name] = $meta_data[$key_name];
             }
         }
-        $this->MetaStore->set_meta_data($class, $primary_index, $meta);
+        if ($class::uses_meta()) {
+            $this->MetaStore->set_meta_data($class, $primary_index, $meta);
 
-        //only the last update time matters (it is also updated when an object is created)
-        //$class_meta = ['object_last_update_microtime' => $meta['object_last_update_microtime'] ];
-        $class_meta = $meta;
-        $this->MetaStore->set_class_meta_data($class, $class_meta);
+
+            //only the last update time matters (it is also updated when an object is created)
+            //$class_meta = ['object_last_update_microtime' => $meta['object_last_update_microtime'] ];
+            $class_meta = $meta;
+            $this->MetaStore->set_class_meta_data($class, $class_meta);
+        }
     }
 
     /**
@@ -437,6 +442,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
      */
     public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
+        if (!$ActiveRecord::uses_meta()) {
+            return;
+        }
         $class = get_class($ActiveRecord);
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $last_update_time = $ActiveRecord->get_meta_data()['meta_object_last_update_microtime'];

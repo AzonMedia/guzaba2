@@ -11,10 +11,20 @@ use Guzaba2\Kernel\Kernel;
 
 abstract class ClassInitialization extends Base implements ClassInitializationInterface
 {
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Events',
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+
     public const INITIALIZATION_METHODS = [
         'initialize_columns',
         'initialize_hooks',
         'initialize_memory',
+        'register_active_record_history_hooks',
     ];
 
     public static function run_all_initializations() : array
@@ -49,6 +59,18 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
             if ($active_record_class::is_loaded_in_memory()) {
                 $active_record_class::initialize_in_memory();
             }
+        }
+    }
+
+    public static function register_active_record_history_hooks(array $ns_prefixes) : void
+    {
+        $active_record_history_classes = ActiveRecord::get_active_record_temporal_classes($ns_prefixes);
+        $Events = self::get_service('Events');
+        foreach ($active_record_history_classes as $active_record_history_class) {
+            //get the parent class and add the hook on the parent class
+            $active_record_class = get_parent_class($active_record_history_class);
+            $Events->add_class_callback($active_record_class, '_after_write', [ActiveRecord::class, 'after_write_handler']);
+            $Events->add_class_callback($active_record_class, '_after_delete', [ActiveRecord::class, 'after_delete_handler']);
         }
     }
 }

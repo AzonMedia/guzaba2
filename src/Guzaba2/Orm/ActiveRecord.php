@@ -16,6 +16,7 @@ use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Interfaces\ActiveRecordTemporalInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\MetaStore\MetaStore;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -24,6 +25,7 @@ use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
+use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Event\Event;
@@ -49,6 +51,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     use ActiveRecordValidation;
     use ActiveRecordHooks;
     use ActiveRecordAuthorization;
+    use ActiveRecordTemporal;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
@@ -56,11 +59,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             'LockManager',
             'Events',
             'AuthorizationProvider',
+            'CurrentUser',
         ],
         //only for non-sql stores
         'structure' => [
 
         ],
+        'temporal_table_suffix'  => '_temporal',
+        'temporal_class_suffix'  => 'Temporal',
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -332,6 +338,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return $this->as_array();
     }
 
+    public static function get_temporal_class() : string
+    {
+        return get_called_class().self::CONFIG_RUNTIME['temporal_class_suffix'];
+    }
+
     public function as_array() : array
     {
         //return ['data' => $this->get_property_data(), 'meta' => $this->get_meta_data()];
@@ -571,7 +582,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (empty(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class() ));
         }
-        return static::CONFIG_RUNTIME['main_table'];
+        $class = get_called_class();
+        if (is_a($class, ActiveRecordTemporalInterface::class, TRUE)) {
+            $ret = static::CONFIG_RUNTIME['main_table'].self::CONFIG_RUNTIME['temporal_table_suffix'];
+        } else {
+            $ret = static::CONFIG_RUNTIME['main_table'];
+        }
+        return $ret;
     }
 
     /**
@@ -923,6 +940,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return $this->record_data;
     }
 
+    /**
+     * Sets all data (or subset) without triggering the hooks.
+     *
+     * @param array $record_data
+     */
+    public function set_record_data(array $record_data) : void
+    {
+        $property_names = $this->get_property_names();
+        $record_data_property_names = array_keys($record_data);
+        //$record_data_property_names must be a subset of $property_names
+        //if (array_intersect($record_data_property_names, $property_names) !== $record_data_property_names) {
+        if ($diff = array_diff($record_data_property_names, $property_names)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided $record_data argument contains invalid keys %1s.'), implode(', ', $diff) ) );
+        }
+
+        $this->record_data = array_replace($this->record_data, $record_data);
+    }
+
+    public static function uses_meta() : bool
+    {
+        return empty(static::CONFIG_RUNTIME['no_meta']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, TRUE);
+    }
+
     public function get_meta_data() : array
     {
         $ret = $this->meta_data;
@@ -1097,6 +1137,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $active_record_classes[$args_hash] = $classes;
         }
         return $active_record_classes[$args_hash];
+    }
+
+    public static function get_active_record_temporal_classes(array $ns_prefixes) : array
+    {
+        static $active_record_temporal_classes = [];
+        $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
+        if (!array_key_exists( $args_hash, $active_record_temporal_classes ) ) {
+            $active_record_temporal_classes[$args_hash] = Kernel::get_classes($ns_prefixes, ActiveRecordTemporalInterface::class);
+        }
+        return $active_record_temporal_classes[$args_hash];
     }
 
     public static function is_loaded_in_memory() : bool

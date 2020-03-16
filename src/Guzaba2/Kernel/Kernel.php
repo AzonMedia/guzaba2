@@ -977,6 +977,9 @@ BANNER;
                 if ( strpos($loaded_class, $ns_prefix) === 0) {
                     if ($class) {
                         if (is_a($loaded_class, $class, TRUE)) {
+                            if ($loaded_class === $class) {
+                                continue;
+                            }
                             $ret[$class_path] = $loaded_class;
                         }
                     } else {

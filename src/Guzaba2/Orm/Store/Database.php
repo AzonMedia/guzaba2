@@ -16,6 +16,7 @@ abstract class Database extends Store
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'ConnectionFactory',
+            'CurrentUser',
         ]
     ];
 

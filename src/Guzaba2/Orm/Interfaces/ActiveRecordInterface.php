@@ -37,6 +37,12 @@ interface ActiveRecordInterface
     
     public static function get_routes() : ?iterable ;
 
+    public static function get_main_table() : string ;
+
+    public static function get_temporal_class() : string ;
+
+    public function is_new() : bool ;
+
     public function get_uuid() : string;
 
     public function get_id();
