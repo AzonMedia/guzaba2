@@ -27,13 +27,13 @@ abstract class Connection extends TransactionalConnection
 
     protected const CONFIG_RUNTIME = [];
 
-    protected $NativeConnection;
+    protected object $NativeConnection;
 
     /**
-     * Contains the original query using named paramenters
+     * Contains the original query using named parameters
      * @var string
      */
-    protected $original_query = '';
+    protected string $original_query = '';
 
     protected function prepare_statement(string $query, string $statement_class, Connection $Connection) : StatementInterface
     {
@@ -68,6 +68,7 @@ abstract class Connection extends TransactionalConnection
 
     public function close() : void
     {
+        parent::close();
         $this->NativeConnection->close();
     }
 
@@ -138,5 +139,62 @@ abstract class Connection extends TransactionalConnection
     public function get_last_error_number() : int
     {
         return $this->NativeConnection->errno;
+    }
+
+    public function get_connection_id_from_db() : string
+    {
+        $q = "SELECT CONNECTION_ID() AS connection_id";
+        return (string) $this->prepare($q)->execute()->fetchRow('connection_id');
+    }
+
+    public function begin_transaction() : void
+    {
+        $q = "START TRANSACTION";
+        //$this->prepare($q)->execute();// Error: [1295] SQLSTATE[HY000] [1295] This command is not supported in the prepared statement protocol yet
+        $this->NativeConnection->query($q);
+    }
+
+    public function commit_transaction() : void
+    {
+        $q = "COMMIT";
+        //$this->prepare($q)->execute();
+        $this->NativeConnection->query($q);
+    }
+
+    public function rollback_transaction() : void
+    {
+        $q = "ROLLBACK";
+        //$this->prepare($q)->execute();
+        $this->NativeConnection->query($q);
+    }
+
+    public function create_savepoint(string $savepoint_name) : void
+    {
+        if (!ctype_alnum($savepoint_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
+        }
+        $q = "SAVEPOINT {$savepoint_name}";
+        //$this->prepare($q)->execute();
+        $this->NativeConnection->query($q);
+    }
+
+    public function rollback_to_savepoint(string $savepoint_name) : void
+    {
+        if (!ctype_alnum($savepoint_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
+        }
+        $q = "ROLLBACK TO SAVEPOINT {$savepoint_name}";
+        //$this->prepare($q)->execute();
+        $this->NativeConnection->query($q);
+    }
+
+    public function release_savepoint(string $savepoint_name) : void
+    {
+        if (!ctype_alnum($savepoint_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
+        }
+        $q = "RELEASE SAVEPOINT {$savepoint_name}";
+        //$this->prepare($q)->execute();
+        $this->NativeConnection->query($q);
     }
 }

@@ -17,7 +17,7 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
     /**
      * @var ConnectionProviderInterface
      */
-    protected $ConnectionProvider;
+    protected ConnectionProviderInterface $ConnectionProvider;
 
     public function __construct(ConnectionProviderInterface $ConnectionProvider)
     {
@@ -36,6 +36,7 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
      * @param string $class_name
      * @param $ScopeReference
      * @param-out $ScopeReference
+     * @return ConnectionInterface
      */
     public function get_connection(string $class_name, &$ScopeReference) : ConnectionInterface
     {

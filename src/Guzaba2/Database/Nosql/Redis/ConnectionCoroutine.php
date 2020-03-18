@@ -222,9 +222,15 @@ abstract class ConnectionCoroutine extends Connection
      */
     public function __construct(array $options)
     {
+        $this->connect($options);
         parent::__construct();
 
-        $this->connect($options);
+
+    }
+
+    public function get_connection_id_from_db(): string
+    {
+        return 'not-implemented';
     }
 
     //the redis method is connect($host, $port, $serialize)

@@ -73,9 +73,9 @@ class Pool extends Provider
         $this->single_connections = [];//destroy the objects as well
 
         foreach ($this->available_connections as $Channel) {
-            $length = $this->available_connections[$connection_class]->length();
+            $length = $Channel->length();
             for ($i = 0; $i < $length; $i ++) {
-                $Connection = $this->available_connections[$connection_class]->pop();
+                $Connection = $Channel->pop();
                 $Connection->close();
             }
         }
@@ -129,6 +129,7 @@ class Pool extends Provider
      * This is to be used only by Connection->free() / Connection->decrement_scope_counter()
      * @param ConnectionInterface $Connection
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function free_connection(ConnectionInterface $Connection) : void
     {

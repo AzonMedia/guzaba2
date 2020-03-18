@@ -21,9 +21,10 @@ abstract class Connection extends GenericResource implements ConnectionInterface
         ]
     ];
 
-    protected array $options;
-
     protected const CONFIG_RUNTIME = [];
+
+    protected array $options;
+    protected ?string $connection_id = NULL;
 
 //    protected $is_created_from_factory_flag = FALSE;
 
@@ -31,12 +32,39 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     {
         $ConnectionFactory = static::get_service('ConnectionFactory');
         parent::__construct($ConnectionFactory);
+        $this->connection_id = $this->get_connection_id_from_db();
     }
 
     public function __destruct()
     {
         //$this->close();//avoid this - the connections should be close()d immediately
         //or have a separate flag $is_connected_flag
+    }
+
+    public function __toString() : string
+    {
+        return $this->get_resource_id();
+    }
+
+    abstract protected function get_connection_id_from_db() : string ;
+
+    /**
+     * To be invoked when the connection is returned to the pool or closed.
+     */
+    public function reset_connection() : void
+    {
+
+    }
+
+
+    public function get_connection_id() : ?string
+    {
+        return $this->connection_id;
+    }
+
+    public function get_resource_id() : string
+    {
+        return get_class($this).':'.$this->get_connection_id();
     }
 
     public function get_options() : array
@@ -55,7 +83,6 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     
     public static function validate_options(array $options) : void
     {
-        $called_class = get_called_class();
         foreach ($options as $key=>$value) {
             if (!in_array($key, static::get_supported_options() )) {
                 throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, get_called_class(), implode(', ', static::get_supported_options() ) ));

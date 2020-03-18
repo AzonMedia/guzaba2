@@ -30,8 +30,9 @@ abstract class ConnectionMysqli extends Connection
 
     public function __construct(array $options)
     {
-        parent::__construct();
         $this->connect($options);
+        parent::__construct();
+
     }
 
     public function prepare(string $query) : StatementInterface

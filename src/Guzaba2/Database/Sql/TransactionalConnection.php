@@ -1,13 +1,11 @@
 <?php
 declare(strict_types=1);
 
-
 namespace Guzaba2\Database\Sql;
 
+use Guzaba2\Database\Sql\Traits\ConnectionTrait;
 
-use Guzaba2\Database\Interfaces\TransactionalConnectionInterface;
-
-abstract class TransactionalConnection extends Connection implements TransactionalConnectionInterface
+abstract class TransactionalConnection extends \Guzaba2\Database\TransactionalConnection
 {
-
+    use ConnectionTrait;
 }

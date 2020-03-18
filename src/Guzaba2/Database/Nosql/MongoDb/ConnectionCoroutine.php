@@ -52,9 +52,10 @@ abstract class ConnectionCoroutine extends Connection
 
     public function __construct(array $options, string $tprefix)
     {
+        $this->connect($options);
         parent::__construct();
 
-        $this->connect($options);
+
     }
 
     private function connect(array $options)
@@ -80,6 +81,11 @@ abstract class ConnectionCoroutine extends Connection
         }
     }
 
+    public function get_connection_id_from_db(): string
+    {
+        return 'not-implemented';
+    }
+
     // public function __call(string $method, array $args)
     // {
     //     return call_user_func_array(array($this->Manager, $method), $args);
@@ -90,6 +96,8 @@ abstract class ConnectionCoroutine extends Connection
      * @param string $collection
      * @param array $filter
      * @param array $options
+     * @return array
+     * @throws \MongoDB\Driver\Exception\Exception
      */
     public function query($collection, array $filter = array(), array $options = array()) : array
     {

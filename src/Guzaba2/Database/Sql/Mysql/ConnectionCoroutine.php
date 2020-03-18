@@ -42,8 +42,9 @@ abstract class ConnectionCoroutine extends Connection
 
     public function __construct(array $options)
     {
-        parent::__construct();
         $this->connect($options);
+        parent::__construct();
+
     }
 
     private function connect(array $options) : void
@@ -87,7 +88,7 @@ abstract class ConnectionCoroutine extends Connection
 
     public function prepare(string $query) : StatementInterface
     {
-        if (!$this->get_coroutine_id()) {
+        if (!$this->get_coroutine_id() && $this->get_connection_id() !== NULL) { //if there is no connection ID allow to prepare as this is the SELECT CONNECTION_ID() query (or other initialization query run at connect)
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
         $Statement = $this->prepare_statement($query, StatementCoroutine::class, $this);

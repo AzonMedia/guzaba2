@@ -11,7 +11,7 @@ class ScopeReference extends \Azonmedia\Patterns\ScopeReference
     /**
      * @var ResourceInterface
      */
-    protected $Resource;
+    protected ResourceInterface $Resource;
 
     public function __construct(ResourceInterface $Resource)
     {

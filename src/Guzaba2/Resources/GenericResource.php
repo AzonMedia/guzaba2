@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Guzaba2\Resources;
 
+use Azonmedia\Exceptions\InvalidArgumentException;
 use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Resources;
 use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
+use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 
@@ -30,20 +32,20 @@ class GenericResource extends Base
 
     protected const CONFIG_RUNTIME = [];
 
-    protected $scope_counter = 0;
+    protected int $scope_counter = 0;
 
     /**
      * @var int
      */
-    protected $coroutine_id = 0;
+    protected int $coroutine_id = 0;
 
     /**
      * @var ResourceFactoryInterface
      */
-    protected $ResourceFactory;
+    protected ?ResourceFactoryInterface $ResourceFactory;
 
-    private $resource_obtained_time = 0;
-    private $resource_released_time = 0;
+    private float $resource_obtained_time = 0;
+    private float $resource_released_time = 0;
 
     public function __construct(?ResourceFactoryInterface $ResourceFactory)
     {
@@ -106,6 +108,8 @@ class GenericResource extends Base
     /**
      * To be invoked when a connection is obtained.
      * @param int $cid
+     * @throws RunTimeException
+     * @throws InvalidArgumentException
      */
     public function assign_to_coroutine(int $cid): void
     {
@@ -129,12 +133,15 @@ class GenericResource extends Base
 
     /**
      * @throws RunTimeException
+     * @throws InvalidArgumentException
      */
     public function unassign_from_coroutine(): void
     {
         if (!$this->get_coroutine_id()) {
             throw new RunTimeException(sprintf(t::_('The connection is not assigned to a coroutine so it can not be unassigned.')));
         }
+
+        $this->reset_connection();
 
         //TODO add a check - if there is running transaction throw an exception
 
