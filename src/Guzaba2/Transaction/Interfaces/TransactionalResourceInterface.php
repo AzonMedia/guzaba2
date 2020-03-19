@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Transaction\Interfaces;
 
-use Guzaba2\Resources\ScopeReference;
+//use Guzaba2\Resources\ScopeReference;
+use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 
 interface TransactionalResourceInterface
@@ -24,5 +25,5 @@ interface TransactionalResourceInterface
 
     public function release_savepoint(string $savepoint_name) : void ;
 
-    public function new_transaction(array $options = []) : Transaction ;
+    public function new_transaction(?ScopeReference &$ScopeReference, array $options = []) : Transaction ;
 }

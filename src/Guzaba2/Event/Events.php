@@ -48,7 +48,10 @@ class Events extends Base implements EventsInterface
     /**
      * @param ObjectInternalIdInterface $Subject
      * @param string $event_name
+     * @param array $arguments
+     * @param null $return_value
      * @return EventInterface
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
     public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) : EventInterface
     //public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) /* mixed */
@@ -63,7 +66,6 @@ class Events extends Base implements EventsInterface
      * @param callable $callback
      * @return bool
      * @throws LogicException
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
     public function add_object_callback(ObjectInternalIdInterface $Subject, string $event_name, callable $callback) : bool
     {
@@ -85,7 +87,6 @@ class Events extends Base implements EventsInterface
      * @param ObjectInternalIdInterface $Subject
      * @param string $event_name
      * @param callable|null $callback
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
     public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name, ?callable $callback) : void
     {
@@ -104,7 +105,6 @@ class Events extends Base implements EventsInterface
      * @param ObjectInternalIdInterface $Subject
      * @param string $event_name
      * @return array
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
     public function get_object_callbacks(ObjectInternalIdInterface $Subject, string $event_name = '') : array
     {
@@ -123,7 +123,6 @@ class Events extends Base implements EventsInterface
      * @param callable $callback
      * @return bool
      * @throws LogicException
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
     public function add_class_callback(string $class, string $event_name, callable $callback) : bool
     {
@@ -144,7 +143,6 @@ class Events extends Base implements EventsInterface
      * @param string $class
      * @param string $event_name
      * @param callable|null $callback
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
     public function remove_class_callback(string $class, string $event_name, ?callable $callback) : void
     {

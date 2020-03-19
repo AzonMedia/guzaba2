@@ -6,7 +6,7 @@ namespace Guzaba2\Database;
 
 
 use Guzaba2\Database\Interfaces\TransactionalConnectionInterface;
-use Guzaba2\Resources\ScopeReference;
+use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 use Guzaba2\Transaction\TransactionManager;
 
@@ -21,9 +21,20 @@ abstract class TransactionalConnection extends Connection implements Transaction
 
     protected const CONFIG_RUNTIME = [];
 
-    public function new_transaction(array $options = []): Transaction
+
+    public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
     {
-        return new \Guzaba2\Database\Transaction($this, $options);
+
+        if ($ScopeReference) {
+            $ScopeReference->set_release_reason($ScopeReference::RELEASE_REASON_OVERWRITING);
+            $ScopeReference = NULL;//trigger rollback (and actually destroy the transaction object - the object may or may not get destroyed - it may live if part of another transaction)
+        }
+
+        $Transaction = new \Guzaba2\Database\Transaction($this, $options);
+
+        $ScopeReference = new ScopeReference($Transaction);
+
+        return $Transaction;
     }
 
     public function close() : void

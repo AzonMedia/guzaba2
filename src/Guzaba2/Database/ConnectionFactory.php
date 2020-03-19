@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Guzaba2\Database;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Database\Interfaces\ConnectionFactoryInterface;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Interfaces\ConnectionProviderInterface;
 use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
+use Guzaba2\Resources\ScopeReference;
 
 //use Guzaba2\Patterns\WorkerSingleton;
 
-class ConnectionFactory extends Base implements ResourceFactoryInterface
+class ConnectionFactory extends Base implements ConnectionFactoryInterface
 {
     /**
      * @var ConnectionProviderInterface
@@ -25,20 +27,13 @@ class ConnectionFactory extends Base implements ResourceFactoryInterface
         $this->ConnectionProvider = $ConnectionProvider;
     }
 
-    //TODO - add as a second argument a scope reference which when destroyed will free the connection
     /**
      * @param string $class_name
-     * @param-out string $ScopeReference
+     * @param ScopeReference|null $ScopeReference
      * @return ConnectionInterface
+     * @param-out ScopeReference|null $ScopeReference
      */
-    //public function get_connection(string $class_name, ?ScopeReference &$ScopeReference = NULL) : ConnectionInterface
-    /**
-     * @param string $class_name
-     * @param $ScopeReference
-     * @param-out $ScopeReference
-     * @return ConnectionInterface
-     */
-    public function get_connection(string $class_name, &$ScopeReference) : ConnectionInterface
+    public function get_connection(string $class_name, ?ScopeReference &$ScopeReference) : ConnectionInterface
     {
         return $this->ConnectionProvider->get_connection($class_name, $ScopeReference);
     }

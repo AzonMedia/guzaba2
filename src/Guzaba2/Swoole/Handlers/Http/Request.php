@@ -3,15 +3,18 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers\Http;
 
+use Azonmedia\Exceptions\InvalidArgumentException;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Application\Application;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Event\Event;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\ContentType;
 use Guzaba2\Http\Method;
 use Guzaba2\Http\QueueRequestHandler;
+use Guzaba2\Http\RequestHandler;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
@@ -47,9 +50,11 @@ class Request extends HandlerBase
 
     /**
      * RequestHandler constructor.
-     * @param array $middlewares
      * @param Server $HttpServer
+     * @param array $middlewares
      * @param Response|null $DefaultResponse
+     * @param ResponseInterface|null $ServerErrorResponse
+     * @throws InvalidArgumentException
      * @throws RunTimeException
      */
     public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL, ?ResponseInterface $ServerErrorResponse = NULL)
@@ -79,13 +84,18 @@ class Request extends HandlerBase
      *
      * @param \Swoole\Http\Request $SwooleRequest
      * @param \Swoole\Http\Response $SwooleResponse
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
-        try {
-            $start_time = microtime(TRUE);
 
+        $start_time = microtime(TRUE);
+
+        new Event($this, '_before_handle');
+
+        try {
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->setServer($this->HttpServer);
             $request_raw_content_length = $PsrRequest->getBody()->getSize();
@@ -107,7 +117,7 @@ class Request extends HandlerBase
             }
 
             //$FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
-            $FallbackHandler = new \Guzaba2\Http\RequestHandler($DefaultResponse);//this will produce 404
+            $FallbackHandler = new RequestHandler($DefaultResponse);//this will produce 404
             $QueueRequestHandler = new QueueRequestHandler($FallbackHandler);//the default response prototype is a 404 message
             foreach ($this->middlewares as $Middleware) {
                 $QueueRequestHandler->add_middleware($Middleware);
@@ -226,7 +236,11 @@ class Request extends HandlerBase
             }
             $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().$request_str.PHP_EOL;
             Kernel::log($log_message, LogLevel::INFO);
+
+            new Event($this, '_after_handle');
         }
+
+
     }
 
     public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void
