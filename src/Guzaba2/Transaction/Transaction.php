@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Transaction;
 
+use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Event\Event;
 use Guzaba2\Event\Events;
@@ -41,6 +44,9 @@ abstract class Transaction extends Base implements ResourceInterface
         'COMMITTED'     => 'COMMITTED',
     ];
 
+    /**
+     * A transaction in the following statuses can not be changed.
+     */
     public const END_STATUSES = [
         self::STATUS['COMMITTED'],
         self::STATUS['ROLLEDBACK'],
@@ -50,7 +56,7 @@ abstract class Transaction extends Base implements ResourceInterface
         //'UNKNOWN'       => 'UNKNOWN',
         'EXCEPTION'     => 'EXCEPTION',//the transaction was rolled back because an exception was thrown and the scope reference was destroyed
         'PARENT'        => 'PARENT',//the parent transaction was rolled back while the child one was saved
-        'IMPLICIT'      => 'IMPLICIT',//the scope was left (return statement) but there is no exception
+        'IMPLICIT'      => 'IMPLICIT',//the scope was left (return statement) but there is no exception, or the scope reference was overwritten (in a loop)
         'EXPLICIT'      => 'EXPLICIT',//the transaction was rolled back with a rollback() call
     ];
 
@@ -71,6 +77,8 @@ abstract class Transaction extends Base implements ResourceInterface
      * @var string|null
      */
     private ?string $rollback_reason = NULL;//NULL means not rolled back or reason unknown
+
+    private ?\Exception $InterruptingException = NULL;
 
     /**
      * Was this transaction which initiated the rollback. If it was a parent one this should stay FALSE.
@@ -112,6 +120,19 @@ abstract class Transaction extends Base implements ResourceInterface
         if ($this->ParentTransaction) {
             $this->ParentTransaction->add_child($this);
         }
+    }
+
+    public function get_interrupting_exception() : ?\Throwable
+    {
+        return $this->InterruptingException;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function get_rollback_reason() : ?string
+    {
+        return $this->rollback_reason;
     }
 
     private function add_child(Transaction $Transaction) : void
@@ -229,7 +250,7 @@ abstract class Transaction extends Base implements ResourceInterface
 
     }
 
-    public function rollback() : void
+    public final function rollback() : void
     {
         //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         $initial_status = $this->get_status();
@@ -245,6 +266,27 @@ abstract class Transaction extends Base implements ResourceInterface
             }
         }
 
+        $caller = StackTraceUtil::get_caller();
+
+        if ($caller[0] === ScopeReference::class) {
+            $CurrentException = BaseException::getCurrentException();
+            if ($CurrentException) {
+                $this->rollback_reason = self::ROLLBACK_REASON['EXCEPTION'];
+                $this->InterruptingException = $CurrentException;
+            } else {
+                $this->rollback_reason = self::ROLLBACK_REASON['IMPLICIT'];//return
+            }
+        } elseif ($caller[0] === Transaction::class && $caller[1] === 'rollback') {
+            $this->rollback_reason = self::ROLLBACK_REASON['PARENT'];
+            $ParentTransaction = $this->get_parent();
+            if (!$ParentTransaction) {
+                throw new LogicException(sprintf(t::_('The transaction is rolled back by a parent transaction (see caller) but get_parent() returned no parent transaction.')));
+            }
+            $this->InterruptingException = $ParentTransaction->get_interrupting_exception();
+        } else {
+            $this->rollback_reason = self::ROLLBACK_REASON['EXPLICIT'];//rollback() method explicitly invoked
+        }
+
         new Event($this, '_before_rollback');
 
         if ($this->has_parent()) {
@@ -256,7 +298,8 @@ abstract class Transaction extends Base implements ResourceInterface
             $this->execute_rollback();
             $this->set_current_transaction(NULL);
         }
-        
+
+
         new Event($this, '_after_rollback');
     }
 

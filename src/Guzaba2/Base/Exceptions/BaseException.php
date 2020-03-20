@@ -59,16 +59,16 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     /**
      * @var \Throwable
      */
-    private static $CurrentException = NULL;
+    private static ?\Exception $CurrentException = NULL;
 
 //    public const STATIC_STORE = [
 //        'CurrentException'  => NULL,
 //    ];
 
-    /**
-     * @var \Guzaba2\Transactions\Transaction
-     */
-    private $InterruptedTransaction = NULL;
+//    /**
+//     * @var \Guzaba2\Transactions\Transaction
+//     */
+//    private $InterruptedTransaction = NULL;
 
     //private static $is_in_clone_flag = FALSE;
 
@@ -176,7 +176,10 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                 //there is no context so we cant preserve the current exception
             } else {
                 $Context = \Swoole\Coroutine::getContext();
-                $Context->CurrentException = $this->cloneException();
+                if (!isset($Context->{self::class})) {
+                    $Context->{self::class} = new \stdClass();
+                }
+                $Context->{self::class}->CurrentException = $this->cloneException();
             }
 
         } else {
@@ -269,13 +272,13 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
 
 
-    /**
-     * @return \Guzaba2\Transactions\Transaction|null
-     */
-    public function getInterruptedTransaction() : ?\Guzaba2\Transaction\Transaction
-    {
-        return $this->InterruptedTransaction;
-    }
+//    /**
+//     * @return \Guzaba2\Transactions\Transaction|null
+//     */
+//    public function getInterruptedTransaction() : ?\Guzaba2\Transaction\Transaction
+//    {
+//        return $this->InterruptedTransaction;
+//    }
 
     public function __destruct()
     {
@@ -289,7 +292,12 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                 } else {
                     try {
                         $Context = Coroutine::getContext();
-                        $Context->CurrentException = NULL;
+                        //$Context->CurrentException = NULL;
+                        $Context = \Swoole\Coroutine::getContext();
+                        if (!isset($Context->{self::class})) {
+                            $Context->{self::class} = new \stdClass();
+                        }
+                        $Context->{self::class}->CurrentException = NULL;
                     } catch (ContextDestroyedException $Exception) {
                         //ignore
                     }
@@ -326,10 +334,16 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      *
      * @param \Throwable $exception
      * @return \Throwable
+     * @throws \ReflectionException
      */
     private function cloneException() : \Throwable
     {
-        $class = get_class($this);
+        return self::cloneExceptionStatic($this);
+    }
+
+    private static function cloneExceptionStatic(\Throwable $Exception) : \Throwable
+    {
+        $class = get_class($Exception);
 
         $RClass = new \ReflectionClass($class);
         $NewException = $RClass->newInstanceWithoutConstructor();//we bypass the contructor as we cant 100% know what to provide to the constructor + we dont need to provide anything as the properties will be set further down (this means that the constructor will not be invoked but this is a good thing - we want only the constructor of the real exception to be invoked anyway)
@@ -339,7 +353,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                 continue;
             }
             $RProperty->setAccessible(TRUE);
-            $NewException->setProperty($RProperty->name, $RProperty->getValue($this));
+            $NewException->setProperty($RProperty->name, $RProperty->getValue($Exception));
         }
 
         $NewException->is_cloned_flag = TRUE;
@@ -431,8 +445,9 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
     /**
      * Returns the current exception (if there is such)
-     * To be used by @see Guzaba2\Transactions\Transaction::get_interrupting_exception()
-     * @return \Throwable
+     * To be used by @return \Throwable
+     * @throws RunTimeException
+     * @see Guzaba2\Transactions\Transaction::get_interrupting_exception()
      */
     public static function getCurrentException() : ?\Throwable
     {
@@ -440,10 +455,18 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         //return self::get_static('CurrentException');
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $ret = $Context->CurrentException ?? self::$CurrentException;
+            $Exception = $Context->CurrentException ?? self::$CurrentException;
         } else {
-            $ret = self::$CurrentException;
+            $Exception = self::$CurrentException;
         }
+        //return $Exception;//this will export a reference to the CurrentException and this should not be allowed as in the __destruct() the CurrentException is also destroyed
+        //if there are leaked references this will not happen and the CurrentException will overflow outside the stack where it was caught
+        if ($Exception) {
+            $NewException = self::cloneExceptionStatic($Exception);
+        } else {
+            $NewException = NULL;
+        }
+        return $NewException;
     }
 
 

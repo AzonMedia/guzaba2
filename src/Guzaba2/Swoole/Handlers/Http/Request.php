@@ -164,6 +164,7 @@ class Request extends HandlerBase
                     withHeader('Content-Length', (string) strlen($json_string));
             }
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
+            $SwooleResponse->end();//this sends the response
 
             //$end_time = microtime(TRUE);
 

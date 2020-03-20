@@ -66,7 +66,6 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         /** @var Transaction $Transaction */
         $Transaction = $Event->get_subject();
         $event_name = $Event->get_event_name();
-        print $event_name.PHP_EOL;
         if (strpos($event_name, '_after_') !== FALSE) {
             $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).' '.str_replace('_after_', '', $event_name);
             if (self::CONFIG_RUNTIME['group_messages']) {
