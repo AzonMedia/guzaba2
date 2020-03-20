@@ -234,10 +234,13 @@ class Request extends HandlerBase
                     $request_str = ' request: '.$request_str;
                 }
             }
+
+            new Event($this, '_after_handle');//lets have it before the very last message about the request.
+
             $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().$request_str.PHP_EOL;
             Kernel::log($log_message, LogLevel::INFO);
 
-            new Event($this, '_after_handle');
+
         }
 
 

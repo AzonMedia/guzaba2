@@ -170,9 +170,7 @@ abstract class Connection extends TransactionalConnection
 
     public function create_savepoint(string $savepoint_name) : void
     {
-        if (!ctype_alnum($savepoint_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
-        }
+        self::validate_savepoint($savepoint_name);
         $q = "SAVEPOINT {$savepoint_name}";
         //$this->prepare($q)->execute();
         $this->NativeConnection->query($q);
@@ -180,9 +178,7 @@ abstract class Connection extends TransactionalConnection
 
     public function rollback_to_savepoint(string $savepoint_name) : void
     {
-        if (!ctype_alnum($savepoint_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
-        }
+        self::validate_savepoint($savepoint_name);
         $q = "ROLLBACK TO SAVEPOINT {$savepoint_name}";
         //$this->prepare($q)->execute();
         $this->NativeConnection->query($q);
@@ -190,11 +186,21 @@ abstract class Connection extends TransactionalConnection
 
     public function release_savepoint(string $savepoint_name) : void
     {
-        if (!ctype_alnum($savepoint_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not alpha-numeric.'), $savepoint_name));
-        }
+        self::validate_savepoint($savepoint_name);
         $q = "RELEASE SAVEPOINT {$savepoint_name}";
         //$this->prepare($q)->execute();
         $this->NativeConnection->query($q);
+    }
+
+    /**
+     * @param string $savepoint_name
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public static function validate_savepoint(string $savepoint_name) : void
+    {
+        if (!preg_match('/[a-zA-Z0-9_]*/', $savepoint_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not valid. Only letters, numbers and _ are allowed.'), $savepoint_name));
+        }
     }
 }

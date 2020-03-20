@@ -107,7 +107,7 @@ abstract class Transaction extends Base implements ResourceInterface
 
         $this->options = $options;
 
-        $this->ParentTransaction = self::get_service('TransactionManager')->get_current_transaction(get_class($this));
+        $this->ParentTransaction = self::get_service('TransactionManager')->get_current_transaction($this->get_resource()->get_resource_id());
         if ($this->ParentTransaction) {
             $this->ParentTransaction->add_child($this);
         }
@@ -197,10 +197,10 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->set_current_transaction($this);
         //new Event($this,'_before_any');
         if ($this->has_parent()) {
-            new Event($this,'_before_savepoint');
+            new Event($this,'_before_create_savepoint');
             $savepoint_name = $this->get_savepoint_name();
             $this->get_parent()->create_savepoint($savepoint_name);
-            new Event($this,'_before_savepoint');
+            new Event($this,'_after_create_savepoint');
         } else {
             new Event($this,'_before_begin');
             $this->execute_begin();
@@ -244,7 +244,7 @@ abstract class Transaction extends Base implements ResourceInterface
 //        }
 
         //$this->execute_before_callbacks();
-        new Event($this, '_before_any');
+        //new Event($this, '_before_any');
 //        if ($initial_status !== $this->get_status()) {
 //            return;//the status has been changed in the callbacks
 //        }
@@ -280,7 +280,7 @@ abstract class Transaction extends Base implements ResourceInterface
         }
         new Events($this, '_after_rollback');
 
-        new Events($this, '_after_any');
+        //new Events($this, '_after_any');
 
         //$this->execute_after_callbacks();
     }
@@ -308,7 +308,7 @@ abstract class Transaction extends Base implements ResourceInterface
 //            return;//the status has been changed in the callbacks
 //        }
 
-        new Event($this, '_before_any');
+        //new Event($this, '_before_any');
 
         if ($this->has_parent()) {
             $this->save();
@@ -327,7 +327,7 @@ abstract class Transaction extends Base implements ResourceInterface
 
             //$this->execute_after_commit_callbacks();
         }
-        new Event($this, '_after_any');
+        //new Event($this, '_after_any');
 
         //$this->execute_after_callbacks();
     }
@@ -399,7 +399,7 @@ abstract class Transaction extends Base implements ResourceInterface
         if ($status === self::STATUS['COMMITTED']) {
             //we need to update the status on all nested transactions
             foreach ($this->get_nested() as $transaction) {
-                if ($transaction->get_status() === self::STATUS_SAVED) {
+                if ($transaction->get_status() === self::STATUS['SAVED']) {
                     $transaction->set_status($status);
                 } else {
                     //child transactions with status ROLLEDBACK (and any others) are left as they are... rolledback transaction can not be committed
