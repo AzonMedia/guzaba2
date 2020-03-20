@@ -67,7 +67,7 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         $Transaction = $Event->get_subject();
         $event_name = $Event->get_event_name();
         if (strpos($event_name, '_after_') !== FALSE) {
-            $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).' '.str_replace('_after_', '', $event_name);
+            $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).':'.$Transaction->get_resource()->get_resource_id().' '.str_replace('_after_', '', $event_name);
             if (self::CONFIG_RUNTIME['group_messages']) {
                 $Context = Coroutine::getContext();
                 if (!isset($Context->{self::class})) {
