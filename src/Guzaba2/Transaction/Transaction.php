@@ -89,11 +89,6 @@ abstract class Transaction extends Base implements ResourceInterface
      */
     private array $children = [];
 
-//    /**
-//     * @var CallbackContainer
-//     */
-//    private CallbackContainer $CallbackContainer;
-
     /**
      * Transaction status
      * @var string
@@ -101,13 +96,6 @@ abstract class Transaction extends Base implements ResourceInterface
     private string $status = self::STATUS['CREATED'];
 
     private array $options = [];
-
-//    public static function _initialize_class() : void
-//    {
-//        /** @var Events $Events */
-//        $Events = self::get_service('Events');
-//        $Events->add_class_callback(Request::class, '_after_handle', [self::dump_debug_info] );
-//    }
 
     /**
      * Transaction constructor.
@@ -124,9 +112,6 @@ abstract class Transaction extends Base implements ResourceInterface
         if ($this->ParentTransaction) {
             $this->ParentTransaction->add_child($this);
         }
-
-        //$this->CallbackContainer = new CallbackContainer($this);
-
     }
 
     private function add_child(Transaction $Transaction) : void
@@ -151,11 +136,6 @@ abstract class Transaction extends Base implements ResourceInterface
             throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2s class supports %3s events.'), $event_name, self::class, implode(', ', self::EVENT ) ));
         }
     }
-
-//    public function add_callback(callable $callback, int $mode, bool $once = FALSE) : void
-//    {
-//        $this->CallbackContainer->add_callable($callback);
-//    }
 
     public function has_parent() : bool
     {
@@ -223,7 +203,7 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->set_status(self::STATUS['STARTED']);
 
         $this->set_current_transaction($this);
-        //new Event($this,'_before_any');
+
         if ($this->has_parent()) {
             new Event($this,'_before_create_savepoint');
             $savepoint_name = $this->get_savepoint_name();
@@ -234,7 +214,7 @@ abstract class Transaction extends Base implements ResourceInterface
             $this->execute_begin();
             new Event($this,'_after_begin');
         }
-        //new Event($this,'_after_any');
+
     }
 
     protected function set_current_transaction(?Transaction $Transaction) : void
@@ -251,8 +231,6 @@ abstract class Transaction extends Base implements ResourceInterface
 
     public function rollback() : void
     {
-        //print debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
-        //print 'ROLLBACK'.PHP_EOL;
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {
@@ -266,51 +244,18 @@ abstract class Transaction extends Base implements ResourceInterface
             }
         }
 
-//        if ($this->has_parent()) {
-//            $ParentTransaction = $this->get_parent();
-//
-//        }
-
-        //$this->execute_before_callbacks();
-        //new Event($this, '_before_any');
-//        if ($initial_status !== $this->get_status()) {
-//            return;//the status has been changed in the callbacks
-//        }
-
         new Event($this, '_before_rollback');
 
         if ($this->has_parent()) {
-
-            //$this->execute_before_rollback_callbacks();
-
-//            if ($initial_status !== $this->get_status()) {
-//                return;//the status has been changed in the callbacks
-//            }
-
             $savepoint = $this->get_savepoint_name();
             $this->get_parent()->rollback_to_savepoint($savepoint);
             $this->set_current_transaction($this->get_parent());
-
-            //$this->execute_after_save_callbacks();
-            //new Event($this, '_a')
         } else {
-
-            $this->execute_before_rollback_callbacks();
-            if ($initial_status !== $this->get_status()) {
-                return;//the status has been changed in the callbacks
-            }
-
             $this->set_status(self::STATUS['ROLLEDBACK']);
             $this->execute_rollback();
             $this->set_current_transaction(NULL);
-
-            //$this->execute_after_rollback_callbacks();
         }
         new Events($this, '_after_rollback');
-
-        //new Events($this, '_after_any');
-
-        //$this->execute_after_callbacks();
     }
 
     protected function rollback_to_savepoint(string $savepoint_name) : void
@@ -331,33 +276,15 @@ abstract class Transaction extends Base implements ResourceInterface
            throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1s and can not be committed. Only transactions in statuses %2s can be committed.'), $initial_status, implode(', ', $allowed_statuses) ));
         }
 
-//        $this->execute_before_callbacks();
-//        if ($initial_status !== $this->get_status()) {
-//            return;//the status has been changed in the callbacks
-//        }
-
-        //new Event($this, '_before_any');
-
         if ($this->has_parent()) {
             $this->save();
         } else {
-
-//            $this->execute_before_commit_callbacks();
-//            if ($initial_status !== $this->get_status()) {
-//                return;//the status has been changed in the callbacks
-//            }
-
             new Event($this, '_before_commit');
             $this->execute_commit();
             $this->set_status(self::STATUS['COMMITTED']);
             $this->set_current_transaction(NULL);
             new Event($this, '_after_commit');
-
-            //$this->execute_after_commit_callbacks();
         }
-        //new Event($this, '_after_any');
-
-        //$this->execute_after_callbacks();
     }
 
     /**
@@ -437,45 +364,5 @@ abstract class Transaction extends Base implements ResourceInterface
     abstract protected function execute_rollback_to_savepoint(string $savepoint) : void;
 
     abstract protected function execute_release_savepoint(string $savepoint) : void;
-
-    private function execute_before_callbacks() : void
-    {
-
-    }
-
-    private function execute_after_callbacks() : void
-    {
-
-    }
-
-    private function execute_before_rollback_callbacks() : void
-    {
-
-    }
-
-    private function execute_after_rollback_callbacks() : void
-    {
-
-    }
-
-    private function execute_before_save_callbacks() : void
-    {
-
-    }
-
-    private function execute_after_save_callbacks() : void
-    {
-
-    }
-
-    private function execute_before_commit_callbacks() : void
-    {
-
-    }
-
-    private function execute_after_commit_callbacks() : void
-    {
-
-    }
 
 }
