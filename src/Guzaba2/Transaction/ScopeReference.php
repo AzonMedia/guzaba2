@@ -15,7 +15,7 @@ class ScopeReference extends \Azonmedia\Patterns\ScopeReference
     {
         $this->Transaction = $Transaction;
         $Function = static function () use ($Transaction) { //if it is not declared as a static function one more reference to $this is created and this defeats the whole purpose of the scopereference - to have a single reference to it. The destructor will not get called.
-            if (in_array($Transaction->get_status(), [ $Transaction::STATUS['STARTED'], $Transaction::STATUS['SAVED']] )) {
+            if ($Transaction->get_status() === $Transaction::STATUS['STARTED'] ) {
                 $Transaction->rollback();
             } else {
                 //it is OK - if the transaction is COMMITTED there is nothing to do, the same of ROLLEDBACK. If it is CREATED it means it was used for execute()

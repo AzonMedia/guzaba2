@@ -231,6 +231,7 @@ abstract class Transaction extends Base implements ResourceInterface
 
     public function rollback() : void
     {
+        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {
@@ -255,7 +256,8 @@ abstract class Transaction extends Base implements ResourceInterface
             $this->execute_rollback();
             $this->set_current_transaction(NULL);
         }
-        new Events($this, '_after_rollback');
+        
+        new Event($this, '_after_rollback');
     }
 
     protected function rollback_to_savepoint(string $savepoint_name) : void
@@ -281,6 +283,7 @@ abstract class Transaction extends Base implements ResourceInterface
         } else {
             new Event($this, '_before_commit');
             $this->execute_commit();
+            //update the status of the nested transactions to committed only after the master one was committed
             $this->set_status(self::STATUS['COMMITTED']);
             $this->set_current_transaction(NULL);
             new Event($this, '_after_commit');
@@ -339,9 +342,11 @@ abstract class Transaction extends Base implements ResourceInterface
 
         if ($status === self::STATUS['COMMITTED']) {
             //we need to update the status on all nested transactions
-            foreach ($this->get_nested() as $transaction) {
-                if ($transaction->get_status() === self::STATUS['SAVED']) {
-                    $transaction->set_status($status);
+            foreach ($this->get_nested() as $Transaction) {
+                if ($Transaction->get_status() === self::STATUS['SAVED']) {
+                    new Event($Transaction, '_before_commit');
+                    $Transaction->set_status($status);
+                    new Event($Transaction, '_after_commit');
                 } else {
                     //child transactions with status ROLLEDBACK (and any others) are left as they are... rolledback transaction can not be committed
                 }
@@ -356,6 +361,8 @@ abstract class Transaction extends Base implements ResourceInterface
     abstract protected function execute_begin() : void;
 
     abstract protected function execute_commit() : void;
+
+    abstract protected function execute_save() : void ;
 
     abstract protected function execute_rollback() : void;
 

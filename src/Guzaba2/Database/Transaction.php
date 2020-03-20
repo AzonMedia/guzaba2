@@ -33,6 +33,11 @@ class Transaction extends \Guzaba2\Transaction\Transaction
         $this->Connection->commit_transaction();
     }
 
+    protected function execute_save(): void
+    {
+        //does nothing
+    }
+
     protected function execute_rollback(): void
     {
         $this->Connection->rollback_transaction();

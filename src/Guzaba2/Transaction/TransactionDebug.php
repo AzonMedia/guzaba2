@@ -49,7 +49,7 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         /** @var Events $Events */
         $Events = self::get_service('Events');
         //register for all events
-        //although only the _before_ones will be used
+        //although only the _after_* ones will be used
         $Events->add_class_callback(Transaction::class, '*', self::class.'::transaction_event_handler' );
         if (self::CONFIG_RUNTIME['group_messages']) {
             $Events->add_class_callback(Request::class, '_after_handle', self::class.'::print_debug_info');
@@ -57,7 +57,7 @@ class TransactionDebug extends Base implements ClassInitializationInterface
     }
 
     /**
-     * Prints or stores all _before_* transaction events
+     * Prints or stores all _after_* transaction events
      * @param Event $Event
      * @throws RunTimeException
      */
@@ -66,8 +66,9 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         /** @var Transaction $Transaction */
         $Transaction = $Event->get_subject();
         $event_name = $Event->get_event_name();
-        if (strpos($event_name, '_before_') !== FALSE) {
-            $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).' '.str_replace('_before', '', $event_name);
+        print $event_name.PHP_EOL;
+        if (strpos($event_name, '_after_') !== FALSE) {
+            $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).' '.str_replace('_after_', '', $event_name);
             if (self::CONFIG_RUNTIME['group_messages']) {
                 $Context = Coroutine::getContext();
                 if (!isset($Context->{self::class})) {
