@@ -5,7 +5,6 @@ namespace Guzaba2\Transaction;
 
 
 use Guzaba2\Base\Base;
-use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
@@ -15,6 +14,10 @@ use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Handlers\Http\Request;
 use Psr\Log\LogLevel;
 
+/**
+ * Class TransactionDebug
+ * @package Guzaba2\Transaction
+ */
 class TransactionDebug extends Base implements ClassInitializationInterface
 {
     protected const CONFIG_DEFAULTS = [
@@ -31,8 +34,6 @@ class TransactionDebug extends Base implements ClassInitializationInterface
     /**
      * Must return an array of the initialization methods (method names or description) that were run.
      * @return array
-     * @throws LogicException
-     * @throws RunTimeException
      */
     public static function run_all_initializations(): array
     {
@@ -55,6 +56,11 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         }
     }
 
+    /**
+     * Prints or stores all _before_* transaction events
+     * @param Event $Event
+     * @throws RunTimeException
+     */
     public static function transaction_event_handler(Event $Event) : void
     {
         /** @var Transaction $Transaction */
@@ -78,7 +84,12 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         }
     }
 
-    public static function print_debug_info() : void
+    /**
+     * Prints the transaction events at the end of the request if group_messages is enabled.
+     * @param Event $Event
+     * @throws RunTimeException
+     */
+    public static function print_debug_info(Event $Event) : void
     {
         $Context = Coroutine::getContext();
         $message = '';

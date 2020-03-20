@@ -9,9 +9,8 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Event\Event;
 use Guzaba2\Event\Events;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
-use Guzaba2\Resources\ScopeReference;
-use Guzaba2\Swoole\Handlers\Http\Request;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Translator\Translator as t;
 
 //TODO - replace the callbacks and containers with Events - leave a method on the transaction -> add_callback() but this method will use the events
 //add DebugTransaction that will register for the events if debug is enabled and print
@@ -28,6 +27,7 @@ abstract class Transaction extends Base implements ResourceInterface
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'TransactionManager',
+            'Events',
         ],
     ];
 
@@ -54,6 +54,19 @@ abstract class Transaction extends Base implements ResourceInterface
         'EXPLICIT'      => 'EXPLICIT',//the transaction was rolled back with a rollback() call
     ];
 
+    public const EVENT = [
+        '_before_begin'             => '_before_begin',
+        '_after_begin'              => '_after_begin',
+        '_before_create_savepoint'  => '_before_create_savepoint',//nested transactions use this instead of begin
+        '_after_create_savepoint'   => '_after_create_savepoint',
+        '_before_save'              => '_before_save',//nested transactions use this instead of commit
+        '_after_save'               => '_after_save',
+        '_before_commit'            => '_before_commit',
+        '_after_commit'             => '_after_commit',
+        '_before_rollback'          => '_before_rollback',
+        '_after_rollback'           => '_after_rollback',
+    ];
+
     /**
      * @var string|null
      */
@@ -76,10 +89,10 @@ abstract class Transaction extends Base implements ResourceInterface
      */
     private array $children = [];
 
-    /**
-     * @var CallbackContainer
-     */
-    private CallbackContainer $CallbackContainer;
+//    /**
+//     * @var CallbackContainer
+//     */
+//    private CallbackContainer $CallbackContainer;
 
     /**
      * Transaction status
@@ -112,7 +125,7 @@ abstract class Transaction extends Base implements ResourceInterface
             $this->ParentTransaction->add_child($this);
         }
 
-        $this->CallbackContainer = new CallbackContainer($this);
+        //$this->CallbackContainer = new CallbackContainer($this);
 
     }
 
@@ -124,10 +137,25 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->children[] = $Transaction;
     }
 
-    public function add_callback(callable $callback, int $mode, bool $once = FALSE) : void
+    public function add_callback(string $event_name, callable $callback) : void
     {
-        $this->CallbackContainer->add_callable($callback);
+        self::validate_event($event_name);
+        /** @var Events $Events */
+        $Events = self::get_service('Events');
+        $Events->add_object_callback($this, $event_name, $callback);
     }
+
+    public static function validate_event(string $event_name) : void
+    {
+        if (!isset(self::EVENT[$event_name])) {
+            throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2s class supports %3s events.'), $event_name, self::class, implode(', ', self::EVENT ) ));
+        }
+    }
+
+//    public function add_callback(callable $callback, int $mode, bool $once = FALSE) : void
+//    {
+//        $this->CallbackContainer->add_callable($callback);
+//    }
 
     public function has_parent() : bool
     {
@@ -335,20 +363,9 @@ abstract class Transaction extends Base implements ResourceInterface
     /**
      * To be called by commit()
      * @throws InvalidArgumentException
-     * @throws RunTimeException
      */
     protected function save() : void
     {
-        $initial_status = $this->get_status();
-        if ($initial_status !== self::STATUS['STARTED']) {
-            //throw
-        }
-
-
-//        $this->execute_before_save_callbacks();
-//        if ($initial_status !== $this->get_status()) {
-//            return;//the status has been changed in the callbacks
-//        }
 
         //no need to create savepoint here for the
 
@@ -357,9 +374,6 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->set_status(self::STATUS['SAVED']);
         $this->set_current_transaction($this->get_parent());
         new Event($this, '_after_save');
-
-        //$this->execute_after_save_callbacks();
-
     }
 
     public function execute(callable $callable) /* mixed */
