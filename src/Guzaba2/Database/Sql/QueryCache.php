@@ -107,7 +107,7 @@ class QueryCache extends Base
         $cache_enabled = TRUE;
 
 //TODO - implement
-//        if (TransactionManager::getCurrentTransaction(Transaction::class)) {
+//        if (TransactionManager::getCurrentTransaction(MemoryTransaction::class)) {
 //            //there is a current transaction
 //            if (!PdoStatement::ENABLE_SELECT_CACHING_DURING_TRANSACTION) {
 //                //the caching of select queries during transaction is disabled

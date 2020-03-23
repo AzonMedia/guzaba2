@@ -44,7 +44,7 @@ use Guzaba2\Orm\Traits\ActiveRecordValidation;
 class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializable, \Iterator
     //, \ArrayAccess, \Countable
 {
-    //for the porpose of splitting and organising the methods (as this class would become too big) traits are used
+    //for the purpose of splitting and organising the methods (as this class would become too big) traits are used
     use ActiveRecordOverloading;
     use ActiveRecordStructure;
     use ActiveRecordIterator;
@@ -60,6 +60,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             'Events',
             'AuthorizationProvider',
             'CurrentUser',
+            'TransactionManager',
         ],
         //only for non-sql stores
         'structure' => [
@@ -183,9 +184,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * ActiveRecord constructor.
      * @param int $index
+     * @param bool $read_only
+     * @param bool $permission_checks_disabled
      * @param StoreInterface|null $Store
      * @throws InvalidArgumentException
+     * @throws LogicException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
     //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
@@ -944,6 +949,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Sets all data (or subset) without triggering the hooks.
      *
      * @param array $record_data
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function set_record_data(array $record_data) : void
     {
@@ -972,6 +979,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * Can be overriden to provide editable default routing.
      * @return iterable|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function get_routes() : ?iterable
     {
@@ -1031,6 +1040,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Returns all old values
      * @param string $property
      * @return array
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function get_property_old_values(string $property) : array
     {
@@ -1043,7 +1054,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * Returns the last old value
      * @param string $property
+     * @return mixed
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function get_property_old_value(string $property) /* mixed */
     {

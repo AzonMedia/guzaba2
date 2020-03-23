@@ -66,7 +66,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 //    ];
 
 //    /**
-//     * @var \Guzaba2\Transactions\Transaction
+//     * @var \Guzaba2\Transactions\MemoryTransaction
 //     */
 //    private $InterruptedTransaction = NULL;
 
@@ -273,9 +273,9 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
 
 //    /**
-//     * @return \Guzaba2\Transactions\Transaction|null
+//     * @return \Guzaba2\Transactions\MemoryTransaction|null
 //     */
-//    public function getInterruptedTransaction() : ?\Guzaba2\Transaction\Transaction
+//    public function getInterruptedTransaction() : ?\Guzaba2\MemoryTransaction\MemoryTransaction
 //    {
 //        return $this->InterruptedTransaction;
 //    }
@@ -447,7 +447,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * Returns the current exception (if there is such)
      * To be used by @return \Throwable
      * @throws RunTimeException
-     * @see Guzaba2\Transactions\Transaction::get_interrupting_exception()
+     * @see Guzaba2\Transactions\MemoryTransaction::get_interrupting_exception()
      */
     public static function getCurrentException() : ?\Throwable
     {

@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Interfaces;
 
 use Guzaba2\Authorization\Role;
+use Guzaba2\Base\Interfaces\BaseInterface;
 
-interface ActiveRecordInterface
+interface ActiveRecordInterface extends BaseInterface
 {
 
     public const PROPERTY_VALIDATION_SUPPORTED_RULES = [

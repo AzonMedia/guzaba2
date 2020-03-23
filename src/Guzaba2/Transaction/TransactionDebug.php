@@ -16,7 +16,7 @@ use Psr\Log\LogLevel;
 
 /**
  * Class TransactionDebug
- * @package Guzaba2\Transaction
+ * @package Guzaba2\MemoryTransaction
  */
 class TransactionDebug extends Base implements ClassInitializationInterface
 {

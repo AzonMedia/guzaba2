@@ -14,17 +14,18 @@ use Guzaba2\Event\Events;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 use Guzaba2\Translator\Translator as t;
+use Throwable;
 
 //TODO - replace the callbacks and containers with Events - leave a method on the transaction -> add_callback() but this method will use the events
 //add DebugTransaction that will register for the events if debug is enabled and print
 
 /**
- * Class Transaction
- * @package Guzaba2\Transaction
+ * Class MemoryTransaction
+ * @package Guzaba2\MemoryTransaction
  *
- * The Transaction contains a doubly linked tree - all child transactions have a reference to their parent and the parent contains references to its children.
+ * The MemoryTransaction contains a doubly linked tree - all child transactions have a reference to their parent and the parent contains references to its children.
  */
-abstract class Transaction extends Base implements ResourceInterface
+abstract class Transaction extends Base /* implements ResourceInterface */
 {
 
     protected const CONFIG_DEFAULTS = [
@@ -53,13 +54,15 @@ abstract class Transaction extends Base implements ResourceInterface
     ];
 
     public const ROLLBACK_REASON = [
-        //'UNKNOWN'       => 'UNKNOWN',
         'EXCEPTION'     => 'EXCEPTION',//the transaction was rolled back because an exception was thrown and the scope reference was destroyed
         'PARENT'        => 'PARENT',//the parent transaction was rolled back while the child one was saved
         'IMPLICIT'      => 'IMPLICIT',//the scope was left (return statement) but there is no exception, or the scope reference was overwritten (in a loop)
         'EXPLICIT'      => 'EXPLICIT',//the transaction was rolled back with a rollback() call
     ];
 
+    /**
+     * A list of events that can be fired by this class
+     */
     public const EVENT = [
         '_before_begin'             => '_before_begin',
         '_after_begin'              => '_after_begin',
@@ -98,15 +101,19 @@ abstract class Transaction extends Base implements ResourceInterface
     private array $children = [];
 
     /**
-     * Transaction status
+     * MemoryTransaction status
      * @var string
      */
     private string $status = self::STATUS['CREATED'];
 
+    /**
+     * Options for the transaction
+     * @var array
+     */
     private array $options = [];
 
     /**
-     * Transaction constructor.
+     * MemoryTransaction constructor.
      * @param array $options Not used currently
      * @throws RunTimeException
      */
@@ -122,7 +129,11 @@ abstract class Transaction extends Base implements ResourceInterface
         }
     }
 
-    public function get_interrupting_exception() : ?\Throwable
+    /**
+     * If the transaction was rolled back because of an exception this will return the exception.
+     * @return Throwable|null
+     */
+    public function get_interrupting_exception() : ?Throwable
     {
         return $this->InterruptingException;
     }
@@ -143,6 +154,14 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->children[] = $Transaction;
     }
 
+    /**
+     * Adds callback on the specified transaction event
+     * @param string $event_name
+     * @param callable $callback
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     */
     public function add_callback(string $event_name, callable $callback) : void
     {
         self::validate_event($event_name);
@@ -269,6 +288,7 @@ abstract class Transaction extends Base implements ResourceInterface
         $caller = StackTraceUtil::get_caller();
 
         if ($caller[0] === ScopeReference::class) {
+            $this->rollback_initiator_flag = TRUE;
             $CurrentException = BaseException::getCurrentException();
             if ($CurrentException) {
                 $this->rollback_reason = self::ROLLBACK_REASON['EXCEPTION'];
@@ -284,6 +304,7 @@ abstract class Transaction extends Base implements ResourceInterface
             }
             $this->InterruptingException = $ParentTransaction->get_interrupting_exception();
         } else {
+            $this->rollback_initiator_flag = TRUE;
             $this->rollback_reason = self::ROLLBACK_REASON['EXPLICIT'];//rollback() method explicitly invoked
         }
 
@@ -308,6 +329,11 @@ abstract class Transaction extends Base implements ResourceInterface
         $this->execute_rollback_to_savepoint($savepoint_name);
     }
 
+    /**
+     * Is this the outermost transaction that was rolled back (that initiates the rollback of the child ones)
+     * or it is a child transaction that is rolled back because of the parent one.
+     * @return bool
+     */
     public function is_rollback_initiator() : bool
     {
         return $this->rollback_initiator_flag;

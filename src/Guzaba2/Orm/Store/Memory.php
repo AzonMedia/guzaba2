@@ -12,6 +12,9 @@ use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Swoole\Handlers\WorkerStart;
+use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Transaction\ScopeReference;
+use Guzaba2\Transaction\Transaction;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\MetaStore\Interfaces\MetaStoreInterface;
@@ -19,7 +22,7 @@ use Guzaba2\Cache\Interfaces\CacheInterface;
 use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Psr\Log\LogLevel;
 
-class Memory extends Store implements StoreInterface, CacheStatsInterface
+class Memory extends Store implements StoreInterface, CacheStatsInterface, TransactionalResourceInterface
 {
     protected const CONFIG_DEFAULTS = [
 
@@ -740,5 +743,56 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface
 
             $this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $CleanupFunction);
         }
+    }
+
+    public function begin_transaction(): void
+    {
+        // TODO: Implement begin_transaction() method.
+
+    }
+
+    public function commit_transaction(): void
+    {
+        // TODO: Implement commit_transaction() method.
+    }
+
+    public function rollback_transaction(): void
+    {
+        // TODO: Implement rollback_transaction() method.
+    }
+
+    public function create_savepoint(string $savepoint_name): void
+    {
+        // TODO: Implement create_savepoint() method.
+    }
+
+    public function rollback_to_savepoint(string $savepoint_name): void
+    {
+        // TODO: Implement rollback_to_savepoint() method.
+    }
+
+    public function release_savepoint(string $savepoint_name): void
+    {
+        // TODO: Implement release_savepoint() method.
+    }
+
+    public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
+    {
+
+        if ($ScopeReference) {
+            //$ScopeReference->set_release_reason($ScopeReference::RELEASE_REASON_OVERWRITING);
+            $ScopeReference = NULL;//trigger rollback (and actually destroy the transaction object - the object may or may not get destroyed - it may live if part of another transaction)
+        }
+
+        $Transaction = new MemoryTransaction($this, $options);
+
+        $ScopeReference = new ScopeReference($Transaction);
+
+        return $Transaction;
+    }
+
+    public function get_resource_id() : string
+    {
+        return get_class($this).':'.Coroutine::getCid();
     }
 }

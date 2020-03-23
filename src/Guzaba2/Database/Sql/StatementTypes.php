@@ -130,7 +130,7 @@ abstract class StatementTypes extends Base
     public const STATEMENT_GROUP_DAL = 5;
 
     /**
-     * Transaction Control Language commands
+     * MemoryTransaction Control Language commands
      *
      */
     public const STATEMENT_GROUP_TCL = 6;

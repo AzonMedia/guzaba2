@@ -7,6 +7,9 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Method;
+use Guzaba2\Orm\Store\Memory;
+use Guzaba2\Orm\Store\MemoryTransaction;
+use Guzaba2\Transaction\TransactionManager;
 use Guzaba2\Translator\Translator as t;
 
 trait ActiveRecordOverloading
@@ -18,6 +21,7 @@ trait ActiveRecordOverloading
      * @param string $property The name of the property that is being accessed
      * @return mixed
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @see http://gitlab.azonmedia.com:4500/root/guzaba-framework/wikis/documentation-0.7/dynamic-properties
      *
      * This method returns by reference so that array properties can have their values modified directly
@@ -64,6 +68,7 @@ trait ActiveRecordOverloading
      * @param string $property The name of the property that is being accessed
      * @return mixed
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @see http://gitlab.azonmedia.com:4500/root/guzaba-framework/wikis/documentation-0.7/dynamic-properties
      *
      * This method returns by reference so that array properties can have their values modified directly
@@ -79,6 +84,10 @@ trait ActiveRecordOverloading
             throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
         }
 
+        if (!array_key_exists($property, $this->record_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+        }
+
 //read_only is set in constructor() if method is GET
 //        if (Coroutine::inCoroutine()) {
 //            $Request = Coroutine::getRequest();
@@ -92,6 +101,9 @@ trait ActiveRecordOverloading
         //     throw new RunTimeException(sprintf(t::_('Trying to set a property on a deleted object of class %s with ID %s.'), get_class($this), $this->get_id() ));
         // }
 
+        //if there is an active ORM transaction then a copy of the objects data needs to be done
+
+
         //instead of unhooking we need to rehook it to a new version called "0" until saved
         //if this is a new object then we do not really need (or can) hook as there is no yet primary index
         //if (!$this->is_modified() && !$this->is_new()) {
@@ -104,11 +116,21 @@ trait ActiveRecordOverloading
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data =& $pointer['modified'];
+
+            //the object needs to be attached to the memory transaction only once
+            /** @var Memory $OrmStore */
+            $OrmStore = self::get_service('OrmStore');
+            if ($OrmStore instanceof Memory) {
+                /** @var TransactionManager $TXM */
+                $TXM = self::get_service('TransactionManager');
+                /** @var MemoryTransaction $Transaction */
+                $Transaction = $TXM->get_current_transaction($OrmStore->get_resource_id());
+                if ($Transaction) {
+                    $Transaction->attach_object($this);
+                }
+            }
         }
 
-        if (!array_key_exists($property, $this->record_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
-        }
 
         $old_value = $this->record_data[$property];
 
