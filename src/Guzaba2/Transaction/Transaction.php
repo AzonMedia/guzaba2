@@ -329,6 +329,11 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $this->execute_rollback_to_savepoint($savepoint_name);
     }
 
+    protected function release_savepoint(string $savepoint) : void
+    {
+        $this->execute_release_savepoint($savepoint);
+    }
+
     /**
      * Is this the outermost transaction that was rolled back (that initiates the rollback of the child ones)
      * or it is a child transaction that is rolled back because of the parent one.
@@ -423,6 +428,15 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         }
 
         $this->status = $status;
+    }
+
+    public final function __destruct()
+    {
+
+        if (in_array($this->get_status(), [self::STATUS['STARTED'], self::STATUS['SAVED']])) {
+            $this->rollback();
+        }
+        parent::__destruct();
     }
 
     abstract public function get_resource() : TransactionalResourceInterface ;

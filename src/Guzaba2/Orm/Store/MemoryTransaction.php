@@ -7,7 +7,9 @@ namespace Guzaba2\Orm\Store;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Orm\Store\Interfaces\StoreTransactionInterface;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Transaction\Transaction;
 
 /**
  * Class MemoryTransaction
@@ -24,7 +26,7 @@ use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
  * So whnever there is a __set() invoked it must mark the objects in the coroutine
  * __set() will be used for tracking instead of obtaining reference. It is important to track the changes not the references
  */
-class MemoryTransaction extends \Guzaba2\Transaction\Transaction
+class MemoryTransaction extends Transaction implements StoreTransactionInterface
 {
 
     protected const CONFIG_DEFAULTS = [

@@ -7,8 +7,10 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Method;
+use Guzaba2\Orm\Store\Interfaces\StoreTransactionInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Orm\Store\MemoryTransaction;
+use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 use Guzaba2\Transaction\TransactionManager;
 use Guzaba2\Translator\Translator as t;
 
@@ -120,12 +122,13 @@ trait ActiveRecordOverloading
             //the object needs to be attached to the memory transaction only once
             /** @var Memory $OrmStore */
             $OrmStore = self::get_service('OrmStore');
-            if ($OrmStore instanceof Memory) {
+            //if ($OrmStore instanceof Memory) {
+            if ($OrmStore instanceof TransactionalResourceInterface) {
                 /** @var TransactionManager $TXM */
                 $TXM = self::get_service('TransactionManager');
                 /** @var MemoryTransaction $Transaction */
                 $Transaction = $TXM->get_current_transaction($OrmStore->get_resource_id());
-                if ($Transaction) {
+                if ($Transaction && $Transaction instanceof StoreTransactionInterface) {
                     $Transaction->attach_object($this);
                 }
             }

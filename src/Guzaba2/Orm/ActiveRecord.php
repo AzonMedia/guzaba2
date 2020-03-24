@@ -24,9 +24,12 @@ use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Orm\Store\MemoryTransaction;
 use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
+use Guzaba2\Transaction\ScopeReference;
+use Guzaba2\Transaction\Transaction;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Event\Event;
 use Guzaba2\Orm\Traits\ActiveRecordOverloading;
@@ -1139,6 +1142,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
      * @param array $ns_prefixes
      * @return array Indexed array with class names
+     * @throws InvalidArgumentException
      */
     public static function get_active_record_classes(array $ns_prefixes) : array
     {
@@ -1146,7 +1150,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
         if (!array_key_exists( $args_hash, $active_record_classes ) ) {
             $classes = Kernel::get_classes($ns_prefixes, ActiveRecordInterface::class);
-            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecord::class, ActiveRecordInterface::class] )  && ( new ReflectionClass($class) )->isInstantiable()  );
+            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecord::class, ActiveRecordInterface::class] ) && ( new ReflectionClass($class) )->isInstantiable()  );
             $active_record_classes[$args_hash] = $classes;
         }
         return $active_record_classes[$args_hash];
@@ -1182,5 +1186,36 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function data_to_collection(array $data) : ActiveRecordCollection
     {
         return new ActiveRecordCollection(get_called_class(), $data);
+    }
+
+    public static function get_store() : StoreInterface
+    {
+        /** @var StoreInterface $Store */
+        $Store = self::get_service('OrmStore');
+        return $Store;
+    }
+
+    /**
+     *
+     * @param ScopeReference|null $ScopeReference
+     * @param array $options
+     * @return Transaction
+     */
+    public static function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
+    {
+//
+//        if ($ScopeReference) {
+//            //$ScopeReference->set_release_reason($ScopeReference::RELEASE_REASON_OVERWRITING);
+//            $ScopeReference = NULL;//trigger rollback (and actually destroy the transaction object - the object may or may not get destroyed - it may live if part of another transaction)
+//        }
+//
+//        $Transaction = new \Guzaba2\Orm\Transaction($options);
+//
+//        $ScopeReference = new ScopeReference($Transaction);
+//
+//        return $Transaction;
+        //it is not an issue that a new instance of OrmTransactionalResource is created every time as this is not really holding any resource
+        //the only method that is needed is get_resource_id() and this is Coroutine dependent not instance dependent
+        return (new OrmTransactionalResource)->new_transaction($ScopeReference, $options);
     }
 }

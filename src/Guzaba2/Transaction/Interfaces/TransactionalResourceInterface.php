@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Transaction\Interfaces;
 
-//use Guzaba2\Resources\ScopeReference;
+use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 
-interface TransactionalResourceInterface
+interface TransactionalResourceInterface extends ResourceInterface
 {
 
     //low level method for directly executing transactional actions

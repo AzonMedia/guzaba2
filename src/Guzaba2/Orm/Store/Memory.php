@@ -729,7 +729,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                                     $cleanedup++;
                                     $cleanup_percentage = $cleanedup / $total_count * 100.0;
                                     if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
-                                        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleanedup. Records left count: %d'), $total_count, $cleanedup, $this->total_count);
+                                        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $this->total_count);
                                         Kernel::log($message_log, LogLevel::INFO);
                                         return;
                                     }
@@ -795,4 +795,5 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     {
         return get_class($this).':'.Coroutine::getCid();
     }
+
 }

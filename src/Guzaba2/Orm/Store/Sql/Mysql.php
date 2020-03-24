@@ -5,9 +5,12 @@ namespace Guzaba2\Orm\Store\Sql;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
+use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Database\Exceptions\DuplicateKeyException;
+use Guzaba2\Database\Exceptions\ForeignKeyConstraintException;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Sql\Mysql\Connection;
 use Guzaba2\Database\Sql\Statement;
@@ -17,6 +20,7 @@ use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Cache\Interfaces\CacheStatsInterface;
+use Guzaba2\Orm\Store\Interfaces\TransactionalStoreInterface;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
 
@@ -26,8 +30,14 @@ use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 
 
-
-class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface
+/**
+ * Class Mysql
+ * @package Guzaba2\Orm\Store\Sql
+ *
+ * No point implementing TransactionalResourceInterface as it will still not be possible to implement new_transaction()
+ * As this required also passing to the caller scope a scope reference for the connection, not just the transaction.
+ */
+class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface, TransactionalStoreInterface
 {
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta',
@@ -72,13 +82,19 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
     private array $classes_data = [];
 
 
-    public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class = '')
+    public function __construct(StoreInterface $FallbackStore, string $connection_class, string $no_coroutine_connection_class)
     {
         parent::__construct();
         if (!$connection_class) {
             throw new InvalidArgumentException(sprintf(t::_('The Store %s needs $connection_class argument provided.'), get_class($this) ));
         }
         $this->FallbackStore = $FallbackStore ?? new NullStore();
+        if (!class_exists($connection_class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided coroutine connection class %1s does not exist.'), $connection_class));
+        }
+        if (!class_exists($no_coroutine_connection_class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided no coroutine connection class %1s does not exist.'), $no_coroutine_connection_class));
+        }
         $this->connection_class = $connection_class;
         $this->no_coroutine_connection_class = $no_coroutine_connection_class;
         //$this->create_meta_if_does_not_exist();//no need - other Store will be provided - MysqlCreate
@@ -186,22 +202,40 @@ VALUES
     public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
     {
 
+//        if (Coroutine::inCoroutine()) {
+//            $connection_class = $this->connection_class;
+//        } else {
+//            if (!$this->no_coroutine_connection_class) {
+//                throw new RunTimeException(sprintf(t::_('The Store %s is used outside coroutine context but there is no $no_coroutine_connection_class configured/provided to the constructor.'), get_class($this) ));
+//            }
+//            $connection_class = $this->no_coroutine_connection_class;
+//        }
+        $connection_class = $this->get_connection_class();
+
+        return static::get_service('ConnectionFactory')->get_connection($connection_class, $ScopeReference);
+    }
+
+    /**
+     * Returns a connection class based on whether the code is in coroutine context or not.
+     * @return string
+     */
+    public function get_connection_class() : string
+    {
         if (Coroutine::inCoroutine()) {
             $connection_class = $this->connection_class;
         } else {
-            if (!$this->no_coroutine_connection_class) {
-                throw new RunTimeException(sprintf(t::_('The Store %s is used outside coroutine context but there is no $no_coroutine_connection_class configured/provided to the constructor.'), get_class($this) ));
-            }
             $connection_class = $this->no_coroutine_connection_class;
         }
-
-        return static::get_service('ConnectionFactory')->get_connection($connection_class, $ScopeReference);
+        return $connection_class;
     }
 
     /**
      * Returns a unified structure
      * @param string $class
      * @return array
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws BadMethodCallException
      */
     public function get_unified_columns_data(string $class) : array
     {
@@ -225,6 +259,9 @@ VALUES
      * Returns the backend storage structure
      * @param string $class
      * @return array
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws BadMethodCallException
      */
     public function get_storage_columns_data(string $class) : array
     {
@@ -243,11 +280,13 @@ VALUES
 
         return $this->storage_columns_data[$class];
     }
-    
+
     /**
      * Returns a unified structure
      * @param string $class
      * @return array
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     protected final function get_unified_columns_data_by_table_name(string $table_name) : array
     {
@@ -255,12 +294,14 @@ VALUES
 
         return $this->unify_columns_data($storage_structure_arr);
     }
-    
+
     /**
-    * Returns the backend storage structure.
-    * @param string $table_name
-    * @return array
-    */
+     * Returns the backend storage structure.
+     * @param string $table_name
+     * @return array
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     protected final function get_storage_columns_data_by_table_name(string $table_name) : array
     {
 
@@ -363,11 +404,14 @@ ORDER BY
         return $ret;
     }
 
-    
+
     /**
      *
      * @param array $storage_structure_arr
      * @return array
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function unify_columns_data(array $storage_structure_arr) : array
     {
@@ -443,8 +487,11 @@ WHERE
 
     /**
      * Returns class and id of object by uuid
-     * @param  string $uuid
+     * @param string $uuid
      * @return array - class and id
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function get_meta_by_uuid(string $uuid) : array
     {
@@ -588,10 +635,10 @@ VALUES
 
     /**
      * @param ActiveRecordInterface $ActiveRecord
-     * @return string UUID
+     * @return array
      * @throws RunTimeException
-     * @throws \Guzaba2\Database\Exceptions\DuplicateKeyException
-     * @throws \Guzaba2\Database\Exceptions\ForeignKeyConstraintException
+     * @throws DuplicateKeyException
+     * @throws ForeignKeyConstraintException
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
@@ -781,10 +828,10 @@ ON DUPLICATE KEY UPDATE
                     $ret = $Statement->execute($data_arr);
 
                     //print 'BB'.$Connection->get_affected_rows().'BB';
-                } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $exception) {
-                    throw new \Guzaba2\Database\Exceptions\DuplicateKeyException($exception->getMessage(), 0, $exception);
-                } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $exception) {
-                    throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
+                } catch (DuplicateKeyException $exception) {
+                    throw new DuplicateKeyException($exception->getMessage(), 0, $exception);
+                } catch (ForeignKeyConstraintException $exception) {
+                    throw new ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
                 }
             }
         }
@@ -962,6 +1009,7 @@ ON DUPLICATE KEY UPDATE
     /**
      * Removes an active record data from the Store
      * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
@@ -995,13 +1043,18 @@ WHERE `meta_object_uuid` = '{$uuid}'
     /**
      * Returns all results matching criteria
      * @param string $class class name
-     * @param array  $index [$column => $value]
+     * @param array $index [$column => $value]
      * @param int $offset
      * @param int $limit
      * @param bool $use_like
      * @param string $sort_by
-     * @param $sort_desc
+     * @param bool $sort_desc
+     * @param int|null $total_found_rows
      * @return array dataset
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws BadMethodCallException
      */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
