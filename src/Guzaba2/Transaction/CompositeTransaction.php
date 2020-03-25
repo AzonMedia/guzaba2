@@ -42,7 +42,7 @@ abstract class CompositeTransaction extends Transaction
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function attach_transaction(Transaction $Transaction) : void
+    public function attach_transaction(Transaction $Transaction): void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
             throw new InvalidArgumentException(sprintf(t::_('The transaction being attached is in status %1s. It is not allowed to attach transactions with status other than %2s.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
@@ -55,17 +55,17 @@ abstract class CompositeTransaction extends Transaction
     }
 
 
-    protected function add_resource_scope_reference(ScopeReference &$ScopeReference) : void
+    protected function add_resource_scope_reference(ScopeReference &$ScopeReference): void
     {
         $this->resource_scope_references[] =& $ScopeReference;
     }
 
-    protected function clear_resource_scope_references() : void
+    protected function clear_resource_scope_references(): void
     {
         $this->resource_scope_references = [];//no need of looping and explicitly set to NULL
     }
 
-    protected function execute_begin() : void
+    protected function execute_begin(): void
     {
         foreach ($this->transactions as $Transaction) {
             $Transaction->begin();
@@ -104,7 +104,7 @@ abstract class CompositeTransaction extends Transaction
     /**
      * @throws InvalidArgumentException
      */
-    public function execute_save() : void
+    public function execute_save(): void
     {
         foreach ($this->transactions as $Transaction) {
             $Transaction->save();
@@ -114,7 +114,7 @@ abstract class CompositeTransaction extends Transaction
     /**
      * @throws RunTimeException
      */
-    protected function execute_commit() : void
+    protected function execute_commit(): void
     {
         foreach ($this->transactions as $Transaction) {
             $Transaction->commit();

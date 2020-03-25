@@ -87,6 +87,9 @@ class GenericResource extends Base
         $this->scope_counter++;
     }
 
+    /**
+     *
+     */
     public function decrement_scope_counter(): void
     {
         StackTraceUtil::validate_caller(ScopeReference::class, '');
