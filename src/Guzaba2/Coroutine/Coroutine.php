@@ -71,6 +71,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     //protected static array $static_data = [];
 
+    /**
+     * @return bool
+     */
     public static function completeBacktraceEnabled() : bool
     {
         return self::CONFIG_RUNTIME['enable_complete_backtrace'];
@@ -100,7 +103,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
      * @param RequestInterface $Request
-     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public static function init(?RequestInterface $Request) : void
     {
@@ -151,7 +156,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * @param null $cid
      * @return \Swoole\Coroutine\Context
+     * @throws ContextDestroyedException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function getContext($cid = NULL) : \Swoole\Coroutine\Context
     {
@@ -269,8 +276,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         };
 
         //increment parent coroutine apm values
-        // print "current cid: " . $current_cid . PHP_EOL;
-        // print "parent cid: " . self::getPcid($current_cid) . PHP_EOL;
         //$Apm = self::getContext()->Apm;
         //$Apm->increment_value('cnt_subcoroutines', 1);
         if (self::has_service('Apm')) {
@@ -304,10 +309,13 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * Works like \Swoole\Coroutine::getBacktrace() but returns the backtrace for all the parent coroutines not just the current one.
      * Does not return backtrace for the code outside the root coroutine (which would usually be the coroutine handling the request).
      * The arguments are the same like
+     * @param int|null $cid
      * @param int $options
      * @param int $limit
      * @return array
+     * @throws ContextDestroyedException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function getFullBacktrace(?int $cid = NULL, int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0) : array
     {
@@ -324,9 +332,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * Returns the full backtrace like self::getFullBacktrace() for the current coroutine but does not require any arguments.
      * The returned backtrace is without the arguments and has no limit.
-     * @uses self::getFullBacktrace()
      * @return array
+     * @throws ContextDestroyedException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @uses self::getFullBacktrace()
      */
     public static function getSimpleBacktrace() : array
     {
@@ -343,8 +353,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * Returns an indexed array with the IDs of all parent coroutines of the provided $cid. The last index is the root coroutine.
      * If no $cid is provided the current coroutine is used.
+     * @param int|null $cid
      * @return array
+     * @throws ContextDestroyedException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function getParentCoroutines(?int $cid = NULL) : array
     {
@@ -374,6 +387,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * If this is in Swoole Server context the root coroutine would be the coroutine started by the worker to serve the request.
      * @param int|null $cid
      * @return int
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function getRootCoroutineId(?int $cid = NULL) : int
     {
@@ -448,7 +463,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * The callables are executed in the current Worker, they are not pushed to a TaskWorker.
      * @param callable ...$callables
      * @return array
+     * @throws ContextDestroyedException
+     * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function executeMulti(callable ...$callables) : array
     {
@@ -488,13 +506,15 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     /**
      * Awaits for all subcoroutines of the current coroutine to end.
      * Blocks the current coroutines until all child coroutines finish.
-     * @throws RunTimeException If the subcoroutines do not finish before the given timeout
      * @param int $timeout
      *
+     * @return array
+     * @throws ContextDestroyedException
+     * @throws RunTimeException If the subcoroutines do not finish before the given timeout
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     private static function awaitSubCoroutines(?int $timeout = NULL) : array
     {
-        //print 'Await'.self::getCid().PHP_EOL;
         if ($timeout === NULL) {
             $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }
@@ -521,7 +541,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $ret = $Channel->pop($timeout);
             if ($ret === FALSE) {
                 /*
-                //print gettype($subcoorutines_arr).' '.gettype($subcoroutines_completed_arr);
                 print_r($subcoorutines_arr);
                 print_r($subcoroutines_completed_arr);
                 $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
@@ -536,7 +555,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
-                //print 'rethrow'.PHP_EOL;
                 throw $ret['exception'];
                 //DO NOT REMOVE THE ABOVE LINE - otherwise the exception may go unnoticed!
             } else {

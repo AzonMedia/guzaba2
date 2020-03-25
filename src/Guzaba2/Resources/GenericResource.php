@@ -9,6 +9,7 @@ use Azonmedia\Utilities\StackTraceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Coroutine\Resources;
 use Guzaba2\Resources\Interfaces\ResourceFactoryInterface;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
@@ -110,6 +111,7 @@ class GenericResource extends Base
      * @param int $cid
      * @throws RunTimeException
      * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function assign_to_coroutine(int $cid): void
     {
@@ -134,6 +136,7 @@ class GenericResource extends Base
     /**
      * @throws RunTimeException
      * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function unassign_from_coroutine(): void
     {

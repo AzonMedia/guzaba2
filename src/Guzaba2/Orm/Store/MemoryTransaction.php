@@ -117,7 +117,6 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
 
     protected function execute_create_savepoint(string $savepoint): void
     {
-
         foreach ($this->objects as $ActiveRecord) {
             $this->objects_data[$savepoint][$ActiveRecord->get_object_internal_id()] = $ActiveRecord->get_record_data();
         }
@@ -126,7 +125,13 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
     protected function execute_rollback_to_savepoint(string $savepoint): void
     {
         foreach ($this->objects as $ActiveRecord) {
-            $ActiveRecord->set_record_data($this->objects_data[$savepoint][$ActiveRecord->get_object_internal_id()]);
+            $object_internal_id = $ActiveRecord->get_object_internal_id();
+            if (array_key_exists($object_internal_id, $this->objects_data[$savepoint])) {
+                $ActiveRecord->set_record_data($this->objects_data[$savepoint][$ActiveRecord->get_object_internal_id()]);
+            } else {
+                //this is an object from another scope
+            }
+
         }
     }
 

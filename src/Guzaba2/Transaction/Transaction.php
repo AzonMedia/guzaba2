@@ -23,7 +23,12 @@ use Throwable;
  * Class MemoryTransaction
  * @package Guzaba2\MemoryTransaction
  *
- * The MemoryTransaction contains a doubly linked tree - all child transactions have a reference to their parent and the parent contains references to its children.
+ * The Transaction contains a doubly linked tree - all child transactions have a reference to their parent and the parent contains references to its children.
+ *
+ * While the API supports setting names for the savepoints thus having multiple savepoints for a single transaction in fact as per the implementation
+ * (scope based savepoints created when a new scope/nested transaction is started) there is only a single savepoint needed.
+ * When the next nested transaction is started it reuses the last savepoint (the previous nested transaction is always in status SAVED or ROLLEDBACK)
+ * Because of this the $savepoint parameter on the savepoint manipulation methods has a default value ("SAVEPOINT")
  */
 abstract class Transaction extends Base /* implements ResourceInterface */
 {
@@ -116,6 +121,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * MemoryTransaction constructor.
      * @param array $options Not used currently
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function __construct(array $options = [])
     {
@@ -125,6 +131,14 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
         $this->ParentTransaction = self::get_service('TransactionManager')->get_current_transaction($this->get_resource()->get_resource_id());
         if ($this->ParentTransaction) {
+            //validate that the previous nested transaction (sibling to this one) has ended with either SAVED or ROLLEDBACK (it should not be in any other status)
+            $sibling_transactions = $this->ParentTransaction->get_children();
+            if ($sibling_transactions) { //if there were previous nested transactions - check the status of the last one
+                $LastSiblingTransaction = $sibling_transactions[ count($sibling_transactions) - 1];
+                if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], TRUE )) {
+                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1s is in status %2s. Before the next nested transaction can be started the previous nested one must be in status %3s or %4s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK'] ));
+                }
+            }
             $this->ParentTransaction->add_child($this);
         }
     }
@@ -234,7 +248,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     protected function get_savepoint_name() : string
     {
-        return 'SP'.$this->get_object_internal_id();
+        //return 'SP'.$this->get_object_internal_id();
+        //the savepoint name reflects the nested level.
+        //if on the same level a new transaction is started the same savepoint name will be reused overwriting the previous savepoint
+        //having the savepoints named this way allows for a CompositeTransaction::rollback_to_savepoint() to work - the savepoints across all transactions are named the same.
+        //there is no need to the savepoint names across the transactions to have different names - the are not using the same TransactionalResource
+        return 'SP_'.$this->get_nesting();
     }
 
     public function begin() : void
@@ -271,11 +290,10 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     public final function rollback() : void
     {
-        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {
-            throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1s and can not be rolled back. Only transactions in statuses %2s can be rolled back.'), $initial_status, implode(', ', $allowed_statuses) ));
+            throw new RunTimeException(sprintf(t::_('The transaction of class %1s is currently in status %1s and can not be rolled back. Only transactions in statuses %2s can be rolled back.'), get_class($this), $initial_status, implode(', ', $allowed_statuses) ));
         }
 
         //rollback all children (no matter what is their status - started on saved ... should be saved)
@@ -432,7 +450,10 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     public final function __destruct()
     {
-
+        //this is just in ca se here
+        //the rollback should be triggered by the ScopeReference
+        //the transaction object will be destroyed by the GC as there are cyclic references
+        //the transaction tree is doubly linked
         if (in_array($this->get_status(), [self::STATUS['STARTED'], self::STATUS['SAVED']])) {
             $this->rollback();
         }

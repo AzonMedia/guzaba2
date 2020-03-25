@@ -22,19 +22,19 @@ class Resources extends Base
     /**
      * @var int
      */
-    protected $cid;
+    protected int $cid;
 
     /**
      * Where this coroutine was created.
      * @var array
      */
-    protected $created_backtrace = [];
+    protected array $created_backtrace = [];
 
     /**
      * A list with the currently assigned resources to this coroutine.
      * @var array
      */
-    protected $resources = [];
+    protected array $resources = [];
 
     /**
      * Resources constructor.
@@ -100,7 +100,10 @@ class Resources extends Base
     }
 
     /**
+     * @param string|null $resource_class
      * @return array Array of ResourceInterface
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function get_resources(?string $resource_class = NULL) : array
     {
@@ -127,6 +130,8 @@ class Resources extends Base
      * This class returns this resource if the coroutine has assigned one.
      * @param string $resource_class
      * @return ResourceInterface|NULL
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public function get_resource(string $resource_class) : ?ResourceInterface
     {

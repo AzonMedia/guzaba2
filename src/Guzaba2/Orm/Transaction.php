@@ -21,8 +21,8 @@ use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 class Transaction extends CompositeTransaction
 {
 
-    /** @var ScopeReference[] */
-    private array $connection_references = [];
+//    /** @var ScopeReference[] */
+//    private array $connection_references = [];
 
     public function __construct(array $options = [])
     {
@@ -50,11 +50,17 @@ class Transaction extends CompositeTransaction
                 //$this->attach_transaction($Transaction);//needs to be in reverse order - first commit in the outermost store
                 $transactions[] = $Transaction;
             } elseif ($Store instanceof TransactionalStoreInterface) {
-                $Transaction = $Store->get_connection($CR)->new_transaction($TR);
+                //$Transaction = $Store->get_connection($CR)->new_transaction($TR);
+                $Connection = $Store->get_connection($CR);
+                //print 'COnn ID: '.$Connection->get_object_internal_id().PHP_EOL;
+                $Transaction = $Connection->new_transaction($TR);
                 $TR->remove_callbacks();
                 $TR = NULL;
                 $transactions[] = $Transaction;
-                $this->connection_references[] = $CR;//the connection reference must be preserved and keep this connection attached to this coroutine
+                //$this->connection_references[] = $CR;//the connection reference must be preserved and keep this connection attached to this coroutine
+                if ($this->is_master()) {
+                    $this->add_resource_scope_reference($CR);
+                }
                 //if the connection if freed then the transaction will be unable to start (starting will throw an error that the connection is not attached to any coroutine)
             } else {
                 //skip this store
@@ -68,10 +74,7 @@ class Transaction extends CompositeTransaction
 
     }
 
-    protected function _before_destruct() : void
-    {
-        $this->connection_references = [];//free all connections
-    }
+
 
     public function get_resource(): TransactionalResourceInterface
     {

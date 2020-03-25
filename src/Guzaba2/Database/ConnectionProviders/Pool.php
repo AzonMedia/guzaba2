@@ -87,9 +87,13 @@ class Pool extends Provider
      * It will reuse a connection from this coroutine if such is found.
      * If a new connection (second, third) for this coroutine is needed self::get_new_connection() is to be used
      * @param string $connection_class
-     * @param $ScopeReference
-     * @param-out $ScopeReference
+     * @param ScopeReference|null $ScopeReference
      * @return ConnectionInterface
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @param-out $ScopeReference
      */
     public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
     {
@@ -228,6 +232,7 @@ class Pool extends Provider
      * @return ConnectionInterface
      * @throws RunTimeException
      * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     private function get_new_connection(string $connection_class) : ConnectionInterface
     {
