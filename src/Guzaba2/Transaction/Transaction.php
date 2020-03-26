@@ -79,6 +79,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         '_after_commit'             => '_after_commit',
         '_before_rollback'          => '_before_rollback',
         '_after_rollback'           => '_after_rollback',
+        '_before_destruct'          => '_before_destruct',
     ];
 
     /**
@@ -163,7 +164,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     private function add_child(Transaction $Transaction) : void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
-            //throw
+            throw new InvalidArgumentException(sprintf(t::_('Trying to add a child/nested transaction that is in status %1s. Only transactions in status %2s can be added as child/nested.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
         }
         $this->children[] = $Transaction;
     }
@@ -172,16 +173,13 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * Adds callback on the specified transaction event
      * @param string $event_name
      * @param callable $callback
+     * @return bool
      * @throws InvalidArgumentException
-     * @throws LogicException
-     * @throws RunTimeException
      */
-    public function add_callback(string $event_name, callable $callback) : void
+    public function add_callback(string $event_name, callable $callback) : bool
     {
         self::validate_event($event_name);
-        /** @var Events $Events */
-        $Events = self::get_service('Events');
-        $Events->add_object_callback($this, $event_name, $callback);
+        return parent::add_callback($event_name, $callback);
     }
 
     public static function validate_event(string $event_name) : void
@@ -230,7 +228,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     /**
      * Returns the nested transactions
-     * @return array
+     * @return Transaction[]
      */
     public function get_children() : array
     {
@@ -338,8 +336,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $this->set_current_transaction(NULL);
         }
 
-
         new Event($this, '_after_rollback');
+
+        //try destroying the tree of transactions after all events are fired...
+        if ($this->is_master()) {
+            $this->destroy_transactions();
+        }
     }
 
     protected function rollback_to_savepoint(string $savepoint_name) : void
@@ -380,6 +382,35 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $this->set_current_transaction(NULL);
             new Event($this, '_after_commit');
         }
+
+        //try destroying the tree of transactions after all events are fired...
+        if ($this->is_master()) {
+            $this->destroy_transactions();
+        }
+    }
+
+    /**
+     * When the master transaction is in an self::END_STATUSES it must explicitly destroy its child transactions and their references to their parents.
+     * As otherwise the transaction object will not be destroyed until the GC is called as the transactions are doubly linked tree which means circular references.
+     */
+    private function destroy_transactions(): void
+    {
+        //try to destroy all child transactions
+//        foreach ($this->children as $Transaction) {
+//            $Transaction->ParentTransaction = NULL;
+//            $Transaction = NULL;
+//        }
+//        $this->children = [];
+        $Function = static function($Transaction) use (&$Function): void
+        {
+            foreach ($Transaction->children as $ChildTransaction) {
+                $Function($ChildTransaction);
+                $ChildTransaction->ParentTransaction = NULL;//remove a reference
+                $ChildTransaction = NULL;
+            }
+            $Transaction->children = [];
+        };
+        $Function($this);
     }
 
     /**
@@ -401,7 +432,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     public function execute(callable $callable) /* mixed */
     {
         if ($this->get_status() !== self::STATUS['CREATED']) {
-            //throw
+            throw new RunTimeException(sprintf(t::_('The code can not be executed (%s($callable)) in the given transaction  as the transaction currently is in status %1s. Only transactions in status %2s can execute code.'), __METHOD__, $this->get_status(), self::STATUS['CREATED'] ));
         }
         $this->begin();
         $ret = $callable();
@@ -450,6 +481,8 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     public final function __destruct()
     {
+        new Event($this, '_before_destruct');
+
         //this is just in ca se here
         //the rollback should be triggered by the ScopeReference
         //the transaction object will be destroyed by the GC as there are cyclic references
@@ -457,6 +490,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         if (in_array($this->get_status(), [self::STATUS['STARTED'], self::STATUS['SAVED']])) {
             $this->rollback();
         }
+
         parent::__destruct();
     }
 

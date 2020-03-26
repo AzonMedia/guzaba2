@@ -32,8 +32,10 @@ abstract class CompositeTransaction extends Transaction
     {
         //this is just in case here
         //in fact the destructor will not be invoked until the GC so this can not be relied upon
-        //$this->connection_references = [];//free all connections
-        $this->clear_resource_scope_references();
+        if ($this->is_master()) {
+            $this->clear_resource_scope_references();
+        }
+        print 'BEFORE DESTRUCT';
     }
 
     /**
@@ -52,6 +54,36 @@ abstract class CompositeTransaction extends Transaction
         }
 
         $this->transactions[] = $Transaction;
+    }
+
+    /**
+     * Returns a transaction (from $transaction_class) form the composite transaction.
+     * @param string $transaction_class
+     * @return Transaction
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_transaction(string $transaction_class) : Transaction
+    {
+        if (!$transaction_class) {
+            throw new InvalidArgumentException(sprintf(t::_('There is no $transaction_class provided.')));
+        }
+        if (!class_exists($transaction_class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided $transaction_class %1s does not exist. The provided argument must contain a valid class name (with namespace without leading slash).'), $transaction_class));
+        }
+        $ReturnTransaction = NULL;
+        /** @var Transaction $Transaction */
+        foreach ($this->transactions as $Transaction) {
+            if (get_class($Transaction) === $Transaction) {
+                $ReturnTransaction = $Transaction;
+                break;
+            }
+        }
+        if (!$ReturnTransaction) {
+            throw new RunTimeException(sprintf(t::_('The composite transaction of class %1s does not have a transaction of class %2s.'), get_class($this), $transaction_class));
+        }
+        return $ReturnTransaction;
     }
 
 

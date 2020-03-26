@@ -71,6 +71,13 @@ trait UsesServices
         return $ret;
     }
 
+    public function add_callback(string $event_name, callable $callback) : bool
+    {
+        /** @var Events $Events */
+        $Events = self::get_service('Events');
+        return $Events->add_object_callback($this, $event_name, $callback);
+    }
+
 //    public static function is_service_instantiated(string $service_name) : bool
 //    {
 //        $called_class = get_called_class();

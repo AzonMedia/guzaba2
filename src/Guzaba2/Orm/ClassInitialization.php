@@ -24,7 +24,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         'initialize_columns',
         'initialize_hooks',
         'initialize_memory',
-        'register_active_record_history_hooks',
+        'register_active_record_temporal_hooks',
     ];
 
     public static function run_all_initializations() : array
@@ -62,7 +62,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         }
     }
 
-    public static function register_active_record_history_hooks(array $ns_prefixes) : void
+    public static function register_active_record_temporal_hooks(array $ns_prefixes) : void
     {
         $active_record_history_classes = ActiveRecord::get_active_record_temporal_classes($ns_prefixes);
         $Events = self::get_service('Events');

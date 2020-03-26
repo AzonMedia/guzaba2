@@ -49,6 +49,15 @@ abstract class Base implements BaseInterface
 
     use BaseTrait;
 
+
+    protected const CONFIG_DEFAULTS = [
+        'services' => [
+            'Events',
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     /**
      * Base constructor.
      * All children must invoke the parent constructor
@@ -64,6 +73,7 @@ abstract class Base implements BaseInterface
         if (method_exists($this, '_before_destruct')) {
             call_user_func_array([$this, '_before_destruct'], []);
         }
+        //the _before_destruct event will not be created here (as this would fire it for all objects) but if a class needs to have it then it should implement the _before_destruct() method and fire the event there
     }
 
     /**
