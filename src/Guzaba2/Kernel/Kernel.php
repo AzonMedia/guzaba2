@@ -714,6 +714,7 @@ BANNER;
      * Checks the logger for any handlers that start with / and pushes the provided $message to these.
      * Returns the number of handlers to which the message was pushed to.
      * @param string $message
+     * @return int
      */
     private static function write_to_log(string $message) : int
     {
@@ -750,10 +751,20 @@ BANNER;
         return $ret;
     }
 
+    public static function file_get_contents(string $file) : string
+    {
+        if (\Swoole\Coroutine::getCid() > 0) {
+            $ret = \Swoole\Coroutine\System::readFile($file);
+        } else {
+            $ret = file_get_contents($file);
+        }
+        return $ret;
+    }
+
     /**
      * Registers a new namespace base that is to be looked up.
      * To be used if the application needs to use the Guzaba2 autoloader
-     * @param string $namespace_prefix
+     * @param string $namespace_base
      * @param string $base_path
      */
     public static function register_autoloader_path(string $namespace_base, string $base_path): void

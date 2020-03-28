@@ -139,6 +139,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @param string $message
      * @param int $code
      * @param Throwable|null $previous
+     * @throws \ReflectionException
      */
     public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL, ?string $uuid = NULL)
     {
@@ -180,6 +181,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                     $Context->{self::class} = new \stdClass();
                 }
                 $Context->{self::class}->CurrentException = $this->cloneException();
+
             }
 
         } else {
@@ -445,9 +447,11 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
     /**
      * Returns the current exception (if there is such)
-     * To be used by @return \Throwable
+     * To be used by
+     * @return \Throwable
+     * @throws ContextDestroyedException
      * @throws RunTimeException
-     * @see Guzaba2\Transactions\MemoryTransaction::get_interrupting_exception()
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException @see Guzaba2\Transactions\MemoryTransaction::get_interrupting_exception()
      */
     public static function getCurrentException() : ?\Throwable
     {
@@ -455,7 +459,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         //return self::get_static('CurrentException');
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Exception = $Context->CurrentException ?? self::$CurrentException;
+            $Exception = $Context->{self::class}->CurrentException ?? self::$CurrentException;
         } else {
             $Exception = self::$CurrentException;
         }

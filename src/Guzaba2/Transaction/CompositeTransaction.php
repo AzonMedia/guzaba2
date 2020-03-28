@@ -18,6 +18,9 @@ use Guzaba2\Translator\Translator as t;
  *
  * Only the master transaction needs to keep resource scope references (in order to prevent them from being destroyed)
  *
+ * Unlike the Transaction class the CompositeTransaction class does not need to take special care for the transaction destruction
+ * as the transactions comprising the composite one do not contain references to it (meaning there is no cyclic references).
+ *
  */
 abstract class CompositeTransaction extends Transaction
 {

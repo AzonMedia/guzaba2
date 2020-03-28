@@ -303,12 +303,20 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
         $caller = StackTraceUtil::get_caller();
 
-        if ($caller[0] === ScopeReference::class) {
+        //it may happen the scope reference for the transactional resource (db connection) to be destroyed before the scope reference for the transaction
+        if ($caller[0] === ScopeReference::class || is_a($caller[0], TransactionalResourceInterface::class, TRUE) ) {
+            //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            //print_r($caller);
             $this->rollback_initiator_flag = TRUE;
             $CurrentException = BaseException::getCurrentException();
             if ($CurrentException) {
                 $this->rollback_reason = self::ROLLBACK_REASON['EXCEPTION'];
                 $this->InterruptingException = $CurrentException;
+            } elseif (StackTraceUtil::check_stack_for_scope_ref_destruct_due_throw()) {
+                //if an exception not extending BaseException and is thrown the CurrentException will not be set
+                //thus the stack needs to be checked - was the destruction of the scope reference (connection one or transaction one) triggered by a throw
+                //this is done by checking the first scope reference destructor and the calling line - is there a throw statement
+                $this->rollback_reason = self::ROLLBACK_REASON['EXCEPTION'];//reason = exception but there will not be available exception
             } else {
                 $this->rollback_reason = self::ROLLBACK_REASON['IMPLICIT'];//return
             }

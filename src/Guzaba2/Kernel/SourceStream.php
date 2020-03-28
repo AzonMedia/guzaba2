@@ -36,6 +36,11 @@ class SourceStream
 
     public const PROTOCOL = 'guzaba.source';
 
+    /**
+     * @var array
+     */
+    private static array $sources = [];
+
     public function stream_open($path, $mode, $options, &$opened_path)
     {
         $this->mode = $mode;
@@ -114,15 +119,18 @@ class SourceStream
 
     /**
      * Returns the rewritten class source.
-     * The rewriting is done by first loading the class (by using eval()) with a different name so that the runtime configuration can be obtained (@see Kernel::get_runtime_configuration()).
-     * Then on the second pass the actual class source is rewritten with the new runtime config and the source is returned.
-     * @uses Kernel::get_runtime_configuration()
-     * @param string $path Class path that is to be loaded
+     * The rewriting is done by first loading the class (by using eval()) with a different name so that the runtime configuration can be obtained (@param string $path Class path that is to be loaded
      * @return string
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @uses Kernel::get_runtime_configuration()
+     * @see  Kernel::get_runtime_configuration()).
+     * Then on the second pass the actual class source is rewritten with the new runtime config and the source is returned.
      */
     private static function load_data(string $path) : string
     {
-
+        if (isset(self::$sources[$path])) {
+            return self::$sources[$path];
+        }
         //print 'load_data: '.$path.PHP_EOL;
 
         if (Kernel::check_syntax($path, $error)) {
@@ -199,16 +207,16 @@ class SourceStream
 
             $class_without_config_source = substr($class_without_config_source, 5);
         }
-        //before evluating check for parse errors
+        //before evaluating check for parse errors
         //this will not be executing anything so runtime errors are not expected
         try {
             eval($class_without_config_source);
         } catch (\Throwable $Exception) {
 //            $message = '';
-//            $PreviosException = $Exception->getPrevious();
+//            $PreviousException = $Exception->getPrevious();
 //
 //            $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
-//            if ($PreviosException) {
+//            if ($PreviousException) {
 //                $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
 //            }
 //            //Kernel::log($message);
@@ -226,6 +234,7 @@ class SourceStream
 //        if ($class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
 //            print $class_source;
 //        }
+        self::$sources[$path] = $class_source;
         return $class_source;
     }
 
