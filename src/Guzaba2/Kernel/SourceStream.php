@@ -128,10 +128,11 @@ class SourceStream
      */
     private static function load_data(string $path) : string
     {
+        //this is needed in case the same file is require()d again
+        //if not cached it will produce duplicate class name error
         if (isset(self::$sources[$path])) {
             return self::$sources[$path];
         }
-        //print 'load_data: '.$path.PHP_EOL;
 
         if (Kernel::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);

@@ -9,11 +9,13 @@ use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Event\Event;
 use Guzaba2\Event\Events;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 use Guzaba2\Translator\Translator as t;
+use ReflectionException;
 use Throwable;
 
 //TODO - replace the callbacks and containers with Events - leave a method on the transaction -> add_callback() but this method will use the events
@@ -286,6 +288,14 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
+     * @throws ReflectionException
+     */
     public final function rollback() : void
     {
         $initial_status = $this->get_status();
@@ -339,10 +349,10 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $this->get_parent()->rollback_to_savepoint($savepoint);
             $this->set_current_transaction($this->get_parent());
         } else {
-            $this->set_status(self::STATUS['ROLLEDBACK']);
             $this->execute_rollback();
             $this->set_current_transaction(NULL);
         }
+        $this->set_status(self::STATUS['ROLLEDBACK']);
 
         new Event($this, '_after_rollback');
 
@@ -372,6 +382,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         return $this->rollback_initiator_flag;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public function commit() : void
     {
         $initial_status = $this->get_status();
