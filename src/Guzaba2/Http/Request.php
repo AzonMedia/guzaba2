@@ -25,45 +25,45 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     /**
      * @var string
      */
-    protected $method;
+    protected string $method;
 
     /**
      * @var UriInterface
      */
-    protected $uri;
+    protected UriInterface $uri;
 
     /**
      * @var array
      */
-    protected $cookies = [];
+    protected array $cookies = [];
 
     /**
      * @var array
      */
-    protected $attributes = [];
+    protected array $attributes = [];
 
     /**
      * @var array
      */
-    protected $server_params = [];
+    protected array $server_params = [];
 
     /**
      * @var array
      */
-    protected $uploaded_files = [];
+    protected array $uploaded_files = [];
 
     /**
      * @var string
      */
-    protected $request_target;
+    protected string $request_target;
 
     /**
      * @var array
      */
-    protected $query_params = [];
+    protected array $query_params = [];
 
     /**
-     * @var Server
+     * @var ServerInterface|null
      */
     protected ?ServerInterface $Server = NULL;
 
@@ -466,6 +466,8 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return null|array|object The deserialized body parameters, if any.
      *     These will typically be an array or object.
+     * @throws NotImplementedException
+     * @throws \ReflectionException
      */
     public function getParsedBody() /* mixed */
     {

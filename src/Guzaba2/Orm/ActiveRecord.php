@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Orm;
 
 use Azonmedia\Lock\Interfaces\LockInterface;
+use Azonmedia\Lock\Interfaces\LockManagerInterface;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
@@ -14,6 +15,7 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Method;
+use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordTemporalInterface;
@@ -25,6 +27,7 @@ use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Store\MemoryTransaction;
+use Guzaba2\Orm\Store\Store;
 use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
@@ -36,13 +39,14 @@ use Guzaba2\Orm\Traits\ActiveRecordOverloading;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
 use Guzaba2\Orm\Traits\ActiveRecordIterator;
 use Guzaba2\Orm\Traits\ActiveRecordValidation;
+use ReflectionException;
 
 
 /**
  * Class ActiveRecord
  * @package Guzaba2\Orm
- * @method \Guzaba2\Orm\Store\Store OrmStore()
- * @method \Azonmedia\Lock\Interfaces\LockManagerInterface LockManager()
+ * @method Store OrmStore()
+ * @method LockManagerInterface LockManager()
  */
 class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializable, \Iterator
     //, \ArrayAccess, \Countable
@@ -194,7 +198,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws LogicException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
-     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws ConfigurationException
+     * @throws ReflectionException
      */
     //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = FALSE, bool $permission_checks_disabled = FALSE, ?StoreInterface $Store = NULL)
@@ -232,7 +237,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->Store = $Store;
         } else {
             //$this->Store = static::OrmStore();//use the default service
-            $this->Store = static::get_service('OrmStore');
+            /** @var StoreInterface $Store */
+            $Store = static::get_service('OrmStore');
+            $this->Store = $Store;
         }
         
         //self::initialize_columns();
@@ -244,7 +251,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         // 1. check is there main index loaded
         // if $this->index is still empty this means that this table has no primary index
         if (!count($primary_columns)) {
-            throw new \Guzaba2\Kernel\Exceptions\ConfigurationException(sprintf(t::_('The class %s has no primary index defined.'), $called_class));
+            throw new ConfigurationException(sprintf(t::_('The class %s has no primary index defined.'), $called_class));
         }
 
         if (is_scalar($index)) {
@@ -264,7 +271,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 //$index = ['object_uuid' => $index];
                 $index = ['meta_object_uuid' => $index];
             } else {
-                throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
+                throw new RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
             }
 
 
@@ -278,7 +285,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //                }
 //            }
         } else {
-            throw new \Guzaba2\Base\Exceptions\RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
+            throw new RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
         }
 
 
@@ -357,6 +364,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return array_merge( $this->get_property_data(), $this->get_meta_data() );
     }
 
+    /**
+     * @param int|string|array $index
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public function read(/* int|string|array */ $index) : void
     {
 
@@ -375,6 +390,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_before_read'], $args);//must return void
         }
 
+        //new Event($this, '_before_read');
         self::get_service('Events')::create_event($this, '_before_read');
 
 
@@ -425,6 +441,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     }
 
+    /**
+     * @return ActiveRecordInterface
+     * @throws Exceptions\MultipleValidationFailedException
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public function write() : ActiveRecordInterface
     {
 
@@ -454,32 +478,38 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
-        //instead the lock levle should be updated (lock reacquired)
+        //instead the lock level should be updated (lock reacquired)
         if ($this->is_new() && static::is_locking_enabled()) {
             $resource = MetaStore::get_key_by_object($this);
-            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-            unset($LR);
+//            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+//            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+//            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+//            unset($LR);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
-        //BEGIN ORMTransaction (==ORMDBTransaction)
+        $Transaction = ActiveRecord::new_transaction($TR);
+        $Transaction->begin();
 
         if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_write'], $args);//must return void
         }
 
+        //new Event($this, '_before_write');
         self::get_service('Events')::create_event($this, '_before_write');
 
-        if (static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-        }
+        $this->validate();
+
+//        if (static::is_locking_enabled()) {
+//            $resource = MetaStore::get_key_by_object($this);
+//            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+//            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+//        }
 
         static::get_service('OrmStore')->update_record($this);
 
+        //new Event($this, '_after_write');
         self::get_service('Events')::create_event($this, '_after_write');
 
         if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled()) {
@@ -487,7 +517,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_write'], $args);//must return void
         }
 
-        //COMMIT ORMTransaction
+        $Transaction->commit();
 
 
 
@@ -501,7 +531,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->is_new_flag = FALSE;
 
         if (static::is_locking_enabled()) {
-            //self::LockManager()->release_lock('', $LR);
             static::get_service('LockManager')->release_lock('', $LR);
         }
 
@@ -532,6 +561,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
         $this->check_permission('delete');
 
+        if ($this->is_new() && static::is_locking_enabled()) {
+            $resource = MetaStore::get_key_by_object($this);
+            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+        }
+
+        $Transaction = ActiveRecord::new_transaction($TR);
+        $Transaction->begin();
 
         if (method_exists($this, '_before_delete') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
@@ -542,18 +578,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_before_delete');
         self::get_service('Events')::create_event($this, '_before_delete');
 
-        if (static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-        }
-
         //remove any permissions associated with this record
         $this->delete_permissions();
         //and only then remove the record
         static::get_service('OrmStore')->remove_record($this);
-
-
 
 
 
@@ -584,6 +612,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return string
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public static function get_main_table() : string
     {
@@ -623,7 +653,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Returns an instance by the provided UUID.
      * @param string $uuid
      * @return ActiveRecord
+     * @throws InvalidArgumentException
      * @throws RecordNotFoundException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static final function get_by_uuid(string $uuid) : ActiveRecord
     {
@@ -715,9 +748,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     /**
      * Returns the primary index (a scalar) of the record.
-     * If the record has multiple columms please use @see self::get_primary_index() which will return an associative array.
-     * @return mixed
+     * If the record has multiple columms please use @return mixed
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
+     * @see self::get_primary_index() which will return an associative array.
      */
     public function get_id()  /* int|string */
     {
@@ -984,6 +1019,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return iterable|null
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public static function get_routes() : ?iterable
     {
@@ -1045,6 +1081,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return array
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public function get_property_old_values(string $property) : array
     {
@@ -1060,6 +1097,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return mixed
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public function get_property_old_value(string $property) /* mixed */
     {

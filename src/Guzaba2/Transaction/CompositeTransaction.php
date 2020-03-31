@@ -9,8 +9,10 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
 use Guzaba2\Translator\Translator as t;
+use ReflectionException;
 
 /**
  * Class CompositeTransaction
@@ -38,7 +40,6 @@ abstract class CompositeTransaction extends Transaction
         if ($this->is_master()) {
             $this->clear_resource_scope_references();
         }
-        print 'BEFORE DESTRUCT';
     }
 
     /**
@@ -46,6 +47,7 @@ abstract class CompositeTransaction extends Transaction
      * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public function attach_transaction(Transaction $Transaction): void
     {
@@ -66,6 +68,7 @@ abstract class CompositeTransaction extends Transaction
      * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public function get_transaction(string $transaction_class) : Transaction
     {
@@ -123,8 +126,12 @@ abstract class CompositeTransaction extends Transaction
     }
 
     /**
-     * @throws RunTimeException
+     * @throws InvalidArgumentException
      * @throws LogicException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
+     * @throws ReflectionException
      */
     protected function execute_rollback(): void
     {
@@ -147,7 +154,10 @@ abstract class CompositeTransaction extends Transaction
     }
 
     /**
+     * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     protected function execute_commit(): void
     {
@@ -162,8 +172,12 @@ abstract class CompositeTransaction extends Transaction
 
     /**
      * @param string $savepoint
+     * @throws InvalidArgumentException
      * @throws LogicException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
+     * @throws ReflectionException
      */
     protected function execute_rollback_to_savepoint(string $savepoint): void
     {

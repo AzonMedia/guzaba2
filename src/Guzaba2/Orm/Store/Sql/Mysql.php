@@ -26,6 +26,8 @@ use Guzaba2\Kernel\Kernel as Kernel;
 
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 use Guzaba2\Resources\ScopeReference;
+use Guzaba2\Transaction\Transaction;
+use Guzaba2\Transaction\TransactionManager;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 
@@ -215,6 +217,15 @@ VALUES
         return static::get_service('ConnectionFactory')->get_connection($connection_class, $ScopeReference);
     }
 
+    public function get_current_transaction(): ?Transaction
+    {
+        // TODO: Implement get_current_transaction() method.
+        $Connection = $this->get_connection($CR);
+        /** @var TransactionManager $TXM */
+        $TXM = self::get_service('TransactionManager');
+        return $TXM->get_current_transaction($Connection->get_resource_id());
+    }
+
     /**
      * Returns a connection class based on whether the code is in coroutine context or not.
      * @return string
@@ -236,6 +247,7 @@ VALUES
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws BadMethodCallException
+     * @throws \ReflectionException
      */
     public function get_unified_columns_data(string $class) : array
     {

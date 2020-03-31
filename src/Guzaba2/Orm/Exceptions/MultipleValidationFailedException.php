@@ -1,38 +1,20 @@
 <?php
 declare(strict_types=1);
-/*
- * Guzaba Framework
- * http://framework.guzaba.org
- *
- * This source file is subject to the BSD license that is bundled with this
- * package in the file LICENSE.txt and available also at:
- * http://www.opensource.org/licenses/bsd-license.php
- */
-
-/**
- * Description of validationFailedException
- * @category    Guzaba Framework
- * @package        Object-Relational-Mapping
- * @subpackage    Exceptions
- * @copyright    Copyright (c) Guzaba Ltd - http://guzaba.com
- * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
- * @author        Vesselin Kenashkov <vesko@webstudiobulgaria.com>
- */
 
 namespace Guzaba2\Orm\Exceptions;
 
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 
 /**
  * This exception is thrown by @see ActiveRecord::validate() with all the validation errors that were found.
  * The provided ValidationFailedExceptions to the constructor may have different targets (if for example more than one ActiveRecord instance is being validated)
  */
-class MultipleValidationFailedException extends ValidationFailedException
+class MultipleValidationFailedException extends BaseException implements ValidationFailedExceptionInterface, \Iterator, \Countable
 {
     /**
-     * Array of ValidationException
-     * @var array
+     * @var ValidationFailedExceptionInterface[]
      */
     protected array $validation_exceptions = [];
 
@@ -40,6 +22,9 @@ class MultipleValidationFailedException extends ValidationFailedException
      * ValidationFailedException constructor.
      * @param array $validation_exceptions An array of ValidationExceptions
      * @param int $code
+     * @param \Exception|null $Exception
+     * @throws InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function __construct(array $validation_exceptions, int $code = 0, ?\Exception $Exception = NULL)
     {
@@ -87,7 +72,7 @@ class MultipleValidationFailedException extends ValidationFailedException
 
     /**
      * Checks if the provided $validation_errors array conforming to the expected structure.
-     * @param array $validation_errors
+     * @param array $validation_exceptions
      * @throws InvalidArgumentException
      */
     private static function check_validation_exceptions(array $validation_exceptions) : void
@@ -95,7 +80,7 @@ class MultipleValidationFailedException extends ValidationFailedException
         if (!count($validation_exceptions)) {
             throw new InvalidArgumentException(sprintf(t::_('No ValidationFailedExceptions provided.')));
         }
-        if ( array_keys($arr) !== range(0, count($arr) - 1) ) {
+        if ( array_keys($validation_exceptions) !== range(0, count($validation_exceptions) - 1) ) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $validation_exceptions array it not an indexed array.')));
         }
 
@@ -104,5 +89,73 @@ class MultipleValidationFailedException extends ValidationFailedException
                 throw new InvalidArgumentException(sprintf(t::_('An element of the provided $validation_exceptions is not an instance of %s.'), ValidationFailedException::class));
             }
         }
+    }
+
+    /**
+     * Return the current element
+     * @link https://php.net/manual/en/iterator.current.php
+     * @return mixed Can return any type.
+     * @since 5.0.0
+     */
+    public function current()
+    {
+        return current($this->validation_exceptions);
+    }
+
+    /**
+     * Move forward to next element
+     * @link https://php.net/manual/en/iterator.next.php
+     * @return void Any returned value is ignored.
+     * @since 5.0.0
+     */
+    public function next()
+    {
+        next($this->validation_exceptions);
+    }
+
+    /**
+     * Return the key of the current element
+     * @link https://php.net/manual/en/iterator.key.php
+     * @return mixed scalar on success, or null on failure.
+     * @since 5.0.0
+     */
+    public function key()
+    {
+        return key($this->validation_exceptions);
+    }
+
+    /**
+     * Checks if current position is valid
+     * @link https://php.net/manual/en/iterator.valid.php
+     * @return bool The return value will be casted to boolean and then evaluated.
+     * Returns true on success or false on failure.
+     * @since 5.0.0
+     */
+    public function valid()
+    {
+        return $this->current() !== FALSE;
+    }
+
+    /**
+     * Rewind the Iterator to the first element
+     * @link https://php.net/manual/en/iterator.rewind.php
+     * @return void Any returned value is ignored.
+     * @since 5.0.0
+     */
+    public function rewind()
+    {
+        reset($this->validation_exceptions);
+    }
+
+    /**
+     * Count elements of an object
+     * @link https://php.net/manual/en/countable.count.php
+     * @return int The custom count as an integer.
+     * The return value is cast to an integer.
+     * @since 5.1.0
+     */
+    public function count()
+    {
+        return count($this->validation_exceptions);
     }
 }

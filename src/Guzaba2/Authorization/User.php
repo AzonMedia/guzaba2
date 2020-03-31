@@ -3,24 +3,37 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
+use Azonmedia\Exceptions\InvalidArgumentException;
 use Azonmedia\Patterns\ScopeReference;
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Interfaces\UserInterface;
+use Guzaba2\Base\Exceptions\LogicException;
+use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
+use Guzaba2\Translator\Translator as t;
+use ReflectionException;
 
 /**
  * Class User
  * @package Guzaba2\Authorization\Rbac
- * @property user_id
- * @property role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
+ * @property int user_id
+ * @property string user_name
+ * @property string user_email
+ * @property string user_password
+ * @property int role_id This is the primary role_id. Every user has his own unique role. This role may inherite may roles
  */
 class User extends ActiveRecord implements UserInterface
 {
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'users',
-        'route'                     => '/users',
+        'route'                     => '/user',
         'validation'                => [
             'user_name'                 => [
                 'required'              => TRUE,
@@ -93,41 +106,110 @@ class User extends ActiveRecord implements UserInterface
     /**
      * Returns the primary role of the user
      * @return Role
+     * @throws InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws ConfigurationException
+     * @throws ReflectionException
      */
     public function get_role() : Role
     {
         return new Role( (int) $this->role_id);
     }
 
+//    /**
+//     * Returns FALSE if the user already has this permission.
+//     * @param Permission $Permission
+//     * @param ScopeReference $ScopeReference
+//     * @return bool
+//     */
+//    public function grant_temporary_permission(PermissionInterface $Permission, ScopeReference $ScopeReference) : bool
+//    {
+//
+//    }
+//
+//    public function revoke_temporary_permission(ScopeReference $ScopeReference) : void
+//    {
+//
+//    }
+
     /**
-     * Returns FALSE if the user already has this permission.
-     * @param Permission $Permission
-     * @param ScopeReference $ScopeReference
-     * @return bool
+     * @return ValidationFailedExceptionInterface|null
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws ValidationFailedException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function grant_temporary_permission(Permission $Permission, ScopeReference $ScopeReference) : bool
-    {
-
-    }
-
-    public function revoke_temporary_permission(ScopeReference $ScopeReference) : void
-    {
-
-    }
-
-    protected function _validate_role_id() : ?ValidationFailedExceptionInterface
+    protected function _validate_role_id(): ?ValidationFailedExceptionInterface
     {
         //the primary role role cant be changed
         //the primary role must be a user role
+        if (!$this->role_id) {
+            throw new ValidationFailedException($this, 'role_id', sprintf(t::_('There is no role_id set for user %1s.'), $this->user_name));
+        } else {
+            try {
+                $Role = new Role($this->role_id);
+                return NULL;
+            } catch (RecordNotFoundException $Exception) {
+                return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role_id %1s set for user %2s does not exist.'), $this->role_id, $this->user_name));
+            } //Roles do not use permissions so no need to catch PermissionDeniedException
+        }
     }
 
-    protected function _validate_user_name() : ?ValidationFailedExceptionInterface
+    /**
+     * @return ValidationFailedExceptionInterface|null
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    protected function _validate_user_name(): ?ValidationFailedExceptionInterface
     {
+        try {
+            $User = new static(['user_name' => $this->user_name]);
+            return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+        } catch (RecordNotFoundException $Exception) {
+            return NULL;
+        } catch (PermissionDeniedException $Exception) {
+            return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+        }
+    }
 
+    /**
+     * @return ValidationFailedExceptionInterface|null
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    protected function _validate_user_email(): ?ValidationFailedExceptionInterface
+    {
+        if (!filter_var($this->user_email, FILTER_VALIDATE_EMAIL)) {
+            return new ValidationFailedException($this, 'user_name', sprintf(t::_('The provided email "%1s" is not valid.'), $this->user_email));
+        } else {
+            try {
+                $User = new static(['user_email' => $this->user_email]);
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
+            } catch (RecordNotFoundException $Exception) {
+                return NULL;
+            } catch (PermissionDeniedException $Exception) {
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
+            }
+        }
     }
 
     protected function _before_write() : void
     {
+        //check is there already a user
+
         if ($this->is_new()) {
             //a new primary role needs to be created for this user
             $Role = Role::create($this->user_name);

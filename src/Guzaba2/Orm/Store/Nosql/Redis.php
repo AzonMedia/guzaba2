@@ -10,10 +10,12 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Nosql\Redis\ConnectionCoroutine;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
+use Guzaba2\Orm\Store\Interfaces\TransactionalStoreInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Orm\Store\NullStore;
 use Psr\Log\LogLevel;
@@ -39,6 +41,8 @@ class Redis extends Database
     /**
      * @return ConnectionInterface
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     protected function get_connection() : ConnectionInterface
     {
@@ -60,8 +64,9 @@ class Redis extends Database
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
+
         /** @var ActiveRecord $ActiveRecord */
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
+        if ($this->FallbackStore instanceof StructuredStoreInterface || $this->FallbackStore instanceof TransactionalStoreInterface) {
             // Saves record in fallback and gets uuid
             $all_data = $this->FallbackStore->update_record($ActiveRecord);
             $uuid = $all_data['meta']['meta_object_uuid'];
@@ -76,71 +81,125 @@ class Redis extends Database
             $record_data = $ActiveRecord->get_record_data();
         }
 
-        /** @var ConnectionCoroutine $Connection */
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
-        // Create or update
-        foreach ($record_data as $key => $value) {
-            $Connection->hSet($uuid, $key, $value);
-        }
 
-        if ($Connection->getExpiryTime()) {
-            $Connection->expire($uuid, $Connection->getExpiryTime());
-        }
+        $Function = function() use ($ActiveRecord, $record_data, $uuid): array {
+            /** @var ConnectionCoroutine $Connection */
+            $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
-        // Add "class-index" association ot the uuid of the object
-        if ($this->FallbackStore instanceof StructuredStoreInterface) {
-            $index = $ActiveRecord->get_primary_index();
-            $redis_id_key = $this->create_active_record_id($ActiveRecord, $index);
-            $Connection->set($redis_id_key, $uuid);
+            // Create or update
+            foreach ($record_data as $key => $value) {
+                $Connection->hSet($uuid, $key, $value);
+            }
+
             if ($Connection->getExpiryTime()) {
-                $Connection->expire($redis_id_key, $Connection->getExpiryTime());
+                $Connection->expire($uuid, $Connection->getExpiryTime());
             }
-        }
 
-        // Meta
-        $metakey = $uuid . ':meta';
-        //$time = time();
-        if (!$Connection->exists($metakey)) {
-            /*
-            $Connection->hSet($metakey, 'meta_class_name', get_class($ActiveRecord));
-            $Connection->hSet($metakey, 'meta_object_create_microtime', $time);
-            $Connection->hSet($metakey, 'meta_object_uuid', $uuid);
+            // Add "class-index" association ot the uuid of the object
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
-                $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
+                $index = $ActiveRecord->get_primary_index();
+                $redis_id_key = $this->create_active_record_id($ActiveRecord, $index);
+                $Connection->set($redis_id_key, $uuid);
+                if ($Connection->getExpiryTime()) {
+                    $Connection->expire($redis_id_key, $Connection->getExpiryTime());
+                }
             }
-            */
-            if (isset($all_data)) { //it is coming from a fallback
-                $meta_data = $all_data['meta'];
-            } else {
-                $object_create_microtime = (int) microtime(TRUE) * 1000000;
-                $meta_data = [
-                    'meta_class_name'                => get_class($ActiveRecord),
-                    'meta_object_create_microtime'   => $object_create_microtime,
-                    'meta_object_uuid'               => $uuid,
-                ];
+
+            // Meta
+            $metakey = $uuid . ':meta';
+            //$time = time();
+            if (!$Connection->exists($metakey)) {
+                /*
+                $Connection->hSet($metakey, 'meta_class_name', get_class($ActiveRecord));
+                $Connection->hSet($metakey, 'meta_object_create_microtime', $time);
+                $Connection->hSet($metakey, 'meta_object_uuid', $uuid);
+                if ($this->FallbackStore instanceof StructuredStoreInterface) {
+                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
+                }
+                */
+                if (isset($all_data)) { //it is coming from a fallback
+                    $meta_data = $all_data['meta'];
+                } else {
+                    $object_create_microtime = (int) microtime(TRUE) * 1000000;
+                    $meta_data = [
+                        'meta_class_name'                => get_class($ActiveRecord),
+                        'meta_object_create_microtime'   => $object_create_microtime,
+                        'meta_object_uuid'               => $uuid,
+                    ];
 //                $Connection->hSet($metakey, 'meta_class_name', get_class($ActiveRecord));
 //                $Connection->hSet($metakey, 'meta_object_create_microtime', $microtime);
 //                $Connection->hSet($metakey, 'meta_object_uuid', $uuid);
 //                if ($this->FallbackStore instanceof StructuredStoreInterface) {
 //                    $Connection->hSet($metakey, 'object_id', $ActiveRecord->get_id());
 //                }
+                }
+
+                foreach ($meta_data as $meta_key=>$meta_value) {
+                    $Connection->hSet($metakey, $meta_key, $meta_value);
+                }
+
+            }
+            $meta_data['meta_object_last_update_microtime'] = $meta_data['meta_object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
+            $Connection->hSet($metakey, 'meta_object_last_update_microtime', $meta_data['meta_object_last_update_microtime']);
+            if ($Connection->getExpiryTime()) {
+                $Connection->expire($metakey, $Connection->getExpiryTime());
             }
 
-            foreach ($meta_data as $meta_key=>$meta_value) {
-                $Connection->hSet($metakey, $meta_key, $meta_value);
+            $ret = ['data' => $record_data, 'meta' => $meta_data];
+
+            return $ret;
+        };
+
+
+        if ($this->FallbackStore instanceof TransactionalStoreInterface) {
+            $CurrentFallbackStoreTransaction = $this->FallbackStore->get_current_transaction();
+            if ($CurrentFallbackStoreTransaction) {
+                //the update of the Redis cache must happen only if the transaction is committed
+                $CurrentFallbackStoreTransaction->add_callback('_after_commit', $Function);
+                $ret = $all_data;//return the data from the previous store as the update will be delayed
+            } else {
+                $ret = $Function();
             }
-
+        } else {
+            $ret = $Function();
         }
-        $meta_data['meta_object_last_update_microtime'] = $meta_data['meta_object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
-        $Connection->hSet($metakey, 'meta_object_last_update_microtime', $meta_data['meta_object_last_update_microtime']);
-        if ($Connection->getExpiryTime()) {
-            $Connection->expire($metakey, $Connection->getExpiryTime());
-        }
-
-        $ret = ['data' => $record_data, 'meta' => $meta_data];
-
         return $ret;
+
+    }
+
+    /**
+     * Removes an active record data from the Store
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
+     * @throws InvalidArgumentException
+     */
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void
+    {
+        $this->FallbackStore->remove_record($ActiveRecord);
+
+        $Function = function() use ($ActiveRecord) : void
+        {
+            $uuid = $ActiveRecord->get_uuid();
+            $id = $ActiveRecord->get_id();
+            $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);
+            /** @var ConnectionCoroutine $Connection */
+            $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $TCR);
+            $Connection->del($uuid);
+            $Connection->del($uuid . ':meta');
+            $Connection->del($class_id);
+        };
+
+        if ($this->FallbackStore instanceof TransactionalStoreInterface) {
+            $CurrentFallbackStoreTransaction = $this->FallbackStore->get_current_transaction();
+            if ($CurrentFallbackStoreTransaction) {
+                $CurrentFallbackStoreTransaction->add_callback('_after_commit', $Function);
+            } else {
+                $Function();
+            }
+        } else {
+            $Function();
+        }
     }
 
     /**
@@ -150,7 +209,10 @@ class Redis extends Database
      * @param string $class
      * @param array $index
      * @return array
-     * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RecordNotFoundException
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
@@ -299,7 +361,7 @@ class Redis extends Database
     {
         $uuid = Uuid::uuid4();
 
-        // Checks if the uuid exists in the db; such occurences are rare
+        // Checks if the uuid exists in the db; such occurrences are rare
         /** @var ConnectionCoroutine $Connection */
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CRR);
         if ($Connection->exists($uuid)) {
@@ -310,25 +372,6 @@ class Redis extends Database
         }
 
         return $uuid;
-    }
-
-    /**
-     * Removes an active record data from the Store
-     * @param ActiveRecordInterface $ActiveRecord
-     * @throws RunTimeException
-     */
-    public function remove_record(ActiveRecordInterface $ActiveRecord): void
-    {
-        $this->FallbackStore->remove_record($ActiveRecord);
-
-        $uuid = $ActiveRecord->get_uuid();
-        $id = $ActiveRecord->get_id();
-        $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);
-        /** @var ConnectionCoroutine $Connection */
-        $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $TCR);
-        $Connection->del($uuid);
-        $Connection->del($uuid . ':meta');
-        $Connection->del($class_id);
     }
 
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable

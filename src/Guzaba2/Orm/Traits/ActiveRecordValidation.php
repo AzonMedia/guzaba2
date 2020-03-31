@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Orm\Exceptions\MultipleValidationFailedException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
+use ReflectionException;
 
 trait ActiveRecordValidation
 {
@@ -36,7 +39,13 @@ trait ActiveRecordValidation
         return $this->validation_is_disabled_flag;
     }
 
-    public function validate() : array
+    /**
+     * @return void
+     * @throws InvalidArgumentException
+     * @throws MultipleValidationFailedException
+     * @throws ReflectionException
+     */
+    public function validate() : void
     {
         $properties = static::get_property_names();
         $validation_exceptions = [];
@@ -57,14 +66,15 @@ trait ActiveRecordValidation
             }
             //method validation
             $method_name = '_validate_'.$property;
-            //$static_method_name = '_validate_static_'.$property;
+            $static_method_name = '_validate_static_'.$property;
             if (method_exists($this, $method_name)) {
                 $ValidationException = $this->{$method_name}();
                 if ($ValidationException) {
                     $validation_exceptions[] = $ValidationException;
                 }
             } elseif (method_exists($this, $static_method_name)) {
-                $ValidationException = $this->{$static_method_name}($this->{$property});
+                //$ValidationException = $this->{$static_method_name}($this->{$property});
+                $ValidationException = static::{$static_method_name}($this->{$property});
                 if ($ValidationException) {
                     $validation_exceptions[] = $ValidationException;
                 }

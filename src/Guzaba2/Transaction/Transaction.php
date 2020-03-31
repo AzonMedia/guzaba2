@@ -125,6 +125,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * @param array $options Not used currently
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ReflectionException
      */
     public function __construct(array $options = [])
     {

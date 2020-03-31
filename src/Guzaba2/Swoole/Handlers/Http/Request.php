@@ -94,7 +94,7 @@ class Request extends HandlerBase
         $start_time = microtime(TRUE);
 
         new Event($this, '_before_handle');
-
+        $request_raw_content_length = 0;
         try {
             $PsrRequest = SwooleToGuzaba::convert_request_with_server_params($SwooleRequest, new \Guzaba2\Http\Request());
             $PsrRequest->setServer($this->HttpServer);
@@ -181,9 +181,9 @@ class Request extends HandlerBase
             //when using log() the worker # is always printed
 
 
-
+            $time_str = '';
             if (Application::is_development()) {
-                $time_str = '';
+
                 $served_in_time = $end_time - $start_time;
 
                 if ($served_in_time > 1) {

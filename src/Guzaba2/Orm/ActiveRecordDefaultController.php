@@ -5,6 +5,7 @@ namespace Guzaba2\Orm;
 
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\Role;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
@@ -46,8 +47,13 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * Instantiates the ActiveRecord object.
      * May return Response if there is an error.
      * @param string|null $uuid
-     * @param string|null $class_name
+     * @param string|null $crud_class_name
+     * @param string|null $language
      * @return ResponseInterface|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
     public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL, ?string $language = NULL) : ?ResponseInterface
     //public function _init(?string $uuid = NULL) : ?ResponseInterface
@@ -143,6 +149,11 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * Does not declare any arguments as these vary for each AcrtiveRecord class.
      * Instead these are obtained internally with $this->get_request()->getParsedBody();
      * @return ResponseInterface
+     * @throws Exceptions\MultipleValidationFailedException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \ReflectionException
      */
     public function crud_action_create() : ResponseInterface
     {
@@ -188,7 +199,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
             'message'   => $message,
             //'class'     => get_class($this->ActiveRecord),
             //'id'        => $id,
-            //'uuid'      => $uuid,
+            'uuid'      => $uuid,
             'operation' => 'create',
         ];
         $struct += self::form_object_struct($this->ActiveRecord);
@@ -203,6 +214,11 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * Instead these are obtained internally with $this->get_request()->getParsedBody();
      * @param string $uuid
      * @return ResponseInterface
+     * @throws Exceptions\MultipleValidationFailedException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \ReflectionException
      */
     public function crud_action_update(string $uuid) : ResponseInterface
     {
@@ -246,6 +262,9 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * Used by the DELETE method
      * @param string $uuid
      * @return ResponseInterface
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \ReflectionException
      */
     public function crud_action_delete(string $uuid) : ResponseInterface
     {
@@ -354,7 +373,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
         return $Response;
     }
 
-    public function crud_revoke_class_permission() : ResponseInterface
+    public function crud_revoke_class_permission(string $role_uuid, string $action_name) : ResponseInterface
     {
         $Role = new Role($role_uuid);
         $this->ActiveRecord->revoke_class_permission($Role, $action_name);

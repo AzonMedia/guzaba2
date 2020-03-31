@@ -1,9 +1,7 @@
 <?php
 declare(strict_types=1);
 
-
 namespace Guzaba2\Orm\Exceptions;
-
 
 use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -24,6 +22,8 @@ class ValidationFailedException extends BaseException implements ValidationFaile
      * @param string $message
      * @param int $code
      * @param \Throwable|null $PreviousException
+     * @throws InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function __construct( /* mixed */ $target, string $field_name, string $message, int $code = 0, ?\Throwable $PreviousException = NULL)
     {
@@ -62,8 +62,23 @@ class ValidationFailedException extends BaseException implements ValidationFaile
         return $ret;
     }
 
+    public function getTarget() /* mixed */
+    {
+        return $this->target;
+    }
+
     public function getFieldName() : string
     {
         return $this->field_name;
+    }
+
+    public function getMessages(): array
+    {
+        return [$this->getMessage()];
+    }
+
+    public function getExceptions(): array
+    {
+        return [$this];
     }
 }

@@ -105,6 +105,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @param array $ns_prefixes
      * @throws ClassValidationException
      * @throws \ReflectionException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function initialize_controller_arguments(array $ns_prefixes) : void
     {
@@ -141,7 +142,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @param ServerRequestInterface $Request
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface
-     * @throws RunTimeException
+     * @throws LogicException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
     {

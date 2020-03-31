@@ -13,7 +13,7 @@ namespace Guzaba2\Orm\Traits;
 trait ActiveRecordIterator
 {
 
-    private $record_and_meta_data = [];
+    private array $record_and_meta_data = [];
 
     private function init_record_and_meta_data() : void
     {

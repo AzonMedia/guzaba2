@@ -81,6 +81,7 @@ abstract class Base implements BaseInterface
      * @param $value
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function __set(string $property, /* mixed */ $value): void
     {

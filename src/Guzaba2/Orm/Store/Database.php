@@ -17,6 +17,7 @@ abstract class Database extends Store
         'services'      => [
             'ConnectionFactory',
             'CurrentUser',
+            'TransactionManager',
         ]
     ];
 
