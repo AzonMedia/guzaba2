@@ -15,6 +15,7 @@ use Guzaba2\Database\Interfaces\ConnectionInterface;
 use Guzaba2\Database\Sql\Mysql\Connection;
 use Guzaba2\Database\Sql\Statement;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
@@ -160,6 +161,12 @@ VALUES
         Kernel::log(sprintf(t::_('%1s: Detected and added a new class %2s with UUID %3s.'), __CLASS__, $class_name, $uuid->getHex()));
     }
 
+    /**
+     * @param string $class_name
+     * @return bool
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public function has_class_data(string $class_name) : bool
     {
         if (!$class_name) {
@@ -171,6 +178,14 @@ VALUES
         return isset($this->classes_data[$class_name]);
     }
 
+    /**
+     * @param string $class_name
+     * @return array
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function get_class_data(string $class_name) : array
     {
         if (!$this->has_class_data($class_name)) {
@@ -179,6 +194,10 @@ VALUES
         return $this->classes_data[$class_name];
     }
 
+    /**
+     * @param int $class_id
+     * @return string|null
+     */
     public function get_class_name(int $class_id) : ?string
     {
         $ret = NULL;
@@ -191,16 +210,37 @@ VALUES
         return $ret;
     }
 
+    /**
+     * @param string $class_name
+     * @return int|null
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function get_class_id(string $class_name) : ?int
     {
         return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_id'] : NULL ;
     }
 
+    /**
+     * @param string $class_name
+     * @return string|null
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function get_class_uuid(string $class_name) : ?string
     {
         return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_uuid'] : NULL ;
     }
 
+    /**
+     * @param ScopeReference|null $ScopeReference
+     * @return ConnectionInterface
+     * @throws RunTimeException
+     */
     public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
     {
 
@@ -217,6 +257,10 @@ VALUES
         return static::get_service('ConnectionFactory')->get_connection($connection_class, $ScopeReference);
     }
 
+    /**
+     * @return Transaction|null
+     * @throws RunTimeException
+     */
     public function get_current_transaction(): ?Transaction
     {
         // TODO: Implement get_current_transaction() method.
@@ -274,6 +318,7 @@ VALUES
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws BadMethodCallException
+     * @throws \ReflectionException
      */
     public function get_storage_columns_data(string $class) : array
     {
@@ -299,6 +344,7 @@ VALUES
      * @return array
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     protected final function get_unified_columns_data_by_table_name(string $table_name) : array
     {
@@ -313,6 +359,7 @@ VALUES
      * @return array
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     protected final function get_storage_columns_data_by_table_name(string $table_name) : array
     {
@@ -424,6 +471,7 @@ ORDER BY
      * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function unify_columns_data(array $storage_structure_arr) : array
     {
@@ -502,8 +550,8 @@ WHERE
      * @param string $uuid
      * @return array - class and id
      * @throws InvalidArgumentException
-     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
      */
     public function get_meta_by_uuid(string $uuid) : array
     {
@@ -536,6 +584,13 @@ WHERE
         return $data;
     }
 
+    /**
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
@@ -588,6 +643,14 @@ WHERE
         $Statement->execute($params);
     }
 
+    /**
+     * @param ActiveRecordInterface $ActiveRecord
+     * @return string
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     protected function create_meta(ActiveRecordInterface $ActiveRecord) : string
     {
         $Connection = $this->get_connection($CR);
@@ -648,9 +711,12 @@ VALUES
     /**
      * @param ActiveRecordInterface $ActiveRecord
      * @return array
-     * @throws RunTimeException
      * @throws DuplicateKeyException
      * @throws ForeignKeyConstraintException
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
@@ -876,6 +942,17 @@ ON DUPLICATE KEY UPDATE
         return $ret;
     }
 
+    /**
+     * @param string $class
+     * @param array $index
+     * @return array
+     * @throws BadMethodCallException
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RecordNotFoundException
+     * @throws \ReflectionException
+     */
     public function &get_data_pointer(string $class, array $index) : array
     {
         if (array_key_exists('<', $index)) {
@@ -944,18 +1021,37 @@ ON DUPLICATE KEY UPDATE
         return $ret;
     }
 
+    /**
+     * @param string $class
+     * @param array $primary_index
+     * @return array
+     * @throws BadMethodCallException
+     * @throws InvalidArgumentException
+     * @throws RecordNotFoundException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
     {
         $data = $this->get_data_pointer($class, $primary_index);
         return $data;
     }
 
+    /**
+     * @param string $class
+     * @param array $primary_index
+     * @return bool
+     */
     public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
     {
         //this store doesnt use pointers
         return FALSE;
     }
 
+    /**
+     * @param ActiveRecordInterface $ActiveRecord
+     */
     public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
     {
         //does nothing
@@ -1067,6 +1163,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws BadMethodCallException
+     * @throws \ReflectionException
      */
     public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
@@ -1086,7 +1183,7 @@ WHERE `meta_object_uuid` = '{$uuid}'
         //set the meta data to $record_data['meta'];
 
         $j = [];//an array containing all the tables that need to be INNER JOINED
-        //needs to be associative as we may join unwillingdfully multiple times the same table
+        //needs to be associative as we may join unwillingly multiple times the same table
         //the key is the name as which the join will be done and the value is the actual table name
         //so the join will look like JOIN key AS value
         $w = [];//array containing the where clauses
@@ -1332,17 +1429,25 @@ WHERE
 
     }
 
-
+    /**
+     * @return int
+     */
     public function get_hits() : int
     {
         return $this->hits;
     }
 
+    /**
+     * @return int
+     */
     public function get_misses() : int
     {
         return $this->misses;
     }
 
+    /**
+     * @return float
+     */
     public function get_hits_percentage() : float {
         $ret = 0.0;
         $hits = $this->get_hits();
@@ -1356,16 +1461,25 @@ WHERE
         return $ret;
     }
 
+    /**
+     *
+     */
     public function reset_hits() : void
     {
         $this->hits = 0;
     }
 
+    /**
+     *
+     */
     public function reset_misses() : void
     {
         $this->misses = 0;
     }
 
+    /**
+     *
+     */
     public function reset_stats() : void
     {
         $this->reset_hits();
