@@ -96,11 +96,15 @@ abstract class ConnectionCoroutine extends Connection
     }
 
     //TODO implement timeout parameter - on timeout this will interrupt the connection so the connection will need to be reestablished
+
     /**
      * Executes the provided queries in parallel
      * @param array $queries_data
      * @return array
+     * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function execute_parallel_queries(array $queries_data) : array
     {

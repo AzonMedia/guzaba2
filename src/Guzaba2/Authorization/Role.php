@@ -5,17 +5,24 @@ declare(strict_types=1);
 namespace Guzaba2\Authorization;
 
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Cache;
+use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\MultipleValidationFailedException;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Authorization\Rbac\Exceptions\RbacException;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
+use ReflectionException;
 
 /**
  * Class Role
  * @package Guzaba2\Authorization\Rbac
- * @property scalar role_id
+ * @property int role_id
+ * @property bool role_is_user
  * @property string role_name
  */
 class Role extends ActiveRecord
@@ -64,13 +71,22 @@ class Role extends ActiveRecord
 
     /**
      * Creates a new Role and returns it.
-     * @param string $name
+     * @param string $role_name
+     * @param bool $role_is_user Is this a user role
      * @return ActiveRecord
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws MultipleValidationFailedException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function create(string $name) : ActiveRecord
+    public static function create(string $role_name, bool $role_is_user) : ActiveRecord
     {
         $Role = new self();
-        $Role->role_name = $name;
+        $Role->role_name = $role_name;
+        $Role->role_is_user = $role_is_user;
         $Role->write();
         return $Role;
     }
@@ -80,6 +96,7 @@ class Role extends ActiveRecord
      * Returns the new RolesHierarchy object of created relation.
      * @param Role $Role
      * @return ActiveRecord
+     * @throws InvalidArgumentException
      */
     public function grant_role(Role $Role) : ActiveRecord
     {
@@ -88,6 +105,10 @@ class Role extends ActiveRecord
 
     /**
      * @param Role $Role
+     * @throws RbacException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
+     * @throws ReflectionException
      */
     public function revoke_role(Role $Role): void
     {
@@ -110,7 +131,10 @@ class Role extends ActiveRecord
 
     /**
      * Returns the inherited roles of this role
-     * @return array
+     * @return int[]
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws RunTimeException
+     * @throws ReflectionException
      */
     public function get_inherited_roles_ids(): array
     {
@@ -118,26 +142,60 @@ class Role extends ActiveRecord
     }
 
     /**
-     * Returns an array of roles
-     * @return array
+     * @return string[]
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function get_inherited_roles(): array
+    public function get_inherited_roles_uuids(): array
     {
-        $ret = [];
-        $ids = $this->get_inherited_roles_ids();
-        foreach ($ids as $id) {
-            $ret[] = new self($id);
-        }
-        return $ret;
+        //this is not that slow considering there will be not many roles that are inherited
+        //and that these objects will be cached in memory
+//        $uuids = [];
+//        $roles = $this->get_inherited_roles();
+//        foreach ($roles as $Role) {
+//            $uuids[] = $Role->get_uuid();
+//        }
+//        return $uuids;
+        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inherited_roles() );
     }
 
     /**
-     * Returns an indexed array of all inherited roles recursively.
-     * @return array
+     * Returns an array of roles
+     * @return Role[]
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws ConfigurationException
+     * @throws ReflectionException
      */
-    public function get_all_inherited_roles_ids() : array
+    public function get_inherited_roles(): array
     {
-        $ret = [];
+//        $ret = [];
+//        $ids = $this->get_inherited_roles_ids();
+//        foreach ($ids as $id) {
+//            $ret[] = new static($id);
+//        }
+//        return $ret;
+        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_inherited_roles() );
+    }
+
+    /**
+     * Returns an indexed array of all inherited roles recursively (including this role id).
+     * @return int[]
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws ConfigurationException
+     * @throws ReflectionException
+     */
+    public function get_all_inherited_roles_ids(): array
+    {
         $role_id = $this->get_id();
         $ret = self::get_service('ContextCache')->get('all_inherited_roles', (string) $role_id);
         if ($ret === NULL) {
@@ -152,16 +210,124 @@ class Role extends ActiveRecord
     }
 
     /**
+     * @return string[]
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_all_inherited_roles_uuids(): array
+    {
+//        $uuids = [];
+//        $roles = $this->get_all_inherited_roles();
+//        foreach ($roles as $Role) {
+//            $uuids[] = $Role->get_uuid();
+//        }
+//        return $uuids;
+
+        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
+    }
+
+    /**
      * Returns an array of all inherited roles recursively.
-     * @return array
+     * @return Role[]
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws ConfigurationException
+     * @throws ReflectionException
      */
     public function get_all_inherited_roles() : array
     {
-        $ret = [];
-        $ids = $this->get_all_inherited_roles_ids();
-        foreach ($ids as $id) {
-            $ret[] = new self($id);
+//        $ret = [];
+//        $ids = $this->get_all_inherited_roles_ids();
+//        foreach ($ids as $id) {
+//            $ret[] = new static($id);
+//        }
+//        return $ret;
+        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
+    }
+
+
+    public function get_inheriting_roles(): array
+    {
+        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_inheriting_roles() );
+    }
+
+    /**
+     * @return int[]
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_inheriting_roles_ids(): array
+    {
+        //return array_column( RolesHierarchy::get_data_by( ['inherited_role_id' => $this->get_id() ] ), 'role_id' );
+        //we need to filter out the user roles
+        //in this basic class this will be done by using the ORM classes & methods only without direct (storage dependent) queries
+        //if faster implementation is needed it is to be provided by a child class
+        $ids = [];
+        $all_ids = array_column( RolesHierarchy::get_data_by( ['inherited_role_id' => $this->get_id() ] ), 'role_id' );
+        foreach ($all_ids as $id) {
+            $Role = new Role($id);
+            if (!$Role->role_is_user) {
+                $ids[] = $id;
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function get_inheriting_roles_uuids(): array
+    {
+        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inheriting_roles() );
+    }
+
+    /**
+     * @return Role[]
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_all_inheriting_roles(): array
+    {
+        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_all_inheriting_roles_ids() );
+    }
+
+    /**
+     * Returns all roles (excluding user roles) that inherit this role
+     * @return array
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_all_inheriting_roles_ids(): array
+    {
+        $role_id = $this->get_id();
+        $ret = self::get_service('ContextCache')->get('all_inheriting_roles', (string) $role_id);
+        if ($ret === NULL) {
+            $ret = [];
+            if (!$this->role_is_user) {
+                $ret[] = $role_id;
+                foreach ($this->get_inheriting_roles() as $InheritedRole) {
+                    $ret[] = $InheritedRole->get_all_inheriting_roles_ids();
+                }
+            }
+            self::get_service('ContextCache')->set('all_inheriting_roles', (string) $role_id, $ret);
         }
         return $ret;
+    }
+
+    public function get_all_inheriting_roles_uuids(): array
+    {
+        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inheriting_roles() );
     }
 }

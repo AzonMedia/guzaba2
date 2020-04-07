@@ -216,7 +216,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                     $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                     $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
-                    Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                    Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                     return $_pointer;
                 }
             }
@@ -247,7 +247,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                        Kernel::log(sprintf('%s: Object of class %s with index %s was found in Memory Store.', __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $_pointer;
                    }
                 }
@@ -281,7 +281,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                             $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                            Kernel::log(sprintf('Object of class %s with index %s was found in Memory Store.', $class, current($primary_index)), LogLevel::DEBUG);
+                            Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                             return $_pointer;
                         }
                     }

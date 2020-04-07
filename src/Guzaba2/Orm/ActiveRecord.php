@@ -1161,7 +1161,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      */
     //public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
     {
         return static::get_service('OrmStore')->get_data_by(static::class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
     }

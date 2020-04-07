@@ -32,7 +32,8 @@ class MultipleValidationFailedException extends BaseException implements Validat
         $this->validation_exceptions = $validation_exceptions;
         $messages = $this->getMessages();
 
-        parent::__construct(implode(' ', $messages), $code, $Exception);
+        //parent::__construct(implode(' ', $messages), $code, $Exception);
+        parent::__construct(implode(PHP_EOL, $messages), $code, $Exception);
     }
 
     /**

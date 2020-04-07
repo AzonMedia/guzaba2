@@ -35,7 +35,7 @@ class ClassInitialization extends Base implements ClassInitializationInterface
         //if the RolesHierarchy is modified remove all cached roles inheritance for the current request
         $Callback = static function(Event $Event) use ($ContextCache): void
         {
-            $ContextCache->delete('all_inherited_roles');
+            $ContextCache->delete('all_inherited_roles', '');
         };
         $Events->add_class_callback(RolesHierarchy::class, '_after_write', $Callback);
         $Events->add_class_callback(RolesHierarchy::class, '_after_delete', $Callback);

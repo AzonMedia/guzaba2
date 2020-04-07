@@ -5,6 +5,8 @@ namespace Guzaba2\Orm\Store\Sql;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
+use Guzaba2\Authorization\CurrentUser;
+use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -680,8 +682,11 @@ WHERE
 //            //'object_uuid'                   => $uuid,
 //        ];
 
+        /** @var CurrentUser $CurrentUser */
         $CurrentUser = self::get_service('CurrentUser');
-        $role_id = $CurrentUser->get()->get_role()->get_id();
+        /** @var UserInterface $User */
+        $User = $CurrentUser->get();
+        $role_id = $User->get_role()->get_id();
         $q = "
 INSERT
 INTO

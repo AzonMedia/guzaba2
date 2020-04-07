@@ -185,7 +185,10 @@ abstract class CompositeTransaction extends Transaction
             $child_transactions = $Transaction->get_children();
             /** @var Transaction $LastChildTransaction */
             $LastChildTransaction = $child_transactions[ count($child_transactions) - 1];
-            $LastChildTransaction->rollback();
+            //if the composite transaction is nested then the child transaction will be rolled back by its own parent transaction
+            if ($LastChildTransaction->get_status() !== self::STATUS['ROLLEDBACK']) {
+                $LastChildTransaction->rollback();
+            }
         }
     }
 

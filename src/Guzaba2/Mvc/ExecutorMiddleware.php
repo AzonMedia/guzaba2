@@ -34,6 +34,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Guzaba2\Mvc\Interfaces\PerActionPhpViewInterface;
 use Guzaba2\Mvc\Interfaces\PerControllerPhpViewInterface;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
+use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 use Psr\Log\LogLevel;
 
 //use Guzaba2\Mvc\Interfaces\ControllerWithAuthorizationInterface;
@@ -310,8 +311,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getPrettyMessage() ] );
-        } catch (InvalidArgumentException | ValidationFailedException $Exception) {
-            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getPrettyMessage()]);
+        } catch (InvalidArgumentException | ValidationFailedExceptionInterface $Exception) {
+            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getPrettyMessage() ]);
         } catch (BaseException $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] );
         } catch (\Throwable $Exception) {

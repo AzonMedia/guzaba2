@@ -12,6 +12,7 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\MultipleValidationFailedException;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -141,7 +142,6 @@ class User extends ActiveRecord implements UserInterface
      * @throws LogicException
      * @throws ReflectionException
      * @throws RunTimeException
-     * @throws ValidationFailedException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
     protected function _validate_role_id(): ?ValidationFailedExceptionInterface
@@ -149,10 +149,13 @@ class User extends ActiveRecord implements UserInterface
         //the primary role role cant be changed
         //the primary role must be a user role
         if (!$this->role_id) {
-            throw new ValidationFailedException($this, 'role_id', sprintf(t::_('There is no role_id set for user %1s.'), $this->user_name));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('There is no role_id set for user %1s.'), $this->user_name));
         } else {
             try {
                 $Role = new Role($this->role_id);
+                if (!$Role->role_is_user) {
+                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name ));
+                }
                 return NULL;
             } catch (RecordNotFoundException $Exception) {
                 return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role_id %1s set for user %2s does not exist.'), $this->role_id, $this->user_name));
@@ -206,14 +209,28 @@ class User extends ActiveRecord implements UserInterface
         }
     }
 
+    /**
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws MultipleValidationFailedException
+     */
     protected function _before_write() : void
     {
         //check is there already a user
 
         if ($this->is_new()) {
             //a new primary role needs to be created for this user
-            $Role = Role::create($this->user_name);
+            $Role = Role::create($this->user_name, TRUE);
             $this->role_id = $Role->get_id();
+
+            //the anonymous role must be granted to any newly created user
+            //then the application specific logic may grant more roles
+            $AnonymousRole = new Role(1);
+            $Role->grant_role($AnonymousRole);
         }
     }
 

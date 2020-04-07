@@ -29,12 +29,12 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
     /**
      * @var \Guzaba2\Http\Server
      */
-    protected $HttpServer;
+    protected Server $HttpServer;
 
     /**
      * @var RouterInterface
      */
-    protected $Router;
+    protected RouterInterface $Router;
 
     /**
      * RoutingMiddleware constructor.

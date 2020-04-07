@@ -28,10 +28,13 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 
 //    protected $is_created_from_factory_flag = FALSE;
 
-    public function __construct()
+    public function __construct(?callable $after_connect_callback = NULL)
     {
         $ConnectionFactory = static::get_service('ConnectionFactory');
         parent::__construct($ConnectionFactory);
+        if ($after_connect_callback) {
+            $after_connect_callback($this);
+        }
         $this->connection_id = $this->get_connection_id_from_db();
     }
 

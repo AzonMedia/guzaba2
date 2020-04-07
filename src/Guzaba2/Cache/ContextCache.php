@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Guzaba2\Cache;
 
+use Azonmedia\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Base;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Cache\Interfaces\CacheInterface;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -29,9 +31,12 @@ class ContextCache extends Base implements CacheInterface
 
     /**
      * Adds/overwrites data in the cache
+     * @param string $prefix
      * @param string $key
      * @param $data
      * @throws RunTimeException
+     * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function set(string $prefix, string $key, /* mixed*/ $data) : void
     {
@@ -54,8 +59,10 @@ class ContextCache extends Base implements CacheInterface
      * @param string $prefix
      * @param string $key
      * @throws RunTimeException
+     * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
      */
-    public function delete(string $prefix, string $key ) : void
+    public function delete(string $prefix, string $key) : void
     {
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
@@ -80,8 +87,12 @@ class ContextCache extends Base implements CacheInterface
 
     /**
      * Returns NULL if the key is not found.
+     * @param string $prefix
      * @param string $key
+     * @return mixed|null
      * @throws RunTimeException
+     * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function get(string $prefix, string $key) /* mixed */
     {
@@ -97,6 +108,14 @@ class ContextCache extends Base implements CacheInterface
         return $ret;
     }
 
+    /**
+     * @param string $prefix
+     * @param string $key
+     * @return bool
+     * @throws RunTimeException
+     * @throws InvalidArgumentException
+     * @throws ContextDestroyedException
+     */
     public function exists(string $prefix, string $key) : bool
     {
         $ret = FALSE;

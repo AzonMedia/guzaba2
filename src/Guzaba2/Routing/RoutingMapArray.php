@@ -15,36 +15,36 @@ class RoutingMapArray extends \Azonmedia\Routing\RoutingMapArray
 {
     public function get(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_GET, $controller);
+        $this->add_route($route, Method::HTTP_GET, $controller);
     }
 
     public function post(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_POST, $controller);
+        $this->add_route($route, Method::HTTP_POST, $controller);
     }
 
     public function put(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_PUT, $controller);
+        $this->add_route($route, Method::HTTP_PUT, $controller);
     }
 
     public function patch(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_PATCH, $controller);
+        $this->add_route($route, Method::HTTP_PATCH, $controller);
     }
 
     public function delete(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_DELETE, $controller);
+        $this->add_route($route, Method::HTTP_DELETE, $controller);
     }
 
     public function head(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_HEAD, $controller);
+        $this->add_route($route, Method::HTTP_HEAD, $controller);
     }
 
     public function options(string $route, callable $controller) : void
     {
-        $this->add_route($string, Method::HTTP_OPTIONS, $controller);
+        $this->add_route($route, Method::HTTP_OPTIONS, $controller);
     }
 }

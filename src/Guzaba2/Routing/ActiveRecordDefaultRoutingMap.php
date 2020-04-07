@@ -34,12 +34,16 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
     private array $processed_models = [];
 
     //private string $route_prefix = '';
+
     /**
      * ActiveRecordDefaultRoutingMap constructor.
      * Goes thorugh the provided namespace prefixes will be walked through and all models will have their routing extracted.
      * If a models has no routing information it will be skipped (not all models are expected to be managed individually though the API).
-     * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      * @param array $ns_prefixes
+     * @param array $supported_languages
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      */
     public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */ )
     {

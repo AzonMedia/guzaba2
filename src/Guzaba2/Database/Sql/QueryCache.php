@@ -10,8 +10,11 @@ use Guzaba2\Cache\Interfaces\IntCacheInterface;
 use Guzaba2\Cache\Interfaces\ProcessCacheInterface;
 use Guzaba2\Database\PdoStatement;
 use Guzaba2\Database\Transaction;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Patterns\Singleton;
+use Guzaba2\Translator\Translator as t;
 use Guzaba2\Transaction\TransactionManager;
+use Psr\Log\LogLevel;
 
 /**
  * Class QueryCache
@@ -157,6 +160,7 @@ class QueryCache extends Base
 
         if ($cache_enabled && $query_data) {
             $ret = $query_data;
+            Kernel::log(sprintf(t::_('%1s: The result of query "%2s" was found in cache.'), __CLASS__, substr($sql, 0, 200).'...' ), LogLevel::DEBUG);
         }
 
         return $ret;
