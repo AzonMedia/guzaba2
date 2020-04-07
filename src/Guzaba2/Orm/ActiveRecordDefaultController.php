@@ -60,7 +60,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
     {
 
         if ($language) {
-            t::set_target_language($language);
+            t::set_target_language($language, $this->get_request() );
         }
 
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');

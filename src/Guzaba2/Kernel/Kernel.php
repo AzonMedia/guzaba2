@@ -414,6 +414,8 @@ BANNER;
      * Returns -1 if there is Server set but it is not yet started (meaning not executing in worker).
      * @return int
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function get_worker_id() : int
     {
@@ -427,6 +429,8 @@ BANNER;
      * @param string $id
      * @return object
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function get_service(string $id) : object
     {
@@ -440,6 +444,8 @@ BANNER;
      * @param string $id
      * @return bool
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function has_service(string $id) : bool
     {
@@ -598,6 +604,12 @@ BANNER;
         } else {
             //when NULL is provided just print the message but do not exit
             //this is to be used in Server context - no point to kill the worker along with the rest of the coroutines
+            if (self::get_http_server()) {
+                //TODO - check is the server actually started or just defined
+                //if it is started do not exit
+            } else {
+                die((string) $Exception);
+            }
         }
 
     }
@@ -611,6 +623,7 @@ BANNER;
      * @param int $errline
      * @param array $errcontext
      * @throws Exceptions\ErrorException
+     * @throws \ReflectionException
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): void
     {

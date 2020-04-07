@@ -220,7 +220,6 @@ class User extends ActiveRecord implements UserInterface
      */
     protected function _before_write() : void
     {
-        //check is there already a user
 
         if ($this->is_new()) {
             //a new primary role needs to be created for this user

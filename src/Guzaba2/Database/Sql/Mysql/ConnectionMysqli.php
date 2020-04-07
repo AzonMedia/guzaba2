@@ -28,11 +28,10 @@ abstract class ConnectionMysqli extends Connection
         'socket',
     ];
 
-    public function __construct(array $options)
+    public function __construct(array $options, ?callable $after_connect_callback = NULL)
     {
         $this->connect($options);
-        parent::__construct();
-
+        parent::__construct($after_connect_callback);
     }
 
     public function prepare(string $query) : StatementInterface

@@ -70,6 +70,42 @@ class Role extends ActiveRecord
     protected const CONFIG_RUNTIME = [];
 
     /**
+     * @return Role[]
+     * @throws RunTimeException
+     */
+    public static function get_system_roles(): array
+    {
+        return array_map(fn(array $record): self => new self($record['role_id']), self::get_system_roles_data() );
+    }
+
+    /**
+     * @return array
+     * @throws RunTimeException
+     */
+    public static function get_system_roles_data(): array
+    {
+        return self::get_data_by( ['role_is_user' => 0] );
+    }
+
+    /**
+     * @return int[]
+     * @throws RunTimeException
+     */
+    public static function get_system_roles_ids(): iterable
+    {
+        return array_map(fn(array $record): string => $record['role_id'], self::get_system_roles_data() );
+    }
+
+    /**
+     * @return string[]
+     * @throws RunTimeException
+     */
+    public static function get_system_roles_uuids(): iterable
+    {
+        return array_map(fn(array $record): string => $record['meta_object_uuid'], self::get_system_roles_data() );
+    }
+
+    /**
      * Creates a new Role and returns it.
      * @param string $role_name
      * @param bool $role_is_user Is this a user role

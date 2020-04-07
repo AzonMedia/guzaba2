@@ -39,6 +39,7 @@ class ClassInitialization extends Base implements ClassInitializationInterface
         };
         $Events->add_class_callback(RolesHierarchy::class, '_after_write', $Callback);
         $Events->add_class_callback(RolesHierarchy::class, '_after_delete', $Callback);
+
     }
 
 }

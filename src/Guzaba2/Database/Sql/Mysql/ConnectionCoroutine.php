@@ -40,11 +40,10 @@ abstract class ConnectionCoroutine extends Connection
         'fetch_mode',
     ];
 
-    public function __construct(array $options)
+    public function __construct(array $options, ?callable $after_connect_callback = NULL)
     {
         $this->connect($options);
-        parent::__construct();
-
+        parent::__construct($after_connect_callback);
     }
 
     private function connect(array $options) : void
