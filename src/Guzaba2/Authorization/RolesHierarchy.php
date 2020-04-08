@@ -7,22 +7,25 @@ namespace Guzaba2\Authorization;
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
+use Guzaba2\Orm\Exceptions\ValidationFailedException;
+use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
 use Guzaba2\Translator\Translator as t;
 
 /**
  * Class RoleRoles
  * Represents the roles hierarchy (self reference)
  * @package Guzaba2\Authorization\Rbac
- * @property scalar role_hierarchy_id
- * @property scalar role_id
- * @property scalar inherited_role_id
+ * @property int role_hierarchy_id
+ * @property int role_id
+ * @property int inherited_role_id
  */
 class RolesHierarchy extends ActiveRecord
 {
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'roles_hierarchy',
-        'route'                 => '/roles-hierarchies',//temporary route
+        'route'                 => '/roles-hierarchy',//temporary route
 
         'load_in_memory'        => TRUE,
 
@@ -40,10 +43,48 @@ class RolesHierarchy extends ActiveRecord
         if ($InheritedRole->is_new() || !$InheritedRole->get_id()) {
             throw new InvalidArgumentException(sprintf(t::_('The seconds argument of %s() is a role that is new or has no ID.'), __METHOD__ ));
         }
-        $RoleRoles = new self();
+        $RoleRoles = new static();
         $RoleRoles->role_id = $Role->get_id();
         $RoleRoles->inherited_role_id = $InheritedRole->get_id();
         $RoleRoles->write();
         return $RoleRoles;
+    }
+
+    public function get_role(): Role
+    {
+        return new Role($this->role_id);
+    }
+
+    public function get_inherited_role(): Role
+    {
+        return new Role($this->inherited_role_id);
+    }
+
+    protected function _validate_role_id(): ?ValidationFailedExceptionInterface
+    {
+        try {
+            $Role = new Role($this->role_id);
+        } catch (RecordNotFoundException $Exception) {
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1s does not exist.'), $this->role_id ));
+        }
+        //validate for duplicate record
+        try {
+            $RolesHierarchy = new static( ['role_id' => $this->role_id, 'inherited_role_id' => $this->inherited_role_id] );
+            //return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1s already inherits role %2s.'), $this->role_id, $this->inherited_role_id ));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1s already inherits role %2s.'), $this->get_role()->role_name, $this->get_inherited_role()->role_name ));
+        } catch (RecordNotFoundException $Exception) {
+            //it is OK
+        }
+        return NULL;
+    }
+
+    protected function _validate_inherited_role_id(): ?ValidationFailedExceptionInterface
+    {
+        try {
+            $Role = new Role($this->inherited_role_id);
+        } catch (RecordNotFoundException $Exception) {
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1s does not exist.'), $this->role_id ));
+        }
+        return NULL;
     }
 }

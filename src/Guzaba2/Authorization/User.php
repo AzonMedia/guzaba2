@@ -225,6 +225,14 @@ class User extends ActiveRecord implements UserInterface
             $Role = Role::create($this->user_name, TRUE);
             $this->role_id = $Role->get_id();
         }
+        if ($this->is_property_modified('user_name')) {
+            //needs to update the role name as well
+            //as this is part of a transaction it doesnt really matter if it is done before or after the user is saved
+            //it will all get rolled back on failure
+            $Role = $this->get_role();
+            $Role->role_name = $this->user_name;
+            $Role->write();
+        }
     }
 
 }

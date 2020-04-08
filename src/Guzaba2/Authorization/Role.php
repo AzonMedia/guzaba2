@@ -84,7 +84,7 @@ class Role extends ActiveRecord
      */
     public static function get_system_roles_data(): array
     {
-        return self::get_data_by( ['role_is_user' => 0] );
+        return self::get_data_by( ['role_is_user' => 0], 0, 0, FALSE, 'role_name' );
     }
 
     /**
