@@ -42,7 +42,8 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
 
     /**
      * StatementCoroutine constructor.
-     * @param $NativeStatement
+     * @param object $NativeStatement
+     * @param Connection $Connection
      * @param string $query
      * @param array $expected_parameters Contains the names of the expected parameters as parsed during statement preparation. Swoole\Statement does not support named parameters but only "?".
      */

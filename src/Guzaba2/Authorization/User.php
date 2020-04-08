@@ -220,16 +220,10 @@ class User extends ActiveRecord implements UserInterface
      */
     protected function _before_write() : void
     {
-
         if ($this->is_new()) {
             //a new primary role needs to be created for this user
             $Role = Role::create($this->user_name, TRUE);
             $this->role_id = $Role->get_id();
-
-            //the anonymous role must be granted to any newly created user
-            //then the application specific logic may grant more roles
-            $AnonymousRole = new Role(1);
-            $Role->grant_role($AnonymousRole);
         }
     }
 

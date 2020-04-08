@@ -40,12 +40,29 @@ abstract class ConnectionCoroutine extends Connection
         'fetch_mode',
     ];
 
+    /**
+     * ConnectionCoroutine constructor.
+     * @param array $options
+     * @param callable|null $after_connect_callback
+     * @throws ConnectionException
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws RunTimeException
+     */
     public function __construct(array $options, ?callable $after_connect_callback = NULL)
     {
         $this->connect($options);
         parent::__construct($after_connect_callback);
     }
 
+    /**
+     * @param array $options
+     * @throws ConnectionException
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     private function connect(array $options) : void
     {
         $this->NativeConnection = new \Swoole\Coroutine\Mysql();
@@ -74,17 +91,24 @@ abstract class ConnectionCoroutine extends Connection
         }
     }
 
-//    public function get_options() : array
-//    {
-//        return $this->NativeConnection->serverInfo ?? [];
-//    }
-
+    /**
+     * @return bool
+     */
     public function get_fetch_mode() : bool
     {
         //return $this->NativeConnection->serverInfo['fetch_mode'];
         return $this->get_options()['fetch_mode'];
     }
 
+    /**
+     * @param string $query
+     * @return StatementInterface
+     * @throws InvalidArgumentException
+     * @throws QueryException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function prepare(string $query) : StatementInterface
     {
         if (!$this->get_coroutine_id() && $this->get_connection_id() !== NULL) { //if there is no connection ID allow to prepare as this is the SELECT CONNECTION_ID() query (or other initialization query run at connect)

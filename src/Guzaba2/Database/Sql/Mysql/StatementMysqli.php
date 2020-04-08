@@ -29,6 +29,8 @@ class StatementMysqli extends Statement implements StatementInterface
             $this->params = $parameters;
         }
 
+        $this->params = $this->get_connection()::prepare_params($this->params);
+
         $sql = $this->get_query();
 
         $statement_group_str = $this->get_statement_group_as_string();

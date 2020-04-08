@@ -24,10 +24,24 @@ class StatementCoroutine extends Statement implements StatementInterface
     /**
      * Used when fetch_mode = FALSE (this is the default).
      * When fetch_mode = FALSE the data if fetched immediately on execution and stored instead of being fetched with fetchAll().
-     * @var array
+     * @var array|bool
      */
     private $rows = [];
 
+    /**
+     * @param array $parameters
+     * @param bool $disable_sql_cache
+     * @return $this
+     * @throws DeadlockException
+     * @throws DuplicateKeyException
+     * @throws ForeignKeyConstraintException
+     * @throws InvalidArgumentException
+     * @throws ParameterException
+     * @throws QueryException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function execute(array $parameters = [], bool $disable_sql_cache = FALSE) : self
     {
 
@@ -38,6 +52,9 @@ class StatementCoroutine extends Statement implements StatementInterface
         if ($parameters) {
             $this->params = $parameters;
         }
+
+        $this->params = $this->get_connection()::prepare_params($this->params);
+
         $this->disable_sql_cache_flag = $disable_sql_cache;
 
         $sql = $this->get_query();
@@ -116,7 +133,7 @@ class StatementCoroutine extends Statement implements StatementInterface
 //                    //the cache needs to be cleared immediately before the master commit and after it (the actual commit in the DB may take time...)
 //                    //in fact before the commit we do the same thing like the update - set the date in future so that the cache is disabled until the commit finishes
 //                    //the commit should succeed within that time
-//                    //avoid adding calblacks on each transaction - instead add one on the master transaction
+//                    //avoid adding callbacks on each transaction - instead add one on the master transaction
 //                    //@see http://gitlab.guzaba.org/root/guzaba-framework-v0.7/issues/9
 //                    //the below works but creates a ton of callbacks
 //                    /*
@@ -221,12 +238,12 @@ class StatementCoroutine extends Statement implements StatementInterface
         return $ret;
     }
 
-    public function fetch_row(string $column_name = '')
+    public function fetch_row(string $column_name = '') /* mixed */
     {
         return $this->fetchRow($column_name);
     }
 
-    public function fetchRow(string $column_name = '') /*mixed*/
+    public function fetchRow(string $column_name = '') /* mixed */
     {
         //the data is already fetched on execute()
         //$data = $this->NativeStatement->fetchAll();

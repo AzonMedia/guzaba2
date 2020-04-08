@@ -290,8 +290,9 @@ BANNER;
 
     /**
      * @param callable $callable
+     * @param array $options
      * @return int
-     * @throws \Exception
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function run(callable $callable, array $options = []) : int
     {
@@ -299,7 +300,7 @@ BANNER;
             throw new \Exception(t::_('Kernel is not initialized. Please execute Kernel::initialize() first.'));
         }
 
-        self::printk(t::_('Kernel::run() invoked')).PHP_EOL;
+        self::printk(t::_('Kernel::run() invoked').PHP_EOL);
         self::printk(PHP_EOL);
 
         $ret = 0;
@@ -571,7 +572,8 @@ BANNER;
     }
 
     /**
-     * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and manual call to the exception handler
+     * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and a manual call to the exception handler
+     * It works outside swoole context so it is still explicitly registered in Kernel::initialize()
      * @param \Throwable $exception
      * @param NULL|int $exit_code If int exit code is provided this will terminate the program/worker
      */
@@ -594,6 +596,7 @@ BANNER;
 //            $output .= $Exception->getTraceAsString().PHP_EOL.PHP_EOL;
 //            $Exception = $Exception->getPrevious();
 //        } while ($Exception);
+
 
         $output = (string) $Exception;
 
@@ -628,7 +631,9 @@ BANNER;
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): void
     {
         //throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
-        self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
+        //self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
+        //must throw the exception instead of passing it directly to the exception handler as in Server mode the exception handler does not interrupt the execution
+        throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
 
     public static function fatal_error_handler() : void

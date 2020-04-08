@@ -28,6 +28,11 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 
 //    protected $is_created_from_factory_flag = FALSE;
 
+    /**
+     * Connection constructor.
+     * @param callable|null $after_connect_callback Callback to be executed when connection is established (but before the connection ID is obtained)
+     * @throws RunTimeException
+     */
     public function __construct(?callable $after_connect_callback = NULL)
     {
         $ConnectionFactory = static::get_service('ConnectionFactory');
@@ -38,12 +43,10 @@ abstract class Connection extends GenericResource implements ConnectionInterface
         $this->connection_id = $this->get_connection_id_from_db();
     }
 
-    public function __destruct()
-    {
-        //$this->close();//avoid this - the connections should be close()d immediately
-        //or have a separate flag $is_connected_flag
-    }
-
+    /**
+     * The string representation of the object is the resource ID @see self::get_resource_id()
+     * @return string
+     */
     public function __toString() : string
     {
         return $this->get_resource_id();
@@ -59,17 +62,29 @@ abstract class Connection extends GenericResource implements ConnectionInterface
 
     }
 
-
+    /**
+     * Returns the connection ID.
+     * @return string|null
+     */
     public function get_connection_id() : ?string
     {
         return $this->connection_id;
     }
 
+    /**
+     * Returns a string ID of the resource.
+     * Currently this is class name + connection ID
+     * @return string
+     */
     public function get_resource_id() : string
     {
         return get_class($this).':'.$this->get_connection_id();
     }
 
+    /**
+     * Returns the connection options
+     * @return array
+     */
     public function get_options() : array
     {
         return $this->options;
@@ -83,7 +98,13 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     {
         return static::CONFIG_RUNTIME['tprefix'] ?? '';
     }
-    
+
+    /**
+     * Validates the provided $options against the supported options @see self::get_supported_options()
+     * @param array $options
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public static function validate_options(array $options) : void
     {
         foreach ($options as $key=>$value) {
@@ -93,6 +114,9 @@ abstract class Connection extends GenericResource implements ConnectionInterface
         }
     }
 
+    /**
+     * @return array
+     */
     public static function get_supported_options(): array
     {
         return static::SUPPORTED_OPTIONS;

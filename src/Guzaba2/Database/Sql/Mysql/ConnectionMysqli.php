@@ -28,18 +28,40 @@ abstract class ConnectionMysqli extends Connection
         'socket',
     ];
 
+    /**
+     * ConnectionMysqli constructor.
+     * @param array $options
+     * @param callable|null $after_connect_callback
+     * @throws ConnectionException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function __construct(array $options, ?callable $after_connect_callback = NULL)
     {
         $this->connect($options);
         parent::__construct($after_connect_callback);
     }
 
+    /**
+     * @param string $query
+     * @return StatementInterface
+     * @throws QueryException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
     public function prepare(string $query) : StatementInterface
     {
         $Statement = $this->prepare_statement($query, StatementMysqli::class, $this);
         return $Statement;
     }
 
+    /**
+     * @param array $options
+     * @throws ConnectionException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     private function connect(array $options) : void
     {
         static::validate_options($options);

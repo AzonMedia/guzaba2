@@ -30,7 +30,7 @@ class Role extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'roles',
-        'route'                 => '/roles',
+        'route'                 => '/role',
 
         //'load_in_memory'        => TRUE,
 
@@ -290,7 +290,7 @@ class Role extends ActiveRecord
 
     public function get_inheriting_roles(): array
     {
-        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_inheriting_roles() );
+        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_inheriting_roles_ids() );
     }
 
     /**
