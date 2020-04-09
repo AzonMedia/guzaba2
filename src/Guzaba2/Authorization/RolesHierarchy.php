@@ -35,7 +35,7 @@ class RolesHierarchy extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function create(Role $Role, Role $InheritedRole) : ActiveRecord
+    public static function create(Role $Role, Role $InheritedRole) : self
     {
         if ($Role->is_new() || !$Role->get_id()) {
             throw new InvalidArgumentException(sprintf(t::_('The first argument of %s() is a role that is new or has no ID.'), __METHOD__ ));

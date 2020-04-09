@@ -29,6 +29,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Store\MemoryTransaction;
 use Guzaba2\Orm\Store\Store;
 use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
+use Guzaba2\Orm\Traits\ActiveRecordLog;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
 use Guzaba2\Transaction\ScopeReference;
@@ -59,6 +60,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     use ActiveRecordHooks;
     use ActiveRecordAuthorization;
     use ActiveRecordTemporal;
+    use ActiveRecordLog;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
@@ -508,6 +510,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //        }
 
         static::get_service('OrmStore')->update_record($this);
+        if ($this->is_new()) {
+            $this->add_log_entry('create', sprintf(t::_('A new record with ID %1s and UUID %2s is created.'), $this->get_id(), $this->get_uuid()));
+        } else {
+            $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1s.'), implode(', ', $this->get_modified_properties_names()) ));
+        }
+
+
 
         //new Event($this, '_after_write');
         self::get_service('Events')::create_event($this, '_after_write');
@@ -578,11 +587,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_before_delete');
         self::get_service('Events')::create_event($this, '_before_delete');
 
+        //get these before the object is deleted.
+        $id = $this->get_id();
+        $uuid = $this->get_uuid();
+
         //remove any permissions associated with this record
         $this->delete_permissions();
         //and only then remove the record
         static::get_service('OrmStore')->remove_record($this);
 
+        $this->add_log_entry('delete', sprintf(t::_('The object with ID %1s and UUID %2s was deleted.'), $id, $uuid ));
 
 
         //new Event($this, '_after_delete');

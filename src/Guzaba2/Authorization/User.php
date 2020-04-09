@@ -136,6 +136,39 @@ class User extends ActiveRecord implements UserInterface
 //    }
 
     /**
+     * @check_permissions
+     * @param Role $Role
+     * @return RolesHierarchy Returns the newly created RolesHierarchy (roles relation) record
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    public function grant_role(Role $Role): RolesHierarchy
+    {
+        $this->check_permission('grant_role');
+        return $this->get_role()->grant_role($Role);
+    }
+
+    /**
+     * @check_permissions
+     * @param Role $Role
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
+    public function revoke_role(Role $Role): void
+    {
+        $this->check_permission('revoke_role');
+        $this->get_role()->revoke_role($Role);
+    }
+
+    /**
      * @return ValidationFailedExceptionInterface|null
      * @throws ConfigurationException
      * @throws InvalidArgumentException
