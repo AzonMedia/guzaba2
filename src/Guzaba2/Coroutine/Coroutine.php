@@ -106,6 +106,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function init(?RequestInterface $Request) : void
     {
@@ -159,6 +160,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function getContext($cid = NULL) : \Swoole\Coroutine\Context
     {
@@ -169,6 +171,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         $cid = $cid ?? self::getcid();
 
         $Context = parent::getContext($cid);
+        if ($Context === NULL) {
+            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));
+        }
 
         if (!empty($Context->is_destroyed)) {
             throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));

@@ -160,7 +160,6 @@ abstract class Message extends Base implements MessageInterface
         foreach ($this->headers as $header_name => $header_value) {
             if (strtolower($name) === strtolower($header_name)) {
                 $ret = $header_value;
-                break;
             }
         }
         return $ret;
@@ -369,7 +368,7 @@ abstract class Message extends Base implements MessageInterface
     {
         $fp = fopen($filename, "r");
 
-        $r =  \SWOOLE\Coroutine::fread($fp);
+        $r =  \Swoole\Coroutine::fread($fp);//TODO - fix this
         $f = file_get_contents($filename);
 
         $this->Body->write($r);

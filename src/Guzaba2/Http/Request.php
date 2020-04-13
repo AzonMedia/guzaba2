@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Http;
 
 use Guzaba2\Base\Exceptions\NotImplementedException;
+use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Interfaces\ServerInterface;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Http\Body\Stream;
@@ -86,7 +87,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
             throw new InvalidArgumentException(sprintf(t::_('No HTTP method provided.')));
         }
         if (!in_array($method, Method::METHODS_MAP)) {
-            throw new InvalidArgumentException(sprintf(t::_('Wrong HTTP method %s provided.'), $method));
+            throw new InvalidArgumentException(sprintf(t::_('Wrong HTTP method %1s provided.'), $method));
         }
 
         $this->method = $method;
@@ -467,14 +468,18 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return null|array|object The deserialized body parameters, if any.
      *     These will typically be an array or object.
      * @throws NotImplementedException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
     public function getParsedBody() /* mixed */
     {
         if (!$this->parsedBody) {
+
             $body_contents = $this->getBody()->getContents();
+            $this->getBody()->rewind();
             if ($body_contents) {
-                $this->getBody()->rewind();
                 $request_type = $this->getContentType();
                 switch ($request_type) {
                     case ContentType::TYPE_HTML:
@@ -493,8 +498,22 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                         throw new NotImplementedException(sprintf('Parsing a YAML request body is not implemented.'));
                         break;
                     case ContentType::TYPE_TEXT:
-                    default:
                         throw new NotImplementedException(sprintf('Parsing a TEXT request body is not implemented.'));
+                        break;
+                    case ContentType::TYPE_NATIVE:
+                        //$this->parsedBody = $body_contents;
+                        //print 'DDDDDDDDDD'.gettype($this->parsedBody).PHP_EOL;
+                        //print_r($this->parsedBody);
+                        $Body = $this->getBody();
+                        if ($Body instanceof Structured) {
+                            $structure = $Body->getStructure();
+                            $this->parsedBody = $structure;
+                        } else {
+                            throw new RunTimeException(sprintf('PHP/native request provided but the Body is not of class %1s but is %2s.', Structured::class, get_class($Body) ));
+                        }
+                        break;
+                    default:
+                        throw new NotImplementedException(sprintf('Parsing an unknown request body is not implemented.'));
                 }
             } else {
                 $this->parsedBody = [];

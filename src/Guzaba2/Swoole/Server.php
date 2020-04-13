@@ -6,10 +6,14 @@ namespace Guzaba2\Swoole;
 //use Guzaba2\Base\Base as Base;
 use Azonmedia\Utilities\SysUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
+use Guzaba2\Swoole\Interfaces\IpcResponseInterface;
 use Guzaba2\Translator\Translator as t;
+use Psr\Log\LogLevel;
 
 /**
  * Class Server
@@ -20,6 +24,10 @@ class Server extends \Guzaba2\Http\Server
 {
 
     protected const CONFIG_DEFAULTS = [
+
+        'ipc_responses_cleanup_time'        => 10,// in seconds - older responses than this will be removed, also used for the tick for the cleanup
+        'ipc_responses_default_timeout'     => 5,//the default time to await for response
+
         'services'      => [
             'Events',
         ]
@@ -136,7 +144,22 @@ class Server extends \Guzaba2\Http\Server
      */
     private int $worker_id = -1;//0 is a valid worker id
 
+    /**
+     * Associative array of IpcResponseInterface. The key is the IpcRequestInterface ID.
+     * @var IpcResponseInterface[]
+     */
+    private array $ipc_responses = [];
 
+    /**
+     * Server constructor.
+     * @param string $host
+     * @param int $port
+     * @param array $options
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
     {
         $this->host = $host;
@@ -147,6 +170,9 @@ class Server extends \Guzaba2\Http\Server
             //$options['worker_num'] = swoole_cpu_num() * 2;
             //TODO - https://github.com/AzonMedia/guzaba2/issues/22
             $options['worker_num'] = swoole_cpu_num();
+        }
+        if (empty($options['task_worker_num'])) {
+            $options['task_worker_num'] = 0;
         }
 
         $this->options = $options;
@@ -231,9 +257,9 @@ class Server extends \Guzaba2\Http\Server
         Kernel::printk(PHP_EOL);
     }
 
-    public function stop() : bool
+    public function stop(): void
     {
-        return $this->SwooleHttpServer->stop();
+        $this->SwooleHttpServer->stop();
     }
 
     public function on(string $event_name, callable $callable) : void
@@ -298,7 +324,10 @@ class Server extends \Guzaba2\Http\Server
      * Validates swooole server configuration options
      * @param array $options this array will be passed to $SwooleHttpServer->set()
      *
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function validate_server_configuration_options(array $options) : void
     {
@@ -351,11 +380,23 @@ class Server extends \Guzaba2\Http\Server
         }
     }
 
-    public function option_is_set(string $option) : bool
+    /**
+     * @param string $option
+     * @return bool
+     */
+    public function option_is_set(string $option): bool
     {
         return array_key_exists($option, $this->options);
     }
 
+    /**
+     * @param string $option
+     * @return mixed
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     */
     public function get_option(string $option) /* mixed */
     {
         if (!$this->option_is_set($option)) {
@@ -364,9 +405,25 @@ class Server extends \Guzaba2\Http\Server
         return $this->options[$option];
     }
 
+    /**
+     * Returns all options passed to the Swoole\Http\Server
+     * @return array
+     */
+    public function get_options(): array
+    {
+        return $this->options;
+    }
+
+    /**
+     * @return string|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     */
     public function get_document_root() : ?string
     {
-        return $this->option_is_set('document_root') ? $this->get_option('document_root') : NULL;
+        return $this->option_is_set('document_root') ? $this->get_option('document_root'): NULL;
     }
 
     public function get_worker_pid() : int
@@ -378,4 +435,119 @@ class Server extends \Guzaba2\Http\Server
 //    {
 //        return $this->SwooleHttpServer->master_pid;
 //    }
+
+    /**
+     * Sends an IPC
+     * @param IpcRequest $IpcRequest
+     * @param int $dest_worker_id
+     * @return bool
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function send_icp_message(IpcRequest $IpcRequest, int $dest_worker_id): bool
+    {
+        $this->validate_destination_worker_id($dest_worker_id);
+        return $this->SwooleHttpServer->sendMessage($IpcRequest, $dest_worker_id);
+    }
+
+    /**
+     * Unlike send_ipc_message() this method awaits and returns the response
+     * @param string $ipc_request_id
+     * @param IpcResponseInterface $IpcResponse
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function set_ipc_request_response(IpcResponseInterface $IpcResponse, string $ipc_request_id): void
+    {
+        if (isset($this->ipc_responses[$ipc_request_id])) {
+            Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1s.'), $ipc_request_id), LogLevel::NOTICE);
+        }
+        $IpcResponse->set_received_time(microtime(TRUE));
+        $this->ipc_responses[$ipc_request_id] = $IpcResponse;
+    }
+
+    /**
+     * @param IpcRequest $IpcRequest
+     * @param int $dest_worker_id
+     * @param int $timeout
+     * @return IpcResponse|null
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function send_ipc_request(IpcRequest $IpcRequest, int $dest_worker_id, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): ?IpcResponse
+    {
+        $this->validate_destination_worker_id($dest_worker_id);
+        if ($timeout > self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+            throw new InvalidArgumentException(sprintf(t::_('The maximum timeout for awaiting an IpcResponse is %1s seconds.'), self::CONFIG_RUNTIME['ipc_responses_cleanup_time']));
+        }
+
+        $microtime_start = microtime(TRUE);
+        $request_id = $IpcRequest->get_request_id();
+        $IpcRequest->set_requires_response(TRUE);
+
+        if ($this->SwooleHttpServer->sendMessage($IpcRequest, $dest_worker_id)) {
+            while(true) {
+                if (microtime(TRUE) > $microtime_start + $timeout) {
+                    return NULL;
+                }
+                Coroutine::sleep(0.001);
+                if (isset($this->ipc_responses[$request_id])) {
+                    $IpcResponse = $this->ipc_responses[$request_id];
+                    unset($this->ipc_responses);
+                    return $IpcResponse;
+                }
+            }
+        } else {
+            //throw ??
+        }
+        return NULL;//just in case...
+    }
+
+    /**
+     * @param int $dest_worker_id
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    private function validate_destination_worker_id(int $dest_worker_id) : void
+    {
+        $worker_num = $this->get_option('worker_num');
+        $task_worker_num = $this->get_option('task_worker_num');
+        $total_workers = $worker_num + $task_worker_num;
+        if (!$dest_worker_id < 0) {
+            throw new InvalidArgumentException(sprintf(t::_('The $dest_worker_id must be positive number.')));
+        } elseif ($dest_worker_id >= $total_workers) { //the worker IDs always start from 0 and even if restarted they get the same ID
+            $message = sprintf(t::_('Invalid $dest_worker_id %1s is provided. There are %2s workers and %3s task workers. The valid range for $dest_worker_id is %4s - %5s.'), $dest_worker_id, $worker_num, $task_worker_num, 0, $worker_num + $task_worker_num - 1);
+            throw new InvalidArgumentException($message);
+        } elseif ($dest_worker_id === $this->SwooleHttpServer->worker_id) {
+            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->SwooleHttpServer->worker_id));
+        }
+    }
+
+    /**
+     *
+     */
+    public function ipc_responses_cleanup(): void
+    {
+        foreach ($this->ipc_responses as $ipc_request_id => $IpcResponse) {
+            if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+                unset($this->ipc_responses[$ipc_request_id]);
+            }
+        }
+    }
+
+    /**
+     * @return int
+     */
+    public function get_ipc_responses_cleanup_time(): int
+    {
+        return self::CONFIG_RUNTIME['ipc_responses_cleanup_time'];
+    }
 }

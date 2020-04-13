@@ -77,17 +77,10 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 //                if ($route_prefix) {
 //                    $routing = ArrayUtil::prefix_keys($routing, $this->route_prefix);
 //                }
-
-                if ($supported_languages) {
-                    //the basic route without language prefix will be always added and will point to the default target language
-                    //here additional routes for each of the supported languages is added
-                    //no need to generate individual URL paths... instead use a {language} var in the path
-//                    foreach ($supported_languages as $supported_language) {
-//                        foreach ($routing as $path => $value) {
-//                            $routing['/'.$supported_language.$path] = $value;
-//                        }
-//                    }
-                    //even if a single language is provided still add additional path as this may be required for other purpose (future proofing)
+                //even if a single language is provided still add additional path as this may be required for other purpose (future proofing)
+                //no - lets not have the language routes if there is only a single language
+                //if ($supported_languages) {
+                if (count($supported_languages) > 1) {
                     foreach ($routing as $path => $value) {
                         $routing['/{language}'.$path] = $value;
                     }

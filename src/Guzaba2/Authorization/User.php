@@ -207,14 +207,17 @@ class User extends ActiveRecord implements UserInterface
      */
     protected function _validate_user_name(): ?ValidationFailedExceptionInterface
     {
-        try {
-            $User = new static(['user_name' => $this->user_name]);
-            return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
-        } catch (RecordNotFoundException $Exception) {
-            return NULL;
-        } catch (PermissionDeniedException $Exception) {
-            return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+        if ($this->is_new() || $this->is_property_modified('user_name')) {
+            try {
+                $User = new static(['user_name' => $this->user_name]);
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+            } catch (RecordNotFoundException $Exception) {
+                return NULL;
+            } catch (PermissionDeniedException $Exception) {
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+            }
         }
+        return NULL;
     }
 
     /**
@@ -230,7 +233,7 @@ class User extends ActiveRecord implements UserInterface
     {
         if (!filter_var($this->user_email, FILTER_VALIDATE_EMAIL)) {
             return new ValidationFailedException($this, 'user_name', sprintf(t::_('The provided email "%1s" is not valid.'), $this->user_email));
-        } else {
+        } elseif ($this->is_new() || $this->is_property_modified('user_name')) {
             try {
                 $User = new static(['user_email' => $this->user_email]);
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
@@ -240,6 +243,7 @@ class User extends ActiveRecord implements UserInterface
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
             }
         }
+        return NULL;
     }
 
     /**

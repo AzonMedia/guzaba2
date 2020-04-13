@@ -17,6 +17,7 @@ abstract class ContentType
     public const TYPE_XML   = 'xml';
     public const TYPE_SOAP  = 'soap';
     public const TYPE_YAML   = 'yaml';
+    public const TYPE_NATIVE = 'php';
 
     public const TYPES_MAP = [
         self::TYPE_TEXT     => [
@@ -46,12 +47,17 @@ abstract class ContentType
                 'application/x-yaml'
             ]
         ],
+        self::TYPE_NATIVE   => [
+            //'mime'  => 'text/x-php',
+            'mime'  => 'application/php',
+        ]
 
     ];
 
     /**
-     * Returns a string representing a constant (@see self::TYPES_MAP) or null if no match is found
+     * Returns a string representing a constant (@param string $header_content
      * @return string|null
+     * @see self::TYPES_MAP) or null if no match is found
      */
     public static function get_content_type(string $header_content) : ?string
     {

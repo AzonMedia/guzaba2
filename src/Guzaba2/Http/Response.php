@@ -86,6 +86,7 @@ class Response extends Message implements ResponseInterface
      *     use the defaults as suggested in the HTTP specification.
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
+     * @throws InvalidArgumentException
      */
     public function withStatus(/* int */ $code, /* string */ $reasonPhrase = '') /* self */
     //public function withStatus(int $code, string $reasonPhrase = '') : self

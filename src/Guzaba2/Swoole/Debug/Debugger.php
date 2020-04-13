@@ -84,6 +84,13 @@ class Debugger extends Base
         //$this->DebugServer->handle([$this,'connection_handler']);//Triggers Uncaught TypeError: Argument 1 passed to Swoole\Coroutine\Server::handle() must be callable, array given
         $Function = function (\Swoole\Coroutine\Server\Connection $Connection) : void {
             while (true) {
+                //print $Connection->exportSocket()->fd.' '.microtime(TRUE).PHP_EOL;
+                /** @var \Swoole\Coroutine\Socket $Socket */
+                $Socket = $Connection->exportSocket();
+                if (!$Socket->checkLiveness()) { //the socket session was interrupted by the other side (app killed)... not using the normal way using "quit"
+                    $Connection->close();
+                    return;
+                }
                 $Connection->send($this->get_prompt());
                 $command = trim($Connection->recv());
                 //Kernel::printk('Received debug command: '.$command.PHP_EOL);

@@ -16,15 +16,20 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class QueueRequestHandler extends Base implements RequestHandlerInterface
 {
-    protected $DefaultRequestHandler;
+    protected RequestHandlerInterface $DefaultRequestHandler;
 
-    protected $middleware_arr = [];
+    protected array $middleware_arr = [];
 
     public function __construct(RequestHandlerInterface $DefaultRequestHandler)
     {
         $this->DefaultRequestHandler = $DefaultRequestHandler;
     }
 
+    /**
+     * Supports method chaining.
+     * @param MiddlewareInterface $Middleware
+     * @return $this
+     */
     public function add_middleware(MiddlewareInterface $Middleware) : self
     {
         $this->middleware_arr[] = $Middleware;
@@ -45,7 +50,6 @@ class QueueRequestHandler extends Base implements RequestHandlerInterface
 
         $Middleware = array_shift($this->middleware_arr);
         $Response = $Middleware->process($Request, $this);
-//print get_class($Middleware).' '.$Response->getBody()->getContents().PHP_EOL;//debug
         return $Response;
     }
 }

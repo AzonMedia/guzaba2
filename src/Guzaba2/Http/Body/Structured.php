@@ -19,31 +19,31 @@ class Structured extends Base implements StreamInterface
 {
 
     /**
-     * @var array
+     * @var iterable
      */
-    protected $structure = [];
+    protected iterable $structure = [];
 
     /**
      * Will be lowered when the processing is over
      * @var bool
      */
-    protected $is_writable_flag = TRUE;
+    protected bool $is_writable_flag = TRUE;
 
-    protected $is_readable_flag = TRUE;
+    protected bool $is_readable_flag = TRUE;
 
-    protected $is_seekable_flag = TRUE;
-
-    protected const DEFAULT_DOCTYPE = '<!doctype html>';
+    protected bool $is_seekable_flag = TRUE;
 
     public const JSON_ENCODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
 
+    /**
+     * Structured constructor.
+     * @param iterable $structure
+     */
     public function __construct(iterable $structure = [])
     {
         parent::__construct();
 
         $this->structure = $structure;
-
-        //$this->write(self::DEFAULT_DOCTYPE . Response::EOL);
     }
 
     /**
@@ -60,6 +60,9 @@ class Structured extends Base implements StreamInterface
      * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
      * @return string
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function __toString() : string
     {
@@ -116,7 +119,12 @@ class Structured extends Base implements StreamInterface
      */
     public function getSize() : ?int
     {
-        $size = count($this->structure);
+        //$size = count($this->structure);
+        if (is_iterable($this->structure)) {
+            $size = iterator_count($this->structure);
+        } else {
+            $size = count($this->structure);
+        }
         return $size;
     }
 
@@ -162,8 +170,10 @@ class Structured extends Base implements StreamInterface
      *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
      *     offset bytes SEEK_CUR: Set position to current location plus offset
      *     SEEK_END: Set position to end-of-stream plus offset.
-     * @throws RuntimeException on failure.
-     *
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
         //public function seek(int $offset, int $whence = SEEK_SET) : void
@@ -179,9 +189,12 @@ class Structured extends Base implements StreamInterface
      * If the stream is not seekable, this method will raise an exception;
      * otherwise, it will perform a seek(0).
      *
-     * @see seek()
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @link http://www.php.net/manual/en/function.fseek.php
-     * @throws RuntimeException on failure.
+     * @see seek()
      */
     public function rewind() : void
     {
@@ -204,8 +217,11 @@ class Structured extends Base implements StreamInterface
      * Write data to the stream.
      *
      * @param string $string The string that is to be written.
-     * @return int Returns the number of bytes written to the stream.
-     * @throws RuntimeException on failure.
+     * @return void Returns the number of bytes written to the stream.
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function write(/* string */ $string) /* int */
         //public function write(string $string) : int
@@ -235,7 +251,10 @@ class Structured extends Base implements StreamInterface
      *     call returns fewer bytes.
      * @return string Returns the data read from the stream, or an empty string
      *     if no bytes are available.
-     * @throws RuntimeException if an error occurs.
+     * @throws RunTimeException if an error occurs.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function read(/* int */ $length) : string
         //public function read(int $length) : string
@@ -251,8 +270,11 @@ class Structured extends Base implements StreamInterface
      * Returns the remaining contents in a string
      *
      * @return string
-     * @throws RuntimeException if unable to read or an error occurs while
+     * @throws RunTimeException if unable to read or an error occurs while
      *     reading.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function getContents() : string
     {

@@ -58,7 +58,6 @@ class ActiveRecordDefaultController extends ActiveRecordController
     public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL, ?string $language = NULL) : ?ResponseInterface
     //public function _init(?string $uuid = NULL) : ?ResponseInterface
     {
-
         if ($language) {
             t::set_target_language($language, $this->get_request() );
         }

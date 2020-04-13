@@ -202,13 +202,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ConfigurationException
      * @throws ReflectionException
+     * @throws ContextDestroyedException
      */
     //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = FALSE, bool $permission_checks_disabled = FALSE, ?StoreInterface $Store = NULL)
     {
         parent::__construct();
-
-
 
         if (strpos(get_class($this),'Test') !== FALSE) {
             //print_r(static::CONFIG_RUNTIME);
@@ -219,12 +218,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
 
-        $this->read_lock_obtained_flag = $read_only;
+        //$this->read_lock_obtained_flag = $read_only;??? //TODO - check why this was here
+        $this->read_only_flag = $read_only;
         $this->permission_checks_disabled_flag = $permission_checks_disabled;
 
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
-            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+            if ($Request && $Request->getMethodConstant() === Method::HTTP_GET) {
                 $this->read_only_flag = TRUE;
             }
         }
@@ -326,15 +326,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->Store->free_pointer($this);
         }
 
+        /*
         if (self::is_locking_enabled() && !$this->is_new()) {
 
-            if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfulyl saved
+            if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfully saved
                 $resource = MetaStore::get_key_by_object($this);
                 static::get_service('LockManager')->release_lock($resource);
 
                 $this->read_lock_obtained_flag = FALSE;
             }
 
+        }
+        */
+        if ($this->read_lock_obtained_flag) { //this is needed for the new records.. at this point they are no longer new if successfully saved
+            $resource = MetaStore::get_key_by_object($this);
+            static::get_service('LockManager')->release_lock($resource);
+
+            $this->read_lock_obtained_flag = FALSE;
         }
         parent::__destruct();
     }
@@ -373,6 +381,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function read(/* int|string|array */ $index) : void
     {
@@ -450,6 +459,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws ContextDestroyedException
      */
     public function write() : ActiveRecordInterface
     {
@@ -726,6 +736,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
     }
 
+    /**
+     * @return bool
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public static function is_locking_enabled() : bool
     {
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -766,6 +782,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
+     * @throws ContextDestroyedException
      * @see self::get_primary_index() which will return an associative array.
      */
     public function get_id()  /* int|string */

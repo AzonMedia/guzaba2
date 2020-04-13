@@ -33,15 +33,20 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
         $class_name = self::get_class_name();
 
         $tok = strtok($command, ' ');
-        if (0 === strcasecmp('help', $tok) || 0 === strcasecmp($class_name, $tok)) {
-            $help_command = preg_replace("/^(\w+\s)/", "", $command);
-            if ($this->can_handle($help_command) || 0 === strcasecmp($class_name, $help_command)) {
-                $ret = self::help($help_command);
-                return $ret;
-            } else {
-                return NULL;
+        if ($tok !== FALSE) {
+            if (0 === strcasecmp('help', $tok) || 0 === strcasecmp($class_name, $tok)) {
+                $help_command = preg_replace("/^(\w+\s)/", "", $command);
+                if ($this->can_handle($help_command) || 0 === strcasecmp($class_name, $help_command)) {
+                    $ret = self::help($help_command);
+                    return $ret;
+                } else {
+                    return NULL;
+                }
             }
+        } else {
+            $command = '';
         }
+
 
         if ($this->can_handle($command)) {
             $ret = 'Query Cache Store details:'.PHP_EOL;

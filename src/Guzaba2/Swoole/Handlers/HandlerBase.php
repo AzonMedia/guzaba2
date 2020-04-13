@@ -31,7 +31,7 @@ abstract class HandlerBase extends Base implements HandlerInterface
     /**
      * @var \Guzaba2\Http\Server
      */
-    protected $HttpServer;
+    protected \Guzaba2\Http\Server $HttpServer;
 
     public function __construct(\Guzaba2\Http\Server $HttpServer)
     {

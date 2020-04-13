@@ -53,6 +53,13 @@ class WorkerStart extends HandlerBase
         return $this->base_debug_port;
     }
 
+    /**
+     * @param \Swoole\Http\Server $Server
+     * @param int $worker_id
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \Exception
+     */
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
         //$this->HttpServer->set_worker_id($worker_id);
@@ -60,10 +67,14 @@ class WorkerStart extends HandlerBase
 
         self::register_log_handler($worker_id);
 
+        //add a ping to the connections to make sure they are not idle
         \Swoole\Coroutine::create(function () {
             $ConnectionMonitor = new ConnectionMonitor();
             $ConnectionMonitor->monitor();
         });
+
+        //\Swoole\Timer::tick($this->HttpServer->get_ipc_responses_cleanup_time() * 1000, [$this->HttpServer, 'ipc_responses_cleanup']);
+
 
         //if (Debugger::is_enabled()) {
         if ($this->enable_debug_ports) {

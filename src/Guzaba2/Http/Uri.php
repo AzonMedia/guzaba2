@@ -21,64 +21,66 @@ class Uri extends Base implements UriInterface
      *
      * @var string
      */
-    protected $scheme = '';
+    protected string $scheme = '';
     /**
      * Uri user
      *
      * @var string
      */
-    protected $user = '';
+    protected string $user = '';
     /**
      * Uri password
      *
      * @var string
      */
-    protected $password = '';
+    protected string $password = '';
     /**
      * Uri host
      *
      * @var string
      */
-    protected $host = '';
+    protected string $host = '';
     /**
      * Uri port number
      *
      * @var null|int
      */
-    protected $port;
+    protected ?int $port;
     /**
      * Uri base path
      *
      * @var string
      */
-    protected $basePath = '';
+    protected string $basePath = '';
     /**
      * Uri path
      *
      * @var string
      */
-    protected $path = '';
+    protected string $path = '';
     /**
      * Uri query string (without "?" prefix)
      *
      * @var string
      */
-    protected $query = '';
+    protected string $query = '';
     /**
      * Uri fragment string (without "#" prefix)
      *
      * @var string
      */
-    protected $fragment = '';
+    protected string $fragment = '';
+
     /**
-     * @param string $scheme   Uri scheme.
-     * @param string $host     Uri host.
-     * @param int    $port     Uri port number.
-     * @param string $path     Uri path.
-     * @param string $query    Uri query string.
+     * @param string $scheme Uri scheme.
+     * @param string $host Uri host.
+     * @param int $port Uri port number.
+     * @param string $path Uri path.
+     * @param string $query Uri query string.
      * @param string $fragment Uri fragment.
-     * @param string $user     Uri user.
+     * @param string $user Uri user.
      * @param string $password Uri password.
+     * @throws InvalidArgumentException
      */
     public function __construct(
         $scheme = '',
@@ -100,12 +102,14 @@ class Uri extends Base implements UriInterface
         $this->user = $user;
         $this->password = $password;
     }
+
     /**
      * Create new Uri from string.
      *
-     * @param  string $uri Complete Uri string (i.e., https://user:pass@host:443/path?query).
+     * @param string $uri Complete Uri string (i.e., https://user:pass@host:443/path?query).
      *
      * @return self
+     * @throws InvalidArgumentException
      */
     public static function createFromString($uri) : self
     {

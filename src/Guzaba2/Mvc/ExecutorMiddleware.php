@@ -61,10 +61,11 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * To be used when the Body of the Response is of type Structured
      */
     protected const CONTENT_TYPE_HANDLERS = [
-        ContentType::TYPE_XML   => 'xml_hanlder',
-        //ContentType::TYPE_SOAP  => 'soap_handler',
-        ContentType::TYPE_JSON  => 'json_handler',
-        ContentType::TYPE_HTML  => 'html_handler',
+        ContentType::TYPE_XML       => 'xml_hanlder',
+        //ContentType::TYPE_SOAP    => 'soap_handler',
+        ContentType::TYPE_JSON      => 'json_handler',
+        ContentType::TYPE_HTML      => 'html_handler',
+        ContentType::TYPE_NATIVE    => 'native_handler',
     ];
 
     protected const DEFAULT_TYPE_HANDLER = 'json_handler';
@@ -83,9 +84,14 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * where default_value is optional and will not be present if there is no default value
      * @var array
      */
-    protected static $controllers_params = [];
+    protected static array $controllers_params = [];
 
 //    public function __construct(Server $Server, string $override_html_content_type = '')
+
+    /**
+     * ExecutorMiddleware constructor.
+     * @param string $default_handler
+     */
     public function __construct(string $default_handler = self::DEFAULT_TYPE_HANDLER)
     {
         
@@ -105,8 +111,10 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * Keeps in static cache the data of all controllers parameters to avoid using Reflection during runtime.
      * @param array $ns_prefixes
      * @throws ClassValidationException
-     * @throws \ReflectionException
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function initialize_controller_arguments(array $ns_prefixes) : void
     {
@@ -144,7 +152,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface
      * @throws LogicException
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
@@ -165,11 +175,15 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
                 $controller_arguments = $Request->getAttribute('controller_arguments') ?? []; //in case there are arguments injected by previous middlware like the Routing
 
+                //print '+++++++++'.get_class($Request->getBody()).' '.$Request->getContentType().PHP_EOL;
+
+                $body_params = $Request->getParsedBody();
+
                 if ($body_params = $Request->getParsedBody()) {
 
                     if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
 
-                        if ($repeating_arguments = array_intersect($controller_arguments, $body_params)) {
+                        if ($repeating_arguments = array_intersect( array_keys($controller_arguments), array_keys($body_params) )) {
                             //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
                             $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true) );
                             $Body = new Structured( [ 'message' => $message ] );
@@ -255,6 +269,14 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     }
 
     //public function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
+
+    /**
+     * @param ActiveRecordController $Controller
+     * @param string $method
+     * @param array $controller_arguments
+     * @return ResponseInterface|null
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public function execute_controller_method(ActiveRecordController $Controller, string $method, array $controller_arguments) : ?ResponseInterface
     {
 
@@ -272,8 +294,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 } elseif (array_key_exists('default_value', $param)) {
                     $value = $param['default_value'];
                 } else {
-                    //TODO add function parameters in the error message.
-                    //$message = sprintf(t::_('No value provided for parameter $%s in %s::%s().'), $param['name'], get_class($Controller), $method );
                     $message = sprintf(t::_('No value provided for parameter $%s in %s::%s(%s).'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
                     throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
@@ -325,6 +345,15 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         return $Response;
     }
 
+    /**
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     protected function json_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
     {
         $StructuredBody = $Response->getBody();
@@ -336,6 +365,17 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             withBody($StreamBody)->
             withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
             withHeader('Content-Length', (string) strlen($json_string));
+        return $Response;
+    }
+
+    /**
+     * Just returns the response as it is.
+     * @param RequestInterface $Request
+     * @param ResponseInterface $Response
+     * @return ResponseInterface
+     */
+    protected function native_handler(RequestInterface $Request, ResponseInterface $Response): ResponseInterface
+    {
         return $Response;
     }
 
@@ -351,7 +391,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 //        return $this->html_handler($Request, $Response);
 //    }
 
-    protected function html_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    protected function html_handler(RequestInterface $Request, ResponseInterface $Response): ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable instanceof PerActionPhpViewInterface) {
@@ -372,9 +412,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @param RequestInterface $Request
      * @param ResponseInterface $Response
      * @return ResponseInterface
+     * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
-    protected function per_controller_php_view_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface
+    protected function per_controller_php_view_handler(RequestInterface $Request, ResponseInterface $Response): ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         $content_type = $Request->getContentType();
@@ -442,6 +486,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
      * @param ResponseInterface $Response
      * @return ResponseInterface
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
     protected function per_action_php_view_handler(RequestInterface $Request, ResponseInterface $Response) : ResponseInterface

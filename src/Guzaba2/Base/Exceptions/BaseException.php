@@ -139,18 +139,24 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @param string $message
      * @param int $code
      * @param Throwable|null $previous
+     * @param string|null $uuid
+     * @throws ContextDestroyedException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
     public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL, ?string $uuid = NULL)
     {
 
         parent::__construct($message, $code, $previous, $uuid);
-        
+
+//        print '==============================================='.PHP_EOL;
+//        print $message.PHP_EOL;
+//        print $this->getTraceAsString().PHP_EOL;
+//        print '==============================================='.PHP_EOL;
 
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
-
-            
         
 
         //TODO - reenable the below code
@@ -176,7 +182,8 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
             if ($this instanceof ContextDestroyedException) {
                 //there is no context so we cant preserve the current exception
             } else {
-                $Context = \Swoole\Coroutine::getContext();
+                //$Context = \Swoole\Coroutine::getContext();
+                $Context = Coroutine::getContext();
                 if (!isset($Context->{self::class})) {
                     $Context->{self::class} = new \stdClass();
                 }

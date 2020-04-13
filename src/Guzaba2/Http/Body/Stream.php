@@ -21,11 +21,11 @@ class Stream extends Base implements StreamInterface
      * Will be lowered when the processing is over
      * @var bool
      */
-    protected $is_writable_flag = TRUE;
+    protected bool $is_writable_flag = TRUE;
 
-    protected $is_readable_flag = TRUE;
+    protected bool $is_readable_flag = TRUE;
 
-    protected $is_seekable_flag = TRUE;
+    protected bool $is_seekable_flag = TRUE;
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
@@ -33,11 +33,15 @@ class Stream extends Base implements StreamInterface
      * Stream constructor.
      * @param null $stream
      * @param string $content If content is provided it will be written to the body
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function __construct(/* resource */ $stream = NULL, string $content = '')
     {
         parent::__construct();
-        
+
         $this->stream = $stream ?? fopen('php://memory', 'r+');
         //$this->stream = $stream ?? tmpfile();//use this if co::fwrite() is needed but memory and \fwrite() is twice faster
 
@@ -60,6 +64,9 @@ class Stream extends Base implements StreamInterface
      * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
      * @return string
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function __toString() : string
     {
@@ -72,6 +79,11 @@ class Stream extends Base implements StreamInterface
         }
 
         return $ret;
+    }
+
+    public function __sleep() : void
+    {
+        throw new RunTimeException(sprintf(t::_('The class %1s can not be serialized.'), __CLASS__));
     }
 
     /**
@@ -118,7 +130,10 @@ class Stream extends Base implements StreamInterface
      * Returns the current position of the file read/write pointer
      *
      * @return int Position of the file pointer
-     * @throws \RuntimeException on error.
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function tell() : int
     {
@@ -158,8 +173,10 @@ class Stream extends Base implements StreamInterface
      *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
      *     offset bytes SEEK_CUR: Set position to current location plus offset
      *     SEEK_END: Set position to end-of-stream plus offset.
-     * @throws RuntimeException on failure.
-     *
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
     //public function seek(int $offset, int $whence = SEEK_SET) : void
@@ -175,9 +192,12 @@ class Stream extends Base implements StreamInterface
      * If the stream is not seekable, this method will raise an exception;
      * otherwise, it will perform a seek(0).
      *
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      * @see seek()
      * @link http://www.php.net/manual/en/function.fseek.php
-     * @throws RuntimeException on failure.
      */
     public function rewind() : void
     {
@@ -201,7 +221,10 @@ class Stream extends Base implements StreamInterface
      *
      * @param string $string The string that is to be written.
      * @return int Returns the number of bytes written to the stream.
-     * @throws RuntimeException on failure.
+     * @throws RunTimeException on failure.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function write(/* string */ $string) /* int */
     //public function write(string $string) : int
@@ -232,7 +255,10 @@ class Stream extends Base implements StreamInterface
      *     call returns fewer bytes.
      * @return string Returns the data read from the stream, or an empty string
      *     if no bytes are available.
-     * @throws RuntimeException if an error occurs.
+     * @throws RunTimeException if an error occurs.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function read(/* int */ $length) : string
     //public function read(int $length) : string
@@ -247,8 +273,11 @@ class Stream extends Base implements StreamInterface
      * Returns the remaining contents in a string
      *
      * @return string
-     * @throws RuntimeException if unable to read or an error occurs while
+     * @throws RunTimeException if unable to read or an error occurs while
      *     reading.
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function getContents() : string
     {

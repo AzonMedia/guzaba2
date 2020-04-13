@@ -112,6 +112,7 @@ abstract class Controller extends Base implements ControllerInterface
      * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
      * @param array $ns_prefixes
      * @return array
+     * @throws InvalidArgumentException
      */
     public static function get_controller_classes(array $ns_prefixes = []) : array
     {
@@ -153,6 +154,7 @@ abstract class Controller extends Base implements ControllerInterface
      * @param Role $Role
      * @param array $ns_prefixes
      * @return array
+     * @throws InvalidArgumentException
      */
     public static function get_controller_classes_role_can_perform(Role $Role, array $ns_prefixes = []) : array
     {
