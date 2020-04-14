@@ -47,7 +47,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     protected const CHECK_MEMORY_STORE_MILLISECONDS = 10000;
 
-    protected $cleanup_timer_id = null;
+    protected ?int $cleanup_timer_id = null;
 
     /**
      * @var array
@@ -61,7 +61,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     //protected $data = [];
     //instead of storing the data
-    protected $data = [
+    protected array $data = [
         /*
         \Azonmedia\Glog\LogEntries\Models\LogEntry::class   => [
             1   => [
@@ -78,22 +78,33 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         */
     ];
 
-    protected $cache_enabled;
-    protected $total_count;
-    protected $hits;
-    protected $misses;
+    protected bool $caching_enabled_flag = TRUE;
 
-    // TODO UUID
-    protected $uuid_data = [];
+    /**
+     * The total number of records in the cache (including various  classes, IDs, versions)
+     * @var int
+     */
+    protected int $total_count = 0;
+    protected int $hits = 0;
+    protected int $misses = 0;
 
+    protected array $uuid_data = [];
+
+    /**
+     * Memory constructor.
+     * @param StoreInterface $FallbackStore
+     * @param MetaStoreInterface|null $MetaStore
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
     public function __construct(StoreInterface $FallbackStore, ?MetaStoreInterface $MetaStore = NULL)
     {
         parent::__construct();
 
         $this->FallbackStore = $FallbackStore ?? new NullStore();
-        $this->total_count = 0;
-        $this->hits = 0;
-        $this->misses = 0;
+//        $this->total_count = 0;
+//        $this->hits = 0;
+//        $this->misses = 0;
 
         if ($MetaStore) {
             $this->MetaStore = $MetaStore;
@@ -102,6 +113,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             $this->MetaStore = static::get_service('OrmMetaStore');
         }
 
+        //TODO - change it to use Server service...
         $ServerInstance = \Swoole\Server::getInstance();
         if ($ServerInstance) {
             //\Swoole\Timer::tick(1_000, function(){ print 'timer'; });
@@ -116,6 +128,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     /**
      * @param string $class
      * @return array
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\BadMethodCallException
      */
     public function get_unified_columns_data(string $class) : array
     {
@@ -128,6 +142,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     /**
      * @param string $class
      * @return array
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\BadMethodCallException
      */
     public function get_storage_columns_data(string $class) : array
     {
@@ -144,133 +160,116 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
-        //$class = get_class($ActiveRecord);
-        //$lookup_index = $ActiveRecord->get_lookup_index();
-        //$this->data[$class][$lookup_index] = $this->process_instance();
-        //if ($this->FallbackStore) {
-        if (true) { //cant work without backend for now
-            $all_data = $this->FallbackStore->update_record($ActiveRecord);
-        }
 
-        //the meta data needs to be updated
-
-        $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
-        $class = get_class($ActiveRecord);
-
-        $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_id());
-
-        $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
-
-
-        //cleanup
-        //unset($this->data[$class][$lookup_index][0]);
-        //$cid = self::get_root_coroutine_id();
-        $cid = \Swoole\Coroutine::getCid();
-        unset($this->data[$class][$lookup_index]['cid_'.$cid]);
-
-        //return $new_meta['object_uuid'];
-
-        // TODO make sure Memory can work as Final store - needs to generate and store UUIDs
-        //$data = $ActiveRecord->get_record_data();
-        //$meta = $ActiveRecord->
-
-        // TODO - update the data in the memory store here too
-        //$last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
-        //$this->data[$class][$lookup_index][$last_update_time] =& $pointer;
-        if ($ActiveRecord::uses_meta()) {
-            $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
-            $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+        if (!$this->caching_enabled()) {
+            return $this->FallbackStore->update_record($ActiveRecord);
         } else {
-            //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+            //$class = get_class($ActiveRecord);
+            //$lookup_index = $ActiveRecord->get_lookup_index();
+            //$this->data[$class][$lookup_index] = $this->process_instance();
+            //if ($this->FallbackStore) {
+            if (true) { //cant work without backend for now
+                $all_data = $this->FallbackStore->update_record($ActiveRecord);
+            }
+
+            //the meta data needs to be updated
+
+            $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
+            $class = get_class($ActiveRecord);
+
+            $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_id());
+
+            $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
+
+
+            //cleanup
+            //unset($this->data[$class][$lookup_index][0]);
+            //$cid = self::get_root_coroutine_id();
+            $cid = \Swoole\Coroutine::getCid();
+            unset($this->data[$class][$lookup_index]['cid_'.$cid]);
+
+            //return $new_meta['object_uuid'];
+
+            // TODO make sure Memory can work as Final store - needs to generate and store UUIDs
+            //$data = $ActiveRecord->get_record_data();
+            //$meta = $ActiveRecord->
+
+            // TODO - update the data in the memory store here too
+            //$last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
+            //$this->data[$class][$lookup_index][$last_update_time] =& $pointer;
+            if ($ActiveRecord::uses_meta()) {
+                $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
+                $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+            } else {
+                //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+            }
+
+            return $all_data;
         }
 
-        return $all_data;
+
     }
 
     /**
      * Returns a pointer to the last unique_version of the gived class and $lookup_index
      * @param string $class
-     * @param $index
+     * @param array $index
      * @return array
+     * @throws LogicException
+     * @throws RecordNotFoundException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function &get_data_pointer(string $class, array $index) : array
     {
-        //the provided index is array
-        //check is the provided array matching the primary index
-        if ($primary_index = $class::get_index_from_data($index)) {
-            
-            $lookup_index = self::form_lookup_index($primary_index);
-            if (isset($this->data[$class][$lookup_index])) {
-                //if found check is it current in MetaStore
-                $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-                //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
-                if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted']) ) {
-                    
-                    if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-                        $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-                    }
-                    $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-                    $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
-                    $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                    $this->hits++;
 
-                    $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
-                    $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
-                    Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
-                    return $_pointer;
-                }
-            }
-            // TODO UUID
-        } elseif ($uuid = $class::get_uuid_from_data($index)) {
-            if (isset($this->uuid_data[$uuid])) {
-                $lookup_index = $this->uuid_data[$uuid]['meta_object_id'];
-                $class_by_uuid = $this->uuid_data[$uuid]['meta_class_name'];
-                if ($class_by_uuid !== $class) {
-                    throw new LogicException(sprintf(t::_('The requested object is of class %s while the the provided UUID %s is of class %s.'), $class, $uuid, $class_by_uuid));
-                }
+        if (!$this->caching_enabled()) {
+            return $this->FallbackStore->get_data_pointer($class, $index);
+        } else {
+            //the provided index is array
+            //check is the provided array matching the primary index
+            if ($primary_index = $class::get_index_from_data($index)) {
+
+                $lookup_index = self::form_lookup_index($primary_index);
                 if (isset($this->data[$class][$lookup_index])) {
-
-                    $meta_data = $this->get_meta_by_uuid($uuid);
-                    $primary_index = [$meta_data['meta_object_id']];
                     //if found check is it current in MetaStore
                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-                    
                     //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
                     if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted']) ) {
+
                         if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                             $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                         }
                         $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
+                        $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         $this->hits++;
 
-                        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
-
+                        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                         Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $_pointer;
-                   }
+                    }
                 }
-            }
-        } elseif (array_key_exists($class, $this->data)) {
-            //do a search in the available memory objects....
+                // TODO UUID
+            } elseif ($uuid = $class::get_uuid_from_data($index)) {
+                if (isset($this->uuid_data[$uuid])) {
+                    $lookup_index = $this->uuid_data[$uuid]['meta_object_id'];
+                    $class_by_uuid = $this->uuid_data[$uuid]['meta_class_name'];
+                    if ($class_by_uuid !== $class) {
+                        throw new LogicException(sprintf(t::_('The requested object is of class %s while the the provided UUID %s is of class %s.'), $class, $uuid, $class_by_uuid));
+                    }
+                    if (isset($this->data[$class][$lookup_index])) {
 
-            //$time_start_lookup = (double) microtime(TRUE);
-
-            foreach ($this->data[$class] as $lookup_index=>$records) {
-                foreach ($records as $update_time=>$record) {
-                    if (array_intersect($index, $record['data']) === $index) {
-                        // $index is a subset of $record['data']
+                        $meta_data = $this->get_meta_by_uuid($uuid);
+                        $primary_index = [$meta_data['meta_object_id']];
                         //if found check is it current in MetaStore
-                        $primary_index = $class::get_index_from_data($record['data']);
-                        //there has to be a valid primary index now...
-                        if (!$primary_index) {
-                            throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, TRUE)));
-                        }
-
                         $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
 
-                        if ($last_update_time && $last_update_time === $update_time) {
+                        //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
+                        if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted']) ) {
                             if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
                                 $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
                             }
@@ -286,7 +285,41 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                         }
                     }
                 }
-            }
+            } elseif (array_key_exists($class, $this->data)) {
+                //do a search in the available memory objects....
+
+                //$time_start_lookup = (double) microtime(TRUE);
+
+                foreach ($this->data[$class] as $lookup_index=>$records) {
+                    foreach ($records as $update_time=>$record) {
+                        if (array_intersect($index, $record['data']) === $index) {
+                            // $index is a subset of $record['data']
+                            //if found check is it current in MetaStore
+                            $primary_index = $class::get_index_from_data($record['data']);
+                            //there has to be a valid primary index now...
+                            if (!$primary_index) {
+                                throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, TRUE)));
+                            }
+
+                            $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+
+                            if ($last_update_time && $last_update_time === $update_time) {
+                                if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+                                    $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+                                }
+                                $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                                $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
+                                $this->hits++;
+
+                                $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
+                                $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
+
+                                Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                                return $_pointer;
+                            }
+                        }
+                    }
+                }
 
 //            $time_end_lookup = (double) microtime(TRUE);
 //            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
@@ -296,73 +329,83 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 //                $Apm->increment_value('memory_store_time', $memory_lookup_time);
 //            }
 
-        } else {
-            //no primary index provided and no local data for this class
-            //proceed to the fallback store
-        }
-
-        $this->misses++;
-
-        $_pointer =& $this->FallbackStore->get_data_pointer($class, $index);
-
-
-        $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
-        $lookup_index = self::form_lookup_index($primary_index);
-        if (!$primary_index) {
-            throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
-        }
-
-        if (!$class::uses_meta()) { //do not store the objects of classes that do not use meta
-            return $_pointer;
-        }
-        if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
-            throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
-        }
-
-        $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
-        $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
-        $this->total_count++;
-
-        $uuid = $_pointer['meta']['meta_object_uuid'];
-        $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
-
-        //there can be other versions for the same class & lookup_index
-        //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
-        $this->update_meta_data($class, $primary_index, $_pointer['meta']);
-
-        if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-            $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-        }
-        $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
-
-        //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
-        foreach ($this->data[$class][$lookup_index] as $previous_update_time=>$data) {
-            if ($data['refcount'] === 0) {
-                unset($this->data[$class][$lookup_index][$previous_update_time]);
+            } else {
+                //no primary index provided and no local data for this class
+                //proceed to the fallback store
             }
+
+            $this->misses++;
+
+            $_pointer =& $this->FallbackStore->get_data_pointer($class, $index);
+
+
+            $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
+            $lookup_index = self::form_lookup_index($primary_index);
+            if (!$primary_index) {
+                throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, TRUE)));
+            }
+
+            if (!$class::uses_meta()) { //do not store the objects of classes that do not use meta
+                return $_pointer;
+            }
+            if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
+                throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, TRUE)));
+            }
+
+            $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
+            $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
+            $this->total_count++;
+
+            $uuid = $_pointer['meta']['meta_object_uuid'];
+            $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
+
+            //there can be other versions for the same class & lookup_index
+            //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
+            $this->update_meta_data($class, $primary_index, $_pointer['meta']);
+
+            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+            }
+            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+            $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
+
+            //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
+            foreach ($this->data[$class][$lookup_index] as $previous_update_time=>$data) {
+                if ($data['refcount'] === 0) {
+                    unset($this->data[$class][$lookup_index][$previous_update_time]);
+                }
+            }
+            return $this->data[$class][$lookup_index][$last_update_time];
         }
-        return $this->data[$class][$lookup_index][$last_update_time];
+
+
     }
 
     protected function update_meta_data(string $class, array $primary_index, array $meta_data) : void
     {
-        $meta = [];
-        //we need to provide only the needed data
-        foreach (MetaStoreInterface::DATA_STRUCT as $key_name=>$value_type) {
-            if (isset($meta_data[$key_name])) {
-                $meta[$key_name] = $meta_data[$key_name];
+
+        if (!$this->caching_enabled()) {
+            //do nothing
+        } else {
+            $meta = [];
+            //we need to provide only the needed data
+            foreach (MetaStoreInterface::DATA_STRUCT as $key_name=>$value_type) {
+                if (isset($meta_data[$key_name])) {
+                    $meta[$key_name] = $meta_data[$key_name];
+                }
+            }
+            if ($class::uses_meta()) {
+                $this->MetaStore->set_meta_data($class, $primary_index, $meta);
+
+
+                //only the last update time matters (it is also updated when an object is created)
+                //$class_meta = ['object_last_update_microtime' => $meta['object_last_update_microtime'] ];
+                $class_meta = $meta;
+                $this->MetaStore->set_class_meta_data($class, $class_meta);
             }
         }
-        if ($class::uses_meta()) {
-            $this->MetaStore->set_meta_data($class, $primary_index, $meta);
 
 
-            //only the last update time matters (it is also updated when an object is created)
-            //$class_meta = ['object_last_update_microtime' => $meta['object_last_update_microtime'] ];
-            $class_meta = $meta;
-            $this->MetaStore->set_class_meta_data($class, $class_meta);
-        }
     }
 
     /**
@@ -372,69 +415,84 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param array $primary_index
      * @return array
      * @throws LogicException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     * @throws RecordNotFoundException
      */
     public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
     {
-        // called in so the MetaStore contains the correct data
-        //$this->get_data_pointer($class, $primary_index);
-        $lookup_index = self::form_lookup_index($primary_index);
-        $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-        if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
-            throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
-        }
-        //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
-        //return $this->data[$class][$lookup_index][0];
-        //the above is wrong - if multiple coroutines at the same time create a new version of the same object they will be pointing to the same revision - 0
-        //$cid = \Co::getCid();
-        //$cid = self::get_root_coroutine_id();
-        //it is correct to have different data for the separate subcoroutines
-        $cid = \Swoole\Coroutine::getCid();
-        //better use the root coroutine as it may happen an object to be passed between coroutines
 
-        //this also allows to use defer() for cleanup
-        if (!$this->there_is_pointer_for_new_version($class, $primary_index)) {
-            //!!! copying arrays actually copies the pointers
-            //$this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
-            //$this->data[$class][$lookup_index]['cid_'.$rcid]['modified'] = [];
-            //instead a new array is to be formed from the existing one by assigning the keys one by one
-            $new_arr = [];
-            foreach ($this->data[$class][$lookup_index][$last_update_time] as $key=>$value) {
-                $new_arr[$key] = $value;
+        if(!$this->caching_enabled()) {
+            return $this->get_data_pointer($class, $primary_index);
+        } else {
+            // called in so the MetaStore contains the correct data
+            //$this->get_data_pointer($class, $primary_index);
+            $lookup_index = self::form_lookup_index($primary_index);
+            $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+            if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
+                throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, TRUE)));
             }
-            if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
-                $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
-            }
-            if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
-                //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
-                //the old version may actually remain the current one if the object gets modified but not saved
-                $latest_update_time = 0;
-                foreach ($this->data[$class][$lookup_index] as $existing_last_update_time=>$data) {
-                    $latest_update_time = max($existing_last_update_time, $latest_update_time);
-                }
-                if ($latest_update_time > $last_update_time) {
-                    //then there is a more recent record and this one can be deleted (as it is refcount 0)
-                    unset($this->data[$class][$lookup_index][$last_update_time]);
-                } else {
-                    //leave the record in ormstore for the purpose of caching
-                }
-            }
-            $new_arr['refcount'] = 1;
-            $new_arr['modified'] = [];
-            $this->data[$class][$lookup_index]['cid_'.$cid] = $new_arr;
-            defer(function () use ($class, $lookup_index, $cid) {
-                unset($this->data[$class][$lookup_index]['cid_'.$cid]);
-            });
-        }
+            //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+            //return $this->data[$class][$lookup_index][0];
+            //the above is wrong - if multiple coroutines at the same time create a new version of the same object they will be pointing to the same revision - 0
+            //$cid = \Co::getCid();
+            //$cid = self::get_root_coroutine_id();
+            //it is correct to have different data for the separate subcoroutines
+            $cid = \Swoole\Coroutine::getCid();
+            //better use the root coroutine as it may happen an object to be passed between coroutines
 
-        return $this->data[$class][$lookup_index]['cid_'.$cid];
+            //this also allows to use defer() for cleanup
+            if (!$this->there_is_pointer_for_new_version($class, $primary_index)) {
+                //!!! copying arrays actually copies the pointers
+                //$this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
+                //$this->data[$class][$lookup_index]['cid_'.$rcid]['modified'] = [];
+                //instead a new array is to be formed from the existing one by assigning the keys one by one
+                $new_arr = [];
+                foreach ($this->data[$class][$lookup_index][$last_update_time] as $key=>$value) {
+                    $new_arr[$key] = $value;
+                }
+                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
+                    $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+                }
+                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
+                    //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
+                    //the old version may actually remain the current one if the object gets modified but not saved
+                    $latest_update_time = 0;
+                    foreach ($this->data[$class][$lookup_index] as $existing_last_update_time=>$data) {
+                        $latest_update_time = max($existing_last_update_time, $latest_update_time);
+                    }
+                    if ($latest_update_time > $last_update_time) {
+                        //then there is a more recent record and this one can be deleted (as it is refcount 0)
+                        unset($this->data[$class][$lookup_index][$last_update_time]);
+                    } else {
+                        //leave the record in ormstore for the purpose of caching
+                    }
+                }
+                $new_arr['refcount'] = 1;
+                $new_arr['modified'] = [];
+                $this->data[$class][$lookup_index]['cid_'.$cid] = $new_arr;
+                defer(function () use ($class, $lookup_index, $cid) {
+                    unset($this->data[$class][$lookup_index]['cid_'.$cid]);
+                });
+            }
+
+            return $this->data[$class][$lookup_index]['cid_'.$cid];
+        }
     }
 
     public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
     {
-        //$rcid = self::get_root_coroutine_id();
-        $cid = \Swoole\Coroutine::getCid();
-        $lookup_index = self::form_lookup_index($primary_index);
-        return isset($this->data[$class][$lookup_index]['cid_'.$cid]);
+        if (!$this->caching_enabled()) {
+            return $this->FallbackStore->there_is_pointer_for_new_version();
+        } else {
+            //$rcid = self::get_root_coroutine_id();
+            $cid = \Swoole\Coroutine::getCid();
+            $lookup_index = self::form_lookup_index($primary_index);
+            return isset($this->data[$class][$lookup_index]['cid_'.$cid]);
+        }
+
     }
 
     /**
@@ -480,78 +538,100 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         }
     }
 
-    public function debug_get_data() : array
+    /**
+     * @return array
+     */
+    public function &debug_get_data() : array
     {
         return $this->data;
     }
 
+    /**
+     * @param string $uuid
+     * @return array
+     */
     public function get_meta_by_uuid(string $uuid) : array
     {
-        if (isset($this->uuid_data[$uuid])) {
-            //$ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
-            //$ret['class'] = $this->uuid_data[$uuid]['class'];
-            $ret = $this->uuid_data[$uuid];
+
+        if (!$this->caching_enabled()) {
+            return $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
         } else {
-            $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
+            if (isset($this->uuid_data[$uuid])) {
+                //$ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
+                //$ret['class'] = $this->uuid_data[$uuid]['class'];
+                $ret = $this->uuid_data[$uuid];
+            } else {
+                $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
+            }
+
+            return $ret;
         }
 
-        return $ret;
+
     }
 
     /**
      * Removes an active record data from the Store
      * @param ActiveRecordInterface $ActiveRecord
      * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
-        $class = get_class($ActiveRecord);
-        $primary_index = $ActiveRecord->get_primary_index();
-        $index = $ActiveRecord->get_id();
 
-        $this->FallbackStore->remove_record($ActiveRecord);
-        $this->MetaStore->remove_meta_data($class, $primary_index);
+        if (!$this->caching_enabled()) {
+            $this->FallbackStore->remove_record($ActiveRecord);
+        } else {
+            $class = get_class($ActiveRecord);
+            $primary_index = $ActiveRecord->get_primary_index();
+            $index = $ActiveRecord->get_id();
 
-        //this is a safe delete only for the version used by the current coroutine
-        //(but leaves an empty entry $data[class][index])
-        // $pointer =& $this->get_data_pointer(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
-        // $pointer['meta'] = [];
-        // $pointer['data'] = [];
-        //if proper locking on obth read & write is used there cant be any other instnaces used by other corouties
-        //and deleting all records/versions of this instance should not affect any other coroutines
-        //there even no need to have a loop thorugh the timestamps as if there is proper locking there should be only one (last) version remaining
-        //the free_pointer() should have released all previous versions (and all other coroutines/instances should have been destroyed if this coroutine has write lock)
+            $this->FallbackStore->remove_record($ActiveRecord);
+            $this->MetaStore->remove_meta_data($class, $primary_index);
 
-        // foreach ($this->data[$class][$index] as $microtime=>&$object_data) {
-        //     $object_data['meta'] = [];
-        //     $object_data['data'] = [];
-        // }
-        // unset($this->data[$class][$index]);
-        //if (count($this->data[$class][$index]) > 1) {
+            //this is a safe delete only for the version used by the current coroutine
+            //(but leaves an empty entry $data[class][index])
+            // $pointer =& $this->get_data_pointer(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+            // $pointer['meta'] = [];
+            // $pointer['data'] = [];
+            //if proper locking on obth read & write is used there cant be any other instnaces used by other corouties
+            //and deleting all records/versions of this instance should not affect any other coroutines
+            //there even no need to have a loop thorugh the timestamps as if there is proper locking there should be only one (last) version remaining
+            //the free_pointer() should have released all previous versions (and all other coroutines/instances should have been destroyed if this coroutine has write lock)
+
+            // foreach ($this->data[$class][$index] as $microtime=>&$object_data) {
+            //     $object_data['meta'] = [];
+            //     $object_data['data'] = [];
+            // }
+            // unset($this->data[$class][$index]);
+            //if (count($this->data[$class][$index]) > 1) {
             //$message = sprintf(t::_('At the time of deletion of object of class %s with index %s there are %s versions in Memory Store. This can be due to improper locking (both read & write needs to be used) or there is a bug in the cleanup in ActiveRecord::__destruct() or Memory::free_pointer().'),
             //$class, print_r($primary_index, TRUE), count($this->data[$class][$index]) );
             //throw new RunTimeException($message);
-        //}
-        foreach ($this->data[$class][$index] as $update_microtime => & $object_data) {
-            $object_data['is_deleted'] = TRUE;
-            //$object_data['meta']['meta_is_deleted'] = TRUE;
-        }
+            //}
+            foreach ($this->data[$class][$index] as $update_microtime => & $object_data) {
+                $object_data['is_deleted'] = TRUE;
+                //$object_data['meta']['meta_is_deleted'] = TRUE;
+            }
 
-        //the below should also be correct (see explanation above)
-        //$last_version_microtime = array_key_first($this->data[$class][$index]);
-        //$this->data[$class][$index][$last_version_microtime]['data'] = [];
-        //$this->data[$class][$index][$last_version_microtime]['meta'] = [];
-        //unset($this->data[$class][$index]);
-        //instead of deleting the data now (which may affect other coroutines in the same worker) we mark it for deletion
-        //which deletion will take place when refcount = 0 in free_pointer()
-        //this will allow GET requests to remain without locking
-        //but mandates a check that no WRITE/DELETE occurs in a GET request
-        //$this->data[$class][$index][$last_version_microtime]['is_deleted'] = TRUE;
+            //the below should also be correct (see explanation above)
+            //$last_version_microtime = array_key_first($this->data[$class][$index]);
+            //$this->data[$class][$index][$last_version_microtime]['data'] = [];
+            //$this->data[$class][$index][$last_version_microtime]['meta'] = [];
+            //unset($this->data[$class][$index]);
+            //instead of deleting the data now (which may affect other coroutines in the same worker) we mark it for deletion
+            //which deletion will take place when refcount = 0 in free_pointer()
+            //this will allow GET requests to remain without locking
+            //but mandates a check that no WRITE/DELETE occurs in a GET request
+            //$this->data[$class][$index][$last_version_microtime]['is_deleted'] = TRUE;
 
-        //$this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
-        $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
+            //$this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
+            $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
         $class_meta = ['meta_object_create_microtime' => $object_last_update_microtime, 'meta_object_last_update_microtime' => $object_last_update_microtime];
         $this->MetaStore->set_class_meta_data($class, $class_meta);
+        }
+
+
     }
 
     /**
@@ -641,12 +721,17 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     public function enable_caching() : void
     {
-        $this->cache_enabled = TRUE;
+        $this->caching_enabled_flag = TRUE;
     }
 
     public function disable_caching() : void
     {
-        $this->cache_enabled = FALSE;
+        $this->caching_enabled_flag = FALSE;
+    }
+
+    public function caching_enabled(): bool
+    {
+        return $this->caching_enabled_flag;
     }
 
     public function clear_cache() : void
@@ -657,14 +742,14 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     public function get_hits() : int
     {
         // !!!!!!FIXME!!!!!! remove start timer
-        $this->start_cleanup_timer();
+        //$this->start_cleanup_timer();
         return $this->hits;
     }
 
     public function get_misses() : int
     {
         // !!!!!!FIXME!!!!!! - remove start timer
-        $this->start_cleanup_timer();
+        //$this->start_cleanup_timer();
         return $this->misses;
     }
 
@@ -706,6 +791,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     }
 
+    /**
+     *
+     */
     public function start_cleanup_timer() : void
     {
 
@@ -776,6 +864,14 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         // TODO: Implement release_savepoint() method.
     }
 
+    /**
+     * @param ScopeReference|null $ScopeReference
+     * @param array $options
+     * @return Transaction
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
     {
 
@@ -791,9 +887,25 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         return $Transaction;
     }
 
+    /**
+     * @return string
+     */
     public function get_resource_id() : string
     {
         return get_class($this).':'.Coroutine::getCid();
+    }
+
+    public function get_stats(): array
+    {
+        $data = [
+            'total_records'         => $this->total_count,
+            'records_classes'       => count($this->data),
+            'enabled'               => $this->caching_enabled(),
+            'cache_hits'            => $this->get_hits(),
+            'cache_misses'          => $this->get_misses(),
+            'cache_hits_ratio'      => $this->get_hits_percentage(),
+        ];
+        return $data;
     }
 
 }

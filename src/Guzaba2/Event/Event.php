@@ -147,6 +147,15 @@ class Event implements ConfigInterface, EventInterface
         return $this->callbacks;
     }
 
+    /**
+     * @param array $callbacks
+     * @return array|null
+     * @throws InvalidReturnValueException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     private function execute_callbacks(array $callbacks) /* mixed */
     {
 

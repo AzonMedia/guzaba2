@@ -35,7 +35,7 @@ class QueryCache extends Base
 
     /**
      * A global cache used to store the microtime of the tables modifications
-     * @var IntCacheInterface
+     * @var ProcessCacheInterface
      */
     private ProcessCacheInterface $TimeCache;
 
@@ -180,5 +180,10 @@ class QueryCache extends Base
         }
 
         return $tables;
+    }
+
+    public function get_stats(): array
+    {
+        return $this->Cache->get_stats('query');
     }
 }

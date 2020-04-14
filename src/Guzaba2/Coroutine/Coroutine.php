@@ -472,6 +472,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function executeMulti(callable ...$callables) : array
     {

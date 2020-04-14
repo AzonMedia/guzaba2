@@ -20,9 +20,9 @@ class MemoryCache extends Base implements CacheInterface
 
     /**
      * Adds/overwrites data in the cache
+     * @param string $prefix
      * @param string $key
      * @param $data
-     * @throws RunTimeException
      */
     public function set(string $prefix, string $key, /* mixed*/ $data) : void
     {
@@ -45,8 +45,9 @@ class MemoryCache extends Base implements CacheInterface
 
     /**
      * Returns NULL if the key is not found.
+     * @param string $prefix
      * @param string $key
-     * @throws RunTimeException
+     * @return mixed|null
      */
     public function get(string $prefix, string $key) /* mixed */
     {
@@ -61,5 +62,27 @@ class MemoryCache extends Base implements CacheInterface
     public function exists(string $prefix, string $key) : bool
     {
         return array_key_exists($prefix, $this->cache) && array_key_exists($key, $this->cache[$prefix]) ;
+    }
+
+    public function get_stats($prefix = ''): array
+    {
+        if ($prefix) {
+            $ret = ['elements' => isset($this->cache[$prefix]) ? count($this->cache[$prefix]) : 0 ];
+        } else {
+            $ret = 0;
+            foreach ($this->cache as $prefix=>$data) {
+                $ret += count($data);
+            }
+        }
+        return $ret;
+    }
+
+    public function clear_cache(string $prefix = ''): void
+    {
+        if ($prefix) {
+            $this->cache[$prefix] = [];
+        } else {
+            $this->cache = [];
+        }
     }
 }

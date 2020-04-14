@@ -113,6 +113,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws RunTimeException
      * @throws ConfigurationException
      * @throws ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function get_role() : Role
     {
@@ -145,6 +146,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function grant_role(Role $Role): RolesHierarchy
     {
@@ -161,6 +163,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function revoke_role(Role $Role): void
     {
@@ -176,6 +179,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     protected function _validate_role_id(): ?ValidationFailedExceptionInterface
     {
@@ -204,6 +208,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     protected function _validate_user_name(): ?ValidationFailedExceptionInterface
     {
@@ -228,6 +233,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     protected function _validate_user_email(): ?ValidationFailedExceptionInterface
     {
@@ -254,6 +260,7 @@ class User extends ActiveRecord implements UserInterface
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws MultipleValidationFailedException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     protected function _before_write() : void
     {
@@ -270,6 +277,53 @@ class User extends ActiveRecord implements UserInterface
             $Role->role_name = $this->user_name;
             $Role->write();
         }
+    }
+
+
+    /**
+     * @check_permissions
+     * @throws InvalidArgumentException
+     * @throws MultipleValidationFailedException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     */
+    public function enable(): void
+    {
+        $Transaction = ActiveRecord::new_transaction($TR);
+        $Transaction->begin();
+
+        $this->check_permission('enable');
+        $this->user_is_disabled = FALSE;
+        $this->write();
+
+        $this->add_log_entry('enable',sprintf(t::_('The user %1s was enabled.'), $this->user_name));
+
+        $Transaction->commit();
+    }
+
+    /**
+     * @check_permissions
+     * @throws InvalidArgumentException
+     * @throws MultipleValidationFailedException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     */
+    public function disable(): void
+    {
+        $Transaction = ActiveRecord::new_transaction($TR);
+        $Transaction->begin();
+
+        $this->check_permission('disable');
+        $this->user_is_disabled = TRUE;
+        $this->write();
+
+        $this->add_log_entry('enable',sprintf(t::_('The user %1s was enabled.'), $this->user_name));
+
+        $Transaction->commit();
     }
 
 }

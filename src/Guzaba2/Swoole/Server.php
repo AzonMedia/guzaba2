@@ -7,10 +7,13 @@ namespace Guzaba2\Swoole;
 use Azonmedia\Utilities\SysUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Event\Event;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
+use Guzaba2\Swoole\Interfaces\IpcRequestInterface;
 use Guzaba2\Swoole\Interfaces\IpcResponseInterface;
 use Guzaba2\Translator\Translator as t;
 use Psr\Log\LogLevel;
@@ -159,6 +162,7 @@ class Server extends \Guzaba2\Http\Server
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
     {
@@ -328,6 +332,7 @@ class Server extends \Guzaba2\Http\Server
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function validate_server_configuration_options(array $options) : void
     {
@@ -479,8 +484,12 @@ class Server extends \Guzaba2\Http\Server
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function send_ipc_request(IpcRequest $IpcRequest, int $dest_worker_id, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): ?IpcResponse
+    public function send_ipc_request(IpcRequestInterface $IpcRequest, int $dest_worker_id, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): ?IpcResponseInterface
     {
+        new Event($this, '_before_send_ipc_request', func_get_args());
+
+        $ret = NULL;
+
         $this->validate_destination_worker_id($dest_worker_id);
         if ($timeout > self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
             throw new InvalidArgumentException(sprintf(t::_('The maximum timeout for awaiting an IpcResponse is %1s seconds.'), self::CONFIG_RUNTIME['ipc_responses_cleanup_time']));
@@ -493,19 +502,88 @@ class Server extends \Guzaba2\Http\Server
         if ($this->SwooleHttpServer->sendMessage($IpcRequest, $dest_worker_id)) {
             while(true) {
                 if (microtime(TRUE) > $microtime_start + $timeout) {
-                    return NULL;
+                    //return NULL;
+                    goto ret;
                 }
                 Coroutine::sleep(0.001);
                 if (isset($this->ipc_responses[$request_id])) {
                     $IpcResponse = $this->ipc_responses[$request_id];
                     unset($this->ipc_responses);
-                    return $IpcResponse;
+                    //return $IpcResponse;
+                    $ret = $IpcResponse;
+                    goto ret;
                 }
             }
         } else {
-            //throw ??
+            throw new RunTimeException(sprintf(t::_('The %1s::%2s() call returned FALSE.'), \Swoole\Http\Server::class, 'sendMessage'));
         }
-        return NULL;//just in case...
+
+        ret:
+        new Event($this, '_after_send_ipc_request', func_get_args());
+        return $ret;//just in case...
+    }
+
+    /**
+     * Sends a request to all other workers.
+     * @param IpcRequestInterface $IpcRequest
+     * @param int $timeout
+     * @return IpcResponseInterface[]
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function send_broadcast_ipc_request(IpcRequestInterface $IpcRequest, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): array
+    {
+        $total_workers = $this->get_total_workers();
+        $dest_worker_ids = range(0, $total_workers - 1);
+        //remove the worker_id of the current one
+        $current_worker_id = $this->get_worker_id();
+        $key = array_search($current_worker_id, $dest_worker_ids, TRUE);
+        if ($key === FALSE) {
+            throw new LogicException(sprintf(t::_('The ID %1s of the current worker is not found in the list of IDs of all the workers.'), $current_worker_id ));
+        }
+        unset($dest_worker_ids[$key]);
+        $dest_worker_ids = array_values($dest_worker_ids);
+        return $this->send_multicast_ipc_request($IpcRequest, $dest_worker_ids, $timeout);
+    }
+
+    /**
+     * Sends an IpcRequest to multiple workers
+     * @param IpcRequestInterface $IpcRequest
+     * @param array $dest_worker_ids
+     * @param int $timeout
+     * @return IpcResponseInterface[]
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function send_multicast_ipc_request(IpcRequestInterface $IpcRequest, array $dest_worker_ids, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): array
+    {
+        $callables = [];
+        foreach ($dest_worker_ids as $dest_worker_id) {
+            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): IpcResponseInterface {
+                return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
+            };
+        }
+        return Coroutine::executeMulti($callables);
+    }
+
+    /**
+     * Returns the total number (request handling workers + task workers) of the workers
+     * @return int
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function get_total_workers(): int
+    {
+        return $this->get_option('worker_num') + $this->get_option('task_worker_num');
     }
 
     /**
@@ -532,7 +610,8 @@ class Server extends \Guzaba2\Http\Server
     }
 
     /**
-     *
+     * Removes old IPC responses.
+     * This is needed as an IPC response may remain uncollected.
      */
     public function ipc_responses_cleanup(): void
     {

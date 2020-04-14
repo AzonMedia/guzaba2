@@ -84,8 +84,11 @@ class Request extends HandlerBase
      *
      * @param \Swoole\Http\Request $SwooleRequest
      * @param \Swoole\Http\Response $SwooleResponse
+     * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
     {

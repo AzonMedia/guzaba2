@@ -31,7 +31,7 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
 
     protected const CHECK_SWOOLE_TABLE_CACHE_MILLISECONDS = 10000;
 
-    protected $cleanup_timer_id = null;
+    protected ?int $cleanup_timer_id = NULL;
 
     public function __construct()
     {
@@ -50,9 +50,9 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
 
     /**
      * Adds/overwrites data in the cache
+     * @param string $prefix
      * @param string $key
-     * @param $data
-     * @throws RunTimeException
+     * @param int $data
      */
     public function set(string $prefix, string $key, int $data) : void
     {
@@ -75,8 +75,9 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
 
     /**
      * Returns NULL if the key is not found.
+     * @param string $prefix
      * @param string $key
-     * @throws RunTimeException
+     * @return int|null
      */
     public function get(string $prefix, string $key) : ?int
     {
@@ -94,6 +95,9 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
         return $this->SwooleTable->exist($key);
     }
 
+    /**
+     *
+     */
     public function start_cleanup_timer() : void
     {
         if (NULL === $this->cleanup_timer_id || (!\Swoole\Timer::exists($this->cleanup_timer_id))) {
@@ -105,14 +109,14 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
                     foreach ($this->SwooleTable as $key => $value) {
                         $this->SwooleTable->del($key);
                         $cleanedup++;
-                        $cleanup_percentage = $cleanedup / $total_count * 100.0;
+                        $cleanup_percentage = $cleanedup / $count * 100.0;
                         if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
                             break;
                         }
                     }
 
                     // log only if any cleanup performed
-                    $message_log = sprintf(t::_('SwooleTableIntCache %d records found, %d records cleanedup. Records left count: %d'), $count, $cleanedup, $this->SwooleTable->count());
+                    $message_log = sprintf(t::_('SwooleTableIntCache %d records found, %d records cleaned up. Records left count: %d'), $count, $cleanedup, $this->SwooleTable->count());
                     Kernel::log($message_log, LogLevel::INFO);
                 }
             };

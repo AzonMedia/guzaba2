@@ -4,13 +4,17 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole;
 
 use Guzaba2\Authorization\CurrentUser;
+use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
+use Guzaba2\Authorization\User;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Method;
 use Guzaba2\Http\Request;
 use Guzaba2\Http\Uri;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Swoole\Interfaces\IpcRequestInterface;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\RequestInterface;
@@ -30,23 +34,36 @@ class IpcRequest extends Request implements IpcRequestInterface
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'CurrentUser',
-            'Events',
         ]
     ];
 
     protected const CONFIG_RUNTIME = [];
 
+    /**
+     * Should a response be returned back to the calling worker.
+     * @var bool
+     */
     private bool $requires_response_flag = FALSE;
+
+    /**
+     * The request will be executed as this user.
+     * @var string
+     */
+    private string $user_uuid;
 
     /**
      * IpcRequest constructor.
      * @param int $method
      * @param string $route
      * @param array $args
-     * @param string $user_uuid
+     * @param string $user_uuid If provided the request will be done on behalf of the provided user_uuid. Use with extreme care!
      * @throws InvalidArgumentException
-     * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
      */
     public function __construct(int $method, string $route, iterable $args = [], string $user_uuid = '')
     {
@@ -60,8 +77,22 @@ class IpcRequest extends Request implements IpcRequestInterface
         if (!$user_uuid) {
             /** @var CurrentUser $CurrentUser */
             $CurrentUser = self::get_service('CurrentUser');
-            $user_uuid = $CurrentUser->get()->get_uuid();//TODO pass this
+            $user_uuid = $CurrentUser->get()->get_uuid();
+        } else {
+            //verify the user exists
+            try {
+                $User = new User($user_uuid);
+                if ($User->user_is_disabled) {
+                    throw new InvalidArgumentException(sprintf(t::_('The provided $user_uuid %1s corresponds to user %1s which is disabled. IPC requests can not be sent on behalf of disabled users.'), $user_uuid, $User->user_name));
+                }
+            } catch (RecordNotFoundException $Exception) {
+                throw new InvalidArgumentException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1s.'), $user_uuid));
+            } catch (PermissionDeniedException $Exception) {
+                throw new LogicException(sprintf(t::_('The user with UUID %1s can not be read. Please check the permissions.'), $user_uuid));
+            }
+
         }
+        $this->user_uuid = $user_uuid;
 
         $CurrentRequest = Coroutine::getRequest();
         if ($CurrentRequest) {
@@ -72,7 +103,7 @@ class IpcRequest extends Request implements IpcRequestInterface
             $Uri = new Uri('http', 'localhost', 80, $route);
         }
         //$headers = ['Accept' => ['application/json']];
-        $headers = ['Accept' => ['application/php']];
+        $headers = ['Accept' => ['application/php']];//this avoids the ExecutorMiddlware::json_handler() and uses the native_handler() which leaves it untouched
         $cookies = [];
         $server_params = [];//these will be formed in the worker when received - it will create a new Request with new server_params
 
@@ -81,16 +112,34 @@ class IpcRequest extends Request implements IpcRequestInterface
         parent::__construct($method, $Uri, $headers, $cookies, $server_params, $Body);
     }
 
+    /**
+     * Returns the UUID of the user which should be used to execute the call.
+     * @return string
+     */
+    public function get_user_uuid(): string
+    {
+        return $this->user_uuid;
+    }
+
+    /**
+     * @return string
+     */
     public function get_request_id(): string
     {
         return $this->get_object_internal_id();
     }
 
+    /**
+     * @param bool $requires
+     */
     public function set_requires_response(bool $requires): void
     {
         $this->requires_response_flag = $requires;
     }
 
+    /**
+     * @return bool
+     */
     public function requires_response(): bool
     {
         return $this->requires_response_flag;

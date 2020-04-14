@@ -50,4 +50,14 @@ class RedisCache extends Base implements CacheInterface, IndependentCacheInterfa
     {
 
     }
+
+    public function get_stats(string $prefix = ''): array
+    {
+        // TODO: Implement get_stats() method.
+    }
+
+    public function clear_cache(string $prefix = ''): void
+    {
+        // TODO: Implement clear_cache() method.
+    }
 }

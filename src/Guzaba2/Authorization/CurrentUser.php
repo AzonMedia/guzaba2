@@ -6,6 +6,7 @@ namespace Guzaba2\Authorization;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 
 /**
@@ -82,6 +83,9 @@ class CurrentUser extends Base
 //            //throw new InvalidArgumentException();
 //        }
 //        $this->initialize_user();
+        if ($User->user_is_disabled) {
+            throw new RunTimeException(sprintf(t::_('The user %1s can not be set as CurrentUser as it is disabled.'), $User->user_name));
+        }
         $this->User = $User;
     }
 

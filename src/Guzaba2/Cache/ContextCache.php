@@ -37,6 +37,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws RunTimeException
      * @throws InvalidArgumentException
      * @throws ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function set(string $prefix, string $key, /* mixed*/ $data) : void
     {
@@ -61,6 +62,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws RunTimeException
      * @throws InvalidArgumentException
      * @throws ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function delete(string $prefix, string $key) : void
     {
@@ -93,6 +95,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws RunTimeException
      * @throws InvalidArgumentException
      * @throws ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function get(string $prefix, string $key) /* mixed */
     {
@@ -115,6 +118,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws RunTimeException
      * @throws InvalidArgumentException
      * @throws ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function exists(string $prefix, string $key) : bool
     {
@@ -133,5 +137,15 @@ class ContextCache extends Base implements CacheInterface
             }
         }
         return $ret;
+    }
+
+    public function get_stats(string $prefix = ''): array
+    {
+        // TODO: Implement get_stats() method.
+    }
+
+    public function clear_cache(string $prefix = ''): void
+    {
+        // TODO: Implement clear_cache() method.
     }
 }
