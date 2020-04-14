@@ -45,7 +45,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
          * The hierarchy of the creation of the coroutines is of no importance in related to this limit.
          */
         'max_allowed_subcoroutines'         => 20,
-        'max_subcoroutine_exec_time'        => 5, //in seconds
+        'max_subcoroutine_exec_time'        => 10, //in seconds
         /**
          * Should a complete backtrace (taking into account parent coroutines) be provided when exception occurrs inside a coroutine
          */
@@ -518,13 +518,14 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws ContextDestroyedException
      * @throws RunTimeException If the subcoroutines do not finish before the given timeout
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     private static function awaitSubCoroutines(?int $timeout = NULL) : array
     {
         if ($timeout === NULL) {
             $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }
-        $cid = parent::getcid();
+        $cid = self::getcid();
 
         $Context = self::getContext();
 
@@ -547,8 +548,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $ret = $Channel->pop($timeout);
             if ($ret === FALSE) {
                 /*
-                print_r($subcoorutines_arr);
-                print_r($subcoroutines_completed_arr);
+                //print_r($subcoorutines_arr);
+                //print_r($subcoroutines_completed_arr);
                 $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
                 $unfinished_message_arr = [];
                 foreach ($subcoroutines_unfinished as $unfinished_cid) {
@@ -558,6 +559,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL . implode(PHP_EOL, $unfinished_message_arr));
                 throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
                 */
+
+                //todo - handle this !!!
+
             //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception

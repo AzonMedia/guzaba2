@@ -11,6 +11,7 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
+use Guzaba2\Http\Body\Structured;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Swoole\Interfaces\IpcRequestInterface;
@@ -166,6 +167,7 @@ class Server extends \Guzaba2\Http\Server
      */
     public function __construct(string $host = self::SWOOLE_DEFAULTS['host'], int $port = self::SWOOLE_DEFAULTS['port'], array $options = [])
     {
+
         $this->host = $host;
         $this->port = $port;
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
@@ -178,6 +180,11 @@ class Server extends \Guzaba2\Http\Server
         if (empty($options['task_worker_num'])) {
             $options['task_worker_num'] = 0;
         }
+
+        //TODO - do not allow task_ipc_mode = 3
+        $options['task_enable_coroutine'] = TRUE;//always true... no matter what is provided
+        //If the configuration message_queue_key has been set, the data of message queue would not be deleted and the swoole server could get the data after a restart.
+        $options['message_queue_key'] = 'swoole_mq1';//if set
 
         $this->options = $options;
 
@@ -460,17 +467,26 @@ class Server extends \Guzaba2\Http\Server
 
     /**
      * Unlike send_ipc_message() this method awaits and returns the response
-     * @param string $ipc_request_id
      * @param IpcResponseInterface $IpcResponse
+     * @param string $ipc_request_id
+     * @param int $src_worker_id
+     * @throws LogicException
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
-    public function set_ipc_request_response(IpcResponseInterface $IpcResponse, string $ipc_request_id): void
+    public function set_ipc_request_response(IpcResponseInterface $IpcResponse, string $ipc_request_id, int $src_worker_id): void
     {
-        if (isset($this->ipc_responses[$ipc_request_id])) {
-            Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1s.'), $ipc_request_id), LogLevel::NOTICE);
+
+        if (isset($this->ipc_responses[$ipc_request_id][$src_worker_id])) {
+            Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1s from worker %2s.'), $ipc_request_id, $src_worker_id), LogLevel::NOTICE);
+        }
+        if ( !( $IpcResponse->getBody()) instanceof Structured) {
+            throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1s but is of class %2s.'), Structured::class, get_class($IpcResponse->getBody()) ));
         }
         $IpcResponse->set_received_time(microtime(TRUE));
-        $this->ipc_responses[$ipc_request_id] = $IpcResponse;
+        $this->ipc_responses[$ipc_request_id][$src_worker_id] = $IpcResponse;
     }
 
     /**
@@ -500,15 +516,15 @@ class Server extends \Guzaba2\Http\Server
         $IpcRequest->set_requires_response(TRUE);
 
         if ($this->SwooleHttpServer->sendMessage($IpcRequest, $dest_worker_id)) {
-            while(true) {
+            while (true) {
                 if (microtime(TRUE) > $microtime_start + $timeout) {
                     //return NULL;
                     goto ret;
                 }
                 Coroutine::sleep(0.001);
-                if (isset($this->ipc_responses[$request_id])) {
-                    $IpcResponse = $this->ipc_responses[$request_id];
-                    unset($this->ipc_responses);
+                if (isset($this->ipc_responses[$request_id][$dest_worker_id])) {
+                    $IpcResponse = $this->ipc_responses[$request_id][$dest_worker_id];
+                    unset($this->ipc_responses[$request_id][$dest_worker_id]);
                     //return $IpcResponse;
                     $ret = $IpcResponse;
                     goto ret;
@@ -566,11 +582,11 @@ class Server extends \Guzaba2\Http\Server
     {
         $callables = [];
         foreach ($dest_worker_ids as $dest_worker_id) {
-            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): IpcResponseInterface {
+            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
                 return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
             };
         }
-        return Coroutine::executeMulti($callables);
+        return Coroutine::executeMulti(...$callables);
     }
 
     /**
@@ -615,8 +631,20 @@ class Server extends \Guzaba2\Http\Server
      */
     public function ipc_responses_cleanup(): void
     {
-        foreach ($this->ipc_responses as $ipc_request_id => $IpcResponse) {
-            if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+//        foreach ($this->ipc_responses as $ipc_request_id => $IpcResponse) {
+//            if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+//                unset($this->ipc_responses[$ipc_request_id]);
+//            }
+//        }
+        foreach ($this->ipc_responses as $ipc_request_id => $worker_data) {
+            foreach ($worker_data as $worker_id => $IpcResponse) {
+                if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+                    unset($this->ipc_responses[$ipc_request_id][$worker_id]);
+                }
+            }
+        }
+        foreach ($this->ipc_responses as $ipc_request_id => $worker_data) {
+            if (!count($worker_data)) {
                 unset($this->ipc_responses[$ipc_request_id]);
             }
         }

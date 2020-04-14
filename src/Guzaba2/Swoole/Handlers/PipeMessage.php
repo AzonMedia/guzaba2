@@ -7,12 +7,12 @@ namespace Guzaba2\Swoole\Handlers;
 use Azonmedia\Exceptions\InvalidArgumentException;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
-use Guzaba2\Authorization\User;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
 use Guzaba2\Http\Body\Stream;
+use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\RequestHandler;
 use Guzaba2\Http\Response;
@@ -107,9 +107,8 @@ class PipeMessage extends HandlerBase
         new Event($this, '_before_handle', func_get_args());
 
         if ($IpcRequest instanceof IpcRequestWithResponse) { //this is a response (pingback to a IpcRequest sent earlier)
-            $this->HttpServer->set_ipc_request_response($IpcRequest->get_response(), $IpcRequest->get_response()->get_request_id());
+            $this->HttpServer->set_ipc_request_response($IpcRequest->get_response(), $IpcRequest->get_response()->get_request_id(), $src_worker_id);
         } else { //this is a request from another worker
-
 
             $IpcRequest->setServer($this->HttpServer);
             $time = time();
@@ -129,11 +128,14 @@ class PipeMessage extends HandlerBase
             ];
             $IpcRequest = $IpcRequest->withServerParams($server_params);
 
+            Coroutine::init($IpcRequest);
+
             /** @var CurrentUser $CurrentUser */
             $CurrentUser = self::get_service('CurrentUser');
             $user_uuid = $IpcRequest->get_user_uuid();
+            $user_class = $CurrentUser->get_default_user_class();
             try {
-                $User = new User($user_uuid);
+                $User = new $user_class($user_uuid);
             } catch (RecordNotFoundException $Exception) {
                 throw new LogicException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1s for the IPC request.'), $user_uuid));
             } catch (PermissionDeniedException $Exception) {
@@ -149,7 +151,6 @@ class PipeMessage extends HandlerBase
             $Response = $QueueRequestHandler->handle($IpcRequest);
 
             if ($IpcRequest->requires_response()) {
-
                 $IpcResponse = new IpcResponse($Response, $IpcRequest->get_request_id());
                 $IpcRequestWithResponse = new IpcRequestWithResponse($IpcResponse);
                 $Server->sendMessage($IpcRequestWithResponse, $src_worker_id);

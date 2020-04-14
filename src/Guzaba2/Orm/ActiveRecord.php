@@ -428,7 +428,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
 
-        if (static::is_locking_enabled()) {
+        if (static::is_locking_enabled() && !$this->is_read_only()) {
             //if ($this->locking_enabled_flag) {
             $resource = MetaStore::get_key_by_object($this);
             $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.

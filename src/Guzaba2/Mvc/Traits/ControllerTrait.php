@@ -38,6 +38,7 @@ trait ControllerTrait
         $ret = [];
         $class = get_called_class();
         $RClass = new ReflectionClass($class);
+        /** @var ReflectionMethod $RMethod */
         foreach ($RClass->getOwnMethods(\ReflectionMethod::IS_PUBLIC) as $RMethod) {
             if (!$RMethod->isStatic() && $RMethod->getName()[0] !== '_') {
                 $ret[] = $RMethod->getName();
@@ -71,8 +72,9 @@ trait ControllerTrait
      * @param callable $controller_callable
      * @param array $arguments
      * @return ResponseInterface
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function execute_controller(callable $controller_callable, array $arguments) : ResponseInterface
+    public static function execute_controller(callable $controller_callable, array $arguments = []) : ResponseInterface
     {
         if (is_array($controller_callable)) {
             $Response = (new ExecutorMiddleware())->execute_controller_method($controller_callable[0], $controller_callable[1], $arguments);
@@ -88,8 +90,9 @@ trait ControllerTrait
      * @param callable $controller_callable
      * @param array $arguments
      * @return array
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function execute_structured_controller(callable $controller_callable, array $arguments) : array
+    public static function execute_structured_controller(callable $controller_callable, array $arguments = []) : array
     {
         return self::execute_controller($controller_callable, $arguments)->getBody()->getStructure();
     }
@@ -100,6 +103,7 @@ trait ControllerTrait
      * @return string
      * @throws InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function get_controller_callable_as_string(callable $controller_callable) : string
     {

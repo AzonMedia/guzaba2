@@ -49,10 +49,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     protected ?int $cleanup_timer_id = null;
 
-    /**
-     * @var array
-     */
-    protected array $known_classes = [];
+//    /**
+//     * @var array
+//     */
+//    protected array $known_classes = [];
 
     /**
      * @var MetaStoreInterface

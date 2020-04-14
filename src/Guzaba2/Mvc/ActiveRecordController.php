@@ -65,6 +65,13 @@ implements ControllerInterface
      * If $Request is provided it will be used as a Controller meaning no "read" permission will be checked at creation.
      * The ExecutorMiddleware will only check the permissions of the method being invoked.
      * @param RequestInterface $Request
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
      */
     //public function __construct(RequestInterface $Request)
     public function __construct($Request = NULL)
@@ -117,6 +124,9 @@ implements ControllerInterface
      * Or suppress certain routes based on permissions.
      * This will allow for the routes to be changed without code modification.
      * @return iterable|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function get_routes() : ?iterable
     {
@@ -135,8 +145,9 @@ implements ControllerInterface
      * @param string $method
      * @param array $arguments
      * @return ResponseInterface
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_action(string $method, array $arguments) : ResponseInterface
+    public function execute_action(string $method, array $arguments = []) : ResponseInterface
     {
         return (new ExecutorMiddleware())->execute_controller_method($this, $method, $arguments);
     }
@@ -147,8 +158,9 @@ implements ControllerInterface
      * @param string $method
      * @param array $arguments
      * @return array
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_structured_action(string $method, array $arguments) : array
+    public function execute_structured_action(string $method, array $arguments = []) : array
     {
         return $this->execute_action($method, $arguments)->getBody()->getStructure();
     }
@@ -161,8 +173,9 @@ implements ControllerInterface
      * @param array $arguments
      * @return array
      * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments) : array
+    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments = []) : array
     {
         return $this->execute_controller_action($controller_class, $method, $arguments)->getBody()->getStructure();
     }
@@ -175,13 +188,14 @@ implements ControllerInterface
      * @param array $arguments
      * @return ResponseInterface
      * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_controller_action(string $controller_class, string $method, array $arguments) : ResponseInterface
+    public function execute_controller_action(string $controller_class, string $method, array $arguments = []) : ResponseInterface
     {
-        if (class_exists($controller_class)) {
+        if (!class_exists($controller_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s does not exist.'), $controller_class));
         }
-        if (is_a($controller_class, ActiveRecordController::class, TRUE)) {
+        if (!is_a($controller_class, ActiveRecordController::class, TRUE)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), ActiveRecordController::class));
         }
         $controller_callable = [ new $controller_class($this->get_request()), $method ];

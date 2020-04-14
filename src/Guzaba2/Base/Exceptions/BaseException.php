@@ -150,11 +150,6 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
         parent::__construct($message, $code, $previous, $uuid);
 
-//        print '==============================================='.PHP_EOL;
-//        print $message.PHP_EOL;
-//        print $this->getTraceAsString().PHP_EOL;
-//        print '==============================================='.PHP_EOL;
-
         $this->set_object_internal_id();
         $this->set_created_coroutine_id();
         

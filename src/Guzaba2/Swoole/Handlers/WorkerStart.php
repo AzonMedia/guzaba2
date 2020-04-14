@@ -73,7 +73,7 @@ class WorkerStart extends HandlerBase
             $ConnectionMonitor->monitor();
         });
 
-        \Swoole\Timer::tick($this->HttpServer->get_ipc_responses_cleanup_time() * 1000, [$this->HttpServer, 'ipc_responses_cleanup']);
+        //\Swoole\Timer::tick($this->HttpServer->get_ipc_responses_cleanup_time() * 1000, [$this->HttpServer, 'ipc_responses_cleanup']);
 
 
         //if (Debugger::is_enabled()) {

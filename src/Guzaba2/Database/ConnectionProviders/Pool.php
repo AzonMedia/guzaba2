@@ -30,7 +30,7 @@ use Guzaba2\Kernel\Kernel;
 class Pool extends Provider
 {
     protected const CONFIG_DEFAULTS = [
-        'max_connections'   => 20,
+        'max_connections'   => 2,//the maximum number of connections per worker
         //'connections'       => [],
         'services'          => [
             'Apm',
