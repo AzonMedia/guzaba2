@@ -284,6 +284,11 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 //        return $this->InterruptedTransaction;
 //    }
 
+    /**
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
     public function __destruct()
     {
         //print 'EXC DESTR'.PHP_EOL;

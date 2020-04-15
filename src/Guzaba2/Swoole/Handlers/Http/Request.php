@@ -56,6 +56,8 @@ class Request extends HandlerBase
      * @param ResponseInterface|null $ServerErrorResponse
      * @throws InvalidArgumentException
      * @throws RunTimeException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL, ?ResponseInterface $ServerErrorResponse = NULL)
     {
@@ -64,7 +66,7 @@ class Request extends HandlerBase
         $this->middlewares = $middlewares;
 
         if (!$DefaultResponse) {
-            $message = t::_('Content not found or request not understood (routing not configured).');
+            $message = t::_('Content not found or request not understood. The request contains a method and route that could not be found.');
             $Body = new Stream();
             $Body->write($message);
             $DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body) )->withHeader('Content-Length', (string) strlen($message));

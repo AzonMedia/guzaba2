@@ -7,6 +7,7 @@ namespace Guzaba2\Transaction;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
+use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Event\Event;
 use Guzaba2\Event\Events;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
@@ -34,6 +35,9 @@ class TransactionDebug extends Base implements ClassInitializationInterface
     /**
      * Must return an array of the initialization methods (method names or description) that were run.
      * @return array
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \ReflectionException
      */
     public static function run_all_initializations(): array
     {
@@ -44,6 +48,11 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         return [];
     }
 
+    /**
+     * @throws RunTimeException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \ReflectionException
+     */
     public static function register_transaction_event_handler() : void
     {
         /** @var Events $Events */
@@ -60,6 +69,9 @@ class TransactionDebug extends Base implements ClassInitializationInterface
      * Prints or stores all _after_* transaction events
      * @param Event $Event
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function transaction_event_handler(Event $Event) : void
     {
@@ -69,14 +81,19 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         if (strpos($event_name, '_after_') !== FALSE) {
             $message = str_repeat(' ',$Transaction->get_nesting() * 4).get_class($Transaction).':'.$Transaction->get_resource()->get_resource_id().' '.str_replace('_after_', '', $event_name);
             if (self::CONFIG_RUNTIME['group_messages']) {
-                $Context = Coroutine::getContext();
-                if (!isset($Context->{self::class})) {
-                    $Context->{self::class} = new \stdClass();
+                try {
+                    $Context = Coroutine::getContext();
+                    if (!isset($Context->{self::class})) {
+                        $Context->{self::class} = new \stdClass();
+                    }
+                    if (!isset($Context->{self::class}->transaction_debug_messages)) {
+                        $Context->{self::class}->transaction_debug_messages = [];
+                    }
+                    $Context->{self::class}->transaction_debug_messages[] = $message;
+                } catch (ContextDestroyedException $Exception) {
+                    Kernel::log($message, LogLevel::DEBUG);
                 }
-                if (!isset($Context->{self::class}->transaction_debug_messages)) {
-                    $Context->{self::class}->transaction_debug_messages = [];
-                }
-                $Context->{self::class}->transaction_debug_messages[] = $message;
+
             } else {
                 Kernel::log($message, LogLevel::DEBUG);
             }
@@ -88,15 +105,23 @@ class TransactionDebug extends Base implements ClassInitializationInterface
      * Prints the transaction events at the end of the request if group_messages is enabled.
      * @param Event $Event
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function print_debug_info(Event $Event) : void
     {
-        $Context = Coroutine::getContext();
-        $message = '';
-        if (!empty($Context->{self::class}->transaction_debug_messages)) {
-            $message = PHP_EOL.'Transactions Debug Info:'.PHP_EOL.implode(PHP_EOL, $Context->{self::class}->transaction_debug_messages);
+        try {
+            $Context = Coroutine::getContext();
+            $message = '';
+            if (!empty($Context->{self::class}->transaction_debug_messages)) {
+                $message = PHP_EOL.'Transactions Debug Info:'.PHP_EOL.implode(PHP_EOL, $Context->{self::class}->transaction_debug_messages);
+            }
+
+            Kernel::log($message, LogLevel::DEBUG);
+        } catch (ContextDestroyedException $Exception) {
+            $message = sprintf(t::_('No transactions Debug Info is available as the coroutine context is destroyed.'));
+            Kernel::log($message, LogLevel::DEBUG);
         }
 
-        Kernel::log($message, LogLevel::DEBUG);
     }
 }

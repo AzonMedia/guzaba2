@@ -49,7 +49,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         /**
          * Should a complete backtrace (taking into account parent coroutines) be provided when exception occurrs inside a coroutine
          */
-        'enable_complete_backtrace'         => TRUE,
+        'enable_complete_backtrace'         => FALSE,//if enabled this will keep individual backtrace for each created coroutine
+        //but this is no longer needed as all coroutines should be created with @see self::executeMulti() and never through self::create()
+        //and executeMulti keeps the one single backtrace for all awaited coroutines
+
         'services'                          => [
             'Apm'
         ],
@@ -164,6 +167,9 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      */
     public static function getContext($cid = NULL) : \Swoole\Coroutine\Context
     {
+
+        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
         if (!self::inCoroutine()) {
             throw new RunTimeException(sprintf(t::_('The code is not running in a coroutine thus the context is not available.')));
         }
@@ -172,11 +178,12 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
         $Context = parent::getContext($cid);
         if ($Context === NULL) {
-            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));
+            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is destroyed and can not be used/obtained again.'), self::getCid() ));
+            //return NULL;
         }
 
         if (!empty($Context->is_destroyed)) {
-            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is being destroyed and can not be used/obtained again.'), self::getCid() ));
+            throw new ContextDestroyedException(sprintf(t::_('The coroutine %s context is currently being destroyed and can not be used/obtained again.'), self::getCid() ));
         }
 
         if (empty($Context->is_initialized_flag)) {
@@ -228,6 +235,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //so instead the callable is wrapped in another callable in which wrapper we obtain the new $cid and process it before the actual callable is executed
         $new_cid = 0;
         $WrapperFunction = static function (...$params) use ($callable, &$new_cid) : void {
+
+            //the first thing to do when creating a new coroutine is to obtain/initialize its context (as this accessed the parent context)
+            //if this is done later in the coroutine the parent coroutine may no longer exist.
+            $Context = self::getContext($new_cid);
+
             $hash = GeneralUtil::get_callable_hash($callable);
 
             $new_cid = self::getcid();
@@ -253,7 +265,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                 }
             }
 
-            $Context = self::getContext($new_cid);
+            //$Context = self::getContext($new_cid);
 
             \Swoole\Coroutine::defer(function() use ($Context, $ParentContext) {
                 //print_r(array_keys(get_object_vars($Context)));
@@ -321,6 +333,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function getFullBacktrace(?int $cid = NULL, int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0) : array
     {
@@ -341,6 +354,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      * @uses self::getFullBacktrace()
      */
     public static function getSimpleBacktrace() : array
@@ -363,6 +377,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function getParentCoroutines(?int $cid = NULL) : array
     {
@@ -392,8 +407,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
      * If this is in Swoole Server context the root coroutine would be the coroutine started by the worker to serve the request.
      * @param int|null $cid
      * @return int
+     * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function getRootCoroutineId(?int $cid = NULL) : int
     {
@@ -477,20 +494,31 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function executeMulti(callable ...$callables) : array
     {
         if (!count($callables)) {
-            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %s()'), __METHOD__));
+            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %1s()'), __METHOD__));
         }
+        $cid = self::getcid();
+        if ($cid <= 0) {
+            throw new RunTimeException(sprintf(t::_('%1s() can be executed only from an existing coroutine.'), __METHOD__));
+        }
+
         $Context = self::getContext();
         if (!property_exists($Context, self::class)) {
-            $Context->{self::class} = [];
+            $Context->{self::class} = new \stdClass();
         }
-        if (!empty($Context->{self::class}['execute_multiple_coroutines'])) {
-            throw new RunTimeException(sprintf(t::_('There is already a %s() running %s coroutines.'), __METHOD__, $Context->{self::class}['execute_multiple_coroutines'] ));
+        if (!empty($Context->{self::class}->execute_multiple_coroutines)) {
+            throw new RunTimeException(sprintf(t::_('There is already a %1s() running %2s coroutines.'), __METHOD__, count($Context->{self::class}->execute_multiple_coroutines) ));
         }
 
-        $Context->{self::class}['execute_multiple_coroutines'] = count($callables);
 
+        //$Context->{self::class}['execute_multiple_coroutines'] = count($callables);
+        //$Context->{self::class}->execute_multiple_coroutines = array_map( fn($callable) : string => GeneralUtil::get_callable_hash($callable), $callables);
+
+        //$Context->{self::class}->execute_multiple_coroutines_backtrace = self::getBackTrace($cid, DEBUG_BACKTRACE_IGNORE_ARGS);
+        //$Context->{self::class}->execute_multiple_coroutines_backtrace = (new \Exception(''))->getTraceAsString();
         foreach ($callables as $callable) {
-            self::create($callable);
+            //self::create($callable);
+            $new_cid = self::create($callable);
+            $Context->{self::class}->execute_multiple_coroutines[$new_cid] = GeneralUtil::get_callable_hash($callable);
         }
         $callables_ret = self::awaitSubCoroutines();
 
@@ -504,7 +532,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             }
         }
 
-        unset($Context->{self::class}['execute_multiple_coroutines']);
+        unset($Context->{self::class}->execute_multiple_coroutines);
+        //unset($Context->{self::class}->execute_multiple_coroutines_backtrace);
 
         return $ret;
     }
@@ -535,33 +564,28 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 //        }
         $Channel = $Context->{Channel::class};
 
-        //$subcoroutines_count = self::getSubCoroutinesCount($cid);
-        //$subcoorutines_arr = self::getSubCoroutines($cid);
+
         $subcoroutines_completed_arr = [];
-        //for ($aa = 0 ; $aa < $subcoroutines_count ; $aa++) {
-        if (empty($Context->{self::class}['execute_multiple_coroutines'])) {
+        if (empty($Context->{self::class}->execute_multiple_coroutines)) {
             throw new RunTimeException(sprintf(t::_('There are not current subcoroutines started.')));
         }
 
-        $cnt_coroutines_to_await = $Context->{self::class}['execute_multiple_coroutines'];
+        $cnt_coroutines_to_await = count($Context->{self::class}->execute_multiple_coroutines);
+        $subcoorutines_arr = $Context->{self::class}->execute_multiple_coroutines;
+
         for ($aa = 0 ; $aa < $cnt_coroutines_to_await ; $aa++) {
             $ret = $Channel->pop($timeout);
             if ($ret === FALSE) {
-                /*
-                //print_r($subcoorutines_arr);
-                //print_r($subcoroutines_completed_arr);
-                $subcoroutines_unfinished = array_diff($subcoorutines_arr, $subcoroutines_completed_arr);
-                $unfinished_message_arr = [];
-                foreach ($subcoroutines_unfinished as $unfinished_cid) {
-                    $backtrace_str = print_r(parent::getBacktrace($unfinished_cid, DEBUG_BACKTRACE_IGNORE_ARGS), TRUE);
-                    $unfinished_message_arr[] = sprintf(t::_('subcoroutine ID %s : %s'), $unfinished_cid, $backtrace_str);
+                //lets find out which ones timed out
+                $failed_subcoroutines_arr = [];
+                $bb = 0;
+                foreach ($subcoorutines_arr as $sub_cid => $sub_hash) {
+                    if (!isset($subcoroutines_completed_arr[$sub_hash])) {
+                        $failed_subcoroutines_arr[] = ['cid' => $sub_cid, 'hash' => $sub_hash, 'position' => $bb];
+                    }
+                    $bb++;
                 }
-                $unfinished_message_str = sprintf(t::_('Unfinished subcoroutines: %s'), PHP_EOL . implode(PHP_EOL, $unfinished_message_arr));
-                throw new RunTimeException(sprintf(t::_('The timeout of %s seconds was reached. %s'), $timeout, $unfinished_message_str));
-                */
-
-                //todo - handle this !!!
-
+                throw new RunTimeException(sprintf(t::_('The timeout of %1s seconds for executing the sub-coroutines was reached. The failed sub-coroutines are: %2s.'), $timeout, print_r($failed_subcoroutines_arr, TRUE) ));
             //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
