@@ -762,7 +762,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         if (0 != $total) {
             $ret = (float) ($hits / $total * 100.0);
         }
-
+        $ret = round($ret, 2);
         return $ret;
     }
 

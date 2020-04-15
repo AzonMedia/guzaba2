@@ -17,7 +17,7 @@ class IpcRequestWithResponse extends IpcRequest implements IcpRequestWithRespons
     {
         $this->IpcResponse = $IpcResponse;
         $method = Method::HTTP_POST;
-        $route = '';
+        $route = '/';
         parent::__construct($method, $route);
     }
 

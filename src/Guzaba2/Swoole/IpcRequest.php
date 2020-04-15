@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
 
+use Azonmedia\Routing\Interfaces\RouterInterface;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\User;
@@ -34,6 +35,7 @@ class IpcRequest extends Request implements IpcRequestInterface
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'CurrentUser',
+            'Router',//used to validate the route
         ]
     ];
 
@@ -65,14 +67,31 @@ class IpcRequest extends Request implements IpcRequestInterface
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      * @throws \ReflectionException
      */
-    public function __construct(int $method, string $route, iterable $args = [], string $user_uuid = '')
+    public function __construct( /* int|string */ $method, string $route, iterable $args = [], string $user_uuid = '')
     {
-        //parent::__construct();
-        if (!isset(Method::METHODS_MAP[$method])) {
-            $valid_method_constants = implode(',', array_map( fn(string $method) : string => 'HTTP_'.$method ,array_values(Method::METHODS_MAP)));
-            throw new InvalidArgumentException(sprintf(t::_('Invalid method constant %1s is provided. The valid constants are %2s::[%3s]'), $method, Method::class,  $valid_method_constants));
+        if (!$method) {
+            throw new InvalidArgumentException(sprintf(t::_('No $method is provided.')));
         }
-        $method = Method::METHODS_MAP[$method];
+        if (is_int($method)) {
+            if (!isset(Method::METHODS_MAP[$method])) {
+                $valid_method_constants = implode(',', array_map(fn (string $method): string => 'HTTP_' . $method, array_values(Method::METHODS_MAP)));
+                throw new InvalidArgumentException(sprintf(t::_('Invalid method constant %1s is provided. The valid constants are %2s::[%3s]'), $method, Method::class, $valid_method_constants));
+            }
+            $method = Method::METHODS_MAP[$method];
+        } elseif (is_string($method)) {
+            if (!Method::is_valid_method($method)) {
+                throw new InvalidArgumentException(sprintf(t::_('Invalid method string %1s is provided. The valid method names are %2s.'), implode(',', array_values(Method::METHODS_MAP)) ));
+            }
+        } else {
+            throw new InvalidArgumentException(sprintf(t::_('Wrong type %1s provided for $method. Only int and string are supported.'), gettype($method) ));
+        }
+
+        if (!$route) {
+            throw new InvalidArgumentException(sprintf(t::_('No $route provided.')));
+        } else {
+            //check is this a valid route...
+            //this will be done further down after the parent constructor is invoked by using $this
+        }
 
         if (!$user_uuid) {
             /** @var CurrentUser $CurrentUser */
@@ -110,6 +129,12 @@ class IpcRequest extends Request implements IpcRequestInterface
         $Body = new Structured($args);
         //$this->Request = new Request($method, $Uri, $headers, $cookies, $server_params, $Body);
         parent::__construct($method, $Uri, $headers, $cookies, $server_params, $Body);
+
+        /** @var RouterInterface $Router */
+        $Router = self::get_service('Router');
+        if (!$Router->match_request($this)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided route %1s seems invalid (can not be routed).'), $route));
+        }
     }
 
     /**

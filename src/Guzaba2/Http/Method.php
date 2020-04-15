@@ -45,4 +45,17 @@ abstract class Method
         }
         return $ret;
     }
+
+    public static function is_valid_method(string $method): bool
+    {
+        $ret = FALSE;
+        $method = strtoupper($method);
+        foreach (self::METHODS_MAP as $method_id => $method_name) {
+            if ($method === $method_name) {
+                $ret = TRUE;
+                break;
+            }
+        }
+        return $ret;
+    }
 }

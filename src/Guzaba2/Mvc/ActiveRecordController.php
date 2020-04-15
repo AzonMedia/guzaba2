@@ -193,10 +193,13 @@ implements ControllerInterface
     public function execute_controller_action(string $controller_class, string $method, array $arguments = []) : ResponseInterface
     {
         if (!class_exists($controller_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided class %s does not exist.'), $controller_class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %1s does not exist.'), $controller_class));
         }
         if (!is_a($controller_class, ActiveRecordController::class, TRUE)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), ActiveRecordController::class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %1s is not a %2s.'), ActiveRecordController::class));
+        }
+        if (!method_exists($controller_class, $method)) {
+            throw new InvalidArgumentException(sprintf(t::_('The controller class %1s does not have a method $2s.'), $controller_class, $method));
         }
         $controller_callable = [ new $controller_class($this->get_request()), $method ];
         return self::execute_controller( $controller_callable, $arguments);
