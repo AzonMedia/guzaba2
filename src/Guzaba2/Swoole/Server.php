@@ -181,10 +181,17 @@ class Server extends \Guzaba2\Http\Server
             $options['task_worker_num'] = 0;
         }
 
+        self::validate_server_configuration_options($options);
+
         //TODO - do not allow task_ipc_mode = 3
-        $options['task_enable_coroutine'] = TRUE;//always true... no matter what is provided
         //If the configuration message_queue_key has been set, the data of message queue would not be deleted and the swoole server could get the data after a restart.
-        $options['message_queue_key'] = 'swoole_mq1';//if set
+        if (empty($options['message_queue_key'])) {
+            $options['message_queue_key'] = 'swoole_mq1';//if set
+        }
+
+        if (empty($options['task_enable_coroutine'])) {
+            $options['task_enable_coroutine'] = TRUE;//always true... no matter what is provided
+        }
 
         $this->options = $options;
 
@@ -197,11 +204,81 @@ class Server extends \Guzaba2\Http\Server
         }
         $this->SwooleHttpServer = new \Swoole\Http\Server($this->host, $this->port, $this->dispatch_mode, $sock_type);
         
-        self::validate_server_configuration_options($options);
+
 
         $this->SwooleHttpServer->set($options);
 
         Kernel::set_http_server($this);
+    }
+
+
+    /**
+     * Validates swooole server configuration options
+     * @param array $options this array will be passed to $SwooleHttpServer->set()
+     *
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     */
+    public static function validate_server_configuration_options(array $options) : void
+    {
+        foreach ($options as $option_name => $option_value) {
+            if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
+                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option "%s" provided to server configuration.'), $option_name));
+            }
+        }
+
+        if (array_key_exists('task_enable_coroutine', $options) && $options['task_enable_coroutine'] !== TRUE) {
+            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to disable the coroutines in the task workers (task_enable_coroutine = FALSE).')));
+        }
+
+        if (!empty($options['task_ipc_mode']) && $options['task_ipc_mode'] === 3) {
+            throw new InvalidArgumentException(sprintf(t::_('task_ipc_mode = 3 is not supported. Mode 3 does not support to specify task worker process in Server::task().')));
+        }
+
+        if (!empty($options['document_root']) && empty($options['enable_static_handler'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $options['document_root']));
+        }
+        if (!empty($options['upload_tmp_dir'])) {
+            if (!file_exists($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+            }
+            if (!is_dir($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+            }
+            if (!is_writeable($options['upload_tmp_dir'])) {
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+            }
+        }
+
+        if (!empty($options['enable_static_handler']) && empty($options['document_root'])) {
+            throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
+        }
+        if (!empty($options['open_http2_protocol']) && (empty($options['ssl_cert_file']) || empty($options['ssl_key_file']))) {
+            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set. You can also try to start the application server with --enable-ssl.')));
+        }
+        if (!empty($options['ssl_cert_file']) && !is_readable($options['ssl_cert_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
+        }
+        if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
+        }
+        //since Swoole 4.4.14 this is supported
+        //if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
+        //    throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
+        //}
+
+        if (!empty($options['daemonize']) && empty($options['log_file'])) {
+            throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));
+        }
+        if (!empty($options['daemonize']) && file_exists($options['log_file']) && !is_writable($options['log_file'])) {
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.'), $options['log_file'] ));
+        }
+        if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'] , dirname($options['log_file']) ));
+        }
     }
 
     public function get_host() : string
@@ -326,80 +403,37 @@ class Server extends \Guzaba2\Http\Server
 //        return $this->SwooleHttpServer;
 //    }
 
-    public function get_worker_id() : int
+    public function get_worker_id(): int
     {
         return $this->SwooleHttpServer->worker_id;
+        //return $this->SwooleHttpServer->getWorkerId();//this returns Bool instead of -1 when not started
     }
 
-    /**
-     * Validates swooole server configuration options
-     * @param array $options this array will be passed to $SwooleHttpServer->set()
-     *
-     * @throws RunTimeException
-     * @throws \Azonmedia\Exceptions\InvalidArgumentException
-     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
-     * @throws \ReflectionException
-     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
-     */
-    public static function validate_server_configuration_options(array $options) : void
+    public function get_manager_pid(): int
     {
-        foreach ($options as $option_name => $option_value) {
-            if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
-                throw new \Guzaba2\Base\Exceptions\InvalidArgumentException(sprintf(t::_('Invalid option "%s" provided to server configuration.'), $option_name));
-            }
-        }
-
-        if (!empty($options['document_root']) && empty($options['enable_static_handler'])) {
-            throw new RunTimeException(sprintf(t::_('The Swoole server has the "document_root" option set to "%s" but the "enable_static_handler" is not enabled. To serve static content the "enable_static_handler" setting needs to be enabled.'), $options['document_root']));
-        }
-        if (!empty($options['upload_tmp_dir'])) {
-            if (!file_exists($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory.'), $options['upload_tmp_dir'] ));
-            }
-            if (!is_dir($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory.'), $options['upload_tmp_dir'] ));
-            }
-            if (!is_writeable($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory.'), $options['upload_tmp_dir'] ));
-            }
-        }
-
-        if (!empty($options['enable_static_handler']) && empty($options['document_root'])) {
-            throw new RunTimeException(sprintf(t::_('The Swoole server has the "enable_static_handler" setting enabled but the "document_root" is not configured. To serve static content the "document_root" setting needs to be set.')));
-        }
-        if (!empty($options['open_http2_protocol']) && (empty($options['ssl_cert_file']) || empty($options['ssl_key_file']))) {
-            throw new RunTimeException(sprintf(t::_('HTTP2 is enabled but no SSL is configured. ssl_cert_file or ssl_key_file is not set. You can also try to start the application server with --enable-ssl.')));
-        }
-        if (!empty($options['ssl_cert_file']) && !is_readable($options['ssl_cert_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
-        }
-        if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
-        }
-        //since Swoole 4.4.14 this is supported
-        //if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {
-        //    throw new RunTimeException(sprintf(t::_('Swoole does not support HTTP2 and static handler to be enabled both. The static handler can only be used with HTTP 1.1.')));
-        //}
-
-        if (!empty($options['daemonize']) && empty($options['log_file'])) {
-            throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));
-        }
-        if (!empty($options['daemonize']) && file_exists($options['log_file']) && !is_writable($options['log_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.'), $options['log_file'] ));
-        }
-        if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'] , dirname($options['log_file']) ));
-        }
+        return $this->SwooleHttpServer->getManagerPid();
     }
 
-    /**
-     * @param string $option
-     * @return bool
-     */
-    public function option_is_set(string $option): bool
+    public function get_master_pid(): int
     {
-        return array_key_exists($option, $this->options);
+        return $this->SwooleHttpServer->getMasterPid();
     }
+
+    public function is_task_worker(): bool
+    {
+        //there is no Swoole\Server method for that
+        return $this->SwooleHttpServer->taskworker;
+    }
+
+
+//    /**
+//     * @param string $option
+//     * @return bool
+//     */
+//    public function option_is_set(string $option): bool
+//    {
+//        return array_key_exists($option, $this->options);
+//    }
 
     /**
      * @param string $option
@@ -411,10 +445,14 @@ class Server extends \Guzaba2\Http\Server
      */
     public function get_option(string $option) /* mixed */
     {
-        if (!$this->option_is_set($option)) {
-            throw new RunTimeException(sprintf(t::_('The option %s is not set.'), $option));
+//        if (!$this->option_is_set($option)) {
+//            throw new RunTimeException(sprintf(t::_('The option %s is not set.'), $option));
+//        }
+//        return $this->options[$option];
+        if (!in_array($option, self::SUPPORTED_OPTIONS)) {
+            throw new InvalidArgumentException(sprintf(t::_('An unsupported option %1s is provided.'), $option));
         }
-        return $this->options[$option];
+        return $this->SwooleHttpServer->setting[$option];
     }
 
     /**
@@ -427,6 +465,16 @@ class Server extends \Guzaba2\Http\Server
     }
 
     /**
+     * Returns all options from Swoole\Http\Server as they are set internally.
+     * @return array
+     */
+    public function get_all_options(): array
+    {
+        //return $this->options;
+        return $this->SwooleHttpServer->setting;
+    }
+
+    /**
      * @return string|null
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
@@ -435,7 +483,8 @@ class Server extends \Guzaba2\Http\Server
      */
     public function get_document_root() : ?string
     {
-        return $this->option_is_set('document_root') ? $this->get_option('document_root'): NULL;
+        //return $this->option_is_set('document_root') ? $this->get_option('document_root'): NULL;
+        return $this->get_option('document_root');
     }
 
     public function get_worker_pid() : int
