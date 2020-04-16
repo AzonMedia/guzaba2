@@ -173,6 +173,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         if ($controller_callable) {
             if (is_array($controller_callable)) {
 
+                //print 'AAAAAAAAAAAAAAAAAAAAAAA';
+
                 $controller_arguments = $Request->getAttribute('controller_arguments') ?? []; //in case there are arguments injected by previous middlware like the Routing
 
                 //print '+++++++++'.get_class($Request->getBody()).' '.$Request->getContentType().PHP_EOL;

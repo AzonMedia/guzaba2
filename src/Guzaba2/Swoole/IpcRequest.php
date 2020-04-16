@@ -130,11 +130,15 @@ class IpcRequest extends Request implements IpcRequestInterface
         //$this->Request = new Request($method, $Uri, $headers, $cookies, $server_params, $Body);
         parent::__construct($method, $Uri, $headers, $cookies, $server_params, $Body);
 
-        /** @var RouterInterface $Router */
-        $Router = self::get_service('Router');
-        if (!$Router->match_request($this)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided route %1s seems invalid (can not be routed).'), $route));
+        //if the service Router is defined validate the route
+        if (self::has_service('Router')) {
+            /** @var RouterInterface $Router */
+            $Router = self::get_service('Router');
+            if (!$Router->match_request($this)) {
+                throw new InvalidArgumentException(sprintf(t::_('The provided route %1s seems invalid (can not be routed).'), $route));
+            }
         }
+
     }
 
     /**

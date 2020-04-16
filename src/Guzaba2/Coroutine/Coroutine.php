@@ -509,12 +509,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             throw new RunTimeException(sprintf(t::_('There is already a %1s() running %2s coroutines.'), __METHOD__, count($Context->{self::class}->execute_multiple_coroutines) ));
         }
 
-
-        //$Context->{self::class}['execute_multiple_coroutines'] = count($callables);
-        //$Context->{self::class}->execute_multiple_coroutines = array_map( fn($callable) : string => GeneralUtil::get_callable_hash($callable), $callables);
-
-        //$Context->{self::class}->execute_multiple_coroutines_backtrace = self::getBackTrace($cid, DEBUG_BACKTRACE_IGNORE_ARGS);
-        //$Context->{self::class}->execute_multiple_coroutines_backtrace = (new \Exception(''))->getTraceAsString();
         foreach ($callables as $callable) {
             //self::create($callable);
             $new_cid = self::create($callable);
@@ -533,7 +527,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         }
 
         unset($Context->{self::class}->execute_multiple_coroutines);
-        //unset($Context->{self::class}->execute_multiple_coroutines_backtrace);
 
         return $ret;
     }
@@ -554,16 +547,10 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         if ($timeout === NULL) {
             $timeout = self::CONFIG_RUNTIME['max_subcoroutine_exec_time'];
         }
-        $cid = self::getcid();
 
         $Context = self::getContext();
 
-//        if (!empty($Context->sub_awaited)) {
-//            //the subcoroutines are already finished - do not try again to pop() again as this will block and fail (if there is timeout)
-//            return [];
-//        }
         $Channel = $Context->{Channel::class};
-
 
         $subcoroutines_completed_arr = [];
         if (empty($Context->{self::class}->execute_multiple_coroutines)) {
@@ -586,7 +573,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     $bb++;
                 }
                 throw new RunTimeException(sprintf(t::_('The timeout of %1s seconds for executing the sub-coroutines was reached. The failed sub-coroutines are: %2s.'), $timeout, print_r($failed_subcoroutines_arr, TRUE) ));
-            //} elseif ($ret instanceof \Throwable) {
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
                 throw $ret['exception'];
@@ -596,7 +582,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             }
             $subcoroutines_completed_arr[$ret['hash']] = $ret['ret'];//the pop returns the subcoroutine ID
         }
-        //$Context->sub_awaited = TRUE;
 
         return $subcoroutines_completed_arr;
     }

@@ -417,6 +417,7 @@ BANNER;
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function get_worker_id() : int
     {
@@ -432,6 +433,7 @@ BANNER;
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function get_service(string $id) : object
     {
@@ -442,11 +444,13 @@ BANNER;
     }
 
     /**
+     * Whether the provided service exists.
      * @param string $id
      * @return bool
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function has_service(string $id) : bool
     {

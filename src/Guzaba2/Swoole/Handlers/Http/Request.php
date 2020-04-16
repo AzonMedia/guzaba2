@@ -69,6 +69,7 @@ class Request extends HandlerBase
             $message = t::_('Content not found or request not understood. The request contains a method and route that could not be found.');
             $Body = new Stream();
             $Body->write($message);
+            $Body->rewind();
             $DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
         }
         $this->DefaultResponse = $DefaultResponse;
@@ -77,6 +78,7 @@ class Request extends HandlerBase
             $message = t::_('Internal server/application error occurred.');
             $Body = new Stream();
             $Body->write($message);
+            $Body->rewind();
             $ServerErrorResponse = (new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
         }
         $this->ServerErrorResponse = $ServerErrorResponse;

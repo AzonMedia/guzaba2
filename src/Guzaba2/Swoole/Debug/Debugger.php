@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole\Debug;
 
 use Azonmedia\Debug\Interfaces\CommandInterface;
+use Azonmedia\Debug\Interfaces\DebuggerInterface;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Http\Server;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Kernel\Kernel;
@@ -39,14 +41,19 @@ class Debugger extends Base
     private \Swoole\Coroutine\Server $DebugServer;
 
     /**
-     * @var \Azonmedia\Debug\Interfaces\DebuggerInterface
+     * @var DebuggerInterface
      */
-    private \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger;
+    private DebuggerInterface $Debugger;
 
     /**
      * @var int
      */
     private int $worker_id;
+
+    /**
+     * @var bool
+     */
+    private bool $is_task_worker_flag;
 
     /**
      * @var array
@@ -57,22 +64,24 @@ class Debugger extends Base
      * Debugger constructor.
      * @param Server $HttpServer
      * @param int $worker_id
-     * @param \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger
+     * @param DebuggerInterface $Debugger
      * @param int $base_debug_port
      */
-    public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
+    //public function __construct(\Guzaba2\Http\Server $HttpServer, int $worker_id, \Azonmedia\Debug\Interfaces\DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
+    public function __construct(\Guzaba2\Http\Server $HttpServer, DebuggerInterface $Debugger, int $base_debug_port = self::DEFAULT_BASE_DEBUG_PORT)
     {
         parent::__construct();
 
         $this->HttpServer = $HttpServer;
-        $this->worker_id = $worker_id;
+        $this->worker_id = $HttpServer->get_worker_id();
+        $this->is_task_worker_flag = $HttpServer->is_task_worker();
         $this->Debugger = $Debugger;
         $this->base_debug_port = $base_debug_port;
 
         $this->set_prompt($this->substitute_prompt_vars(self::CONFIG_RUNTIME['prompt']));
 
         //ob_implicit_flush();
-        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($worker_id), FALSE);
+        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($this->worker_id), FALSE);
 //        $server->handle(function (Swoole\Coroutine\Server\Connection $conn) use ($server) {
 //            while(true) {
 //                $data = $conn->recv();
@@ -81,7 +90,6 @@ class Debugger extends Base
 //                $conn->send("world\n");
 //            }
 //        });
-        //$this->DebugServer->handle([$this,'connection_handler']);//Triggers Uncaught TypeError: Argument 1 passed to Swoole\Coroutine\Server::handle() must be callable, array given
         $Function = function (\Swoole\Coroutine\Server\Connection $Connection) : void {
             while (true) {
                 //print $Connection->exportSocket()->fd.' '.microtime(TRUE).PHP_EOL;
@@ -125,7 +133,8 @@ class Debugger extends Base
 
     protected function substitute_prompt_vars(string $prompt) : string
     {
-        $prompt = str_replace('{WORKER_ID}', $this->worker_id, $prompt);
+        $replacement = ( $this->is_task_worker_flag ? 'TW' : 'W' ).$this->worker_id;
+        $prompt = str_replace('{WORKER_ID}', $replacement, $prompt);
         $prompt = str_replace('{COROUTINE_ID}', \Swoole\Coroutine::getCid(), $prompt);
         return $prompt;
     }
@@ -151,21 +160,6 @@ class Debugger extends Base
     public function get_prompt() : string
     {
         return $this->prompt_stack[ count($this->prompt_stack) - 1];
-    }
-
-    protected function connection_handler(\Swoole\Coroutine\Server\Connection $Connection) : void
-    {
-        while (true) {
-            $command = $Connection->recv();
-            $response = $this->Debugger->handle($command);
-            if ($response === NULL) {
-                $response = sprintf(t::_('Unknown command provided.'));
-            }
-            //$json = json_decode($data, true);
-            //Assert::eq(is_array($json), $json['data'], 'hello');
-            $response .= PHP_EOL;
-            // $conn->send($response);
-        }
     }
 
     /**
@@ -199,9 +193,10 @@ class Debugger extends Base
 //    }
 
     /**
-     * Returns an assocaitive array with all debug command classes
+     * Returns an associative array with all debug command classes
      * @return array
-     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @throws \ReflectionException
      */
     public static function get_debug_command_classes() : array
     {

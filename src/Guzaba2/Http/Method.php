@@ -3,6 +3,14 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+
+/**
+ * Class Method
+ * @package Guzaba2\Http
+ *
+ * PRovides method constants as bitmask
+ */
 abstract class Method
 {
     const HTTP_CONNECT  = 1;
@@ -35,7 +43,7 @@ abstract class Method
      * @param int $methods_mask
      * @return array
      */
-    public static function get_methods(int $methods_mask) : array
+    public static function get_methods(int $methods_mask): array
     {
         $ret = [];
         foreach (self::METHODS_MAP as $method_int => $method_name) {
@@ -46,16 +54,31 @@ abstract class Method
         return $ret;
     }
 
+    /**
+     * Returns the method constant value from method as string.
+     * @param string $method
+     * @return int
+     * @throws InvalidArgumentException
+     */
+    public static function get_method(string $method): int
+    {
+        $method = strtoupper($method);
+        $int = array_search($method, self::METHODS_MAP, TRUE);
+        if ($int === FALSE) {
+            throw new InvalidArgumentException(sprintf(t::_('An invalid method %1s is provided.'), $method));
+        }
+        return $int;
+    }
+
+    /**
+     * Checks is the provided method as string a valid method.
+     * @param string $method
+     * @return bool
+     */
     public static function is_valid_method(string $method): bool
     {
-        $ret = FALSE;
         $method = strtoupper($method);
-        foreach (self::METHODS_MAP as $method_id => $method_name) {
-            if ($method === $method_name) {
-                $ret = TRUE;
-                break;
-            }
-        }
-        return $ret;
+        $key = array_search($method, self::METHODS_MAP, TRUE);
+        return $key === FALSE ? FALSE : TRUE;
     }
 }

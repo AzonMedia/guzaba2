@@ -82,7 +82,7 @@ class WorkerStart extends HandlerBase
             $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic( Debugger::get_debug_command_classes() );
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
 
-            $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $worker_id, $Debugger, $this->base_debug_port);
+            $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $Debugger, $this->base_debug_port);
             //after the server is started print here will not print anything - it seems the output is redirected
         }
         
