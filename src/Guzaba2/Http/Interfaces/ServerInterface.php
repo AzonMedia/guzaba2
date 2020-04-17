@@ -11,5 +11,6 @@ interface ServerInterface
     public function is_task_worker(): bool ;
     public function get_worker_id(): int ;
     public function get_worker_pid(): int ;
+    public function get_worker(): WorkerInterface ;
     public function get_document_root(): ?string;
 }

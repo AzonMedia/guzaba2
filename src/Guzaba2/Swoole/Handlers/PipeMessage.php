@@ -35,6 +35,7 @@ class PipeMessage extends HandlerBase
         'services'      => [
             'CurrentUser',
             'Events',
+            'Server',
         ]
     ];
 
@@ -131,6 +132,9 @@ class PipeMessage extends HandlerBase
             $IpcRequest = $IpcRequest->withServerParams($server_params);
 
             Coroutine::init($IpcRequest);
+            /** @var \Guzaba2\Swoole\Server $Server */
+            $Server = self::get_service('Server');
+            $Server->get_worker()->increment_served_pipe_requests();
 
             /** @var CurrentUser $CurrentUser */
             $CurrentUser = self::get_service('CurrentUser');

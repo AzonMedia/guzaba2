@@ -29,7 +29,8 @@ class Request extends HandlerBase
 {
     protected const CONFIG_DEFAULTS = [
         'services'      => [
-            'Apm'
+            'Apm',
+            'Server',
         ]
     ];
 
@@ -109,6 +110,8 @@ class Request extends HandlerBase
 
             //\Guzaba2\Coroutine\Coroutine::init($this->HttpServer->get_worker_id());
             \Guzaba2\Coroutine\Coroutine::init($PsrRequest);
+            $Server = self::get_service('Server');
+            $Server->get_worker()->increment_served_requests();
 
             //TODO - this may be reworked to reroute to a new route (provided in the constructor) instead of providing the actual response in the constructor
             $DefaultResponse = $this->DefaultResponse;

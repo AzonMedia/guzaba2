@@ -21,6 +21,7 @@ use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Http\Uri;
 use Guzaba2\Swoole\Debug\Backends\BasicCommand;
+use Guzaba2\Swoole\Server;
 use Guzaba2\Translator\Translator as t;
 use GuzabaPlatform\Platform\Application\Middlewares;
 use Psr\Http\Message\ServerRequestInterface;
@@ -46,6 +47,7 @@ class ControllerExecutor extends Base implements CommandInterface
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'Middlewares',
+            'Server'
         ],
     ];
 
@@ -219,6 +221,7 @@ class ControllerExecutor extends Base implements CommandInterface
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
+     * @throws LogicException
      */
     private function handle_execute(string $method, string $route, array $args): string
     {
@@ -240,6 +243,11 @@ class ControllerExecutor extends Base implements CommandInterface
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $Request = $this->form_request($method, $route, $args);
+            Coroutine::init($Request);
+            /** @var Server $Server */
+            $Server = self::get_service('Server');
+            $Server->get_worker()->increment_served_console_requests();
+
             $Response = $QueueRequestHandler->handle($Request);
 
             $ret = $Response->getBody()->getContents();
@@ -258,21 +266,33 @@ class ControllerExecutor extends Base implements CommandInterface
      * @param array $args
      * @return ServerRequestInterface
      * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     private function form_request(string $method, string $route, array $args): ServerRequestInterface
     {
-        $method_int = Method::get_method($method);
-        $CurrentRequest = Coroutine::getRequest();
-        if ($CurrentRequest) {
-            $CurrentUri = $CurrentRequest->getUri();
-            //even as the scheme is actually a request over IPC lets leave the original scheme as changing it may cause error in the controller execution
-            $Uri = new Uri($CurrentUri->getScheme(), $CurrentUri->getHost(), $CurrentUri->getPort(), $route);
-        } else {
-            $Uri = new Uri('http', 'localhost', 80, $route);
-        }
+        $Uri = new Uri('http', 'localhost', 80, $route);
         $headers = ['Accept' => [ContentType::TYPES_MAP[$this->accept_content_type]['mime']]];
         $cookies = [];
-        $server_params = [];//these will be formed in the worker when received - it will create a new Request with new server_params
+        $time = time();
+        /** @var Server $Server */
+        $Server = self::get_service('Server');
+        $server_params = [
+            'console_request'       => TRUE,
+            'request_uri'           => $route,
+            'path_info'             => $route,
+            'request_time'          => $time,
+            'request_time_float'    => microtime(true),
+            'server_protocol'       => 'HTTP/1.1',//for the sake of controllers executing correctly...
+            'server_port'           => $Server->get_worker()->get_debug_port(),
+            'remote_port'           => $Server->get_worker()->get_debug_port(),
+            'remote_addr'           => '127.0.0.1',
+            'master_time'           => $time,
+
+        ];
 
         $Body = new Structured($args);
         $Request = new Request($method, $Uri, $headers, $cookies, $server_params, $Body);
@@ -320,8 +340,6 @@ class ControllerExecutor extends Base implements CommandInterface
         } else if (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();
         } else {
-            print $command.PHP_EOL;
-            print_r(self::COMMANDS_HELP);
             if (isset(self::COMMANDS_HELP[$command])) {
                 return sprintf(t::_('%s: %s'), $command, self::COMMANDS_HELP[$command]);
             } else {

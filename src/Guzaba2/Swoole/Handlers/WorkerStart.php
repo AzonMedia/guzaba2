@@ -6,6 +6,7 @@ namespace Guzaba2\Swoole\Handlers;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Database\ConnectionMonitor;
+use Guzaba2\Swoole\Worker;
 use Monolog\Handler\StreamHandler;
 
 /**
@@ -62,8 +63,12 @@ class WorkerStart extends HandlerBase
      */
     public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
     {
+        //$this->HttpServer->set_worker_start_time(microtime(true));
+        $debug_port = $this->base_debug_port + $worker_id;
+        $Worker = new Worker($worker_id, $Server->worker_pid, $Server->taskworker, $debug_port);
+        $this->HttpServer->set_worker($Worker);
         //$this->HttpServer->set_worker_id($worker_id);
-        self::get_service('Events')->create_event($this, '_after_start');
+
 
         self::register_log_handler($worker_id);
 
@@ -88,6 +93,8 @@ class WorkerStart extends HandlerBase
         
         Kernel::$Watchdog->checkin($Server, $worker_id);
         Kernel::$Watchdog->check($worker_id);
+
+        self::get_service('Events')->create_event($this, '_after_start');
     }
 
     /**

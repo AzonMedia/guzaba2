@@ -1142,6 +1142,10 @@ BANNER;
      * @param string $level
      * @param array $context
      * @return bool
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
     {
@@ -1197,11 +1201,20 @@ BANNER;
         }
         Kernel::printk($error_handlers_str);
         self::printk(PHP_EOL);
-        self::printk(t::_('Kernel is initialized')).PHP_EOL;
+        self::printk(t::_('Kernel is initialized').PHP_EOL);
         self::printk(PHP_EOL);
 
     }
 
+    /**
+     * @param string $class_name
+     * @return bool
+     * @throws Exceptions\AutoloadException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     protected static function autoloader(string $class_name): bool
     {
         $ret = FALSE;

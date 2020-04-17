@@ -12,6 +12,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
 use Guzaba2\Http\Body\Structured;
+use Guzaba2\Http\Interfaces\WorkerInterface;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Swoole\Interfaces\IpcRequestInterface;
@@ -154,6 +155,15 @@ class Server extends \Guzaba2\Http\Server
      */
     private array $ipc_responses = [];
 
+    private ?float $start_microtime = NULL;
+
+    /**
+     * @var float[]
+     */
+    private array $worker_start_times = [];
+
+    private Worker $Worker;
+
     /**
      * Server constructor.
      * @param string $host
@@ -209,6 +219,33 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer->set($options);
 
         Kernel::set_http_server($this);
+    }
+
+    /**
+     * To be invoked by WorkerStart
+     * @param Worker $Worker
+     */
+    public function set_worker(Worker $Worker): void
+    {
+        $this->Worker = $Worker;
+    }
+
+    /**
+     * @param int $worker_id
+     * @return Worker
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     * @throws LogicException
+     */
+    public function get_worker(): WorkerInterface
+    {
+        if ($this->get_start_microtime() === NULL) {
+            throw new RunTimeException(sprintf(t::_('The server is not yet started. There are no workers.')));
+        }
+        return $this->Worker;
     }
 
 
@@ -308,8 +345,32 @@ class Server extends \Guzaba2\Http\Server
         //just before the server is started enable the coroutine hooks (not earlier as these will be in place but we will not be in coroutine cotext yet and this will trigger an error - for example when exec() is used)
         self::get_service('Events')->create_event($this, '_before_start');
         \Swoole\Runtime::enableCoroutine(TRUE);//we will be running everything in coroutine context and makes sense to enable all hooks
+
+        $this->start_microtime = microtime(TRUE);
         $this->SwooleHttpServer->start();
         //self::get_service('Events')->create_event($this, '_after_start');//no code is being executed after the server is started... the next code that is being executed is in the worker start or Start handler
+    }
+
+    /**
+     * @return float|null
+     */
+    public function get_start_microtime(): ?float
+    {
+        return $this->start_microtime;
+    }
+
+    public function set_worker_start_time(int $worker_id, float $time): void
+    {
+        $this->validate_worker_id($worker_id);
+        $this->worker_start_times[$worker_id] = $time;
+    }
+
+    public function get_worker_start_time(?int $worker_id = NULL): ?float
+    {
+        if ($worker_id === NULL) {
+            $worker_id = $this->get_worker_id();
+        }
+        return $this->worker_start_times[$worker_id] ?? NULL ;
     }
 
     private function print_server_start_messages() : void
@@ -330,7 +391,7 @@ class Server extends \Guzaba2\Http\Server
         $WorkerStartHandler = $this->get_handler('WorkerStart');
         if ($WorkerStartHandler->debug_ports_enabled()) {
             $base_port = $WorkerStartHandler->get_base_debug_port();
-            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->options['worker_num']).PHP_EOL);
+            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->get_total_workers()).PHP_EOL);
         }
         if (!empty($this->options['open_http2_protocol'])) {
             Kernel::printk(sprintf(t::_('HTTP2 enabled')).PHP_EOL);
@@ -379,34 +440,15 @@ class Server extends \Guzaba2\Http\Server
         return call_user_func_array([$this->SwooleHttpServer, $method], $args);
     }
 
-//    /**
-//     * Sets the worker ID for the server after the server is started.
-//     * After the server is started and the workers forked each worker has its own instance of the Server object.
-//     * Each server object will have its own worker_id set
-//     * @param int $worker_id
-//     */
-//    public function set_worker_id(int $worker_id) : void
-//    {
-//        $this->worker_id = $worker_id;
-//    }
-//
-//    /**
-//     * @return int
-//     */
-//    public function get_worker_id() : int
-//    {
-//        return $this->worker_id;
-//    }
-
-//    public function get_swoole_server() : \Swoole\Http\Server
-//    {
-//        return $this->SwooleHttpServer;
-//    }
-
     public function get_worker_id(): int
     {
         return $this->SwooleHttpServer->worker_id;
         //return $this->SwooleHttpServer->getWorkerId();//this returns Bool instead of -1 when not started
+    }
+
+    public function get_worker_pid() : int
+    {
+        return $this->SwooleHttpServer->worker_pid;
     }
 
     public function get_manager_pid(): int
@@ -487,16 +529,6 @@ class Server extends \Guzaba2\Http\Server
         return $this->get_option('document_root');
     }
 
-    public function get_worker_pid() : int
-    {
-        return $this->SwooleHttpServer->worker_pid;
-    }
-
-//    public function get_master_pid() : int
-//    {
-//        return $this->SwooleHttpServer->master_pid;
-//    }
-
     /**
      * Sends an IPC
      * @param IpcRequest $IpcRequest
@@ -534,7 +566,7 @@ class Server extends \Guzaba2\Http\Server
         if ( !( $IpcResponse->getBody()) instanceof Structured) {
             throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1s but is of class %2s.'), Structured::class, get_class($IpcResponse->getBody()) ));
         }
-        $IpcResponse->set_received_time(microtime(TRUE));
+        $IpcResponse->set_received_microtime(microtime(TRUE));
         $this->ipc_responses[$ipc_request_id][$src_worker_id] = $IpcResponse;
     }
 
@@ -630,12 +662,17 @@ class Server extends \Guzaba2\Http\Server
     public function send_multicast_ipc_request(IpcRequestInterface $IpcRequest, array $dest_worker_ids, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): array
     {
         $callables = [];
-        foreach ($dest_worker_ids as $dest_worker_id) {
-            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
-                return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
-            };
+        if (count($dest_worker_ids)) {
+            foreach ($dest_worker_ids as $dest_worker_id) {
+                $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
+                    return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
+                };
+            }
+            return Coroutine::executeMulti(...$callables);
+        } else {
+            return [];
         }
-        return Coroutine::executeMulti(...$callables);
+
     }
 
     /**
@@ -659,18 +696,37 @@ class Server extends \Guzaba2\Http\Server
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    private function validate_destination_worker_id(int $dest_worker_id) : void
+    private function validate_destination_worker_id(int $dest_worker_id): void
+    {
+
+//        } elseif ($dest_worker_id === $this->SwooleHttpServer->worker_id) {
+//            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->SwooleHttpServer->worker_id));
+//        }
+        $this->validate_worker_id($dest_worker_id);
+        if ($dest_worker_id === $this->get_worker_id()) {
+            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->get_worker_id() ));
+        }
+    }
+
+    /**
+     * Throws InvalidArgumentException if the provided $worker_id is not a valid one (there is no such worker).
+     * @param int $worker_id
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function validate_worker_id(int $worker_id): void
     {
         $worker_num = $this->get_option('worker_num');
         $task_worker_num = $this->get_option('task_worker_num');
         $total_workers = $worker_num + $task_worker_num;
-        if (!$dest_worker_id < 0) {
+        if (!$worker_id < 0) {
             throw new InvalidArgumentException(sprintf(t::_('The $dest_worker_id must be positive number.')));
-        } elseif ($dest_worker_id >= $total_workers) { //the worker IDs always start from 0 and even if restarted they get the same ID
-            $message = sprintf(t::_('Invalid $dest_worker_id %1s is provided. There are %2s workers and %3s task workers. The valid range for $dest_worker_id is %4s - %5s.'), $dest_worker_id, $worker_num, $task_worker_num, 0, $worker_num + $task_worker_num - 1);
+        } elseif ($worker_id >= $total_workers) { //the worker IDs always start from 0 and even if restarted they get the same ID
+            $message = sprintf(t::_('Invalid $dest_worker_id %1s is provided. There are %2s workers and %3s task workers. The valid range for $dest_worker_id is %4s - %5s.'), $worker_id, $worker_num, $task_worker_num, 0, $worker_num + $task_worker_num - 1);
             throw new InvalidArgumentException($message);
-        } elseif ($dest_worker_id === $this->SwooleHttpServer->worker_id) {
-            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->SwooleHttpServer->worker_id));
         }
     }
 
@@ -680,14 +736,10 @@ class Server extends \Guzaba2\Http\Server
      */
     public function ipc_responses_cleanup(): void
     {
-//        foreach ($this->ipc_responses as $ipc_request_id => $IpcResponse) {
-//            if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
-//                unset($this->ipc_responses[$ipc_request_id]);
-//            }
-//        }
+
         foreach ($this->ipc_responses as $ipc_request_id => $worker_data) {
             foreach ($worker_data as $worker_id => $IpcResponse) {
-                if ($IpcResponse->get_received_time() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+                if ($IpcResponse->get_received_microtime() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
                     unset($this->ipc_responses[$ipc_request_id][$worker_id]);
                 }
             }

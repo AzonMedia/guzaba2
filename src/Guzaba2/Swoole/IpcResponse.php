@@ -39,15 +39,13 @@ class IpcResponse extends Response implements IpcResponseInterface
         return $this->get_object_internal_id();
     }
 
-    public function set_received_time(float $received_microtime): void
+    public function set_received_microtime(float $received_microtime): void
     {
         $this->received_microtime = $received_microtime;
     }
 
-    public function get_received_time(): ?float
+    public function get_received_microtime(): ?float
     {
         return $this->received_microtime;
     }
-
-
 }

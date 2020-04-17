@@ -54,7 +54,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //and executeMulti keeps the one single backtrace for all awaited coroutines
 
         'services'                          => [
-            'Apm'
+            'Apm',
         ],
     ];
 
@@ -123,6 +123,8 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //even though this is not the perfect solution as someone else might use the same approach and the property name is the Interface name, not the specific Class name
         //to make sure there are not collisions the specific class name is used
         $Context->{Request::class} = $Request;
+
+
         
 //        foreach (self::$registered_coroutine_services as $class_name) {
 //            $Context->{$class_name} = new $class_name();
@@ -155,6 +157,32 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     {
         $Context = self::getContext($cid);
         return $Context->{Request::class} ?? NULL ;
+    }
+
+
+    public static function getCoroutineRequestsStatus(): array
+    {
+        $ret = [];
+        $coroutines = self::listCoroutines();
+        foreach ($coroutines as $cid) {
+            $pcid = self::getPcid($cid);
+            if ($pcid <= 0) { //there is no parent coroutine
+                $Request = self::getRequest($cid);
+                if ($Request) { //there are coroutines triggered by various timers and they are not triggered by a Request
+                    //$ret[$cid] = [$Request->getMethod() => $Request->getUri()->getPath()];
+                    $ret[] = [
+                        'cid'           => $cid,
+                        'method'        => $Request->getMethod(),
+                        'route'         => $Request->getUri()->getPath(),
+                        'elapsed_time'  => self::getElapsed(),
+                    ];
+                }
+
+            } else {
+                //do not list the sub-coroutines
+            }
+        }
+        return $ret;
     }
 
     /**

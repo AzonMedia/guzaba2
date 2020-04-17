@@ -15,7 +15,7 @@ interface IpcResponseInterface extends ResponseInterface
 
     public function get_response_id(): string ;
 
-    public function set_received_time(float $received_microtime): void ;
+    public function set_received_microtime(float $received_microtime): void ;
 
-    public function get_received_time(): ?float ;
+    public function get_received_microtime(): ?float ;
 }
