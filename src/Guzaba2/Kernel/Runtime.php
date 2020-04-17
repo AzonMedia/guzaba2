@@ -12,15 +12,29 @@ namespace Guzaba2\Kernel;
 abstract class Runtime
 {
 
+    /**
+     * Returns the memory limit in Bytes (no matter eve if it is set as 128M for example in php_ini).
+     * @return int
+     */
     public static function get_memory_limit(): int
     {
-        return (int) ini_get('memory_limit');
+        //return (int) ini_get('memory_limit');
+        $limit = ini_get('memory_limit');
+        $multiply = 1;
+        if (stripos($limit,'K') !== FALSE) {
+            $multiply = 1024;
+        } elseif (stripos($limit, 'M') !== FALSE) {
+            $multiply = 1024 * 1024;
+        } elseif (stripos($limit, 'G') !== FALSE) {
+            $multiply = 1024 * 1024 * 1024;
+        }
+        $limit = (int) str_ireplace(['K', 'M', 'G'],'', $limit);
+        return $limit * $multiply;
     }
 
     public static function set_memory_limit(int $bytes): void
     {
-        ini_set('memory_limit', $bytes);
-        self::$memory_limit = $bytes;
+        ini_set('memory_limit', (string) $bytes);
     }
 
     public static function raise_memory_limit(int $bytes): bool

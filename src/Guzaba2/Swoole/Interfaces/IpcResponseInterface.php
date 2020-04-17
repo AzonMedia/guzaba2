@@ -7,6 +7,9 @@ use Psr\Http\Message\ResponseInterface;
 
 interface IpcResponseInterface extends ResponseInterface
 {
+
+    public function get_source_worker_id(): int ;
+
     /**
      * For which request is this response
      * @return string

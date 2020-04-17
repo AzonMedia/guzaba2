@@ -36,6 +36,7 @@ class IpcRequest extends Request implements IpcRequestInterface
         'services'      => [
             'CurrentUser',
             'Router',//used to validate the route
+            'Server',
         ]
     ];
 
@@ -52,6 +53,12 @@ class IpcRequest extends Request implements IpcRequestInterface
      * @var string
      */
     private string $user_uuid;
+
+    /**
+     * The ID of the worker sending the request.
+     * @var int
+     */
+    private int $source_worker_id;
 
     /**
      * IpcRequest constructor.
@@ -113,6 +120,10 @@ class IpcRequest extends Request implements IpcRequestInterface
         }
         $this->user_uuid = $user_uuid;
 
+        /** @var Server $Server */
+        $Server = self::get_service('Server');
+        $this->source_worker_id = $Server->get_worker_id();
+
         $CurrentRequest = Coroutine::getRequest();
         if ($CurrentRequest) {
             $CurrentUri = $CurrentRequest->getUri();
@@ -134,11 +145,16 @@ class IpcRequest extends Request implements IpcRequestInterface
         if (self::has_service('Router')) {
             /** @var RouterInterface $Router */
             $Router = self::get_service('Router');
-            if (!$Router->match_request($this)) {
+            if ($Router->match_request($this)->getAttribute('controller_callable') === NULL) {
                 throw new InvalidArgumentException(sprintf(t::_('The provided route %1s seems invalid (can not be routed).'), $route));
             }
         }
 
+    }
+
+    public function get_source_worker_id(): int
+    {
+        return $this->source_worker_id;
     }
 
     /**

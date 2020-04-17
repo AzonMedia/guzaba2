@@ -20,7 +20,10 @@ use Guzaba2\Mvc\Traits\ControllerTrait;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\ActiveRecordDefaultController;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Swoole\IpcRequest;
+use Guzaba2\Swoole\Server;
 use Guzaba2\Translator\Translator as t;
+use GuzabaPlatform\AppServer\Monitor\Controllers\Responder;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Guzaba2\Mvc\Traits\ResponseFactories;
@@ -44,6 +47,9 @@ implements ControllerInterface
         'route'                 => '/controller',
         //'structure' => []//TODO add structure
         //'controllers_use_db'    => FALSE,
+        'services'              => [
+            'Server',
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -160,9 +166,12 @@ implements ControllerInterface
      * @return array
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_structured_action(string $method, array $arguments = []) : array
+    public function execute_structured_action(string $method, array $arguments = [], ?int &$status_code = NULL) : array
     {
-        return $this->execute_action($method, $arguments)->getBody()->getStructure();
+        //return $this->execute_action($method, $arguments)->getBody()->getStructure();
+        $Response = $this->execute_action($method, $arguments);
+        $status_code = $Response->getStatusCode();
+        return $Response->getBody()->getStructure();
     }
 
     /**
@@ -175,9 +184,12 @@ implements ControllerInterface
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments = []) : array
+    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments = [], ?int &$status_code = NULL) : array
     {
-        return $this->execute_controller_action($controller_class, $method, $arguments)->getBody()->getStructure();
+        //return $this->execute_controller_action($controller_class, $method, $arguments)->getBody()->getStructure();
+        $Response = $this->execute_controller_action($controller_class, $method, $arguments);
+        $status_code = $Response->getStatusCode();
+        return $Response->getBody()->getStructure();
     }
 
     /**
@@ -205,5 +217,70 @@ implements ControllerInterface
         return self::execute_controller( $controller_callable, $arguments);
     }
 
+    /**
+     * Executes a request on all workers including the current one.
+     * The current one executes the request directly , not over IPC as sending an IpcRequest to yourself is not supported.
+     * @param int $method
+     * @param string $route
+     * @param string $controller_class
+     * @param string $action
+     * @param array $arguments
+     * @return array
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
+     */
+    public function execute_broadcast_request(int $method, string $route, string $controller_class, string $action, array $arguments = []): array
+    {
+        $ret = [];
+
+        /** @var Server $Server */
+        $Server = self::get_service('Server');
+        $worker_ids = range(0, $Server->get_total_workers()-1 );//the workers IDs start from 0
+
+
+        $IpcRequest = new IpcRequest($method, $route, $arguments);
+        $ipc_responses = $Server->send_broadcast_ipc_request($IpcRequest);
+
+        foreach ($ipc_responses as $IpcResponse) {
+            if ($IpcResponse) {
+                $from_worker_id = $IpcResponse->get_source_worker_id();
+                $ret[$from_worker_id]['worker_id'] = $from_worker_id;
+                $ret[$from_worker_id]['code'] = $IpcResponse->getStatusCode();
+                if ($IpcResponse->getStatusCode() === StatusCode::HTTP_OK) {
+                    $ret[$from_worker_id]['data'] = $IpcResponse->getBody()->getStructure();
+                } else {
+                    $ret[$from_worker_id]['data'] = sprintf(t::_('Worker ID %1s returned HTTP status code %2s.'), $from_worker_id, $IpcResponse->getStatusCode() );
+                }
+            }
+        }
+
+        $this_worker_id = $Server->get_worker_id();
+        //we need to add the current worker data
+        $data = $this->execute_controller_action_structured($controller_class, $action, $arguments, $status_code);
+        $ret[$this_worker_id]['worker_id'] = $this_worker_id;
+        $ret[$this_worker_id]['code'] = $status_code;
+        $ret[$this_worker_id]['data'] = $data;
+
+
+        //add entries for the workers from which we didnt receive data
+        foreach ($worker_ids as $worker_id) {
+            if (!isset($ret[$worker_id])) {
+                $ret[$worker_id]['worker_id'] = $worker_id;
+                $ret[$worker_id]['code'] = StatusCode::HTTP_CONNECTION_CLOSED_WITHOUT_RESPONSE;//a custom code to denote that no response was received from the worker
+                $ret[$worker_id]['data'] = sprintf(t::_('No response received from worker %1s.'), $worker_id);
+            }
+        }
+
+        ksort($ret);
+        //if the worker ID in future changes from 0-X to something else then it may be better to preserve the presentation in JSON as array to send back just the values;
+        $ret = array_values($ret);
+
+        return $ret;
+    }
 
 }

@@ -7,6 +7,8 @@ use Psr\Http\Message\RequestInterface;
 
 interface IpcRequestInterface extends RequestInterface
 {
+    public function get_source_worker_id(): int ;
+
     public function get_request_id(): string ;
 
     public function requires_response(): bool ;

@@ -13,16 +13,38 @@ use Psr\Http\Message\UriInterface;
 class IpcResponse extends Response implements IpcResponseInterface
 {
 
+    protected const CONFIG_DEFAULTS = [
+        'services'      => [
+            'Server',
+        ]
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     private string $request_id;
 
     private ?float $received_microtime = NULL;
 
+    /**
+     * The ID of the worker producing the response
+     * @var int
+     */
+    private int $source_worker_id;
+
     public function __construct(ResponseInterface $Response, string $request_id)
     {
         $this->request_id = $request_id;
+        /** @var Server $Server */
+        $Server = self::get_service('Server');
+        $this->source_worker_id = $Server->get_worker_id();
         foreach ($Response as $property=>$value) {
             $this->{$property} = $value;
         }
+    }
+
+    public function get_source_worker_id(): int
+    {
+        return $this->source_worker_id;
     }
 
     /**

@@ -644,6 +644,7 @@ class Server extends \Guzaba2\Http\Server
         }
         unset($dest_worker_ids[$key]);
         $dest_worker_ids = array_values($dest_worker_ids);
+
         return $this->send_multicast_ipc_request($IpcRequest, $dest_worker_ids, $timeout);
     }
 

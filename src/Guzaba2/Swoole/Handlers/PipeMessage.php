@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole\Handlers;
 
 use Azonmedia\Exceptions\InvalidArgumentException;
+use Composer\XdebugHandler\Status;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -157,10 +158,15 @@ class PipeMessage extends HandlerBase
             $Response = $QueueRequestHandler->handle($IpcRequest);
 
             if ($IpcRequest->requires_response()) {
+
+                if ($Response->getStatusCode() !== StatusCode::HTTP_OK) {
+                    $NewBody = new Structured( ['message' => $Response->getBody()->getContents()] );
+                    $Response = $Response->withBody($NewBody);
+                }
+
                 $IpcResponse = new IpcResponse($Response, $IpcRequest->get_request_id());
                 $IpcRequestWithResponse = new IpcRequestWithResponse($IpcResponse);
                 $Server->sendMessage($IpcRequestWithResponse, $src_worker_id);
-
             }
 
         }
