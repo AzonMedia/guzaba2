@@ -58,6 +58,8 @@ abstract class Base implements BaseInterface
 
     protected const CONFIG_RUNTIME = [];
 
+    private bool $is_destroyed_flag = FALSE;
+
     /**
      * Base constructor.
      * All children must invoke the parent constructor
@@ -70,10 +72,14 @@ abstract class Base implements BaseInterface
 
     public function __destruct()
     {
-        if (method_exists($this, '_before_destruct')) {
-            call_user_func_array([$this, '_before_destruct'], []);
+        if (!$this->is_destroyed_flag) { //ensure the _before_destruct is called only once (as the __destruct() may be called manually and then by the actual destruction)
+
+            if (method_exists($this, '_before_destruct')) {
+                call_user_func_array([$this, '_before_destruct'], []);
+            }
+            //the _before_destruct event will not be created here (as this would fire it for all objects) but if a class needs to have it then it should implement the _before_destruct() method and fire the event there
         }
-        //the _before_destruct event will not be created here (as this would fire it for all objects) but if a class needs to have it then it should implement the _before_destruct() method and fire the event there
+        $this->is_destroyed_flag = TRUE;
     }
 
     /**
@@ -82,6 +88,7 @@ abstract class Base implements BaseInterface
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public function __set(string $property, /* mixed */ $value): void
     {

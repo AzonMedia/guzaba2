@@ -121,11 +121,6 @@ BANNER;
     protected static array $loaded_classes = [];
 
     /**
-     * @var array
-     */
-    //protected static array $loaded_paths = [];
-
-    /**
      * Additional places where the autoloader should look.
      * An associative array containing namespace prefix as key and lookup path as value.
      * @var array
@@ -292,7 +287,10 @@ BANNER;
      * @param callable $callable
      * @param array $options
      * @return int
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function run(callable $callable, array $options = []) : int
     {
@@ -578,12 +576,16 @@ BANNER;
     /**
      * Exception handler does not work in Swoole worker context so everything in the request is in try/catch \Throwable and a manual call to the exception handler
      * It works outside swoole context so it is still explicitly registered in Kernel::initialize()
-     * @param \Throwable $exception
+     * @param \Throwable $Exception
      * @param NULL|int $exit_code If int exit code is provided this will terminate the program/worker
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function exception_handler(\Throwable $Exception, ?int $exit_code = NULL): void
     {
-
+print 'KKKKKKKKKKKKKKKKKKKKKKKKKKK';
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
         //then disable the locking for this coroutine
         //self::$Container->get('LockManager')->release_all_own_locks();
@@ -630,6 +632,9 @@ BANNER;
      * @param int $errline
      * @param array $errcontext
      * @throws Exceptions\ErrorException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): void
@@ -640,6 +645,16 @@ BANNER;
         throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
 
+    /**
+     * Used to catch uncaught exceptions that cause worker restart and pass them to the error/exception handler of the Kernel.
+     * This is called only at worker shutdown.
+     * There are no coroutines in this phase.
+     * @throws Exceptions\ErrorException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public static function fatal_error_handler() : void
     {
         $error = error_get_last();
@@ -657,27 +672,7 @@ BANNER;
         //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
     }
-    
-    /* DEBUG
-    public static function logtofile_backtrace(string $filename) : void
-    {
-        //self::raise_memory_limit(4096);
-        foreach(self::simplify_trace(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) as $key => $row){
-            self::logtofile($filename,array($key, $row));//NOVERIFY
-        }
 
-
-    }
-
-     public static function simplify_trace($debug_trace) {
-        foreach($debug_trace as &$call) {
-            unset($call['object']);
-            unset($call['args']);
-        }
-        return $debug_trace;
-    }
-    */
-    
     public static function bt(array $context = []) : void
     {
         $bt = print_r(Coroutine::getSimpleBacktrace(), TRUE);
@@ -687,7 +682,11 @@ BANNER;
     /**
      * Prints a message to the default output of the server (in daemon mode this is redirected to file).
      * It can be used even if the Kernel is not initialized
-     * @param $message
+     * @param string $message
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public static function printk(string $message) : void
     {
@@ -1116,11 +1115,8 @@ BANNER;
      */
     public static function get_class_path(string $class_name) : ?string
     {
-//        if (!class_exists($class_name)) {
-//            throw new InvalidArgumentException(sprintf('No class/interface %s exists.', $class_name));
-//        }
-        if ($class && !class_exists($class) && !interface_exists($class)) {
-            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class));
+        if ($class_name && !class_exists($class_name) && !interface_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class_name));
         }
         $ret = array_search($class_name, self::$loaded_classes);
         if ($ret === FALSE) {
@@ -1130,10 +1126,6 @@ BANNER;
         return $ret;
     }
 
-//    public static function get_loaded_paths() : array
-//    {
-//        return self::$loaded_paths;
-//    }
 
     /**
      * Logs a message using the default logger
@@ -1156,7 +1148,7 @@ BANNER;
         }
         if (self::get_http_server()) {
             //$message = 'Worker #'.self::get_worker_id().': '.$message;
-            $message = sprintf(t::_('Process #%s: %s'), self::get_worker_id(), $message );
+            $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message );
         }
 
         $Logger->log($level, $message, $context);
@@ -1243,8 +1235,6 @@ BANNER;
                         throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
                     }
                     self::initialize_class($class_name);
-                    //self::$loaded_classes[] = $class_name;
-                    //self::$loaded_paths[] = $class_path;
                     self::$loaded_classes[$class_path] = $class_name;
                     $ret = TRUE;
 
@@ -1279,6 +1269,10 @@ BANNER;
      * @param string $class_path
      * @param string $class_name
      * @return mixed|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
@@ -1309,8 +1303,6 @@ BANNER;
 
         return $ret;
     }
-
-
 
     /**
      * @param string $class_name

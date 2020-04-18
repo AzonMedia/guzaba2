@@ -21,6 +21,7 @@ use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\ContentType;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Kernel\Runtime;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
@@ -173,15 +174,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         if ($controller_callable) {
             if (is_array($controller_callable)) {
 
-                //print 'AAAAAAAAAAAAAAAAAAAAAAA';
-
                 $controller_arguments = $Request->getAttribute('controller_arguments') ?? []; //in case there are arguments injected by previous middlware like the Routing
 
-                //print '+++++++++'.get_class($Request->getBody()).' '.$Request->getContentType().PHP_EOL;
 
                 $body_params = $Request->getParsedBody();
 
-                if ($body_params = $Request->getParsedBody()) {
+                if ($body_params) {
 
                     if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH]) ) {
 

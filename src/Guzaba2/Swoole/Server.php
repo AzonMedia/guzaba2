@@ -446,6 +446,11 @@ class Server extends \Guzaba2\Http\Server
         //return $this->SwooleHttpServer->getWorkerId();//this returns Bool instead of -1 when not started
     }
 
+    public function get_all_workers_ids(): array
+    {
+        return range(0, $this->get_total_workers() - 1);
+    }
+
     public function get_worker_pid() : int
     {
         return $this->SwooleHttpServer->worker_pid;
@@ -634,9 +639,11 @@ class Server extends \Guzaba2\Http\Server
      */
     public function send_broadcast_ipc_request(IpcRequestInterface $IpcRequest, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): array
     {
-        $total_workers = $this->get_total_workers();
-        $dest_worker_ids = range(0, $total_workers - 1);
-        //remove the worker_id of the current one
+        //$total_workers = $this->get_total_workers();
+        //$dest_worker_ids = range(0, $total_workers - 1);
+        $dest_worker_ids = $this->get_all_workers_ids();
+        //remove the worker_id of the current one - a message can not be sent to itself (if this worker needs to execute the same command this needs to be done separately)
+        //@see ActiveRecordController::execute_multicast_request()
         $current_worker_id = $this->get_worker_id();
         $key = array_search($current_worker_id, $dest_worker_ids, TRUE);
         if ($key === FALSE) {
@@ -663,16 +670,15 @@ class Server extends \Guzaba2\Http\Server
     public function send_multicast_ipc_request(IpcRequestInterface $IpcRequest, array $dest_worker_ids, int $timeout = self::CONFIG_RUNTIME['ipc_responses_default_timeout']): array
     {
         $callables = [];
-        if (count($dest_worker_ids)) {
-            foreach ($dest_worker_ids as $dest_worker_id) {
-                $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
-                    return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
-                };
-            }
-            return Coroutine::executeMulti(...$callables);
-        } else {
+        if (!count($dest_worker_ids)) {
             return [];
         }
+        foreach ($dest_worker_ids as $dest_worker_id) {
+            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
+                return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
+            };
+        }
+        return Coroutine::executeMulti(...$callables);
 
     }
 

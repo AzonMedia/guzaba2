@@ -108,6 +108,7 @@ class PipeMessage extends HandlerBase
      */
     public function handle(Server $Server, int $src_worker_id, IpcRequest $IpcRequest): void
     {
+
         new Event($this, '_before_handle', func_get_args());
 
         if ($IpcRequest instanceof IpcRequestWithResponse) { //this is a response (pingback to a IpcRequest sent earlier)
@@ -131,7 +132,6 @@ class PipeMessage extends HandlerBase
 
             ];
             $IpcRequest = $IpcRequest->withServerParams($server_params);
-
             Coroutine::init($IpcRequest);
             /** @var \Guzaba2\Swoole\Server $Server */
             $Server = self::get_service('Server');

@@ -218,8 +218,8 @@ implements ControllerInterface
     }
 
     /**
-     * Executes a request on all workers including the current one.
-     * The current one executes the request directly , not over IPC as sending an IpcRequest to yourself is not supported.
+     * Executes a request on the provided $worker_ids list.
+     * The current one is included it executes the request directly , not over IPC as sending an IpcRequest to yourself is not supported.
      * @param int $method
      * @param string $route
      * @param string $controller_class
@@ -242,6 +242,37 @@ implements ControllerInterface
         $Server = self::get_service('Server');
         $worker_ids = range(0, $Server->get_total_workers()-1 );//the workers IDs start from 0
 
+        return $this->execute_multicast_request($worker_ids,$method, $route, $controller_class, $action, $arguments = []);
+    }
+
+    /**
+     * Executes a request on all workers including the current one.
+     * The current one executes the request directly , not over IPC as sending an IpcRequest to yourself is not supported.
+     * @param array $worker_ids
+     * @param int $method
+     * @param string $route
+     * @param string $controller_class
+     * @param string $action
+     * @param array $arguments
+     * @return array
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
+     */
+    public function execute_multicast_request(array $worker_ids, int $method, string $route, string $controller_class, string $action, array $arguments = []): array
+    {
+        if (!count($worker_ids)) {
+            throw new InvalidArgumentException(sprintf(t::_('No worker IDs provided.')));
+        }
+
+        $ret = [];
+
+        /** @var Server $Server */
+        $Server = self::get_service('Server');
 
         $IpcRequest = new IpcRequest($method, $route, $arguments);
         $ipc_responses = $Server->send_broadcast_ipc_request($IpcRequest);

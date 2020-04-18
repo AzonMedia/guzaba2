@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Guzaba2\Coroutine;
 
 use Azonmedia\Apm\Interfaces\ProfilerInterface;
+use Azonmedia\Di\Container;
+use Azonmedia\Lock\Interfaces\LockManagerInterface;
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
@@ -23,6 +25,7 @@ use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
+use SebastianBergmann\CodeCoverage\Report\PHP;
 
 /**
  * Class Coroutine
@@ -82,27 +85,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         return self::CONFIG_RUNTIME['enable_complete_backtrace'];
     }
 
-//    public static function getRegisteredCoroutineServices() : iterable
-//    {
-//        return self::$registered_coroutine_services;
-//    }
-//
-//    /**
-//     * Registers a new services. Expects the class name of the service to be provied.
-//     * If the service is already registered returns FALSE.
-//     * @param string $class_name
-//     * @return bool
-//     */
-//    public static function registerCoroutineService(string $class_name) : bool
-//    {
-//        $ret = FALSE;
-//        if (!in_array($class_name, self::$registered_coroutine_services)) {
-//            self::$registered_coroutine_services[] = $class_name;
-//            $ret = TRUE;
-//        }
-//        return $ret;
-//    }
-
     /**
      * An initialization method that should be always called at the very beginning of the execution of the root coroutine (usually this is the end of the request handler).
      * @param RequestInterface $Request
@@ -141,11 +123,20 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
         //this is needed because the objects being destroyed may be referring to the $Context of the coroutine which is already destroyed
         //this is to say that there is no guarantee that the $Context object is the very
         \Swoole\Coroutine::defer(function() use ($Context) {
-            //Kernel::get_di_container()->coroutine_services_cleanup();
+            //Kernel::get_di_container()->coroutine_services_cleanup();//fix this!!!
             //cleanup any remaining objects
             $context_vars = get_object_vars($Context);
             foreach($context_vars as $name => $value) {
                 if (is_object($value)) {
+                    //TODO - fix this temporary fix - enable coroutine_services_clean()
+                    if ($value instanceof LockManagerInterface) { //should be the very last one to be destroyed
+                        continue;
+                    }
+                    //no need to explicitly invoke this
+                    //if ($value instanceof Base) {
+                    //    $Context->{$name}->__destruct();
+                    //}
+                    //as the reference below should be the last one (if the coroutines are not awaited then a sub-coroutine may keep holding a reference and in this case the destructor should not be called here explicitly
                     $Context->{$name} = NULL;//trigger the destructor
                 }
             }
@@ -296,16 +287,20 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             //$Context = self::getContext($new_cid);
 
             \Swoole\Coroutine::defer(function() use ($Context, $ParentContext) {
+
                 //print_r(array_keys(get_object_vars($Context)));
                 //Kernel::get_di_container()->coroutine_services_cleanup();//it is not possible to trigger the destructors in the right way
                 //even if the references are set to NULL in the right way
                 //cleanup any remaining objects
                 $context_vars = get_object_vars($Context);
+
                 foreach($context_vars as $name => $value) {
                     if (is_object($value)) {
-                        $Context->{$name} = NULL;//trigger the destructor
+                        $Context->{$name} = NULL;//destroy this reference .. but do not call the destructor here.. neither this should trigger the destructor as there should be a reference in the parent coroutine
+                        //and the parent coroutine should still be alive as in Guzaba Framework all coroutines should be created and executed with executeMulti() which awaits them all
                     }
                 }
+
                 $Context->is_destroyed = TRUE;
 
                 //do not remove the finished ones

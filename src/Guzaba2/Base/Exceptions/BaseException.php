@@ -237,6 +237,17 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 //        return self::getCompleteMessage();
 //    }
 
+    public function getCompleteMessage(): string
+    {
+        $message = parent::getCompleteMessage();
+        $Server = \Swoole\Server::getInstance();
+        $wid = $Server->worker_id;
+        $cid = \Swoole\Coroutine::getCid();
+        $pre = 'W'.$wid.'C'.$cid.': ';// W0C-1 - how is that possible? be inside the worker but not in coroutine?
+        $message = $pre.$message;
+        return $message;
+    }
+
     /**
      * @overrides
      * @return string|null
@@ -459,6 +470,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @throws ContextDestroyedException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException @see Guzaba2\Transactions\MemoryTransaction::get_interrupting_exception()
+     * @throws \ReflectionException
      */
     public static function getCurrentException() : ?\Throwable
     {

@@ -315,11 +315,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //TODO implement
     }
 
-    public function __destruct()
+    protected function _before_destruct()
     {
-
-
-        //print 'destr '.get_class($this).PHP_EOL;
 
 
         if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
@@ -344,7 +341,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
             $this->read_lock_obtained_flag = FALSE;
         }
-        parent::__destruct();
     }
 
     public function __toString() : string

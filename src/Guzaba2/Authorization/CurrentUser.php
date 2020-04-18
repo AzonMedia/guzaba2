@@ -54,12 +54,12 @@ class CurrentUser extends Base
         return $this->default_user_class;
     }
 
-    public function __destruct()
+    protected function _before_destruct()
     {
         unset($this->User);
         //$this->User = NULL;//this will trigger a typed property error
 
-        parent::__destruct();
+        //parent::__destruct();
     }
 
 //    /**
