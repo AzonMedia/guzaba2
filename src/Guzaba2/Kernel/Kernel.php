@@ -39,7 +39,6 @@ use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Orm\ActiveRecord;
 //use Guzaba2\Translator\Translator as t;
 use Azonmedia\Translator\Translator as t;
-use Guzaba2\Authorization\IpBlackList;
 use Monolog\Handler\StreamHandler;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -250,7 +249,7 @@ BANNER;
      * @param RegistryInterface $Registry
      * @param LoggerInterface $Logger
      */
-    public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger): void
+    public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger, array $options = []): void
     {
 
         if (self::$init_microtime === NULL) {
@@ -274,7 +273,10 @@ BANNER;
         set_error_handler([__CLASS__, 'error_handler']);
         register_shutdown_function([__CLASS__,'fatal_error_handler']);
 
-        //stream_wrapper_register('guzaba.source', SourceStream::class);
+        $source_stream_options = $options[SourceStream::class] ?? [];
+
+        SourceStream::initialize($source_stream_options);
+
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
         self::$is_initialized_flag = TRUE;
@@ -585,7 +587,6 @@ BANNER;
      */
     public static function exception_handler(\Throwable $Exception, ?int $exit_code = NULL): void
     {
-print 'KKKKKKKKKKKKKKKKKKKKKKKKKKK';
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
         //then disable the locking for this coroutine
         //self::$Container->get('LockManager')->release_all_own_locks();
@@ -657,19 +658,22 @@ print 'KKKKKKKKKKKKKKKKKKKKKKKKKKK';
      */
     public static function fatal_error_handler() : void
     {
+        $Server = self::get_http_server();
+        if ($Server) {
+            self::printk(sprintf(t::_('Worker %1s shutdown'), $Server->get_worker_id()));
+        } else {
+            self::printk(sprintf(t::_('Main process shutdown') ));
+        }
+
         $error = error_get_last();
         if ($error) {
             self::error_handler($error['type'], $error['message'], $error['file'], $error['line']);
         }
     }
 
+    //not used
     public static function logtofile(string $content, array $context = []): void
     {
-        //$path = self::$framework_root_dir . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
-        //die(self::$cwd);
-        //$path = self::$cwd . DIRECTORY_SEPARATOR . '../logs'. DIRECTORY_SEPARATOR . $file_name;
-        //file_put_contents($path, $content.PHP_EOL.PHP_EOL, FILE_APPEND);
-        //$content = time().' '.date('Y-m-d H:i:s').' '.$content.PHP_EOL.PHP_EOL;//no need of this
         self::$Logger->debug($content, $context);
     }
 
@@ -1035,7 +1039,7 @@ print 'KKKKKKKKKKKKKKKKKKKKKKKKKKK';
             $Directory = new \RecursiveDirectoryIterator($autoload_lookup_path);
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
-            foreach ($Regex as $path=>$match) {
+            foreach ($Regex as $path => $match) {
 
                 $class_name = str_replace($autoload_lookup_path, '', $path);
                 $class_name = str_replace('\\\\','\\', $class_name);
@@ -1061,7 +1065,7 @@ print 'KKKKKKKKKKKKKKKKKKKKKKKKKKK';
     }
 
     /**
-     * Returns a twodimensional associative array: class_name=>['method1','method2']
+     * Returns a two-dimensional associative array: class_name=>['method1','method2']
      * @return array
      */
     public static function run_all_validations() : array

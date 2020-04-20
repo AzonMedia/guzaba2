@@ -18,7 +18,6 @@ abstract class Runtime
      */
     public static function get_memory_limit(): int
     {
-        //return (int) ini_get('memory_limit');
         $limit = ini_get('memory_limit');
         $multiply = 1;
         if (stripos($limit,'K') !== FALSE) {
@@ -32,11 +31,21 @@ abstract class Runtime
         return $limit * $multiply;
     }
 
+    /**
+     * Sets the memory limit.
+     * @param int $bytes
+     */
     public static function set_memory_limit(int $bytes): void
     {
         ini_set('memory_limit', (string) $bytes);
     }
 
+    /**
+     * Raises the memory limit to the provided $bytes.
+     * If the current memory limit is higher it is not changed and the method returns false.
+     * @param int $bytes
+     * @return bool
+     */
     public static function raise_memory_limit(int $bytes): bool
     {
         if ($bytes > self::get_memory_limit()) {
@@ -46,6 +55,12 @@ abstract class Runtime
         return FALSE;
     }
 
+    /**
+     * Lowers the memory limit to the provided $bytes.
+     * If the current memory limit is lower it is not changed and the method returns false.
+     * @param int $bytes
+     * @return bool
+     */
     public static function lower_memory_limit(int $bytes): bool
     {
         if ($bytes < self::get_memory_limit()) {

@@ -241,7 +241,11 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     {
         $message = parent::getCompleteMessage();
         $Server = \Swoole\Server::getInstance();
-        $wid = $Server->worker_id;
+        if ($Server) {
+            $wid = $Server->worker_id;
+        } else {
+            $wid = -1;
+        }
         $cid = \Swoole\Coroutine::getCid();
         $pre = 'W'.$wid.'C'.$cid.': ';// W0C-1 - how is that possible? be inside the worker but not in coroutine?
         $message = $pre.$message;

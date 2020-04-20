@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Guzaba2\Kernel;
 
+use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\DebugUtil;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Exceptions\NotImplementedException;
 use Guzaba2\Kernel\Exceptions\AutoloadException;
@@ -23,7 +25,7 @@ class SourceStream
 {
     public $context;
 
-    protected $position = 0;
+    protected int $position = 0;
 
 
     protected $data = '';
@@ -31,8 +33,8 @@ class SourceStream
     protected $mode;
     protected $options;
 
-    protected $read_enabled = false;
-    protected $write_enabled = false;
+    protected bool $read_enabled = FALSE;
+    protected bool $write_enabled = FALSE;
 
     public const PROTOCOL = 'guzaba.source';
 
@@ -40,6 +42,42 @@ class SourceStream
      * @var array
      */
     private static array $sources = [];
+
+    private static array $class_options = [];
+
+    private static int $registry_mtime = 0;
+
+    public const SUPPORTED_CLASS_OPTIONS = [
+        'class_cache_enabled'       => 'bool',
+        'class_cache_dir'           => 'string',
+        'registry_dir'              => 'string',
+    ];
+
+    /**
+     * @param array $options
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public static function initialize(array $options): void
+    {
+        ArrayUtil::validate_array($options, self::SUPPORTED_CLASS_OPTIONS, $errors);
+        if ($errors) {
+            throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1s. %2s'), __METHOD__, implode(' ',$errors)));
+        }
+        self::$class_options = $options;
+        $registry_dir = self::$class_options['registry_dir'] ?? NULL;
+        if ($registry_dir && file_exists($registry_dir)) {
+            $Directory = new \RecursiveDirectoryIterator($registry_dir);
+            $Iterator = new \RecursiveIteratorIterator($Directory);
+            $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
+            foreach ($Regex as $path => $match) {
+                $mtime = filemtime($path);
+                if (self::$registry_mtime < $mtime) {
+                    self::$registry_mtime = $mtime;
+                }
+            }
+        }
+    }
 
     public function stream_open($path, $mode, $options, &$opened_path)
     {
@@ -119,10 +157,13 @@ class SourceStream
 
     /**
      * Returns the rewritten class source.
-     * The rewriting is done by first loading the class (by using eval()) with a different name so that the runtime configuration can be obtained (@param string $path Class path that is to be loaded
+     * The rewriting is done by first loading the class (by using eval()) with a different name so that the runtime configuration can be obtained (
+     * @param string $path Class path that is to be loaded
      * @return string
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
-     * @uses Kernel::get_runtime_configuration()
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException@uses Kernel::get_runtime_configuration()
      * @see  Kernel::get_runtime_configuration()).
      * Then on the second pass the actual class source is rewritten with the new runtime config and the source is returned.
      */
@@ -133,6 +174,34 @@ class SourceStream
         if (isset(self::$sources[$path])) {
             return self::$sources[$path];
         }
+
+        if (self::$class_options['class_cache_enabled'] && self::$class_options['class_cache_dir']) {
+            $cache_dir = self::$class_options['class_cache_dir'];
+            // /home/local/PROJECTS/guzaba-platform-skeleton/vendor/guzaba-platform/roles/app/src/Component.php
+            //$cache_dir = '/home/local/PROJECTS/guzaba-platform-skeleton/app/startup_generated/classes';
+            //$cache_path = str_replace('/home/local/PROJECTS/guzaba-platform-skeleton','',$path);
+            $cache_path = $path;
+            $cache_path = $cache_dir.$cache_path;
+            if (file_exists($cache_path)) {
+                /*
+                if (self::$registry_mtime) {
+                    if (filemtime($cache_path) > self::$registry_mtime) {
+                        return file_get_contents($cache_path);
+                    } else {
+                        //do not use the cache file - there is a file in the registry that was modified after this file
+                    }
+                } else {
+                    return file_get_contents($cache_path);
+                }
+                */
+                $cached_file_mtime = filemtime($cache_path);
+                $file_mtime = filemtime($path);
+                if (self::$registry_mtime < $cached_file_mtime && $file_mtime < $cached_file_mtime) {
+                    return file_get_contents($cache_path);
+                }
+            }
+        }
+
 
         if (Kernel::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
@@ -213,14 +282,6 @@ class SourceStream
         try {
             eval($class_without_config_source);
         } catch (\Throwable $Exception) {
-//            $message = '';
-//            $PreviousException = $Exception->getPrevious();
-//
-//            $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
-//            if ($PreviousException) {
-//                $message .= get_class($Exception).' '.$Exception->getMessage().' in '.$Exception->getFile().':'.$Exception->getLine().PHP_EOL.'Eval code:'.PHP_EOL.DebugUtil::dump_code_with_lines($class_without_config_source).PHP_EOL.PHP_EOL;
-//            }
-//            //Kernel::log($message);
             Kernel::exception_handler($Exception);
         }
 
@@ -232,13 +293,25 @@ class SourceStream
 
         $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
 
-//        if ($class_name === \GuzabaPlatform\Platform\Application\MysqlConnection::class) {
-//            print $class_source;
-//        }
+        if (!empty($cache_path)) {
+            if (!file_exists(dirname($cache_path))) {
+                mkdir(dirname($cache_path), 0777, TRUE);
+            }
+            file_put_contents($cache_path, $class_source);
+        }
+
         self::$sources[$path] = $class_source;
         return $class_source;
     }
 
+    /**
+     * @param $count
+     * @return false|string
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public function stream_read($count)
     {
         if (!$this->read_enabled) {
@@ -249,6 +322,14 @@ class SourceStream
         return $ret;
     }
 
+    /**
+     * @param $data
+     * @return int
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public function stream_write($data)
     {
         if (!$this->write_enabled) {
