@@ -391,7 +391,7 @@ class Server extends \Guzaba2\Http\Server
         $WorkerStartHandler = $this->get_handler('WorkerStart');
         if ($WorkerStartHandler->debug_ports_enabled()) {
             $base_port = $WorkerStartHandler->get_base_debug_port();
-            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->get_total_workers()).PHP_EOL);
+            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->get_total_workers() - 1).PHP_EOL);
         }
         if (!empty($this->options['open_http2_protocol'])) {
             Kernel::printk(sprintf(t::_('HTTP2 enabled')).PHP_EOL);
