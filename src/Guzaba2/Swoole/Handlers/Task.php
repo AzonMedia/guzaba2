@@ -23,6 +23,7 @@ use Guzaba2\Swoole\IpcResponse;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
+use Swoole\Server;
 
 class Task extends HandlerBase
 {
@@ -40,6 +41,11 @@ class Task extends HandlerBase
      * @var MiddlewareInterface[]
      */
     protected iterable $middlewares = [];
+
+    /**
+     * @var int[]
+     */
+    private array $running_tasks;
 
     /**
      * @var ResponseInterface
@@ -72,21 +78,24 @@ class Task extends HandlerBase
      * It is part of Guzaba implementation that the $message is a IpcRequest
      * The IpcRequest is also a RequestInterface
      * @param Server $Server
+     * @param int $task_id
      * @param int $src_worker_id The worker sending the request
      * @param IpcRequest $IpcRequest
-     * @throws InvalidArgumentException
-     * @throws RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
-     * @throws \Guzaba2\Base\Exceptions\LogicException
-     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
-     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
-     * @throws \ReflectionException
      */
-    public function handle(Server $Server, int $src_worker_id, IpcRequest $IpcRequest): void
+    public function handle(Server $Server, int $task_id, int $src_worker_id, IpcRequest $IpcRequest): void
     {
         new Event($this, '_before_handle', func_get_args());
 
+
         //TODO implement this
+
+        //havea global list with the currently running tasks
+        $this->running_tasks[] = $task_id;
+        //add an array holding requests for interrupting tasks
+        defer(function() use ($task_id) {
+            //remove the task from running_tasks
+        });
 
         new Event($this, '_after_handle', func_get_args());
     }

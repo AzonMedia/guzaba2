@@ -7,6 +7,8 @@ use Azonmedia\Routing\RoutingMapArray;
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
+use Guzaba2\Http\Method;
+use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
@@ -41,8 +43,12 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * If a models has no routing information it will be skipped (not all models are expected to be managed individually though the API).
      * @param array $ns_prefixes
      * @param array $supported_languages
+     * @throws ConfigurationException
      * @throws InvalidArgumentException
+     * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      */
     public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */ )
@@ -61,8 +67,21 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 
             $routing = $loaded_class::get_routes();
 
-
             if ($routing) {
+
+                //some validation
+                foreach ($routing as $path => $route) {
+                    foreach ($route as $method => $controller) {
+                        if (is_array($controller)) {
+                            if (!class_exists($controller[0])) {
+                                throw new ConfigurationException(sprintf(t::_('The class %1s contains an invalid controller for route %2s:%3s - the class %4s does not exist.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0]));
+                            }
+                            if (!method_exists($controller[0], $controller[1])) {
+                                throw new ConfigurationException(sprintf(t::_('The class %1s contains an invalid controller for route %2s:%3s - the class %4s does not have a method %5s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1] ));
+                            }
+                        }
+                    }
+                }
 
 //                //if ($api_route_prefix) {
 //                if (is_a($loaded_class, ControllerInterface::class, TRUE)) {
