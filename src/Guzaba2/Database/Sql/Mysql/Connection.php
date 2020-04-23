@@ -200,7 +200,7 @@ abstract class Connection extends TransactionalConnection
     public static function validate_savepoint(string $savepoint_name) : void
     {
         if (!preg_match('/[a-zA-Z0-9_]*/', $savepoint_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1s is not valid. Only letters, numbers and _ are allowed.'), $savepoint_name));
+            throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1$s is not valid. Only letters, numbers and _ are allowed.'), $savepoint_name));
         }
     }
 }

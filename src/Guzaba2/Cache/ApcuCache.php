@@ -35,8 +35,8 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
 
     /**
      * Returns NULL if the key is not found.
+     * @param string $prefix
      * @param string $key
-     * @throws RunTimeException
      */
     public function get(string $prefix, string $key) /* mixed */
     {
@@ -53,13 +53,13 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
 
     }
 
-    public function get_stats(string $prfix = ''): array
+    public function get_stats(string $prefix = ''): array
     {
 
     }
 
-    public function clear_cache(string $prefix = ''): void
+    public function clear_cache(string $prefix = '', int $percentage = 100): int
     {
-
+        return 0;
     }
 }

@@ -83,7 +83,7 @@ class Stream extends Base implements StreamInterface
 
     public function __sleep() : void
     {
-        throw new RunTimeException(sprintf(t::_('The class %1s can not be serialized.'), __CLASS__));
+        throw new RunTimeException(sprintf(t::_('The class %1$s can not be serialized.'), __CLASS__));
     }
 
     /**

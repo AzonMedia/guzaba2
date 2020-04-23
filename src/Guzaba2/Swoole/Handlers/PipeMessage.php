@@ -144,9 +144,9 @@ class PipeMessage extends HandlerBase
             try {
                 $User = new $user_class($user_uuid);
             } catch (RecordNotFoundException $Exception) {
-                throw new LogicException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1s for the IPC request.'), $user_uuid));
+                throw new LogicException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1$s for the IPC request.'), $user_uuid));
             } catch (PermissionDeniedException $Exception) {
-                throw new LogicException(sprintf(t::_('The user with UUID %1s can not be read. Please check the user permissions.'), $user_uuid));
+                throw new LogicException(sprintf(t::_('The user with UUID %1$s can not be read. Please check the user permissions.'), $user_uuid));
             }
             $CurrentUser->set($User);
 

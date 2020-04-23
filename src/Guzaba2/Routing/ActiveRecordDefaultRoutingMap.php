@@ -74,10 +74,10 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                     foreach ($route as $method => $controller) {
                         if (is_array($controller)) {
                             if (!class_exists($controller[0])) {
-                                throw new ConfigurationException(sprintf(t::_('The class %1s contains an invalid controller for route %2s:%3s - the class %4s does not exist.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0]));
+                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not exist.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0]));
                             }
                             if (!method_exists($controller[0], $controller[1])) {
-                                throw new ConfigurationException(sprintf(t::_('The class %1s contains an invalid controller for route %2s:%3s - the class %4s does not have a method %5s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1] ));
+                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not have a method %5$s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1] ));
                             }
                         }
                     }

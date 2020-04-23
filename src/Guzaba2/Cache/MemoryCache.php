@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Guzaba2\Cache;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Cache\Interfaces\CacheInterface;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class MemoryCache
@@ -77,12 +79,50 @@ class MemoryCache extends Base implements CacheInterface
         return $ret;
     }
 
-    public function clear_cache(string $prefix = ''): void
+    /**
+     * @param string $prefix
+     * @param int $percentage
+     * @return int
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function clear_cache(string $prefix = '', int $percentage = 100): int
     {
+        if (!$prefix && $percentage !== 100) {
+            throw new InvalidArgumentException(sprintf(t::_('The $percentage argument must be 100 when no $prefix is provided.')));
+        }
+        if ($percentage === 0) {
+            throw new InvalidArgumentException(sprintf(t::_('The $percentage argument can not be 0.')));
+        }
+        if ($percentage > 100) {
+            throw new InvalidArgumentException(sprintf(t::_('The $percentage argument can not be higher than 100.')));
+        }
+
         if ($prefix) {
-            $this->cache[$prefix] = [];
+            if ($percentage === 100) {
+                $cleared_entries = count($this->cache[$prefix]);
+                $this->cache[$prefix] = [];
+            } else {
+                $total_entries = count($this->cache[$prefix]);
+                $entries_to_clean = round($total_entries * $percentage / 100, 1);
+                //assuming the oldest added are to be clean using for each and cleaning the first $entries_to_be_clean should be OK
+                $cleared_entries = 0;
+                foreach ($this->cache[$prefix] as $key=>$value) {
+                    unset($this->cache[$prefix][$key]);
+                    $cleared_entries++;
+                    if ($cleared_entries === $entries_to_clean) {
+                        break;
+                    }
+                }
+            }
+
         } else {
+            $cleared_entries = 0;
+            foreach ($this->cache as $prefix=>$data) {
+                $cleared_entries += count($data);
+            }
             $this->cache = [];
         }
+        return $cleared_entries;
     }
 }

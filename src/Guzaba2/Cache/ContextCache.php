@@ -144,8 +144,9 @@ class ContextCache extends Base implements CacheInterface
         // TODO: Implement get_stats() method.
     }
 
-    public function clear_cache(string $prefix = ''): void
+    public function clear_cache(string $prefix = '', int $percentage = 100): int
     {
         // TODO: Implement clear_cache() method.
+        return 0;
     }
 }

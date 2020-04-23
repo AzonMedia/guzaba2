@@ -45,7 +45,7 @@ trait ConnectionTrait
         foreach ($params as $param_name => $param_value) {
             if (is_array($param_value)) {
                 if (array_keys($param_value) !== range(0, count($param_value) - 1)) {
-                    throw new InvalidArgumentException(sprintf(t::_('The array for parameters %1s is not an indexed array.'), $param_name));
+                    throw new InvalidArgumentException(sprintf(t::_('The array for parameters %1$s is not an indexed array.'), $param_name));
                 }
                 for ($aa = 0; $aa < count($param_value); $aa++) {
                     $params[$param_name.$aa] = $param_value[$aa];

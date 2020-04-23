@@ -62,7 +62,7 @@ class SourceStream
     {
         ArrayUtil::validate_array($options, self::SUPPORTED_CLASS_OPTIONS, $errors);
         if ($errors) {
-            throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1s. %2s'), __METHOD__, implode(' ',$errors)));
+            throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1$s. %2$s'), __METHOD__, implode(' ',$errors)));
         }
         self::$class_options = $options;
         $registry_dir = self::$class_options['registry_dir'] ?? NULL;

@@ -82,15 +82,15 @@ class IpcRequest extends Request implements IpcRequestInterface
         if (is_int($method)) {
             if (!isset(Method::METHODS_MAP[$method])) {
                 $valid_method_constants = implode(',', array_map(fn (string $method): string => 'HTTP_' . $method, array_values(Method::METHODS_MAP)));
-                throw new InvalidArgumentException(sprintf(t::_('Invalid method constant %1s is provided. The valid constants are %2s::[%3s]'), $method, Method::class, $valid_method_constants));
+                throw new InvalidArgumentException(sprintf(t::_('Invalid method constant %1$s is provided. The valid constants are %2$s::[%3$s]'), $method, Method::class, $valid_method_constants));
             }
             $method = Method::METHODS_MAP[$method];
         } elseif (is_string($method)) {
             if (!Method::is_valid_method($method)) {
-                throw new InvalidArgumentException(sprintf(t::_('Invalid method string %1s is provided. The valid method names are %2s.'), implode(',', array_values(Method::METHODS_MAP)) ));
+                throw new InvalidArgumentException(sprintf(t::_('Invalid method string %1$s is provided. The valid method names are %2$s.'), implode(',', array_values(Method::METHODS_MAP)) ));
             }
         } else {
-            throw new InvalidArgumentException(sprintf(t::_('Wrong type %1s provided for $method. Only int and string are supported.'), gettype($method) ));
+            throw new InvalidArgumentException(sprintf(t::_('Wrong type %1$s provided for $method. Only int and string are supported.'), gettype($method) ));
         }
 
         if (!$route) {
@@ -109,12 +109,12 @@ class IpcRequest extends Request implements IpcRequestInterface
             try {
                 $User = new User($user_uuid);
                 if ($User->user_is_disabled) {
-                    throw new InvalidArgumentException(sprintf(t::_('The provided $user_uuid %1s corresponds to user %1s which is disabled. IPC requests can not be sent on behalf of disabled users.'), $user_uuid, $User->user_name));
+                    throw new InvalidArgumentException(sprintf(t::_('The provided $user_uuid %1$s corresponds to user %1$s which is disabled. IPC requests can not be sent on behalf of disabled users.'), $user_uuid, $User->user_name));
                 }
             } catch (RecordNotFoundException $Exception) {
-                throw new InvalidArgumentException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1s.'), $user_uuid));
+                throw new InvalidArgumentException(sprintf(t::_('There is no user corresponding to the provided $user_uuid %1$s.'), $user_uuid));
             } catch (PermissionDeniedException $Exception) {
-                throw new LogicException(sprintf(t::_('The user with UUID %1s can not be read. Please check the permissions.'), $user_uuid));
+                throw new LogicException(sprintf(t::_('The user with UUID %1$s can not be read. Please check the permissions.'), $user_uuid));
             }
 
         }
@@ -146,7 +146,7 @@ class IpcRequest extends Request implements IpcRequestInterface
             /** @var RouterInterface $Router */
             $Router = self::get_service('Router');
             if ($Router->match_request($this)->getAttribute('controller_callable') === NULL) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided route %1s seems invalid (can not be routed).'), $route));
+                throw new InvalidArgumentException(sprintf(t::_('The provided route %1$s seems invalid (can not be routed).'), $route));
             }
         }
 

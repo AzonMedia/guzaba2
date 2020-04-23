@@ -69,4 +69,15 @@ abstract class Runtime
         }
         return FALSE;
     }
+
+    /**
+     * @return int
+     */
+    public static function gc_collect_cycles(): int
+    {
+        return gc_collect_cycles();
+    }
+
+
+
 }

@@ -133,11 +133,11 @@ class ControllerExecutor extends Base implements CommandInterface
     {
         $command_arr = explode(' ',$command);
         if (!isset($command_arr[1])) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1s does not contain method.'), $command));
+            throw new InvalidArgumentException(sprintf(t::_('The command %1$s does not contain method.'), $command));
         }
         $method = strtolower($command_arr[1]);
         if (!in_array($method, self::SUPPORTED_SUBCOMMANDS)) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1s contains an invalid method %2s.'), $command, $method));
+            throw new InvalidArgumentException(sprintf(t::_('The command %1$s contains an invalid method %2$s.'), $command, $method));
         }
         return $method;
     }
@@ -158,7 +158,7 @@ class ControllerExecutor extends Base implements CommandInterface
         }
         $route = $command_arr[2];
         if ($route[0]!=='/') {
-            throw new InvalidArgumentException(sprintf(t::_('The provided command %1s contains an invalid route $2s. The route must begin with /.'), $command, $route));
+            throw new InvalidArgumentException(sprintf(t::_('The provided command %1$s contains an invalid route $2s. The route must begin with /.'), $command, $route));
         }
         return $route;
     }
@@ -198,15 +198,15 @@ class ControllerExecutor extends Base implements CommandInterface
     {
         $command_arr = explode(' ', $command);
         if (empty($command_arr[1])) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1s does not contain an accept type.'), $command));
+            throw new InvalidArgumentException(sprintf(t::_('The command %1$s does not contain an accept type.'), $command));
         }
         $accept_type = strtolower($command_arr[1]);
         if (!isset(self::SUPPORTED_CONTENT_TYPES[$accept_type])) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1s contains an unsupported accept content type %2s. The supported accept content types are %3s.'), $command, $accept_type, implode(',', array_keys(self::SUPPORTED_CONTENT_TYPES)) ));
+            throw new InvalidArgumentException(sprintf(t::_('The command %1$s contains an unsupported accept content type %2$s. The supported accept content types are %3$s.'), $command, $accept_type, implode(',', array_keys(self::SUPPORTED_CONTENT_TYPES)) ));
         }
         $this->accept_content_type = self::SUPPORTED_CONTENT_TYPES[$accept_type];
 
-        $ret = sprintf(t::_('The accept content type is set to %1s.'), $accept_type);
+        $ret = sprintf(t::_('The accept content type is set to %1$s.'), $accept_type);
         return $ret;
     }
 
@@ -318,11 +318,11 @@ class ControllerExecutor extends Base implements CommandInterface
     public static function handles_commands(): string
     {
         $class_name = GeneralUtil::get_class_name(static::class);
-        $ret = sprintf(t::_('%1s available commands:'), $class_name ).PHP_EOL;
+        $ret = sprintf(t::_('%1$s available commands:'), $class_name ).PHP_EOL;
         //$ret .= 'accept CONTENT_TYPE'.PHP_EOL;
         //$ret .= 'execute METHOD ROUTE [ARGS]'.PHP_EOL;
-        $ret .= sprintf(t::_('%1s METHOD ROUTE [ARGS] - executes a controller with the provided METHOD, ROUTE and optional ARGS'), 'execute').PHP_EOL;
-        $ret .= sprintf(t::_('%1s CONTENT_TYPE - sets the content type for the response'), 'accept').PHP_EOL;
+        $ret .= sprintf(t::_('%1$s METHOD ROUTE [ARGS] - executes a controller with the provided METHOD, ROUTE and optional ARGS'), 'execute').PHP_EOL;
+        $ret .= sprintf(t::_('%1$s CONTENT_TYPE - sets the content type for the response'), 'accept').PHP_EOL;
         return $ret;
     }
 
@@ -336,14 +336,14 @@ class ControllerExecutor extends Base implements CommandInterface
     {
         $class_name = GeneralUtil::get_class_name(static::class);
         if (NULL === $command) {
-            return sprintf(t::_('%1s - allows for controllers execution - type help %2s to see available commands'), $class_name, strtolower($class_name));
+            return sprintf(t::_('%1$s - allows for controllers execution - type help %2$s to see available commands'), $class_name, strtolower($class_name));
         } else if (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();
         } else {
             if (isset(self::COMMANDS_HELP[$command])) {
                 return sprintf(t::_('%s: %s'), $command, self::COMMANDS_HELP[$command]);
             } else {
-                return sprintf(t::_('Unknown command %1s provided to help.'), $command);
+                return sprintf(t::_('Unknown command %1$s provided to help.'), $command);
             }
 
         }

@@ -20,32 +20,32 @@ abstract class CompositeTransactionResource implements TransactionalResourceInte
 
     public function begin_transaction(): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     public function commit_transaction(): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     public function rollback_transaction(): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     public function create_savepoint(string $savepoint_name): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     public function rollback_to_savepoint(string $savepoint_name): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     public function release_savepoint(string $savepoint_name): void
     {
-        throw new LogicException(sprintf(t::_('The class %1s does not support the %2s method.'), __CLASS__, __FUNCTION__ ));
+        throw new LogicException(sprintf(t::_('The class %1$s does not support the %2$s method.'), __CLASS__, __FUNCTION__ ));
     }
 
     abstract public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction ;

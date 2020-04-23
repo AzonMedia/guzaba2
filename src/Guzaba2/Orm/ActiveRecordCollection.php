@@ -26,14 +26,14 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
             throw new InvalidArgumentException(sprintf(t::_('No $class argument provided.')));
         }
         if (!class_exists($class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $class argument "%1s" does not exist.'), $class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $class argument "%1$s" does not exist.'), $class));
         }
 
         $primary_index = $class::get_primary_index_columns();
         if ($data) {
             foreach ($primary_index as $column_name) {
                 if (!isset($data[0][$column_name])) {
-                    throw new InvalidArgumentException(sprintf(t::_('The provided $data does not have the expected primary index column %1s.'), $column_name));
+                    throw new InvalidArgumentException(sprintf(t::_('The provided $data does not have the expected primary index column %1$s.'), $column_name));
                 }
             }
         }
@@ -110,7 +110,7 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
     {
         self::validate_offset($offset);
         if (!is_object($value)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $value is of type %1s. Only objects (of class %s) are accepted.'), gettype($value), $this->get_class() ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $value is of type %1$s. Only objects (of class %s) are accepted.'), gettype($value), $this->get_class() ));
         }
         if (!($value instanceof $this->class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $value is an object of class %s. Only objects of class %s are accepted.'), $this->get_class($value), $this->get_class() ));
@@ -123,7 +123,7 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
         //throw new RunTimeException(sprintf(t::_('It is not allowed to unset elements from an ActiveRecordCollection.')));
         self::validate_offset($offset);
         if (!$this->offsetExists($offset)) {
-            throw new InvalidArgumentException(sprintf(t::_('The ActiveRecordCollection has no element %1s.'), $offset));
+            throw new InvalidArgumentException(sprintf(t::_('The ActiveRecordCollection has no element %1$s.'), $offset));
         }
         unset($this->objects, $offset);
     }
@@ -131,7 +131,7 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
     private static function validate_offset(/* mixed */ $offset) : void
     {
         if (!is_int($offset)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $offset is of type %1s. Only integers are accepted.'), gettype($offset) ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $offset is of type %1$s. Only integers are accepted.'), gettype($offset) ));
         }
     }
 

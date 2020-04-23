@@ -140,7 +140,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             if ($sibling_transactions) { //if there were previous nested transactions - check the status of the last one
                 $LastSiblingTransaction = $sibling_transactions[ count($sibling_transactions) - 1];
                 if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], TRUE )) {
-                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1s is in status %2s. Before the next nested transaction can be started the previous nested one must be in status %3s or %4s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK'] ));
+                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1$s is in status %2$s. Before the next nested transaction can be started the previous nested one must be in status %3$s or %4$s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK'] ));
                 }
             }
             $this->ParentTransaction->add_child($this);
@@ -167,7 +167,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     private function add_child(Transaction $Transaction) : void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
-            throw new InvalidArgumentException(sprintf(t::_('Trying to add a child/nested transaction that is in status %1s. Only transactions in status %2s can be added as child/nested.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
+            throw new InvalidArgumentException(sprintf(t::_('Trying to add a child/nested transaction that is in status %1$s. Only transactions in status %2$s can be added as child/nested.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
         }
         $this->children[] = $Transaction;
     }
@@ -188,7 +188,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     public static function validate_event(string $event_name) : void
     {
         if (!isset(self::EVENT[$event_name])) {
-            throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2s class supports %3s events.'), $event_name, self::class, implode(', ', self::EVENT ) ));
+            throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2$s class supports %3$s events.'), $event_name, self::class, implode(', ', self::EVENT ) ));
         }
     }
 
@@ -302,7 +302,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {
-            throw new RunTimeException(sprintf(t::_('The transaction of class %1s is currently in status %1s and can not be rolled back. Only transactions in statuses %2s can be rolled back.'), get_class($this), $initial_status, implode(', ', $allowed_statuses) ));
+            throw new RunTimeException(sprintf(t::_('The transaction of class %1$s is currently in status %1$s and can not be rolled back. Only transactions in statuses %2$s can be rolled back.'), get_class($this), $initial_status, implode(', ', $allowed_statuses) ));
         }
 
         //rollback all children (no matter what is their status - started on saved ... should be saved)
@@ -394,7 +394,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {
-           throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1s and can not be committed. Only transactions in statuses %2s can be committed.'), $initial_status, implode(', ', $allowed_statuses) ));
+           throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1$s and can not be committed. Only transactions in statuses %2$s can be committed.'), $initial_status, implode(', ', $allowed_statuses) ));
         }
 
         if ($this->has_parent()) {
@@ -457,7 +457,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     public function execute(callable $callable) /* mixed */
     {
         if ($this->get_status() !== self::STATUS['CREATED']) {
-            throw new RunTimeException(sprintf(t::_('The code can not be executed (%s($callable)) in the given transaction  as the transaction currently is in status %1s. Only transactions in status %2s can execute code.'), __METHOD__, $this->get_status(), self::STATUS['CREATED'] ));
+            throw new RunTimeException(sprintf(t::_('The code can not be executed (%s($callable)) in the given transaction  as the transaction currently is in status %1$s. Only transactions in status %2$s can execute code.'), __METHOD__, $this->get_status(), self::STATUS['CREATED'] ));
         }
         $this->begin();
         $ret = $callable();
@@ -479,12 +479,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     {
         $current_status = $this->get_status();
         if (in_array($current_status, self::END_STATUSES, TRUE)) {
-            throw new InvalidArgumentException(sprintf(t::_('The current status of the transaction is %1s. Transactions in statuses %s2 can not be changed. The provided status is %3s.'), $current_status, implode(', ', self::END_STATUSES), $status ));
+            throw new InvalidArgumentException(sprintf(t::_('The current status of the transaction is %1$s. Transactions in statuses %s2 can not be changed. The provided status is %3$s.'), $current_status, implode(', ', self::END_STATUSES), $status ));
         }
         if ($status === self::STATUS['COMMITTED']) {
             $allowed_statuses = [self::STATUS['SAVED'], self::STATUS['STARTED'] ];
             if (!in_array($current_status, $allowed_statuses )) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided $status %1s can not be set as the current status of the transaction %s2 does not allow to transition to the provided status. Only %3s statuses can transition to the provided status.'), $status, $current_status, implode(', ', $allowed_statuses)));
+                throw new InvalidArgumentException(sprintf(t::_('The provided $status %1$s can not be set as the current status of the transaction %s2 does not allow to transition to the provided status. Only %3$s statuses can transition to the provided status.'), $status, $current_status, implode(', ', $allowed_statuses)));
             }
         }
 

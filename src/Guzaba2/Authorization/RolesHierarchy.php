@@ -65,13 +65,13 @@ class RolesHierarchy extends ActiveRecord
         try {
             $Role = new Role($this->role_id);
         } catch (RecordNotFoundException $Exception) {
-            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1s does not exist.'), $this->role_id ));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1$s does not exist.'), $this->role_id ));
         }
         //validate for duplicate record
         try {
             $RolesHierarchy = new static( ['role_id' => $this->role_id, 'inherited_role_id' => $this->inherited_role_id] );
-            //return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1s already inherits role %2s.'), $this->role_id, $this->inherited_role_id ));
-            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1s already inherits role %2s.'), $this->get_role()->role_name, $this->get_inherited_role()->role_name ));
+            //return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1$s already inherits role %2$s.'), $this->role_id, $this->inherited_role_id ));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1$s already inherits role %2$s.'), $this->get_role()->role_name, $this->get_inherited_role()->role_name ));
         } catch (RecordNotFoundException $Exception) {
             //it is OK
         }
@@ -83,7 +83,7 @@ class RolesHierarchy extends ActiveRecord
         try {
             $Role = new Role($this->inherited_role_id);
         } catch (RecordNotFoundException $Exception) {
-            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1s does not exist.'), $this->role_id ));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1$s does not exist.'), $this->role_id ));
         }
         return NULL;
     }

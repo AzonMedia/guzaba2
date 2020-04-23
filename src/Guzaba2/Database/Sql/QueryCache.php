@@ -160,7 +160,7 @@ class QueryCache extends Base
 
         if ($cache_enabled && $query_data) {
             $ret = $query_data;
-            Kernel::log(sprintf(t::_('%1s: The result of query "%2s" was found in cache.'), __CLASS__, substr($sql, 0, 200).'...' ), LogLevel::DEBUG);
+            Kernel::log(sprintf(t::_('%1$s: The result of query "%2$s" was found in cache.'), __CLASS__, substr($sql, 0, 200).'...' ), LogLevel::DEBUG);
         }
 
         return $ret;
@@ -185,5 +185,10 @@ class QueryCache extends Base
     public function get_stats(): array
     {
         return $this->Cache->get_stats('query');
+    }
+
+    public function clear_cache(int $percentage = 100): int
+    {
+        return $this->Cache->clear_cache('query', $percentage);
     }
 }

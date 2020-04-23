@@ -249,7 +249,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
-                        Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $_pointer;
                     }
                 }
@@ -280,7 +280,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                             $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                            Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                             return $_pointer;
                         }
                     }
@@ -314,7 +314,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                                 $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(TRUE);
                                 $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                                Kernel::log(sprintf(t::_('%1s: Object of class %2s with index %3s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                                Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                                 return $_pointer;
                             }
                         }
@@ -734,10 +734,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         return $this->caching_enabled_flag;
     }
 
-    public function clear_cache() : void
-    {
-        $this->data = [];
-    }
+//    public function clear_cache() : void
+//    {
+//        $this->data = [];
+//    }
 
     public function get_hits() : int
     {
@@ -798,39 +798,84 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     {
 
         if (NULL === $this->cleanup_timer_id || (!\Swoole\Timer::exists($this->cleanup_timer_id))) {
-            $CleanupFunction = function () {
-                //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
+//            $CleanupFunction = function () {
+//                //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
+//                if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
+//                    // cleanup
+//                    $total_count = $this->total_count;
+//                    $cleanedup = 0;
+//
+//                    foreach ($this->data as $class => $class_data) {
+//                        foreach ($class_data as $object => $object_data) {
+//                            foreach ($object_data as $last_update_time => $data) {
+//                                $time = (double) microtime(TRUE);
+//                                if ($data['refcount'] == 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
+//                                    // !!!!!!!FIXME!!!!!
+//                                    unset($this->data[$class][$object]);
+//
+//                                    $this->total_count--;
+//                                    $cleanedup++;
+//                                    $cleanup_percentage = $cleanedup / $total_count * 100.0;
+//                                    if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
+//                                        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $this->total_count);
+//                                        Kernel::log($message_log, LogLevel::INFO);
+//                                        return;
+//                                    }
+//
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            };
+
+            //$this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $CleanupFunction);
+
+            $Function = function(): void
+            {
                 if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
-                    // cleanup
-                    $total_count = $this->total_count;
-                    $cleanedup = 0;
-
-                    foreach ($this->data as $class => $class_data) {
-                        foreach ($class_data as $object => $object_data) {
-                            foreach ($object_data as $last_update_time => $data) {
-                                $time = (double) microtime(TRUE);
-                                if ($data['refcount'] == 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
-                                    // !!!!!!!FIXME!!!!!
-                                    unset($this->data[$class][$object]);
-
-                                    $this->total_count--;
-                                    $cleanedup++;
-                                    $cleanup_percentage = $cleanedup / $total_count * 100.0;
-                                    if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
-                                        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $this->total_count);
-                                        Kernel::log($message_log, LogLevel::INFO);
-                                        return;
-                                    }
-
-                                }
-                            }
-                        }
-                    }
+                    $this->clear_cache(self::CONFIG_RUNTIME['cleanup_at_percentage_usage']);
                 }
             };
 
-            $this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $CleanupFunction);
+            $this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $Function);
         }
+    }
+
+    public function clear_cache(int $percentage = 100): int
+    {
+        //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
+        //if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
+            // cleanup
+            $total_count = $this->total_count;
+            $cleanedup = 0;
+
+            foreach ($this->data as $class => $class_data) {
+                foreach ($class_data as $object => $object_data) {
+                    foreach ($object_data as $last_update_time => $data) {
+                        $time = (double) microtime(TRUE);
+                        if ($data['refcount'] == 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
+                            // !!!!!!!FIXME!!!!!
+                            unset($this->data[$class][$object]);
+
+                            $this->total_count--;
+                            $cleanedup++;
+                            $cleanup_percentage = $cleanedup / $total_count * 100.0;
+                            if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
+                                //$message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
+                                //Kernel::log($message_log, LogLevel::INFO);
+                                //return $cleanedup;
+                                break 3;
+                            }
+
+                        }
+                    }
+                }
+            }
+        //}
+        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
+        Kernel::log($message_log, LogLevel::INFO);
+        return $cleanedup;
     }
 
     public function begin_transaction(): void

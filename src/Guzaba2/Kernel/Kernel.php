@@ -660,7 +660,7 @@ BANNER;
     {
         $Server = self::get_http_server();
         if ($Server) {
-            self::printk(sprintf(t::_('Worker %1s shutdown'), $Server->get_worker_id()));
+            self::printk(sprintf(t::_('Worker %1$s shutdown'), $Server->get_worker_id()));
         } else {
             self::printk(sprintf(t::_('Main process shutdown') ));
         }
@@ -1001,7 +1001,7 @@ BANNER;
             $ns_prefixes = array_keys(self::get_registered_autoloader_paths());
         }
         if ($class && !class_exists($class) && !interface_exists($class)) {
-            throw new InvalidArgumentException(sprintf('Class/interface %1s does not exist.', $class));
+            throw new InvalidArgumentException(sprintf('Class/interface %1$s does not exist.', $class));
         }
         $loaded_classes = Kernel::get_loaded_classes();
 

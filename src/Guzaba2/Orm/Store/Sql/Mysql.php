@@ -95,10 +95,10 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
         }
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         if (!class_exists($connection_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided coroutine connection class %1s does not exist.'), $connection_class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided coroutine connection class %1$s does not exist.'), $connection_class));
         }
         if (!class_exists($no_coroutine_connection_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided no coroutine connection class %1s does not exist.'), $no_coroutine_connection_class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided no coroutine connection class %1$s does not exist.'), $no_coroutine_connection_class));
         }
         $this->connection_class = $connection_class;
         $this->no_coroutine_connection_class = $no_coroutine_connection_class;
@@ -160,7 +160,7 @@ VALUES
         ];
         $Connection->prepare($q)->execute($b);
 
-        Kernel::log(sprintf(t::_('%1s: Detected and added a new class %2s with UUID %3s.'), __CLASS__, $class_name, $uuid->getHex()));
+        Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->getHex()));
     }
 
     /**
@@ -175,7 +175,7 @@ VALUES
             throw new InvalidArgumentException(sprintf(t::_('No $class_name argument provided.')));
         }
         if (!class_exists($class_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('There is no class %1s.'), $class_name));
+            throw new InvalidArgumentException(sprintf(t::_('There is no class %1$s.'), $class_name));
         }
         return isset($this->classes_data[$class_name]);
     }
@@ -191,7 +191,7 @@ VALUES
     public function get_class_data(string $class_name) : array
     {
         if (!$this->has_class_data($class_name)) {
-            throw new RunTimeException(sprintf(t::_('The Mysql store has no data for class %1s.'), $class_name));
+            throw new RunTimeException(sprintf(t::_('The Mysql store has no data for class %1$s.'), $class_name));
         }
         return $this->classes_data[$class_name];
     }
@@ -558,7 +558,7 @@ WHERE
     public function get_meta_by_uuid(string $uuid) : array
     {
         if (!GeneralUtil::is_uuid($uuid)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1s is not a valid UUID.'), $uuid));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1$s is not a valid UUID.'), $uuid));
         }
         $Connection = $this->get_connection($CR);
 
@@ -974,7 +974,7 @@ ON DUPLICATE KEY UPDATE
         }
         if (array_key_exists('<', $index) && array_key_exists('>', $index)) {
             if ($index['<'] === $index['>']) {
-                throw new InvalidArgumentException(sprintf(t::_('Both sorting keys "<" and ">" are provided and both use the same column %1s.'), $index['<'] ));
+                throw new InvalidArgumentException(sprintf(t::_('Both sorting keys "<" and ">" are provided and both use the same column %1$s.'), $index['<'] ));
             }
         }
         $sort_by = NULL;

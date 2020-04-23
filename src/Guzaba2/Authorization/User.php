@@ -186,16 +186,16 @@ class User extends ActiveRecord implements UserInterface
         //the primary role role cant be changed
         //the primary role must be a user role
         if (!$this->role_id) {
-            return new ValidationFailedException($this, 'role_id', sprintf(t::_('There is no role_id set for user %1s.'), $this->user_name));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('There is no role_id set for user %1$s.'), $this->user_name));
         } else {
             try {
                 $Role = new Role($this->role_id);
                 if (!$Role->role_is_user) {
-                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name ));
+                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2$s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name ));
                 }
                 return NULL;
             } catch (RecordNotFoundException $Exception) {
-                return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role_id %1s set for user %2s does not exist.'), $this->role_id, $this->user_name));
+                return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role_id %1$s set for user %2$s does not exist.'), $this->role_id, $this->user_name));
             } //Roles do not use permissions so no need to catch PermissionDeniedException
         }
     }
@@ -215,11 +215,11 @@ class User extends ActiveRecord implements UserInterface
         if ($this->is_new() || $this->is_property_modified('user_name')) {
             try {
                 $User = new static(['user_name' => $this->user_name]);
-                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
             } catch (RecordNotFoundException $Exception) {
                 return NULL;
             } catch (PermissionDeniedException $Exception) {
-                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1s".'), $this->user_name));
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
             }
         }
         return NULL;
@@ -238,15 +238,15 @@ class User extends ActiveRecord implements UserInterface
     protected function _validate_user_email(): ?ValidationFailedExceptionInterface
     {
         if (!filter_var($this->user_email, FILTER_VALIDATE_EMAIL)) {
-            return new ValidationFailedException($this, 'user_name', sprintf(t::_('The provided email "%1s" is not valid.'), $this->user_email));
+            return new ValidationFailedException($this, 'user_name', sprintf(t::_('The provided email "%1$s" is not valid.'), $this->user_email));
         } elseif ($this->is_new() || $this->is_property_modified('user_name')) {
             try {
                 $User = new static(['user_email' => $this->user_email]);
-                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
             } catch (RecordNotFoundException $Exception) {
                 return NULL;
             } catch (PermissionDeniedException $Exception) {
-                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1s".'), $this->user_email));
+                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
             }
         }
         return NULL;
@@ -298,7 +298,7 @@ class User extends ActiveRecord implements UserInterface
         $this->user_is_disabled = FALSE;
         $this->write();
 
-        $this->add_log_entry('enable',sprintf(t::_('The user %1s was enabled.'), $this->user_name));
+        $this->add_log_entry('enable',sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
 
         $Transaction->commit();
     }
@@ -321,7 +321,7 @@ class User extends ActiveRecord implements UserInterface
         $this->user_is_disabled = TRUE;
         $this->write();
 
-        $this->add_log_entry('enable',sprintf(t::_('The user %1s was enabled.'), $this->user_name));
+        $this->add_log_entry('enable',sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
 
         $Transaction->commit();
     }

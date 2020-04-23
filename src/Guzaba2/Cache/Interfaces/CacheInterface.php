@@ -34,7 +34,8 @@ interface CacheInterface
 
     public function get_stats(string $prefix = ''): array ;
 
-    public function clear_cache(string $prefix = ''): void ;
+
+    public function clear_cache(string $prefix = '', int $percentage = 100): int ;
     /*
     public function enable_caching() : void;
 

@@ -87,7 +87,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
             throw new InvalidArgumentException(sprintf(t::_('No HTTP method provided.')));
         }
         if (!in_array($method, Method::METHODS_MAP)) {
-            throw new InvalidArgumentException(sprintf(t::_('Wrong HTTP method %1s provided.'), $method));
+            throw new InvalidArgumentException(sprintf(t::_('Wrong HTTP method %1$s provided.'), $method));
         }
 
         $this->method = $method;
@@ -509,7 +509,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                             $structure = $Body->getStructure();
                             $this->parsedBody = $structure;
                         } else {
-                            throw new RunTimeException(sprintf('PHP/native request provided but the Body is not of class %1s but is %2s.', Structured::class, get_class($Body) ));
+                            throw new RunTimeException(sprintf('PHP/native request provided but the Body is not of class %1$s but is %2$s.', Structured::class, get_class($Body) ));
                         }
                         break;
                     default:

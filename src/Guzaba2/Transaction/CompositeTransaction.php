@@ -52,10 +52,10 @@ abstract class CompositeTransaction extends Transaction
     public function attach_transaction(Transaction $Transaction): void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
-            throw new InvalidArgumentException(sprintf(t::_('The transaction being attached is in status %1s. It is not allowed to attach transactions with status other than %2s.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
+            throw new InvalidArgumentException(sprintf(t::_('The transaction being attached is in status %1$s. It is not allowed to attach transactions with status other than %2$s.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
         }
         if ($this->get_status() !== self::STATUS['CREATED']) {
-            throw new RunTimeException(sprintf(t::_('The distributed transaction is in status %1s. It is not allowed to attach transactions to a distributed transaction that is in status different from %2s.'), $this->get_status(), self::STATUS['CREATED'] ));
+            throw new RunTimeException(sprintf(t::_('The distributed transaction is in status %1$s. It is not allowed to attach transactions to a distributed transaction that is in status different from %2$s.'), $this->get_status(), self::STATUS['CREATED'] ));
         }
 
         $this->transactions[] = $Transaction;
@@ -76,7 +76,7 @@ abstract class CompositeTransaction extends Transaction
             throw new InvalidArgumentException(sprintf(t::_('There is no $transaction_class provided.')));
         }
         if (!class_exists($transaction_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $transaction_class %1s does not exist. The provided argument must contain a valid class name (with namespace without leading slash).'), $transaction_class));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $transaction_class %1$s does not exist. The provided argument must contain a valid class name (with namespace without leading slash).'), $transaction_class));
         }
         $ReturnTransaction = NULL;
         /** @var Transaction $Transaction */
@@ -87,7 +87,7 @@ abstract class CompositeTransaction extends Transaction
             }
         }
         if (!$ReturnTransaction) {
-            throw new RunTimeException(sprintf(t::_('The composite transaction of class %1s does not have a transaction of class %2s.'), get_class($this), $transaction_class));
+            throw new RunTimeException(sprintf(t::_('The composite transaction of class %1$s does not have a transaction of class %2$s.'), get_class($this), $transaction_class));
         }
         return $ReturnTransaction;
     }

@@ -74,7 +74,7 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
         } else {
             //when the current transaction is committed or rolled back it is removed from the TransactionManager
             //when it is in status Created it is not yet added to the TransactionManager
-            throw new LogicException(sprintf(t::_('There seems to be a current transaction set while there should not be as its status is %1s.'), $this->get_status() ));
+            throw new LogicException(sprintf(t::_('There seems to be a current transaction set while there should not be as its status is %1$s.'), $this->get_status() ));
         }
     }
 

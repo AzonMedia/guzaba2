@@ -92,7 +92,7 @@ class CurrentUser extends Base
 //        }
 //        $this->initialize_user();
         if ($User->user_is_disabled) {
-            throw new RunTimeException(sprintf(t::_('The user %1s can not be set as CurrentUser as it is disabled.'), $User->user_name));
+            throw new RunTimeException(sprintf(t::_('The user %1$s can not be set as CurrentUser as it is disabled.'), $User->user_name));
         }
         $this->User = $User;
     }

@@ -497,7 +497,7 @@ class Server extends \Guzaba2\Http\Server
 //        }
 //        return $this->options[$option];
         if (!in_array($option, self::SUPPORTED_OPTIONS)) {
-            throw new InvalidArgumentException(sprintf(t::_('An unsupported option %1s is provided.'), $option));
+            throw new InvalidArgumentException(sprintf(t::_('An unsupported option %1$s is provided.'), $option));
         }
         return $this->SwooleHttpServer->setting[$option];
     }
@@ -566,10 +566,10 @@ class Server extends \Guzaba2\Http\Server
     {
 
         if (isset($this->ipc_responses[$ipc_request_id][$src_worker_id])) {
-            Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1s from worker %2s.'), $ipc_request_id, $src_worker_id), LogLevel::NOTICE);
+            Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1$s from worker %2$s.'), $ipc_request_id, $src_worker_id), LogLevel::NOTICE);
         }
         if ( !( $IpcResponse->getBody()) instanceof Structured) {
-            throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1s but is of class %2s.'), Structured::class, get_class($IpcResponse->getBody()) ));
+            throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1$s but is of class %2$s.'), Structured::class, get_class($IpcResponse->getBody()) ));
         }
         $IpcResponse->set_received_microtime(microtime(TRUE));
         $this->ipc_responses[$ipc_request_id][$src_worker_id] = $IpcResponse;
@@ -594,7 +594,7 @@ class Server extends \Guzaba2\Http\Server
 
         $this->validate_destination_worker_id($dest_worker_id);
         if ($timeout > self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
-            throw new InvalidArgumentException(sprintf(t::_('The maximum timeout for awaiting an IpcResponse is %1s seconds.'), self::CONFIG_RUNTIME['ipc_responses_cleanup_time']));
+            throw new InvalidArgumentException(sprintf(t::_('The maximum timeout for awaiting an IpcResponse is %1$s seconds.'), self::CONFIG_RUNTIME['ipc_responses_cleanup_time']));
         }
 
         $microtime_start = microtime(TRUE);
@@ -617,7 +617,7 @@ class Server extends \Guzaba2\Http\Server
                 }
             }
         } else {
-            throw new RunTimeException(sprintf(t::_('The %1s::%2s() call returned FALSE.'), \Swoole\Http\Server::class, 'sendMessage'));
+            throw new RunTimeException(sprintf(t::_('The %1$s::%2$s() call returned FALSE.'), \Swoole\Http\Server::class, 'sendMessage'));
         }
 
         ret:
@@ -647,7 +647,7 @@ class Server extends \Guzaba2\Http\Server
         $current_worker_id = $this->get_worker_id();
         $key = array_search($current_worker_id, $dest_worker_ids, TRUE);
         if ($key === FALSE) {
-            throw new LogicException(sprintf(t::_('The ID %1s of the current worker is not found in the list of IDs of all the workers.'), $current_worker_id ));
+            throw new LogicException(sprintf(t::_('The ID %1$s of the current worker is not found in the list of IDs of all the workers.'), $current_worker_id ));
         }
         unset($dest_worker_ids[$key]);
         $dest_worker_ids = array_values($dest_worker_ids);
@@ -707,11 +707,11 @@ class Server extends \Guzaba2\Http\Server
     {
 
 //        } elseif ($dest_worker_id === $this->SwooleHttpServer->worker_id) {
-//            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->SwooleHttpServer->worker_id));
+//            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1$s.'), $this->SwooleHttpServer->worker_id));
 //        }
         $this->validate_worker_id($dest_worker_id);
         if ($dest_worker_id === $this->get_worker_id()) {
-            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1s.'), $this->get_worker_id() ));
+            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1$s.'), $this->get_worker_id() ));
         }
     }
 
@@ -732,7 +732,7 @@ class Server extends \Guzaba2\Http\Server
         if (!$worker_id < 0) {
             throw new InvalidArgumentException(sprintf(t::_('The $dest_worker_id must be positive number.')));
         } elseif ($worker_id >= $total_workers) { //the worker IDs always start from 0 and even if restarted they get the same ID
-            $message = sprintf(t::_('Invalid $dest_worker_id %1s is provided. There are %2s workers and %3s task workers. The valid range for $dest_worker_id is %4s - %5s.'), $worker_id, $worker_num, $task_worker_num, 0, $worker_num + $task_worker_num - 1);
+            $message = sprintf(t::_('Invalid $dest_worker_id %1$s is provided. There are %2$s workers and %3$s task workers. The valid range for $dest_worker_id is %4$s - %5$s.'), $worker_id, $worker_num, $task_worker_num, 0, $worker_num + $task_worker_num - 1);
             throw new InvalidArgumentException($message);
         }
     }

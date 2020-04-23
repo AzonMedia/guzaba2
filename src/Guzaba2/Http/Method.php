@@ -65,7 +65,7 @@ abstract class Method
         $method = strtoupper($method);
         $int = array_search($method, self::METHODS_MAP, TRUE);
         if ($int === FALSE) {
-            throw new InvalidArgumentException(sprintf(t::_('An invalid method %1s is provided.'), $method));
+            throw new InvalidArgumentException(sprintf(t::_('An invalid method %1$s is provided.'), $method));
         }
         return $int;
     }

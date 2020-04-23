@@ -517,9 +517,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         static::get_service('OrmStore')->update_record($this);
         if ($this->is_new()) {
-            $this->add_log_entry('create', sprintf(t::_('A new record with ID %1s and UUID %2s is created.'), $this->get_id(), $this->get_uuid()));
+            $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
         } else {
-            $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1s.'), implode(', ', $this->get_modified_properties_names()) ));
+            $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
         }
 
 
@@ -602,7 +602,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //and only then remove the record
         static::get_service('OrmStore')->remove_record($this);
 
-        $this->add_log_entry('delete', sprintf(t::_('The object with ID %1s and UUID %2s was deleted.'), $id, $uuid ));
+        $this->add_log_entry('delete', sprintf(t::_('The object with ID %1$s and UUID %2$s was deleted.'), $id, $uuid ));
 
 
         //new Event($this, '_after_delete');
@@ -681,7 +681,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static final function get_by_uuid(string $uuid) : ActiveRecord
     {
         if (!GeneralUtil::is_uuid($uuid)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1s is not a valid UUID.'), $uuid));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1$s is not a valid UUID.'), $uuid));
         }
         //$Store = static::OrmStore();
         /**
@@ -690,7 +690,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $Store = static::get_service('OrmStore');
         $meta_data = $Store->get_meta_by_uuid($uuid);
         if (!$meta_data) {
-            throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %1s.'), $uuid));
+            throw new RecordNotFoundException(sprintf(t::_('There is no record found by UUID %1$s.'), $uuid));
         }
             
         $object_id = $meta_data['meta_object_id'];
@@ -1024,7 +1024,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //$record_data_property_names must be a subset of $property_names
         //if (array_intersect($record_data_property_names, $property_names) !== $record_data_property_names) {
         if ($diff = array_diff($record_data_property_names, $property_names)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $record_data argument contains invalid keys %1s.'), implode(', ', $diff) ) );
+            throw new InvalidArgumentException(sprintf(t::_('The provided $record_data argument contains invalid keys %1$s.'), implode(', ', $diff) ) );
         }
 
         $this->record_data = array_replace($this->record_data, $record_data);

@@ -517,11 +517,11 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
     public static function executeMulti(callable ...$callables) : array
     {
         if (!count($callables)) {
-            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %1s()'), __METHOD__));
+            throw new InvalidArgumentException(sprintf(t::_('No callables are provided to %1$s()'), __METHOD__));
         }
         $cid = self::getcid();
         if ($cid <= 0) {
-            throw new RunTimeException(sprintf(t::_('%1s() can be executed only from an existing coroutine.'), __METHOD__));
+            throw new RunTimeException(sprintf(t::_('%1$s() can be executed only from an existing coroutine.'), __METHOD__));
         }
 
         $Context = self::getContext();
@@ -529,7 +529,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
             $Context->{self::class} = new \stdClass();
         }
         if (!empty($Context->{self::class}->execute_multiple_coroutines)) {
-            throw new RunTimeException(sprintf(t::_('There is already a %1s() running %2s coroutines.'), __METHOD__, count($Context->{self::class}->execute_multiple_coroutines) ));
+            throw new RunTimeException(sprintf(t::_('There is already a %1$s() running %2$s coroutines.'), __METHOD__, count($Context->{self::class}->execute_multiple_coroutines) ));
         }
 
         foreach ($callables as $callable) {
@@ -595,7 +595,7 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
                     }
                     $bb++;
                 }
-                throw new RunTimeException(sprintf(t::_('The timeout of %1s seconds for executing the sub-coroutines was reached. The failed sub-coroutines are: %2s.'), $timeout, print_r($failed_subcoroutines_arr, TRUE) ));
+                throw new RunTimeException(sprintf(t::_('The timeout of %1$s seconds for executing the sub-coroutines was reached. The failed sub-coroutines are: %2$s.'), $timeout, print_r($failed_subcoroutines_arr, TRUE) ));
             } elseif (!empty($ret['exception'])) {
                 //rethrow the exception
                 throw $ret['exception'];
