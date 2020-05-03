@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\BadMethodCallException;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
@@ -22,6 +24,10 @@ use Guzaba2\Cache\Interfaces\CacheInterface;
 use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Psr\Log\LogLevel;
 
+/**
+ * Class Memory
+ * @package Guzaba2\Orm\Store
+ */
 class Memory extends Store implements StoreInterface, CacheStatsInterface, TransactionalResourceInterface
 {
     protected const CONFIG_DEFAULTS = [
@@ -95,7 +101,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param StoreInterface $FallbackStore
      * @param MetaStoreInterface|null $MetaStore
      * @throws RunTimeException
-     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(StoreInterface $FallbackStore, ?MetaStoreInterface $MetaStore = NULL)
     {
@@ -129,7 +135,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param string $class
      * @return array
      * @throws RunTimeException
-     * @throws \Guzaba2\Base\Exceptions\BadMethodCallException
+     * @throws BadMethodCallException
      */
     public function get_unified_columns_data(string $class) : array
     {
@@ -143,7 +149,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param string $class
      * @return array
      * @throws RunTimeException
-     * @throws \Guzaba2\Base\Exceptions\BadMethodCallException
+     * @throws BadMethodCallException
      */
     public function get_storage_columns_data(string $class) : array
     {
@@ -157,6 +163,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param ActiveRecordInterface $ActiveRecord
      * @return string
      * @throws RunTimeException
+     * @throws InvalidArgumentException
      */
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
@@ -377,10 +384,14 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             }
             return $this->data[$class][$lookup_index][$last_update_time];
         }
-
-
     }
 
+    /**
+     * @param string $class
+     * @param array $primary_index
+     * @param array $meta_data
+     * @throws InvalidArgumentException
+     */
     protected function update_meta_data(string $class, array $primary_index, array $meta_data) : void
     {
 
@@ -574,7 +585,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * Removes an active record data from the Store
      * @param ActiveRecordInterface $ActiveRecord
      * @throws RunTimeException
-     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
@@ -627,8 +638,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
             //$this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
             $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
-        $class_meta = ['meta_object_create_microtime' => $object_last_update_microtime, 'meta_object_last_update_microtime' => $object_last_update_microtime];
-        $this->MetaStore->set_class_meta_data($class, $class_meta);
+            $class_meta = ['meta_object_create_microtime' => $object_last_update_microtime, 'meta_object_last_update_microtime' => $object_last_update_microtime];
+            $this->MetaStore->set_class_meta_data($class, $class_meta);
         }
 
 
@@ -873,7 +884,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 }
             }
         //}
-        $message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
+        $message_log = sprintf(t::_('%1$s: Memory store cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d'), __CLASS__, $total_count, $cleanedup, $total_count - $cleanedup);
         Kernel::log($message_log, LogLevel::INFO);
         return $cleanedup;
     }
