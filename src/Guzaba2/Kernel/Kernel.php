@@ -776,6 +776,10 @@ BANNER;
         return $ret;
     }
 
+    /**
+     * @param string $file
+     * @return string
+     */
     public static function file_get_contents(string $file) : string
     {
         if (\Swoole\Coroutine::getCid() > 0) {

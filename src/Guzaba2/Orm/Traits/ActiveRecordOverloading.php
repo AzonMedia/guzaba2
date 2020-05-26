@@ -188,6 +188,9 @@ trait ActiveRecordOverloading
      * @param string $property The name of the property that is being accessed
      * @return void
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
      */
     public function __unset(string $property) : void
     {
@@ -341,11 +344,14 @@ trait ActiveRecordOverloading
      * const CAST_PROPERTIES_ON_ASSIGNMENT = TRUE;
      * const LOG_NOTICE_ON_PROPERTY_CAST = TRUE;
      * const THROW_EXCEPTION_ON_PROPERTY_CAST = FALSE;
-     * Tobe used/called only by @see self::__set()
-     * @param string $property
+     * Tobe used/called only by @param string $property
      * @param mixed $value
      * @return void
      * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     * @see self::__set()
      */
     private function assign_property_value($property, $value) : void
     {
@@ -356,12 +362,16 @@ trait ActiveRecordOverloading
                 $this->record_data[$property] = $value;
             } elseif (empty($value) && in_array(gettype($value), ['integer','int','double','float']) && in_array($property_type, ['integer','int','double','float'])) {
                 // we don't need error on zeros - casting (float) 0 still treated as integer
-                $this->record_data[$property] = $this->_cast($property_type, $value);
+                //$this->record_data[$property] = $this->_cast($property_type, $value);
+                settype($value, $property_type);
+                $this->record_data[$property] = $value;
             //also we should always allow INT to be set on FLOAT column but not the reverse - a FLOAT to be set to an INT column
                 //$value is the value being set, $property_type is the type of the column
             } elseif (gettype($value) === 'double' && $property_type === 'integer') {
                 //this is allowed
-                $this->record_data[$property] = $this->_cast($property_type, $value);
+                //$this->record_data[$property] = $this->_cast($property_type, $value);
+                settype($value, $property_type);
+                $this->record_data[$property] = $value;
             //} else if (gettype($value) === 'integer' && $property_type === 'double') {//no need to explicitly have a case for this as it will go into the section below
             } else {
                 //casting is needed

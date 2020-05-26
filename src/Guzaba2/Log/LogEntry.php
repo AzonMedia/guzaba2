@@ -54,6 +54,7 @@ class LogEntry extends ActiveRecord
      * @throws ConfigurationException
      * @throws MultipleValidationFailedException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function create(ActiveRecordInterface $ActiveRecord, string $log_action, string $log_content): self
     {
@@ -78,6 +79,7 @@ class LogEntry extends ActiveRecord
      * @throws ConfigurationException
      * @throws MultipleValidationFailedException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     public static function create_for_class(string $class, string $log_action, string $log_content): self
     {
@@ -109,6 +111,7 @@ class LogEntry extends ActiveRecord
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
     protected static function execute_create(int $log_class_id, ?int $log_object_id, string $log_action, string $log_content): self
     {
@@ -121,7 +124,7 @@ class LogEntry extends ActiveRecord
         /** @var CurrentUser $CurrentUser */
         $CurrentUser = self::get_service('CurrentUser');
         $LogEntry = new static();
-        $LogEntry->$log_class_id = $log_class_id;
+        $LogEntry->log_class_id = $log_class_id;
         $LogEntry->log_object_id = $log_object_id;
         $LogEntry->log_action = $log_action;
         $LogEntry->log_content = $log_content;

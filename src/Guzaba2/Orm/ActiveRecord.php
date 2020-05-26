@@ -17,6 +17,7 @@ use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Log\LogEntry;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordTemporalInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -516,12 +517,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //        }
 
         static::get_service('OrmStore')->update_record($this);
-        if ($this->is_new()) {
-            $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
-        } else {
-            $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
-        }
 
+        //reattach the pointer
+        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+
+        $this->record_data =& $pointer['data'];
+        $this->meta_data =& $pointer['meta'];
+        $this->record_modified_data = [];
+
+        $this->is_new_flag = FALSE;
+
+        if (! ($this instanceof LogEntry)) {
+            if ($this->is_new()) {
+                $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
+            } else {
+                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
+            }
+        }
 
 
         //new Event($this, '_after_write');
@@ -536,14 +548,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
 
-        //reattach the pointer
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
-
-        $this->record_data =& $pointer['data'];
-        $this->meta_data =& $pointer['meta'];
-        $this->record_modified_data = [];
-
-        $this->is_new_flag = FALSE;
 
         if (static::is_locking_enabled()) {
             static::get_service('LockManager')->release_lock('', $LR);
@@ -1047,6 +1051,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
+     * @throws ContextDestroyedException
      */
     public static function get_routes() : ?iterable
     {

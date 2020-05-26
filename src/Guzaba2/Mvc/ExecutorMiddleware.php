@@ -328,19 +328,22 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
         } catch (PermissionDeniedException $Exception) {
-            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getPrettyMessage() ] );
+            $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] ); //dont use getPrettyMessage for generic and expected exceptions as this one
         } catch (RecordNotFoundException $Exception) {
-            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getPrettyMessage() ] );
+            $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
         } catch (InvalidArgumentException | ValidationFailedExceptionInterface $Exception) {
-            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getPrettyMessage() ]);
+            $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getMessage() ]);
         } catch (BaseException $Exception) {
-            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] );
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] ); //use getPrettymessage for unexpected exceptions like this one
+            Kernel::exception_handler($Exception);
         } catch (\Throwable $Exception) {
-            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] ); //no getPrettyMessage() here
+            $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] ); //no getPrettyMessage() is available here
+            Kernel::exception_handler($Exception);
         } finally {
-            if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
-                Kernel::exception_handler($Exception);
-            }
+            //only two exceptions will be passed to the exception_handler() (see above)
+//            if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {
+//                Kernel::exception_handler($Exception);
+//            }
         }
         return $Response;
     }

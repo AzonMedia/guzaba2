@@ -23,6 +23,9 @@ class ValidationFailedException extends BaseException implements ValidationFaile
      * @param int $code
      * @param \Throwable|null $PreviousException
      * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
     public function __construct( /* mixed */ $target, string $field_name, string $message, int $code = 0, ?\Throwable $PreviousException = NULL)
@@ -42,15 +45,9 @@ class ValidationFailedException extends BaseException implements ValidationFaile
 
     }
 
-    public function getInstance() : ?ActiveRecordInterface
-    {
-        $ret = NULL;
-        if ($this->target instanceof ActiveRecordInterface) {
-            $ret = $this->target;
-        }
-        return $ret;
-    }
-
+    /**
+     * @return string|null
+     */
     public function getClass() : ?string
     {
         $ret = NULL;

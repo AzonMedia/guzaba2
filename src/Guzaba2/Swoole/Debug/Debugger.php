@@ -80,7 +80,7 @@ class Debugger extends Base
 
         $this->set_prompt($this->substitute_prompt_vars(self::CONFIG_RUNTIME['prompt']));
 
-        //ob_implicit_flush();
+
         $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($this->worker_id), FALSE);
 //        $server->handle(function (Swoole\Coroutine\Server\Connection $conn) use ($server) {
 //            while(true) {
