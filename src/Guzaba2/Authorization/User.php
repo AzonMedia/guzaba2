@@ -172,6 +172,21 @@ class User extends ActiveRecord implements UserInterface
     }
 
     /**
+     * Alias of self::inherits_role()
+     * @param Role $Role
+     * @return bool
+     */
+    public function is_member_of(Role $Role): bool
+    {
+        return $this->inherits_role($Role);
+    }
+
+    public function inherits_role(Role $Role): bool
+    {
+        return $this->get_role()->inherits_role($Role);
+    }
+
+    /**
      * @return ValidationFailedExceptionInterface|null
      * @throws ConfigurationException
      * @throws InvalidArgumentException

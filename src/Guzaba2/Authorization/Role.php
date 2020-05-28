@@ -163,6 +163,24 @@ class Role extends ActiveRecord
 
     }
 
+    public function inherits_role(Role $Role): bool
+    {
+        $role_id = $Role->get_id();
+        $all_inherited_roles_ids = $this->get_all_inherited_roles_ids();
+        print_r($all_inherited_roles_ids);
+        return in_array($role_id, $all_inherited_roles_ids, TRUE);
+    }
+
+    /**
+     * Alias of self::inherits_role()
+     * @param Role $Role
+     * @return bool
+     */
+    public function is_member_of(Role $Role): bool
+    {
+        return $this->inherits_role($Role);
+    }
+
     //not implemented
     public function get_roles_tree(): array
     {
@@ -244,7 +262,8 @@ class Role extends ActiveRecord
         if ($ret === NULL) {
             $ret[] = $role_id;
             foreach ($this->get_inherited_roles() as $InheritedRole) {
-                $ret[] = $InheritedRole->get_all_inherited_roles_ids();
+                //$ret[] = $InheritedRole->get_all_inherited_roles_ids();
+                $ret = array_merge($ret, $InheritedRole->get_all_inherited_roles_ids());
             }
             self::get_service('ContextCache')->set('all_inherited_roles', (string) $role_id, $ret);
         }
@@ -284,7 +303,8 @@ class Role extends ActiveRecord
 //            $ret[] = new static($id);
 //        }
 //        return $ret;
-        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
+        //return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
+        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_all_inherited_roles_ids() );
     }
 
 

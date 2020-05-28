@@ -802,7 +802,8 @@ BANNER;
     }
 
     /**
-     * @return array
+     * Returns the registered for autoloading namespaces and their respective paths
+     * @return array An associative array containing namespace prefix as key and lookup path as value.
      */
     public static function get_registered_autoloader_paths(): array
     {
@@ -853,7 +854,18 @@ BANNER;
     {
         $runtime_config = [];
 
-        $RClass = new ReflectionClass($class_name);
+        try {
+            $RClass = new ReflectionClass($class_name);
+        } catch (\ReflectionException $Exception) {
+            $message = sprintf(t::_('[DEBUG] Dumping registered autoloader paths because of %s exception due autoloading:'), get_class($Exception) );
+            $paths = self::get_registered_autoloader_paths();
+            foreach ($paths as $reg_ns => $reg_path) {
+                $message .= PHP_EOL.' - '.$reg_ns.': '.$reg_path;
+            }
+            $message .= PHP_EOL;
+            self::printk($message);
+            throw $Exception;
+        }
 
         if ($RClass->implementsInterface(ConfigInterface::class)) {
             

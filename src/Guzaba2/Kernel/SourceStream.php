@@ -169,6 +169,7 @@ class SourceStream
      */
     private static function load_data(string $path) : string
     {
+
         //this is needed in case the same file is require()d again
         //if not cached it will produce duplicate class name error
         if (isset(self::$sources[$path])) {
@@ -225,40 +226,26 @@ class SourceStream
                 break;
             }
         }
+
         if (empty($class_ns_base)) {
             throw new \RuntimeException(sprintf('The file %s can not be loaded as it is not from whithin a registered autoload path.', $path));
         }
 
-        $ns_pos = strpos( $path, str_replace('\\', '/', $class_ns_base) );
-        if ($ns_pos) {
-            $class_name = substr($path, $ns_pos );
-            $class_name = str_replace('/', '\\', $class_name);
-            $class_name = str_replace('.php', '', $class_name);
-        } else {
-
-            $class_name = str_replace($class_autoload_path,'',$path);
-            $class_name = str_replace('.php', '', $class_name);
-            $class_name = str_replace('/', '\\', $class_name);
-            $class_name = $class_ns_base.'\\'.$class_name;
+        $class_name = str_replace( [$class_autoload_path, '.php'], '', $path);
+        $class_name = str_replace('/','\\', $class_name);
+        if ($class_name[0] === '\\') {
+            $class_name = substr($class_name, 1);
         }
 
-
-
-
-        //print $class_name.PHP_EOL.PHP_EOL;
-        //print $path.' '.$class_ns.PHP_EOL;
-        //print $class_name.PHP_EOL.PHP_EOL;
-
-        //$class_name = $path;
-//        $registered_autoload_paths = Kernel::get_registered_autoloader_paths();
-//        foreach ($registered_autoload_paths as $autoload_path) {
-//            $class_name = str_replace($autoload_path, '', $class_name);
-//        }
-
-//        $class_name = str_replace('/', '\\', $class_name);
-//        $class_name = str_replace('.php', '', $class_name);
-//        // Strip leading slash
-//        $class_name = substr($class_name, 1);
+        if ($class_ns_base[-1] !== '\\') {
+            $class_ns_base .= '\\';
+        }
+        if (strpos($class_name, $class_ns_base) === 0) {
+            //do not prepend the $class_ns_base - it is already part of the class name
+            //this is because some packages contain the full directory hierarchy corresponding to the namespace
+        } else {
+            $class_name = $class_ns_base.$class_name;
+        }
 
 
         $ns_arr = explode('\\', $class_name);
