@@ -5,6 +5,7 @@ namespace Guzaba2\Mvc;
 
 use Azonmedia\Reflection\Reflection;
 use Azonmedia\Reflection\ReflectionMethod;
+use Guzaba2\Application\Application;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
@@ -327,18 +328,30 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+                Kernel::exception_handler($Exception);
+            }
         } catch (PermissionDeniedException $Exception) {
             $Response = Controller::get_structured_forbidden_response( [ 'message' => $Exception->getMessage() ] ); //dont use getPrettyMessage for generic and expected exceptions as this one
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+                Kernel::exception_handler($Exception);
+            }
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response( [ 'message' => $Exception->getMessage() ] );
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+                Kernel::exception_handler($Exception);
+            }
         } catch (InvalidArgumentException | ValidationFailedExceptionInterface $Exception) {
             $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getMessage() ]);
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+                Kernel::exception_handler($Exception);
+            }
         } catch (BaseException $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getPrettyMessage() ] ); //use getPrettymessage for unexpected exceptions like this one
-            Kernel::exception_handler($Exception);
+            Kernel::exception_handler($Exception);//this is an unexpected error - always print the backtrace
         } catch (\Throwable $Exception) {
             $Response = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] ); //no getPrettyMessage() is available here
-            Kernel::exception_handler($Exception);
+            Kernel::exception_handler($Exception);//this is an unexpected error - always print the backtrace
         } finally {
             //only two exceptions will be passed to the exception_handler() (see above)
 //            if (isset($Exception) && !($Exception instanceof InterruptControllerException) ) {

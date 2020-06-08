@@ -39,9 +39,10 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
         $this->SwooleTable->column('int_val', \Swoole\Table::TYPE_INT, 8);
         $this->SwooleTable->create();
 
-        $ServerInstance = \Swoole\Server::getInstance();
-
-        if ($ServerInstance) {
+        //$ServerInstance = \Swoole\Server::getInstance();
+        //if ($ServerInstance) {
+        $Server = Kernel::get_http_server();
+        if ($Server) {
             $this->start_cleanup_timer();
         } else {
             self::get_service('Events')->add_class_callback(WorkerStart::class, '_after_start', [$this, 'start_cleanup_timer']);

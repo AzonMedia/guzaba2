@@ -7,6 +7,7 @@ use Guzaba2\Base\Exceptions\BaseException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Interfaces\ValidationFailedExceptionInterface;
+use Guzaba2\Translator\Translator as t;
 
 class ValidationFailedException extends BaseException implements ValidationFailedExceptionInterface
 {
@@ -34,7 +35,7 @@ class ValidationFailedException extends BaseException implements ValidationFaile
             throw new InvalidArgumentException(sprintf(t::_('An unsupported type $target is provided to %s. ActiveRecordInterface instance, valid class name or NULL are the supported types.'), __METHOD__));
         }
         if (is_string($target) && !class_exists($target)) {
-            throw new InvalidArgumentException(sprintf(t::_('An invalida class name %s provided as $target to %s.'), $target, __METHOD__));
+            throw new InvalidArgumentException(sprintf(t::_('An invalid class name %s provided as $target to %s.'), $target, __METHOD__));
         }
         if ($target !== NULL && !strlen($field_name)) {
             throw new InvalidArgumentException(sprintf(t::_('It is required to provide $field_name to %s when $target is not NULL.'), __METHOD__));

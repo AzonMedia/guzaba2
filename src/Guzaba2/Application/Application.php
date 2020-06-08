@@ -16,22 +16,17 @@ abstract class Application extends Base
 {
 
     protected const CONFIG_DEFAULTS = [
-        'deployment'   => self::DEPLOYMENT_DEVELOPMENT,
+        'deployment'   => self::DEPLOYMENT['DEVELOPMENT'],
     ];
 
     protected const CONFIG_RUNTIME = [];
 
-    public const DEPLOYMENT_PRODUCTION = 'production';
-    public const DEPLOYMENT_STAGING = 'staging';
-    public const DEPLOYMENT_DEVELOPMENT = 'development';
-    //more can be added in the extending class
-
-    public const DEPLOYMENT_MAP = [
-        self::DEPLOYMENT_PRODUCTION     => ['name' => 'production'],
-        self::DEPLOYMENT_STAGING        => ['name' => 'staging'],
-        self::DEPLOYMENT_DEVELOPMENT    => ['name' => 'development'],
+    public const DEPLOYMENT = [
+        'PRODUCTION'    => 'production',
+        'STAGING'       => 'staging',
+        'DEVELOPMENT'   => 'development',
     ];
-
+    //more can be added in the extending class
 
     /**
      * Application constructor.
@@ -39,9 +34,9 @@ abstract class Application extends Base
      */
     public function __construct()
     {
-        if (!isset(static::DEPLOYMENT_MAP[self::CONFIG_RUNTIME['deployment']])) {
-            $allowed_str = implode(', ', array_map(fn($deployment) => '"'.$deployment['name'].'"',self::DEPLOYMENT_MAP));
-            throw new RunTimeException(sprintf('The application deployment type is set to an invalid value of "%s". The valid types are %s.', self::CONFIG_RUNTIME['deployment'], $allowed_str));
+        if (!in_array(self::CONFIG_RUNTIME['deployment'], static::DEPLOYMENT)) {
+            $allowed_str = implode(', ', array_map(fn($deployment) => '"'.$deployment['name'].'"',static::DEPLOYMENT));
+            throw new RunTimeException(sprintf('The application deployment type is set to an invalid value of "%s". The valid types are %s.', static::CONFIG_RUNTIME['deployment'], $allowed_str));
         }
         parent::__construct();
 
@@ -54,16 +49,16 @@ abstract class Application extends Base
 
     public static function is_production() : bool
     {
-        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_PRODUCTION);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['PRODUCTION']);
     }
 
     public static function is_development() : bool
     {
-        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_DEVELOPMENT);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['DEVELOPMENT']);
     }
 
     public static function is_staging() : bool
     {
-        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT_STAGING);
+        return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['STAGING']);
     }
 }

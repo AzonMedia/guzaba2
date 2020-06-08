@@ -84,6 +84,9 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
                 if ($RMethod->getDeclaringClass()->getName() !== $loaded_class) {
                     continue;//do not validate parent methods
                 }
+                if ($RMethod->isStatic()) {
+                    continue;//do not validate the static methods as these are helper methods. The controller actions are only dynamic
+                }
                 foreach ($RMethod->getParameters() as $RParameter) {
                     if (!($RType = $RParameter->getType()) ) {
                         throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $loaded_class, $RMethod->getName(), $RParameter->getName() ));

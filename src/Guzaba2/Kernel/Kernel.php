@@ -167,6 +167,7 @@ BANNER;
     private static ?float $init_microtime = NULL;
 
     public const APM_DATA_STRUCTURE = [
+        'worker_pid'                            => 0,
         'worker_id'                             => 0,
         'coroutine_id'                          => 0,
         'execution_start_microtime'             => 0,
@@ -412,7 +413,7 @@ BANNER;
     }
 
     /**
-     * Returns -1 if there is Server set but it is not yet started (meaning not executing in worker).
+     * Returns -1 the code is not executed in worker context
      * @return int
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
@@ -421,10 +422,16 @@ BANNER;
      */
     public static function get_worker_id() : int
     {
-        if (!isset(self::$HttpServer)) {
-            throw new RunTimeException(sprintf(t::_('No Http Server is set (Kernel::set_http_server()).')));
+//Returns -1 if there is Server set but it is not yet started (meaning not executing in worker).
+//        if (!isset(self::$HttpServer)) {
+//            throw new RunTimeException(sprintf(t::_('No Http Server is set (Kernel::set_http_server()).')));
+//        }
+//        return self::$HttpServer->get_worker_id();
+        $worker_id = -1;
+        if (isset(self::$HttpServer)) {
+            $worker_id = self::$HttpServer->get_worker_id();
         }
-        return self::$HttpServer->get_worker_id();
+        return $worker_id;
     }
 
     /**

@@ -240,9 +240,11 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     public function getCompleteMessage(): string
     {
         $message = parent::getCompleteMessage();
-        $Server = \Swoole\Server::getInstance();
+        //$Server = \Swoole\Server::getInstance();//no longer supported as of Swoole 4.5.0
+        $Server = Kernel::get_http_server();
         if ($Server) {
-            $wid = $Server->worker_id;
+            //$wid = $Server->worker_id;
+            $wid = $Server->get_worker_id();
         } else {
             $wid = -1;
         }

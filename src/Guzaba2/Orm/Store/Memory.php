@@ -120,8 +120,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         }
 
         //TODO - change it to use Server service...
-        $ServerInstance = \Swoole\Server::getInstance();
-        if ($ServerInstance) {
+        //$ServerInstance = \Swoole\Server::getInstance();
+        //if ($ServerInstance) {
+        $Server = Kernel::get_http_server();
+        if ($Server) {
             //\Swoole\Timer::tick(1_000, function(){ print 'timer'; });
             //start the timer
             $this->start_cleanup_timer();
