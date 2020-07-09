@@ -78,11 +78,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         ],
         'temporal_table_suffix'  => '_temporal',
         'temporal_class_suffix'  => 'Temporal',
+
+        /**
+         * Casts the following:
+         * - strign values which are numeric to int or float if the column is int or float
+         * - bool values to int is the column is int (this is probably a BOOL column which is INT size 1 - this is how MySQL defines a BOOL column - no real bool type)
+         */
+        'cast_properties_on_assignment'         => TRUE,
+
+        'log_notice_on_property_cast'           => FALSE,
+        'throw_exception_on_property_cast'      => FALSE,
+        'add_validation_error_on_property_cast' => FALSE,
+
+
     ];
 
     protected const CONFIG_RUNTIME = [];
 
-    protected const CAST_PROPERTIES_ON_ASSIGNMENT = false;
+
+    //protected const CAST_PROPERTIES_ON_ASSIGNMENT = TRUE;
 
     protected const STANDARD_ACTIONS = [
         'create',
@@ -549,7 +563,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
 
-        if (static::is_locking_enabled()) {
+        //if (static::is_locking_enabled()) {
+        if (!empty($LR)) {
             static::get_service('LockManager')->release_lock('', $LR);
         }
 

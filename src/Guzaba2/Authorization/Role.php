@@ -386,4 +386,25 @@ class Role extends ActiveRecord
     {
         return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inheriting_roles() );
     }
+
+    protected function _before_delete(): void
+    {
+        //no need of transaction as the _before_delete hook is part of the overall delete() transaction
+        //$Transaction = ActiveRecord::new_transaction($TR);
+        //$Transaction->begin();
+
+        //remove all records of roles inheriting this one
+        $roles_hierarchies = RolesHierarchy::get_by( ['inherited_role_id' => $this->get_id() ] );
+        foreach ($roles_hierarchies as $RolesHierarchy) {
+            $RolesHierarchy->delete();
+        }
+        //remove all records of this role inheriting others
+        $roles_hierarchies = RolesHierarchy::get_by( ['role_id' => $this->get_id() ] );
+        foreach ($roles_hierarchies as $RolesHierarchy) {
+            $RolesHierarchy->delete();
+        }
+
+
+        //$Transaction->commit();
+    }
 }

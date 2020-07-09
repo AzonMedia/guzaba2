@@ -75,6 +75,9 @@ class RolesHierarchy extends ActiveRecord
         } catch (RecordNotFoundException $Exception) {
             //it is OK
         }
+        if ($this->role_id === $this->inherited_role_id) {
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role can not inherit itself.')));
+        }
         return NULL;
     }
 
