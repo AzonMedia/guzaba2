@@ -153,7 +153,7 @@ class Role extends ActiveRecord
     {
         $this->check_permission('revoke_role');
         try {
-            $RoleHierarchy = new RoleHierarchy(['role_id' => $this->get_index(), 'inherited_role_id' => $Role->get_id()]);
+            $RoleHierarchy = new RolesHierarchy(['role_id' => $this->get_id(), 'inherited_role_id' => $Role->get_id()]);
         } catch (RecordNotFoundException $Exception) {
             throw new RunTimeException(sprintf(t::_('The role %s does not inherit role %s.'), $this->role_name, $Role->role_name));
         }

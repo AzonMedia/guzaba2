@@ -632,7 +632,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
 
-        if (static::is_locking_enabled()) {
+        //if (static::is_locking_enabled()) {
+        if (!empty($LR)) {
             //self::LockManager()->release_lock('', $LR);
             static::get_service('LockManager')->release_lock('', $LR);
         }
