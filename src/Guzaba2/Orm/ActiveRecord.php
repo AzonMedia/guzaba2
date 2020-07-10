@@ -224,11 +224,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         parent::__construct();
 
-        if (strpos(get_class($this),'Test') !== FALSE) {
-            //print_r(static::CONFIG_RUNTIME);
-            //print_r(static::CONFIG_DEFAULTS);
-        }
-
         if (!isset(static::CONFIG_RUNTIME['main_table'])) {
             throw new RunTimeException(sprintf(t::_('ActiveRecord class %s does not have "main_table" entry in its CONFIG_RUNTIME.'), get_called_class()));
         }
@@ -619,7 +614,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //remove any permissions associated with this record
         $this->delete_permissions();
         //and only then remove the record
-        static::get_service('OrmStore')->remove_record($this);
+        /** @var Store $OrmStore */
+        $OrmStore = static::get_service('OrmStore');
+        $OrmStore->remove_record($this);
 
         $this->add_log_entry('delete', sprintf(t::_('The object with ID %1$s and UUID %2$s was deleted.'), $id, $uuid ));
 
@@ -631,6 +628,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $args = func_get_args();
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
+
+        $Transaction->commit();
 
         //if (static::is_locking_enabled()) {
         if (!empty($LR)) {

@@ -288,7 +288,6 @@ class Coroutine extends \Swoole\Coroutine implements ConfigInterface
 
             \Swoole\Coroutine::defer(function() use ($Context, $ParentContext) {
 
-                //print_r(array_keys(get_object_vars($Context)));
                 //Kernel::get_di_container()->coroutine_services_cleanup();//it is not possible to trigger the destructors in the right way
                 //even if the references are set to NULL in the right way
                 //cleanup any remaining objects

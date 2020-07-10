@@ -299,6 +299,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      */
     public final function rollback() : void
     {
+
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
         if (!in_array($initial_status, $allowed_statuses, TRUE )) {

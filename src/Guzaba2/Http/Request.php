@@ -501,9 +501,6 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                         throw new NotImplementedException(sprintf('Parsing a TEXT request body is not implemented.'));
                         break;
                     case ContentType::TYPE_NATIVE:
-                        //$this->parsedBody = $body_contents;
-                        //print 'DDDDDDDDDD'.gettype($this->parsedBody).PHP_EOL;
-                        //print_r($this->parsedBody);
                         $Body = $this->getBody();
                         if ($Body instanceof Structured) {
                             $structure = $Body->getStructure();

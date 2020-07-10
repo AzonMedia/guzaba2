@@ -182,7 +182,6 @@ class SwooleTable extends MetaStore
         self::validate_data($data);
         $this->SwooleTable->set($key, $data);
 
-        //print_r($this->SwooleTable->get($key));
         if (count($this->SwooleTable) > self::CONFIG_RUNTIME['max_rows'] * (self::CONFIG_RUNTIME['cleanup_at_percentage_usage'] / 100)) {
             //95% usage is reached - cleanup is needed
             //the cleanup cleans more records than just 1 or few... If just a few are cleaned then the cleanup will be invoked much more often

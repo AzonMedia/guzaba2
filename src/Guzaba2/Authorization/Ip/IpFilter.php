@@ -47,8 +47,6 @@ class IpFilter
         //     );
         // }
 
-        // print_r($this->SwooleTable->get($ip));
-
         if (empty($this->SwooleTable->get($ip))) {
             return FALSE;
         } else {

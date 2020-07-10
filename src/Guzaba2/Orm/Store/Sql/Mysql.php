@@ -402,7 +402,6 @@ WHERE
         $s = $Connection->prepare($q);
         $s->table_schema = $Connection::get_database();
         $s->table_name = $Connection::get_tprefix().$table_name;
-        //print_r($s->get_params());
         $keys_ret = $s->execute()->fetchAll();
 
         foreach ($keys_ret as $key_row) {
@@ -1004,7 +1003,7 @@ ON DUPLICATE KEY UPDATE
             //$data contains also meta data
             $record_data = [];
             $sturcutre_data = $this->get_storage_columns_data($class);
-            //print_r($sturcutre_data);
+
             $column_names = array_map(fn($column_data) => $column_data['COLUMN_NAME'], $sturcutre_data);
 //            $column_names = [];
 //            foreach ($structure_data as $structure_datum) {
@@ -1128,29 +1127,37 @@ ON DUPLICATE KEY UPDATE
     {
         $Connection = $this->get_connection($CR);
         $primary_index = $ActiveRecord->get_primary_index();
-        $w_arr = [];
+        $w = $b = [];
         foreach ($primary_index as $key => $value) {
-            $w_arr[] = "$key = '$value'";
+            //$w_arr[] = "$key = '$value'";
+            $w[] = "`$key` = :$key";
+            $b[$key] = $value;
         }
-        $w_str = implode(' AND ', $w_arr);
+        $w_str = implode(' AND ', $w);
 
         // Remove record data
         $q = "
-DELETE FROM {$Connection::get_tprefix()}{$ActiveRecord::get_main_table()} 
-WHERE {$w_str}
-";
+DELETE
+    FROM {$Connection::get_tprefix()}{$ActiveRecord::get_main_table()} 
+WHERE
+    {$w_str}
+        ";
+
         $s = $Connection->prepare($q);
-        $s->execute();
+        $s->execute($b);
 
         // Remove meta data
         $meta_table = self::get_meta_table();
         $uuid = $ActiveRecord->get_uuid();
         $q = "
-DELETE FROM {$Connection::get_tprefix()}{$meta_table} 
-WHERE `meta_object_uuid` = '{$uuid}'
+DELETE
+    FROM {$Connection::get_tprefix()}{$meta_table} 
+WHERE
+    `meta_object_uuid` = :meta_object_uuid
 ";
+        $b = ['meta_object_uuid' => $uuid];
         $s = $Connection->prepare($q);
-        $s->execute();
+        $s->execute($b);
     }
 
     /**

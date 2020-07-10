@@ -281,7 +281,6 @@ class Structured extends Base implements StreamInterface
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
         }
-        //$contents = print_r($this->structure, TRUE);
         //convert instead to JSON
         $contents = json_encode($this->structure, self::getJsonFlags());
         return $contents;

@@ -167,7 +167,6 @@ class Role extends ActiveRecord
     {
         $role_id = $Role->get_id();
         $all_inherited_roles_ids = $this->get_all_inherited_roles_ids();
-        print_r($all_inherited_roles_ids);
         return in_array($role_id, $all_inherited_roles_ids, TRUE);
     }
 
