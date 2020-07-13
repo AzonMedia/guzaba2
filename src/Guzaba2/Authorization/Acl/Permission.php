@@ -94,8 +94,6 @@ class Permission extends ActiveRecord implements PermissionInterface
                 (new $this->class_name($this->object_id))->check_permission('grant_permission');
             }
         } catch (RecordNotFoundException $Exception) {
-            print $Exception->getMessage();
-            print $Exception->getTraceAsString();
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
 
@@ -114,8 +112,7 @@ class Permission extends ActiveRecord implements PermissionInterface
                 'object_id'     => $this->object_id,
                 'action_name'   => $this->action_name,
             ] );
-            print $Permission->role_id.' '.$Permission->class_name.' '.$Permission->object_id.' '.$Permission->action_name.PHP_EOL;
-            print gettype($Permission->object_id).PHP_EOL;
+
             throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
         } catch (RecordNotFoundException $Exception) {
             //no duplicates
