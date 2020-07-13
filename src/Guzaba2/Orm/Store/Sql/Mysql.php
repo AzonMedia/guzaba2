@@ -1344,6 +1344,7 @@ WHERE
     {$l_str}
 ";
 
+
         $q_count = "
 SELECT
     COUNT(*) as total_found_rows

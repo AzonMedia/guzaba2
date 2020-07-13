@@ -163,6 +163,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     protected static array $columns_data = [];
 
     /**
+     * Contains properties of the class in the unified format as per the structure.
+     * @see StoreInterface::UNIFIED_COLUMNS_STRUCTURE
+     * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
+     * @var array
+     */
+    protected static array $properties_data = [];
+
+    /**
      * Contains the unified record structure for this class meta data (ownership data).
      * @see StoreInterface::UNIFIED_COLUMNS_STRUCTURE
      * While in Swoole/coroutine context static variables shouldnt be used here it is acceptable as this structure is not expected to change ever during runtime once it is assigned.
@@ -933,12 +941,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return array
      */
-    public static function get_columns_data() : array
+    public static function get_columns_data(): array
     {
         $called_class = get_called_class();
         //self::initialize_columns();
         return self::$columns_data[$called_class];
     }
+
+    public static function get_properties_data(): array
+    {
+        return self::get_columns_data() + self::get_class_properties_data();
+    }
+
+    public static function get_class_properties_data(): array
+    {
+        $called_class = get_called_class();
+        return self::$properties_data[$called_class];
+    }
+
+
 
     /**
      * @return bool

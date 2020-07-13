@@ -10,6 +10,7 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
+use Guzaba2\Orm\Store\Sql\Mysql;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -32,13 +33,34 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected const CONFIG_DEFAULTS = [
         'main_table'            => 'acl_permissions',
-        'route'                 => '/acl-permissions',//no longer possible directly to grant permissions
+        'route'                 => '/acl-permission',
         //instead the individual routes for the objects are to be used
         //'load_in_memory'        => TRUE,//testing
         'no_permissions'    => TRUE,//the permissions records themselves cant use permissions
+
+        'services'  => [
+            'MysqlOrmStore',//needed for the convertsion between class_id & class_name
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
+
+    public string $class_name;
+
+    protected function _after_read(): void
+    {
+        /** @var Mysql $MysqlOrmStore */
+        $MysqlOrmStore = self::get_service('MysqlOrmStore');
+        $this->class_name = $MysqlOrmStore->get_class_name($this->class_id);
+    }
+
+    protected function _before_set_class_id(int $class_id): int
+    {
+        /** @var Mysql $MysqlOrmStore */
+        $MysqlOrmStore = self::get_service('MysqlOrmStore');
+        $this->class_name = $MysqlOrmStore->get_class_name($this->class_id);
+        return $class_id;
+    }
 
     protected function _before_write() : void
     {
