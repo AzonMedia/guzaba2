@@ -813,7 +813,6 @@ VALUES
 )
                 ";
 
-
 //            try {
                 $Statement = $Connection->prepare($q);
                 $Statement->execute($data_arr);

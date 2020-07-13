@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
 
+use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
@@ -46,9 +47,51 @@ trait ActiveRecordStructure
         }
 
         if (empty(self::$primary_index_columns[$called_class])) {
+            self::$primary_index_columns[$called_class] = [];
             foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
                 if (!empty($column_data['primary'])) {
                     self::$primary_index_columns[$called_class][] = $column_name;
+                }
+            }
+        }
+        //print_r(self::$columns_data);
+        //print 'AAAA'.$called_class.PHP_EOL;
+        if (empty(self::$properties_data[$called_class])) {
+            self::$properties_data[$called_class] = [];
+            $RClass = new ReflectionClass($called_class);
+            $default_properties = $RClass->getDefaultProperties();
+            foreach ( $RClass->getProperties() as $RProperty) {
+                if ($RProperty->isPublic() && !$RProperty->isStatic()) {
+//                    if ($RProperty->isInitialized()) {
+//                        $default_value = $default_properties[$RProperty->getName()];
+//                    } else {
+//                        $default_value = NULL;//this is not really correct...
+//                    }
+                    if (array_key_exists($RProperty->getName(), $default_properties)) {
+                        $default_value = $default_properties[$RProperty->getName()];
+                    } else {
+                        $default_value = NULL;//this is not correct as the property may not even be nullable... but we need to have some value
+                    }
+                    if ($RProperty->hasType()) {
+                        $type = $RProperty->getType()->getName();
+                        $nullable = $RProperty->getType()->allowsNull();
+                    } else {
+                        //do not allow untyped properties
+                        throw new RunTimeException(sprintf(t::_('The ActiveRecord class %s has a property %s which is missing type.'), $called_class, $RProperty->getName() ));
+                    }
+
+                    self::$properties_data[$called_class][$RProperty->getName()] = [
+                        'name'          => $RProperty->getName(),
+                        'native_type'   => $type,
+                        'php_type'      => $type,
+                        'size'          => 0, //not applicable as for example the string type has no size
+                        'nullable'      => $nullable,
+                        'column_id'     => 0,//not a real column
+                        'default_value' => $default_value,
+                        'autoincrement' => 0,
+                        'key_name'      => '',
+                        'key_reference' => '',
+                    ];
                 }
             }
         }
@@ -151,7 +194,8 @@ trait ActiveRecordStructure
      */
     public static function has_property(string $property_name) : bool
     {
-        return array_key_exists($property_name, static::get_columns_data());
+        //return array_key_exists($property_name, static::get_columns_data());
+        return array_key_exists($property_name, static::get_properties_data());
     }
 
 

@@ -494,7 +494,11 @@ trait ActiveRecordOverloading
     public static function fix_data_arr_empty_values_type(array $data_arr) : array
     {
         //$columns_data = self::$columns_data;
-        $columns_data = static::get_columns_data();
+        //$columns_data = static::get_columns_data();
+        //$columns_data = static::get_columns_and_properties_data();
+        $columns_data = static::get_properties_data();
+
+
 
         foreach ($data_arr as $field_name=>$field_value) {
             if ($field_value === '') {
