@@ -122,10 +122,11 @@ SELECT
 FROM
     {$Connection::get_tprefix()}{$this::get_class_table()}
 ORDER BY
-    class_name ASC
+    class_id ASC
         ";
         $data = $Connection->prepare($q)->execute()->fetchAll();
         foreach ($data as $record) {
+            unset($record['class_uuid_binary']);
             $this->classes_data[$record['class_name']] = $record;
         }
     }
@@ -207,6 +208,9 @@ VALUES
     public function get_class_name(int $class_id) : ?string
     {
         $ret = NULL;
+        if (!$class_id) {
+            throw new InvalidArgumentException(sprintf(t::_('No class_id provided.')));
+        }
         foreach ($this->classes_data as $classes_datum) {
             if ($classes_datum['class_id'] === $class_id) {
                 $ret = $classes_datum['class_name'];

@@ -18,7 +18,7 @@ use Guzaba2\Translator\Translator as t;
  * @package Guzaba2\Authorization\Acl
  * @property scalar permission_id
  * @property scalar role_id
- * @property string class_name
+ * @property string class_id
  * @property scalar object_id
  * @property string action_name
  * @property string permission_description
@@ -58,12 +58,19 @@ class Permission extends ActiveRecord implements PermissionInterface
     {
         /** @var Mysql $MysqlOrmStore */
         $MysqlOrmStore = self::get_service('MysqlOrmStore');
-        $this->class_name = $MysqlOrmStore->get_class_name($this->class_id);
+        $this->class_name = $MysqlOrmStore->get_class_name($class_id);
         return $class_id;
     }
 
     protected function _before_write() : void
     {
+
+        if (!$this->class_id && $this->class_name) {
+            /** @var Mysql $MysqlOrmStore */
+            $MysqlOrmStore = self::get_service('MysqlOrmStore');
+            $this->class_id = $MysqlOrmStore->get_class_id($this->class_name);
+        }
+
         if (!$this->class_name) {
             throw new ValidationFailedException($this, 'class_name', sprintf(t::_('No class name provided.')));
         }

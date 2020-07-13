@@ -95,4 +95,10 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
     {
         return [Permission::class, Operation::class, PermissionOperation::class, RolePermission::class, Role::class];
     }
+
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    {
+        //TODO implement
+        return '';
+    }
 }
