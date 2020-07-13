@@ -291,7 +291,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 //$index = ['object_uuid' => $index];
                 $index = ['meta_object_uuid' => $index];
             } else {
-                throw new RunTimeException(sprintf(t::_('An unsupported type "%s" was supplied for the index of object of class "%s".'), gettype($index), get_class($this)));
+                print 'AAAAAAAAa '.$index.PHP_EOL;
+                throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this) ));
             }
 
 

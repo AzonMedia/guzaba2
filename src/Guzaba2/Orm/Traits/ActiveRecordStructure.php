@@ -54,8 +54,7 @@ trait ActiveRecordStructure
                 }
             }
         }
-        //print_r(self::$columns_data);
-        //print 'AAAA'.$called_class.PHP_EOL;
+
         if (empty(self::$properties_data[$called_class])) {
             self::$properties_data[$called_class] = [];
             $RClass = new ReflectionClass($called_class);
