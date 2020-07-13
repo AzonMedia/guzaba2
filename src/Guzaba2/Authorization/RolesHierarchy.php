@@ -62,6 +62,9 @@ class RolesHierarchy extends ActiveRecord
 
     protected function _validate_role_id(): ?ValidationFailedExceptionInterface
     {
+        if (!$this->role_id) {
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('No role_id is provided.'), $this->role_id ));
+        }
         try {
             $Role = new Role($this->role_id);
         } catch (RecordNotFoundException $Exception) {
@@ -83,10 +86,13 @@ class RolesHierarchy extends ActiveRecord
 
     protected function _validate_inherited_role_id(): ?ValidationFailedExceptionInterface
     {
+        if (!$this->inherited_role_id) {
+            return new ValidationFailedException($this, 'inherited_role_id', sprintf(t::_('No inherited_role_id is provided.') ));
+        }
         try {
             $Role = new Role($this->inherited_role_id);
         } catch (RecordNotFoundException $Exception) {
-            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided role_id %1$s does not exist.'), $this->role_id ));
+            return new ValidationFailedException($this, 'role_id', sprintf(t::_('The provided inherited_role_id %1$s does not exist.'), $this->inherited_role_id ));
         }
         return NULL;
     }

@@ -106,12 +106,21 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                 }
 
                 $routing_map = array_merge($routing_map, $routing);
-                $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
 
-            }
+                $route = current(array_keys($routing));
 
+                $routing_meta_data[$route] = ['orm_class' => $loaded_class];
+                if ($route[-1] === '/') {
+                    //add the same route without trailing /
+                    $route_wo_trailing_slash = substr($route, 0, strlen($route) -1);
+                    $routing_meta_data[ $route_wo_trailing_slash ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
+                } else {
+                    //add the same route with trailing /
+                    $routing_meta_data[ $route.'/' ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
+                }
 
-        }
+            } // end if $routing
+        } // end foreach
 
         parent::__construct($routing_map, $routing_meta_data);
     }

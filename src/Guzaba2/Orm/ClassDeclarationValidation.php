@@ -30,7 +30,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         'validate_property_hooks',
 
         'validate_validation_rules',
-        'validate_properties',
+        //'validate_properties',//lets allow the active records to declare properties
         'validate_structure_source',
     ];
 

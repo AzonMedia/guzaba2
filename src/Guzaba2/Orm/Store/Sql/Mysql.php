@@ -6,6 +6,7 @@ namespace Guzaba2\Orm\Store\Sql;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Authorization\CurrentUser;
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -47,6 +48,9 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta',
         'class_table'   => 'classes',
+        'services'      => [
+            'AuthorizationProvider',
+        ],
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -1219,15 +1223,13 @@ WHERE
         //we need to always join all the main tables
         //otherwise the loaded object will be mising properties
         //but these can be loaded on request
-        //so if we
+        //the vertical sharding is currently not supported
 
         $table_name = $class::get_main_table();
         //the main table must be always loaded
-        $j[$class::get_main_table()] = $Connection::get_tprefix().$class::get_main_table();//if it gets assigned multiple times it will overwrite it
+        //$j[$class::get_main_table()] = $Connection::get_tprefix().$class::get_main_table();//if it gets assigned multiple times it will overwrite it
         //as it may happen the WHERE index provided to get_instance to be from other shards
-        
         //if($this->is_ownership_table($table_name)){
-            
         //}
 
         
@@ -1237,7 +1239,7 @@ WHERE
 
         /**
          * If UUID is provided the meta data is searched to find the primary key in order
-         * to perform the SELECT operation
+         * to perform the SELECT operation and ignores the rest of the $index keys
          */
         if (array_key_exists('meta_object_uuid', $index)) {
 
@@ -1251,23 +1253,20 @@ WHERE
                 //do a like search
                 $w[] = 'meta_object_uuid LIKE :meta_object_uuid';
                 if ($use_like) {
-                    $b['meta_object_uuid'] = '%'.$index['meta_object_uuid'].'%';
+                    $b['meta_object_uuid'] = '%' . $index['meta_object_uuid'] . '%';
                 } else {
                     //$b['meta_object_uuid'] = $index['meta_object_uuid'];//this is pointless - it is an error
                     //either provide an exact UUID or $use_like = TRUE
-                    throw new InvalidArgumentException(sprintf(t::_('An invalid/partial UUID "%s" provided and the $use_like argument is set to FALSE.'), $index['meta_object_uuid'] ));
+                    throw new InvalidArgumentException(sprintf(t::_('An invalid/partial UUID "%s" provided and the $use_like argument is set to FALSE.'), $index['meta_object_uuid']));
                 }
 
             }
-
         } else {
-
             //an implementation detail of MySQL store is to replace class_name lookups to by class_id for performance reasons
             if (array_key_exists('class_name', $index) && $class::has_property('class_id')) {
                 $index['class_id'] = $this->get_class_id($index['class_name']);
                 unset($index['class_name']);
             }
-
             foreach ($index as $field_name=>$field_value) {
                 if (!is_string($field_name)) {
                     //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
@@ -1279,14 +1278,10 @@ WHERE
                         throw new RunTimeException(sprintf(t::_('A field named "%s" that does not exist is supplied to the constructor of an object of class "%s".'), $field_name, $class));
                     }
                 }
-
-                $j[$table_name] = $Connection::get_tprefix().$table_name;
-                //$w[] = "{$table_name}.{$field_name} {$this->db->equals($field_value)} :{$field_name}";
-                //$b[$field_name] = $field_value;
                 if (is_null($field_value)) {
-                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value)} NULL";
+                    $w[] = "main_table.{$field_name} {$Connection::equals($field_value)} NULL";
                 } else {
-                    $w[] = "{$class::get_main_table()}.{$field_name} {$Connection::equals($field_value, $use_like)} :{$field_name}";
+                    $w[] = "main_table.{$field_name} {$Connection::equals($field_value, $use_like)} :{$field_name}";
                     if ($use_like) {
                         $b[$field_name] = "%".$field_value."%";
                     } else {
@@ -1299,45 +1294,16 @@ WHERE
                 $w[] = "1";
             }
         }
-        //here we join the tables and load only the data from the joined tables
-        //this means that some tables / properties will not be loaded - these will be loaded on request
-        //$j_str = implode(" INNER JOIN ", $j);//cant do this way as now we use keys
-        //the key is the alias of the table, the value is the real full name of the table (including the prefix)
-        $j_alias_arr = [];
-        $select_arr = [];
-
-        foreach ($j as $table_alias=>$full_table_name) {
-            //and the class_id & object_id are moved to the WHERE CLAUSE
-            if ($table_alias == $table_name) {
-                //do not add ON clause - this is the table containing the primary index and the first shard
-                $on_str = "";
-//            } elseif ($table_alias == 'ownership_table') {
-//                $on_arr = [];
-//
-//                $on_arr[] = "ownership_table.class_id = :class_id";
-//                $b['class_id'] = static::_class_id;
-//
-//                $w[] = "ownership_table.object_id = {$table_name}.{$main_index[0]}";//the ownership table does not support compound primary index
-//
-//                $on_str = "ON ".implode(" AND ", $on_arr);
-            } else {
-                $on_arr = [];
-                foreach ($main_index as $column_name) {
-                    $on_arr[] = "{$table_alias}.{$column_name} = {$table_name}.{$column_name}";
-                }
-                $on_str = "ON ".implode(" AND ", $on_arr);
-            }
-            $j_alias_arr[] = "`{$full_table_name}` AS `{$table_alias}` {$on_str}";
-            $select_arr[] = $table_alias . ".*";
-            //$this->data_is_loaded_from_tables[] = $table_alias;
+        $full_main_table_name = $Connection::get_tprefix().$table_name;
+        $j_str = "`$full_main_table_name` AS main_table";
+        if ($class::uses_permissions()) {
+            /** @var AuthorizationProviderInterface $AuthorizationProvider */
+            $AuthorizationProvider = self::get_service('AuthorizationProvider');
+            $j_str .= $AuthorizationProvider->get_sql_permission_check($class);
         }
 
-        $j_str = implode(PHP_EOL."\t"."LEFT JOIN ", $j_alias_arr);//use LEFT JOIN as old record will have no data in the new shards
-        unset($j, $j_alias_arr);
         $w_str = implode(" AND ", $w);
-        unset($w);
-        $select_str = implode(PHP_EOL."\t".", ", $select_arr);
-        unset($select_arr);
+        $select_str = "main_table.*";
 
 
         // GET meda data
@@ -1360,10 +1326,9 @@ WHERE
 LEFT JOIN 
     `{$meta_table}` as `meta` 
     ON 
-        meta.meta_object_id = {$table_name}.{$main_index[0]} 
+        meta.meta_object_id = main_table.{$main_index[0]} 
     AND
-        meta.meta_class_id = :meta_class_id
-        
+        meta.meta_class_id = :meta_class_id   
 ";
         //$b['meta_class_name'] = $class;
         $b['meta_class_id'] = $this->get_class_id($class);
@@ -1420,13 +1385,6 @@ WHERE
             $total_found_rows = count($data);
         }
 
-
-
-
-
-        if (empty($data)) {
-            // $this->throw_not_found_exception($class, self::form_lookup_index($index));
-        }
         $class_uuid = $this->get_class_uuid($class);
         $add_class_name = $class::has_property('class_name') && $class::has_property('class_id');
         foreach ($data as &$record) {
@@ -1438,7 +1396,6 @@ WHERE
         }
 
         return $data;
-
     }
 
     /**

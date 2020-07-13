@@ -8,10 +8,12 @@ use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Role;
+use Guzaba2\Orm\Store\Sql\Mysql;
 use Guzaba2\Translator\Translator as t;
 
 class AclAuthorizationProvider extends Base implements AuthorizationProviderInterface
@@ -22,6 +24,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'CurrentUser',
+            'MysqlOrmStore',//needed because the get_class_id() method is used
         ],
     ];
 
@@ -161,8 +164,51 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         return $ret;
     }
 
+    /**
+     * Returns the classes used by this implementation
+     * @return array
+     */
     public static function get_used_active_record_classes() : array
     {
         return [Permission::class, Role::class, RolesHierarchy::class];
+    }
+
+
+    /**
+     * Returns the join chunk of the SQL query needed to enforce the permissions to be used in a custom query.
+     * @param string $main_table The main table from the main query to which the join should be applied
+     * @return string The join part of the stamement that needs to be included in the query
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \ReflectionException
+     */
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    {
+
+        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class must be of class %s. A %s is provided instead.'), ActiveRecordInterface::class, $class ));
+        }
+
+
+        /** @var Mysql $MysqlOrmStore */
+        $MysqlOrmStore = self::get_service('MysqlOrmStore');
+        $connection_class = $MysqlOrmStore->get_connection_class();
+        $table_prefix = $connection_class::get_tprefix();
+        $acl_table = $table_prefix.Permission::get_main_table();
+        $acl_permission_class_id = $MysqlOrmStore->get_class_id($class);
+        $primary_index_columns = $class::get_primary_index_columns();
+        if (count($primary_index_columns) > 1) {
+            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index. Compound primary index is not supported with ACL permissions. Please use a single column integer index (preferrably autoincrement one).'), $class ));
+        }
+        $main_table_column = $primary_index_columns[0];
+        //the JOIN is INNER as the permissions must be enforced. Rows not matching a permission record must not be returned.
+        //the query does not use binding as this would meanthe bind array to be passed by reference as well
+        //there is no need either to use binding as the value is generated internally by the framework and not an exernally provided one
+        //if binding is to be used it will be best to have a method that accepts the whole assembed query so far, along with the bound parameters and the method to amend both the query and tha array
+        $q = "
+INNER JOIN
+    `$acl_table` AS acl_table ON acl_table.class_id = {$acl_permission_class_id} AND acl_table.object_id = main_table.{$main_table_column}
+        ";
+        return $q;
     }
 }
