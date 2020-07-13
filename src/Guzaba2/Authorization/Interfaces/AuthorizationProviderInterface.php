@@ -115,5 +115,11 @@ interface AuthorizationProviderInterface
      */
     public static function get_used_active_record_classes() : array ;
 
+    /**
+     * Returns the join chunk of the SQL query needed to enforce the permissions to be used in a custom query.
+     * @param string $main_table The main table from the main query to which the join should be applied
+     * @return string The join part of the stamement that needs to be included in the query
+     */
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string ;
 
 }

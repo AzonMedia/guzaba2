@@ -87,6 +87,8 @@ class Permission extends ActiveRecord implements PermissionInterface
                 (new $this->class_name($this->object_id))->check_permission('grant_permission');
             }
         } catch (RecordNotFoundException $Exception) {
+            print $Exception->getMessage();
+            print $Exception->getTraceAsString();
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
 

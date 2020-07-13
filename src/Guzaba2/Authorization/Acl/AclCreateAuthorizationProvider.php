@@ -23,12 +23,12 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
     {
         return TRUE;
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    public function role_can_on_class(Role $Role, string $action, string $class): bool
     {
         $ret = TRUE;
     }
@@ -39,25 +39,30 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
     {
         return TRUE;
     }
 
-    public function current_role_can_on_class(string $action, string $class) : bool
+    public function current_role_can_on_class(string $action, string $class): bool
     {
         return TRUE;
     }
 
     /**
      * @overrides
-     * @throws PermissionDeniedException
      * @param string $action
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
+     * @throws PermissionDeniedException
      */
-    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void
+    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord): void
     {
         return;
+    }
+
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    {
+        return '';
     }
 }
