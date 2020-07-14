@@ -136,7 +136,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     if (!($Rtype = $RParameter->getType())) {
                         throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $class, $RMethod->getName(), $RParameter->getName() ));
                     }
-                    $param_data = ['name' => $RParameter->getName(), 'type' => $RParameter->getType()->getName()];
+                    $param_data = ['name' => $RParameter->getName(), 'type' => $RParameter->getType()->getName(), 'nullable' => $RParameter->allowsNull()];
                     if ($RParameter->isDefaultValueAvailable()) {
                         $param_data['default_value'] = $RParameter->getDefaultValue();
                     }
@@ -289,6 +289,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             $Controller::check_class_permission($method);
 
             $ordered_arguments = [];
+
             foreach (self::$controllers_params[get_class($Controller)][$method] as $param) {
                 if (isset($controller_arguments[$param['name']])) {
                     $value = $controller_arguments[$param['name']];
@@ -298,7 +299,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $message = sprintf(t::_('No value provided for parameter $%s in %s::%s(%s).'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
                     throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
-                if (Reflection::isValidType($param['type'])) {
+                if (Reflection::isValidType($param['type']) && !$param['nullable']) {
                     settype($value, $param['type']);
                 }
                 $ordered_arguments[] = $value;
