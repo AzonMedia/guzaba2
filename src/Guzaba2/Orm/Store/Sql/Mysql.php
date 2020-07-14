@@ -8,6 +8,7 @@ use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Interfaces\UserInterface;
+use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -46,9 +47,9 @@ use Ramsey\Uuid\Uuid;
 class Mysql extends Database implements StructuredStoreInterface, CacheStatsInterface, TransactionalStoreInterface
 {
     protected const CONFIG_DEFAULTS = [
-        'meta_table'    => 'object_meta',
-        'class_table'   => 'classes',
-        'services'      => [
+        'meta_table'        => 'object_meta',
+        'class_table'       => 'classes',
+        'services'          => [
             'AuthorizationProvider',
         ],
     ];
@@ -1298,19 +1299,19 @@ WHERE
             }
         }
         $full_main_table_name = $Connection::get_tprefix().$table_name;
-        $j_str = "`$full_main_table_name` AS main_table";
+        $roles_table = $Connection::get_tprefix().Role::get_main_table();
+        $from_str = "`$full_main_table_name` AS main_table";
         if ($class::uses_permissions()) {
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
             $AuthorizationProvider = self::get_service('AuthorizationProvider');
-            $j_str .= $AuthorizationProvider->get_sql_permission_check($class);
+            $from_str .= $AuthorizationProvider->get_sql_permission_check($class);
         }
 
         $w_str = implode(" AND ", $w);
-        $select_str = "main_table.*";
 
-
-        // GET meda data
-        //, meta.meta_class_name
+        $select_str = "
+            main_table.*
+        ";
         $select_str .= "
             , meta.meta_object_uuid
             , meta.meta_class_id
@@ -1320,18 +1321,30 @@ WHERE
             , meta.meta_object_create_transaction_id
             , meta.meta_object_last_update_transaction_id
         ";
+        $select_str .= "
+            , create_role.role_name AS create_role_name
+            , last_update_role.role_name AS last_update_role_name
+        ";
 
         // JOIN meta data
         $meta_table = $Connection::get_tprefix().$this::get_meta_table();
         $class_table = $Connection::get_tprefix().$this::get_class_table();
         // -- meta.meta_class_name = :meta_class_name
-        $meta_str = " 
-LEFT JOIN 
+        $from_str .= " 
+INNER JOIN 
     `{$meta_table}` as `meta` 
     ON 
         meta.meta_object_id = main_table.{$main_index[0]} 
     AND
-        meta.meta_class_id = :meta_class_id   
+        meta.meta_class_id = :meta_class_id
+INNER JOIN
+    `{$roles_table}` as `create_role`
+    ON
+        create_role.role_id = meta.meta_object_create_role_id
+INNER JOIN
+    `{$roles_table}` as `last_update_role`
+    ON
+        last_update_role.role_id = meta.meta_object_last_update_role_id  
 ";
         //$b['meta_class_name'] = $class;
         $b['meta_class_id'] = $this->get_class_id($class);
@@ -1340,8 +1353,7 @@ LEFT JOIN
 SELECT
     {$select_str}
 FROM
-    {$j_str}
-    {$meta_str}
+    {$from_str}
 WHERE
     {$w_str}
     {$sort_str}
@@ -1349,14 +1361,11 @@ WHERE
 ";
 
 
-
-
-        $q_count = "
+    $q_count = "
 SELECT
     COUNT(*) as total_found_rows
 FROM
-    {$j_str}
-    {$meta_str}
+    {$from_str}
 WHERE
     {$w_str}
 ";

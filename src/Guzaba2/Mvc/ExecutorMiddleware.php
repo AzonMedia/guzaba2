@@ -299,8 +299,14 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $message = sprintf(t::_('No value provided for parameter $%s in %s::%s(%s).'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
                     throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
-                if (Reflection::isValidType($param['type']) && !$param['nullable']) {
+                //TODO - the code below does not take into account UNION TYPES coming in PHP 8
+                if ($value === NULL && $param['nullable']) {
+                    //leave it
+                } elseif (Reflection::isValidType($param['type'])) {
                     settype($value, $param['type']);
+                } else {
+                    $message = sprintf(t::_('The parameter $%s in %s::%s(%s) has no type set.'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList() );
+                    throw new InvalidArgumentException($message, 0, NULL, 'fa3a19d3-d001-4afe-8077-9245cea4fa05' );
                 }
                 $ordered_arguments[] = $value;
             }
