@@ -120,6 +120,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     protected bool $is_new_flag = TRUE;
 
     /**
+     * @var bool
+     */
+    protected bool $was_new_flag = FALSE;
+
+    /**
      * @var array
      */
     protected array $record_data = [];
@@ -542,13 +547,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->meta_data =& $pointer['meta'];
         $this->record_modified_data = [];
 
-        $this->is_new_flag = FALSE;
+        //setting the flag to FALSE means that the record has UUID & ID assigned
+        //the record is not yet commited
+        if ($this->is_new_flag) {
+            $this->is_new_flag = FALSE;
+            $this->was_new_flag = TRUE;
+        }
 
         if (! ($this instanceof LogEntry)) {
             if ($this->is_new()) {
                 $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
             } else {
-                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updates %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
+                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
             }
         }
 
@@ -563,13 +573,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         $Transaction->commit();
 
-
-
-
         //if (static::is_locking_enabled()) {
         if (!empty($LR)) {
             static::get_service('LockManager')->release_lock('', $LR);
         }
+
+        //the flag is lowered only after the record is committed
+        $this->was_new_flag = FALSE;
 
         return $this;
     }
@@ -989,12 +999,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
     /**
-     * Returns true is the record is just being created now and it is not yet saved
+     * Returns true is the record is just being created now and it is not yet saved.
+     * More precisely if the record has no yet UUID & ID it will return TRUE.
+     * The record may have been submitted to be saved to the DB and have UUID & ID but may not be actually be saved as it may be part of a transaction which can get rolled back.
      * @return bool
      */
     public function is_new() : bool
     {
         return $this->is_new_flag;
+    }
+
+    /**
+     * Returns TRUE when the object has UUID & ID but still not committed to the database.
+     * Once committed then will return FALSE.
+     * This method is useful in _after_write() context.
+     * @return bool
+     */
+    public function was_new(): bool
+    {
+        return $this->was_new_flag;
     }
 
     public function is_modified() : bool
