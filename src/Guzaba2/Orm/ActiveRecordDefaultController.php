@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
+use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -97,16 +98,28 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
         } else {
             try {
-                $this->ActiveRecord = ActiveRecord::get_by_uuid($uuid);
+                //even if $uuid is in UUID format still try the get_by_alias as the provided UUID may actually be an alias.
+                //but for performance reasons check is the provided string in the UUID format - if it is not no point trying get_by_uuid()
+                if (GeneralUtil::is_uuid($uuid)) {
+                    //lets try first get_by_uuid()
+                    try {
+                        $this->ActiveRecord = ActiveRecord::get_by_uuid($uuid);
+                    } catch (RecordNotFoundException $Exception) {
+                        $this->ActiveRecord = ActiveRecord::get_by_alias($uuid);
+                    } //let the PermissionDeniedException bubble
+                } else {
+                    //try only get_by_alias
+                    $this->ActiveRecord = ActiveRecord::get_by_alias($uuid);
+                }
             } catch (RecordNotFoundException $Exception) {
                 $struct = [];
-                $struct['message'] = sprintf(t::_('No object with the provided UUID %s is found.'), $uuid);
+                $struct['message'] = sprintf(t::_('No object with the provided UUID/alias %s is found.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
                 $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;
             } catch (PermissionDeniedException $Exception) {
                 $struct = [];
-                $struct['message'] = sprintf(t::_('You are not allowed to read the object with UUID %s.'), $uuid);
+                $struct['message'] = sprintf(t::_('You are not allowed to read the object with UUID/alias %s.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
                 $Response = $Response->withHeader('data-origin','orm-specific');
                 return $Response;

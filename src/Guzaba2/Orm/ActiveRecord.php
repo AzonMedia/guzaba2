@@ -28,7 +28,9 @@ use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\Store\MemoryTransaction;
+use Guzaba2\Orm\Store\Sql\Mysql;
 use Guzaba2\Orm\Store\Store;
+use Guzaba2\Orm\Traits\ActiveRecordAlias;
 use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 use Guzaba2\Orm\Traits\ActiveRecordLog;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
@@ -54,6 +56,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     //, \ArrayAccess, \Countable
 {
     //for the purpose of splitting and organising the methods (as this class would become too big) traits are used
+    use ActiveRecordAlias;
     use ActiveRecordOverloading;
     use ActiveRecordStructure;
     use ActiveRecordIterator;
@@ -66,6 +69,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'OrmStore',
+            'MysqlOrmStore',//needed only for get_class_id()
             'LockManager',
             'Events',
             'AuthorizationProvider',
@@ -295,6 +299,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 //this is UUID
                 //$index = ['object_uuid' => $index];
                 $index = ['meta_object_uuid' => $index];
+            } elseif (is_string($index)) {
+                //try to do a lookup by object alias
+                try {
+                    $ObjectAlias = new ObjectAlias( ['object_alias_class_id' => static::get_class_id(), 'object_alias_name' => $index] );
+                    $index = $ObjectAlias->object_alias_object_id;
+                    //and proceed loading the object (it should already be cached as ObjectAlias creates the target object in order to check the permissions
+                } catch (RecordNotFoundException $Exception) {
+                    //there is no such alias (at least not for an object of this class
+                    throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this) ));
+                } //SECURITY - leave the PermissionDeniedException to pop... it will expose that such an object does exist but is consistent with the rest of the logic
             } else {
                 throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this) ));
             }
@@ -544,6 +558,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
 
         $this->record_data =& $pointer['data'];
+        print_r($this->record_data);
         $this->meta_data =& $pointer['meta'];
         $this->record_modified_data = [];
 
@@ -555,7 +570,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         if (! ($this instanceof LogEntry)) {
-            if ($this->is_new()) {
+            if ($this->was_new()) {
                 $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
             } else {
                 $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
@@ -843,6 +858,53 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
+     * Returns the class ID of the class on which the method was invoked.
+     * May return NULL if NO Mysql store is used as the class ID is an implementation specific detail for MySQL.
+     * @return int|null
+     * @throws ContextDestroyedException
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public static function get_class_id(): ?int
+    {
+        $class_id = NULL;
+        $called_class = get_called_class();
+        if ($called_class === __CLASS__) {
+            throw new RunTimeException(sprintf(t::_('The method %s is to be called on a class extending %s, not on %s it self.'), __METHOD__, __CLASS__, __CLASS__ ));
+        }
+        if (self::uses_service('MysqlOrmStore')) {
+            /** @var Mysql $MysqlOrmStore */
+            $MysqlOrmStore = self::get_service('MysqlOrmStore');
+
+            $class_id = $MysqlOrmStore->get_class_id($called_class);
+            if (!$class_id) {
+                //if the class is not found this is a runtime error as the class on which this method is called is an ActiveRecord class, null is acceptable only if th
+                throw new RunTimeException(sprintf(t::_('No class ID for class %s could be found.'), $called_class));
+            }
+        }
+        return $class_id;
+    }
+
+    public static function get_class_name(int $class_id): string
+    {
+        if (!$class_id) {
+            throw new InvalidArgumentException(sprintf(t::_('No class_id provided.')));
+        }
+        if ($class_id < 0) {
+            throw new InvalidArgumentException(sprintf(t::_('A negative class_id %s provided.'), $class_id));
+        }
+        /** @var Mysql $MysqlOrmStore */
+        $MysqlOrmStore = self::get_service('MysqlOrmStore');
+        $class_name = $MysqlOrmStore->get_class_name($class_id);
+        if (!$class_name) {
+            throw new RunTimeException(sprintf(t::_('There is no class associated with class_id %s.'), $class_id));
+        }
+        return $class_name;
+    }
+
+    /**
      * Returns the $index provided to the constructor.
      * The returned index is always converted to an array with column_name=>$value even if scalar was provided.
      * @return array
@@ -870,21 +932,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         $ret = $this->meta_data['meta_object_uuid'];
         return $ret;
-    }
-
-    public function add_alias() : void
-    {
-
-    }
-
-    public function remove_alias() : void
-    {
-
-    }
-
-    public function has_alias() : bool
-    {
-
     }
 
     /**

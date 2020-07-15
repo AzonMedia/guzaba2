@@ -1353,6 +1353,17 @@ INNER JOIN
             //$b['meta_class_name'] = $class;
             $b['meta_class_id'] = $this->get_class_id($class);
         }
+        //it is not a good idea to join the aliases
+        //if there is more than one alias this will multiply the result... GROUP_CONCAT() will be needed along with GROUP_BY
+        //also will require additional dimension to represent all aliases
+//        $from_str .= "
+//LEFT JOIN
+//    `{$object_aliases_table}` as `aliases`
+//    ON
+//        aliases.object_alias_class_id = meta.meta_class_id
+//    AND
+//        aliases.object_alias_object_id = meta.meta_object_id
+//        ";
 
 
         $q_data = "
