@@ -1312,7 +1312,15 @@ WHERE
         $select_str = "
             main_table.*
         ";
-        $select_str .= "
+
+
+        // JOIN meta data
+        $meta_table = $Connection::get_tprefix().$this::get_meta_table();
+        $class_table = $Connection::get_tprefix().$this::get_class_table();
+        // -- meta.meta_class_name = :meta_class_name
+        if ($class::uses_meta()) {
+
+            $select_str .= "
             , meta.meta_object_uuid
             , meta.meta_class_id
             , meta.meta_object_id
@@ -1320,17 +1328,13 @@ WHERE
             , meta.meta_object_last_update_microtime
             , meta.meta_object_create_transaction_id
             , meta.meta_object_last_update_transaction_id
-        ";
-        $select_str .= "
+            ";
+            $select_str .= "
             , create_role.role_name AS create_role_name
             , last_update_role.role_name AS last_update_role_name
-        ";
+            ";
 
-        // JOIN meta data
-        $meta_table = $Connection::get_tprefix().$this::get_meta_table();
-        $class_table = $Connection::get_tprefix().$this::get_class_table();
-        // -- meta.meta_class_name = :meta_class_name
-        $from_str .= " 
+            $from_str .= " 
 INNER JOIN 
     `{$meta_table}` as `meta` 
     ON 
@@ -1346,8 +1350,10 @@ INNER JOIN
     ON
         last_update_role.role_id = meta.meta_object_last_update_role_id  
 ";
-        //$b['meta_class_name'] = $class;
-        $b['meta_class_id'] = $this->get_class_id($class);
+            //$b['meta_class_name'] = $class;
+            $b['meta_class_id'] = $this->get_class_id($class);
+        }
+
 
         $q_data = "
 SELECT
