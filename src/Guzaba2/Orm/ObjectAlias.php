@@ -16,7 +16,7 @@ use Guzaba2\Translator\Translator as t;
  * @package Guzaba2\Orm
  *
  * Multiple aliases per object are supported.
- * The first one is the main one and will be used/preferred over the object UUID in the front-end
+ * The first one is the main one and will be used/preferred over the object UUID in the front-end.
  *
  * @property int object_alias_id
  * @property int object_alias_object_id
@@ -34,7 +34,18 @@ class ObjectAlias extends ActiveRecord
     ];
     protected const CONFIG_RUNTIME = [];
 
-
+    /**
+     * @param ActiveRecord $ActiveRecord
+     * @param string $alias
+     * @return ObjectAlias
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
+     */
     public static function create(ActiveRecord $ActiveRecord, string $alias): self
     {
         if ($ActiveRecord->is_new()) {
@@ -84,6 +95,16 @@ class ObjectAlias extends ActiveRecord
     //protected function _validate_object_alias_object_id()
     //protected function _validate_object_alias_class_id()
 
+    /**
+     * Returns the target object of the alias.
+     * Can not be invoked on new instances.
+     * @return ActiveRecordInterface
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public function get_object(): ActiveRecordInterface
     {
 
