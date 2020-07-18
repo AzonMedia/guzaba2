@@ -11,6 +11,7 @@ use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Orm\Store\Sql\Mysql;
+use Guzaba2\Orm\Store\Store;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -27,6 +28,9 @@ use Guzaba2\Translator\Translator as t;
  * The way the controllers are handled though is by creating a controller instance and checking the permission against the controller record.
  * This has the advantage that with a DB query all controller permissions can be pulled, while if the controller class is used directly in the permission record this will not be possible.
  * It will not be known is the permission record for controller or not at the time of the query.
+ *
+ * Because when publically exposed the Permission object must be able to accept class_name (instead of class_id), object_uuid (instead of object_id) and role_uuid (for role_id)
+ * these are also defined as class properties.
  */
 class Permission extends ActiveRecord implements PermissionInterface
 {
@@ -37,9 +41,8 @@ class Permission extends ActiveRecord implements PermissionInterface
         //instead the individual routes for the objects are to be used
         //'load_in_memory'        => TRUE,//testing
         'no_permissions'    => TRUE,//the permissions records themselves cant use permissions
+        'services'          => [
 
-        'services'  => [
-            'MysqlOrmStore',//needed for the convertsion between class_id & class_name
         ],
     ];
 
@@ -47,28 +50,50 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     public string $class_name;
 
+    public string $object_uuid;
+
+    public string $role_uuid;
+
     protected function _after_read(): void
     {
-        /** @var Mysql $MysqlOrmStore */
-        $MysqlOrmStore = self::get_service('MysqlOrmStore');
-        $this->class_name = $MysqlOrmStore->get_class_name($this->class_id);
+        $this->class_name = self::get_class_name($this->class_id);
+        /** @var Store $OrmStore */
+        $OrmStore = self::get_service('OrmStore');
+        $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $this->object_id)['meta_object_uuid'];
+
+        $this->role_uuid = (new Role($this->role_id))->get_uuid();
     }
 
-    protected function _before_set_class_id(int $class_id): int
+    protected function _before_set_class_id(?int $class_id): ?int
     {
-        /** @var Mysql $MysqlOrmStore */
-        $MysqlOrmStore = self::get_service('MysqlOrmStore');
-        $this->class_name = $MysqlOrmStore->get_class_name($class_id);
+        if ($class_id) {
+            $this->class_name = self::get_class_name($class_id);
+        }
         return $class_id;
+    }
+
+    protected function _before_set_object_id(?int $object_id): ?int
+    {
+        if ($object_id) {
+            /** @var Store $OrmStore */
+            $OrmStore = self::get_service('OrmStore');
+            $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $object_id)['meta_object_uuid'];
+        }
+        return $object_id;
+    }
+
+    protected function _before_set_role_id(?int $role_id): ?int
+    {
+        if ($role_id) {
+            $this->role_uuid = (new Role($role_id))->get_uuid();
+        }
+        return $role_id;
     }
 
     protected function _before_write() : void
     {
-
         if (!$this->class_id && $this->class_name) {
-            /** @var Mysql $MysqlOrmStore */
-            $MysqlOrmStore = self::get_service('MysqlOrmStore');
-            $this->class_id = $MysqlOrmStore->get_class_id($this->class_name);
+            $this->class_id = self::get_class_id($this->class_name);
         }
 
         if (!$this->class_name) {
@@ -84,7 +109,17 @@ class Permission extends ActiveRecord implements PermissionInterface
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
         }
 
-        //before creating a Permission record check does the object on which it is created has the appropriate CHOWN permission
+        if (!$this->object_id && $this->object_uuid) {
+            /** @var Store $OrmStore */
+            $OrmStore = self::get_service('OrmStore');
+            $this->object_id = $OrmStore->get_meta_by_uuid($this->object_uuid)['meta_object_id'];
+        }
+
+        if (!$this->role_id && $this->role_uuid) {
+            $this->role_id = (new Role($this->role_uuid))->get_id();
+        }
+
+        //before creating a Permission record check does the object on which it is created has the appropriate grnat_permission permission
         try {
             if ($this->object_id === NULL) {
                 $class_name = $this->class_name;

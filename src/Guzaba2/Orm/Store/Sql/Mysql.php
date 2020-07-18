@@ -587,10 +587,42 @@ WHERE
             //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
             $data = $this->FallbackStore->get_meta_by_uuid( $uuid);
         }
-        //$ret['object_id'] = $data['object_id'];
-        //$ret['class'] = $data['class_name'];
+        return $data;
+    }
 
-        //return $ret;
+    public function get_meta_by_id(string $class_name, int $object_id): array
+    {
+        if (!is_a($class_name, ActiveRecordInterface::class, TRUE)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class_name %s is not a %s.'), $class_name, ActiveRecordInterface::class));
+        }
+        if (!$object_id) {
+            throw new InvalidArgumentException(sprintf(t::_('No object_id provided.')));
+        }
+        if ($object_id < 0) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided object_id is negative.')));
+        }
+        $Connection = $this->get_connection($CR);
+
+        $q = "
+SELECT 
+    *,
+    classes.class_name AS meta_class_name 
+FROM
+    {$Connection::get_tprefix()}{$this::get_meta_table()} AS meta
+    INNER JOIN {$Connection::get_tprefix()}{$this::get_class_table()} AS classes ON classes.class_id = meta.meta_class_id
+WHERE
+    meta_class_id = :class_id
+    AND meta_object_id = :object_id
+        ";
+        $class_id = $this->get_class_id($class_name);
+
+        $data = $Connection->prepare($q)->execute([ 'class_id' => $class_id, 'object_id' => $object_id])->fetchRow();
+        unset($data['meta_object_uuid_binary']);
+        unset($data['class_uuid_binary']);
+        if (!count($data)) {
+            //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
+            $data = $this->FallbackStore->get_meta_by_id( $class_name, $object_id);
+        }
         return $data;
     }
 

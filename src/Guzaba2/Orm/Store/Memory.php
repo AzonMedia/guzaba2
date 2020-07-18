@@ -563,24 +563,33 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @param string $uuid
      * @return array
      */
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
-
         if (!$this->caching_enabled()) {
             return $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
         } else {
             if (isset($this->uuid_data[$uuid])) {
-                //$ret['object_id'] = $this->uuid_data[$uuid]['lookup_index'];
-                //$ret['class'] = $this->uuid_data[$uuid]['class'];
                 $ret = $this->uuid_data[$uuid];
             } else {
                 $ret = $this->FallbackStore->get_meta_by_uuid($uuid);
             }
-
             return $ret;
         }
+    }
 
-
+    public function get_meta_by_id(string $class_name, int $object_id): array
+    {
+        if (!$this->caching_enabled()) {
+            return $ret = $this->FallbackStore->get_meta_by_id($class_name, $object_id);
+        } else {
+            if (isset($this->data[$class_name][$object_id])) {
+                $timestamp = array_key_last($this->data[$class_name][$object_id]);
+                $ret = $this->data[$class_name][$object_id][$timestamp]['meta'];
+            } else {
+                $ret = $this->FallbackStore->get_meta_by_id($class_name, $object_id);
+            }
+            return $ret;
+        }
     }
 
     /**
@@ -619,7 +628,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             // unset($this->data[$class][$index]);
             //if (count($this->data[$class][$index]) > 1) {
             //$message = sprintf(t::_('At the time of deletion of object of class %s with index %s there are %s versions in Memory Store. This can be due to improper locking (both read & write needs to be used) or there is a bug in the cleanup in ActiveRecord::__destruct() or Memory::free_pointer().'),
-            //$class, print_r($primary_index, TRUE), count($this->data[$class][$index]) );
+
             //throw new RunTimeException($message);
             //}
             foreach ($this->data[$class][$index] as $update_microtime => & $object_data) {

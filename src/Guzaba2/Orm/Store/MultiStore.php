@@ -2,10 +2,14 @@
 declare(strict_types=1);
 namespace Guzaba2\Orm\Store;
 
+use Guzaba2\Base\Exceptions\NotImplementedException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
+use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
 use Guzaba2\Orm\Store\Store;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class MultiStore
@@ -122,5 +126,16 @@ class MultiStore extends Store
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
         $this->get_fallback_store()->remove_record($ActiveRecord);
+    }
+
+
+    public function get_meta_by_uuid(string $uuid) : array
+    {
+        return $this->get_fallback_store()->get_meta_by_uuid($uuid);
+    }
+
+    public function get_meta_by_id(string $class_name, int $object_id) : array
+    {
+        return $this->get_fallback_store()->get_meta_by_id($class_name, $object_id);
     }
 }

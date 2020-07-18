@@ -147,6 +147,14 @@ trait ActiveRecordAuthorization
 
     }
 
+    /**
+     * Returns a list of the actions that the given class supports.
+     * These are the standard actions (@see self::get_standard_actions())
+     * and also any public method that has an attribute @check_permission, @check_permissions, @is_action (@see self::is_method_action())
+     * Unlike @see self::get_object_actions() the class actions include the static methods (if they have the appripraite attribute)
+     * @return array
+     * @throws \ReflectionException
+     */
     public static function get_class_actions() : array
     {
         $class = get_called_class();
@@ -160,6 +168,13 @@ trait ActiveRecordAuthorization
         return $ret;
     }
 
+    /**
+     * Returns a list of the actions that the given object supports.
+     * These are the standard actions (@see self::get_standard_actions())
+     * and also any public non-static method that has an attribute @check_permission, @check_permissions, @is_action (@see self::is_method_action())
+     * @return array
+     * @throws \ReflectionException
+     */
     public static function get_object_actions() : array
     {
         $class = get_called_class();
@@ -173,6 +188,12 @@ trait ActiveRecordAuthorization
         return $ret;
     }
 
+    /**
+     * Checks is the provided method is a method requiring permissions check.
+     * These are marked with any of the following attributes: @check_permission, @check_permissions, @is_action
+     * @param \ReflectionMethod $RMethod
+     * @return bool
+     */
     protected static function is_method_action(\ReflectionMethod $RMethod) : bool
     {
         $ret = FALSE;

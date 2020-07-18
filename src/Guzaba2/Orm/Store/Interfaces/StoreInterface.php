@@ -68,4 +68,19 @@ interface StoreInterface
      * @param ActiveRecordInterface $ActiveRecord
      */
     public function remove_record(ActiveRecordInterface $ActiveRecord): void ;
+
+    /**
+     * Returns the meta data for the given UUID
+     * @param string $uuid
+     * @return array
+     */
+    public function get_meta_by_uuid(string $uuid): array ;
+
+    /**
+     * Returns the meta data by given class & object id
+     * @param string $class_name
+     * @param int $object_id
+     * @return array
+     */
+    public function get_meta_by_id(string $class_name, int $object_id): array ;
 }

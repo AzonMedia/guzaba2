@@ -11,10 +11,8 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Translator\Translator as t;
 
 /**
- * Class NullStore
- * Null is reserves keyword so it uses NullStore name.
- * Throws RecordNotFoundException when a lookup is done.
- * It is to be used always as last fallback store so that an exception is thrown if the requested method is not found anywhere in the storage chain
+ * To be used for data creation.
+ * NOT IMPLEMENTED
  * @package Guzaba2\Orm\Store
  */
 class BlankStore extends Store implements StoreInterface
@@ -96,5 +94,27 @@ class BlankStore extends Store implements StoreInterface
     public function remove_record(ActiveRecordInterface $ActiveRecord): void
     {
         //does nothing
+    }
+
+    /**
+     * Returns class and id of object by uuid
+     * @param  string $uuid
+     * @return array - class and id
+     */
+    public function get_meta_by_uuid(string $uuid) : array
+    {
+
+        return [];
+    }
+
+    /**
+     * Returns class and id of object by uuid
+     * @param  string $uuid
+     * @return array - class and id
+     */
+    public function get_meta_by_id(string $class_name, int $object_id) : array
+    {
+
+        return [];
     }
 }

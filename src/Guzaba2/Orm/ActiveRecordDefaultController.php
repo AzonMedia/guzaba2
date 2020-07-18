@@ -184,7 +184,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
         //Kernel::dump($body_arguments);
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
         //Kernel::dump($body_arguments);
-        $columns_data = $this->ActiveRecord::get_columns_data();
+        //$columns_data = $this->ActiveRecord::get_columns_data();
+        $columns_data = $this->ActiveRecord::get_properties_data();
 
         foreach ($body_arguments as $property_name=>$property_value) {
             if ($property_name === 'crud_class_name') {
@@ -236,7 +237,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
     {
         $body_arguments = $this->get_request()->getParsedBody();
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
-        $columns_data = $this->ActiveRecord::get_columns_data();
+        //$columns_data = $this->ActiveRecord::get_columns_data();
+        $columns_data = $this->ActiveRecord::get_properties_data();
         foreach ($body_arguments as $property_name=>$property_value) {
             if ($property_name === 'crud_class_name') {
                 continue;
@@ -247,9 +249,9 @@ class ActiveRecordDefaultController extends ActiveRecordController
                 return $Response;
             }
 
-            if ($columns_data[$property_name]['php_type'] == "integer") {
-                $property_value = (int) $property_value;
-            }
+//            if ($columns_data[$property_name]['php_type'] === "integer") {
+//                $property_value = (int) $property_value;
+//            }
 
             $this->ActiveRecord->{$property_name} = $property_value;
         }

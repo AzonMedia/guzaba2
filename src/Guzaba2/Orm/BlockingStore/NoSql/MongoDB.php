@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\BlockingStore\NoSql;
 
+use Guzaba2\Base\Exceptions\NotImplementedException;
 use Guzaba2\Orm\Store\Database;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Store\Interfaces\StructuredStoreInterface;
@@ -87,6 +88,11 @@ class MongoDB extends Database
         }
 
         return $result[0];
+    }
+
+    public function get_meta_by_id(string $class_name, int $object_id) : array
+    {
+        throw new NotImplementedException();
     }
 
     protected function update_meta(ActiveRecordInterface $ActiveRecord) : array

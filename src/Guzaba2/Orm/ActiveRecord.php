@@ -558,7 +558,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
 
         $this->record_data =& $pointer['data'];
-        print_r($this->record_data);
         $this->meta_data =& $pointer['meta'];
         $this->record_modified_data = [];
 
@@ -858,8 +857,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
-     * Returns the class ID of the class on which the method was invoked.
+     * Returns the class ID for the class name that was provided.
+     * If the class name is not provided it assumes the class on which the method was invoked.
      * May return NULL if NO Mysql store is used as the class ID is an implementation specific detail for MySQL.
+     * @param null|string $class_name
      * @return int|null
      * @throws ContextDestroyedException
      * @throws InvalidArgumentException
@@ -867,26 +868,39 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function get_class_id(): ?int
+    public static function get_class_id(?string $class_name = ''): ?int
     {
         $class_id = NULL;
-        $called_class = get_called_class();
-        if ($called_class === __CLASS__) {
-            throw new RunTimeException(sprintf(t::_('The method %s is to be called on a class extending %s, not on %s it self.'), __METHOD__, __CLASS__, __CLASS__ ));
+        if (!$class_name) {
+            $class_name = get_called_class();
+            if ($class_name === __CLASS__) {
+                throw new RunTimeException(sprintf(t::_('The method %s is to be called on a class extending %s, not on %s it self.'), __METHOD__, __CLASS__, __CLASS__ ));
+            }
         }
+
         if (self::uses_service('MysqlOrmStore')) {
             /** @var Mysql $MysqlOrmStore */
             $MysqlOrmStore = self::get_service('MysqlOrmStore');
 
-            $class_id = $MysqlOrmStore->get_class_id($called_class);
+            $class_id = $MysqlOrmStore->get_class_id($class_name);
             if (!$class_id) {
                 //if the class is not found this is a runtime error as the class on which this method is called is an ActiveRecord class, null is acceptable only if th
-                throw new RunTimeException(sprintf(t::_('No class ID for class %s could be found.'), $called_class));
+                throw new RunTimeException(sprintf(t::_('No class ID for class %s could be found.'), $class_name));
             }
         }
         return $class_id;
     }
 
+    /**
+     * Returns the class name
+     * @param int $class_id
+     * @return string
+     * @throws ContextDestroyedException
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public static function get_class_name(int $class_id): string
     {
         if (!$class_id) {

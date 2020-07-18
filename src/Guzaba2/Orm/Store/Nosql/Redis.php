@@ -5,6 +5,7 @@ namespace Guzaba2\Orm\Store\Nosql;
 
 use Azonmedia\Glog\Application\RedisConnection;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\NotImplementedException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Interfaces\ConnectionInterface;
@@ -315,6 +316,11 @@ class Redis extends Database
         $result = $Connection->hGetAll($metakey);
 
         return $result;
+    }
+
+    public function get_meta_by_id(string $class_name, int $object_id): array
+    {
+        throw new NotImplementedException();
     }
 
     /**
