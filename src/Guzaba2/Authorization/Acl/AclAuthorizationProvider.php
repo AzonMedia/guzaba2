@@ -32,7 +32,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 
     public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : PermissionInterface
     {
-        return Permission::create($Role, $action, $this);
+        return Permission::create($Role, $action, $ActiveRecord);
     }
 
     public function grant_class_permission(Role $Role, string $action, string $class_name) : PermissionInterface

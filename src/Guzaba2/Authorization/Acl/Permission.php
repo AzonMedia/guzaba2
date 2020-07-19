@@ -48,10 +48,22 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected const CONFIG_RUNTIME = [];
 
+    /**
+     * Can be used instead of class_id
+     * @var string
+     */
     public string $class_name;
 
+    /**
+     * Can be used instead of object_id
+     * @var string
+     */
     public string $object_uuid;
 
+    /**
+     * Can be used instead of role_id
+     * @var string
+     */
     public string $role_uuid;
 
     protected function _after_read(): void
@@ -181,7 +193,7 @@ class Permission extends ActiveRecord implements PermissionInterface
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecord
+    public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecordInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();
@@ -206,7 +218,7 @@ class Permission extends ActiveRecord implements PermissionInterface
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public static function create_class_permission(Role $Role, string $action, string $class_name, string $permission_description='') : ActiveRecord
+    public static function create_class_permission(Role $Role, string $action, string $class_name, string $permission_description='') : ActiveRecordInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();

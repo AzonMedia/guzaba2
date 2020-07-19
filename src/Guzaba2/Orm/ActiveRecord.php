@@ -8,6 +8,8 @@ use Azonmedia\Lock\Interfaces\LockManagerInterface;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
+use Guzaba2\Authorization\CurrentUser;
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
@@ -576,6 +578,19 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
         }
 
+        if ($this->was_new() && self::uses_permissions()) {
+            /** @var AuthorizationProviderInterface $AuthorizationProvider */
+            $AuthorizationProvider = self::get_service('AuthorizationProvider');
+            /** @var CurrentUser $CurrentUser */
+            $CurrentUser = self::get_service('CurrentUser');
+            $Role = $CurrentUser->get()->get_role();
+            //create permission records for each action this record supports
+            $object_actions = self::get_object_actions();
+            foreach($object_actions as $object_action) {
+                $AuthorizationProvider->grant_permission($Role, $object_action, $this);
+            }
+        }
+
 
         //new Event($this, '_after_write');
         self::get_service('Events')::create_event($this, '_after_write');
@@ -645,6 +660,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //remove any permissions associated with this record
         $this->delete_permissions();
+
+        //delete all alises to this object
+        $this->delete_all_aliases();
+
         //and only then remove the record
         /** @var Store $OrmStore */
         $OrmStore = static::get_service('OrmStore');

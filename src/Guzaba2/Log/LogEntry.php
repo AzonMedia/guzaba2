@@ -28,6 +28,10 @@ use Guzaba2\Translator\Translator as t;
  * @property string log_content
  * @property int log_create_microtime
  * @property int role_id
+ *
+ * This class unlike the Acl\permission one does not provide alternatives for class_id -> class_name, object_id -> object_uuid and role_id -> role_uuid
+ * because no records of this class can be created by the API.
+ * Records can be created only by other instances.
  */
 class LogEntry extends ActiveRecord
 {
