@@ -21,7 +21,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
 
 
     public const INITIALIZATION_METHODS = [
-        'initialize_columns',
+        'initialize_structure',
         'initialize_hooks',
         'initialize_memory',
         'register_active_record_temporal_hooks',
@@ -36,11 +36,11 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         return self::INITIALIZATION_METHODS;
     }
 
-    public static function initialize_columns(array $ns_prefixes) : void
+    public static function initialize_structure(array $ns_prefixes) : void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
-            $active_record_class::initialize_columns();
+            $active_record_class::initialize_structure();
         }
     }
 

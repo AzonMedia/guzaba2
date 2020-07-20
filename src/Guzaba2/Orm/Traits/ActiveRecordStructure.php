@@ -27,7 +27,7 @@ trait ActiveRecordStructure
      * To be called by ClassInitialization
      * @throws RunTimeException
      */
-    public static function initialize_columns() : void
+    public static function initialize_structure() : void
     {
         $Store = static::get_service('OrmStore');
 
@@ -114,7 +114,8 @@ trait ActiveRecordStructure
         }
         $is_nullable = static::is_property_nullable($property_name);
         $default_value = static::get_property_default_value($property_name);
-        return static::get_columns_data()[$property_name]['php_type'];
+        //return static::get_columns_data()[$property_name]['php_type'];
+        return static::get_properties_data()[$property_name]['php_type'];
     }
 
     /**
@@ -133,7 +134,8 @@ trait ActiveRecordStructure
             //return 'string';//the value column on the arr_table and assoc_arr_table is string
             return 'array';//but returning string will be very misleading so we better return array (even that mysql actually doesnt support array as a native type (PG does!))
         }
-        return static::get_columns_data()[$property_name]['native_type'];
+        //return static::get_columns_data()[$property_name]['native_type'];
+        return static::get_properties_data()[$property_name]['native_type'];
     }
 
     /**
@@ -159,27 +161,38 @@ trait ActiveRecordStructure
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
         //this will also work for array_property_names and assoc_array_property_names as self::$columns_data now contains the column information for the value column from the arr and assoc_arr tables
-        return static::get_columns_data()[$property_name];
+        //return static::get_columns_data()[$property_name];
+        return static::get_properties_data()[$property_name];
     }
 
     /**
-     * Returns an indexed array containing the names of all properties/columns.
+     * Returns an indexed array containing the names of all properties and columns.
      * @return array
      */
     public static function get_property_names() : array
     {
-        $ret = [];
-        $columns_data = static::get_columns_data();
-        foreach ($columns_data as $columns_datum) {
-            $ret[] = $columns_datum['name'];
-        }
-        return $ret;
+        //return array_column(static::get_columns_data(), 'name');
+        return array_column(static::get_properties_data(), 'name');
+    }
+
+    public static function get_column_names(): array
+    {
+        return array_column(static::get_columns_data(), 'name');
+    }
+
+    /**
+     * @return array
+     */
+    public static function get_class_property_names(): array
+    {
+        return array_column(static::get_class_properties_data(), 'name');
     }
 
     public static function get_property_names_with_types() : array
     {
         $ret = [];
-        $columns_data = static::get_columns_data();
+        //$columns_data = static::get_columns_data();
+        $columns_data = static::get_properties_data();
         foreach ($columns_data as $columns_datum) {
             $ret[$columns_datum['name']] = $columns_datum['type'];
         }
@@ -209,7 +222,8 @@ trait ActiveRecordStructure
         if (!self::has_property($property_name)) {
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        return static::get_columns_data()[$property_name]['nullable'];
+        //return static::get_columns_data()[$property_name]['nullable'];
+        return static::get_properties_data()[$property_name]['nullable'];
     }
 
     /**
@@ -224,6 +238,7 @@ trait ActiveRecordStructure
         if (!static::has_property($property_name)) {
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
         }
-        return static::get_columns_data()[$property_name]['default_value'];
+        //return static::get_columns_data()[$property_name]['default_value'];
+        return static::get_properties_data()[$property_name]['default_value'];
     }
 }

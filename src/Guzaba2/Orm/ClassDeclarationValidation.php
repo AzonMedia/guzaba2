@@ -30,7 +30,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         'validate_property_hooks',
 
         'validate_validation_rules',
-        //'validate_properties',//lets allow the active records to declare properties
+        'validate_properties',
         'validate_structure_source',
     ];
 
@@ -189,9 +189,12 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
             if (is_a($active_record_class, ActiveRecordController::class, TRUE)) {
                 continue;//as the Controller is now also an ActiveRecord this check needs to be suppressed. These are expected to have properties.
             }
-            if (count($RClass->getOwnDynamicProperties())) {
-                throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
-            }
+            //it is now allowed the ActiveRecord children to have dynamic properties
+//            if (count($RClass->getOwnDynamicProperties())) {
+//                throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
+//            }
+            //but they still cant have static ones - using static properties in Swoole/coroutine context is a really bad idea
+            //if static props are needed a separate class that does not extend ActiveRecord should be created
             if (count($RClass->getOwnStaticProperties())) {
                 throw new ClassValidationException(sprintf(t::_('The ActiveRecord class %s has defined static properties. The ActiveRecord instances are not allowed to define any properties.'), $active_record_class));
             }

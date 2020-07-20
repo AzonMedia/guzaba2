@@ -57,6 +57,7 @@ trait ActiveRecordOverloading
         if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];
         } else {
+            print_r($this->record_data);
             throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
@@ -83,7 +84,10 @@ trait ActiveRecordOverloading
      */
     public function __set(string $property, /* mixed */ $value) : void
     {
-        if ($this->is_read_only()) {
+        //if ($this->is_read_only()) {
+        //must allow for properties that are class properties to be set
+        //this is needed because these are initialized in _after_read
+        if ($this->is_read_only() && !in_array($property, self::get_class_property_names())) {
             throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
         }
 
@@ -314,27 +318,6 @@ trait ActiveRecordOverloading
         //return count($this->record_data) + count($this->record_data_2);
         return count($this->record_data);
     }
-
-    /**
-     * A singledimensional associative array containing properties of this class.
-     * No exception is thrown if there are more properties or missing properties.
-     * The ones that are foudn will be cast to the expected type.
-     * @param array $data
-     * @return array
-     */
-//    public static function cast_data_to_property_types(array $data) : array
-//    {
-//        $properties = static::get_property_names();
-//        foreach ($properties as $property) {
-//            $type = static::get_property_type($property, $is_nullable, $default_value);
-//            if (array_key_exists($property, $data)) {
-//                $value = $data[$property];
-//                settype($value, $type);
-//                $data[$property] = $value;
-//            }
-//        }
-//        return $data;
-//    }
 
     /**
      * Checks the type of the provided value against the expected type and if there is mismatch it may:

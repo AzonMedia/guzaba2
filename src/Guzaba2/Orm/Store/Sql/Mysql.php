@@ -766,6 +766,7 @@ VALUES
     public function update_record(ActiveRecordInterface $ActiveRecord) : array
     {
 
+
         //BEGIN DB TRANSACTION
 
         // basic checks
@@ -781,16 +782,17 @@ VALUES
         $record_data = $ActiveRecord->get_record_data();
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_id();
-        if ($ActiveRecord->is_new() /*&& !$already_in_save */) {
+        if ($ActiveRecord->is_new() ) {
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
             }
 
+
             //TO DO - find more intelligent solution
             // if (!$index[$main_index[0]]) {
             //temporary fix
-            if (true) { 
+            //if (true) {
             //temporary fix end
                 if (!$ActiveRecord::uses_autoincrement()) {
                     //TODO IVO
@@ -800,7 +802,7 @@ VALUES
                     $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
                     $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
                 } else {
-                    $field_names_arr = $ActiveRecord::get_property_names();//this includes the full index
+                    $field_names_arr = $ActiveRecord::get_column_names();//this includes the full index
 
                     //implementation detail of Mysql store
                     if (
@@ -823,15 +825,15 @@ VALUES
 
                     $data_arr = $record_data_to_save;
                 }
-            } else {
-                // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
-                $field_names_arr = array_unique(array_merge($ActiveRecord::get_property_names(), $main_index));
-                $field_names_str = implode(', ', $field_names_arr);
-                $placeholder_str = implode(', ', array_map(function ($value) {
-                    return ':'.$value;
-                }, $field_names_arr));
-                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
-            }
+//            } else {
+//                // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
+//                $field_names_arr = array_unique(array_merge($ActiveRecord::get_property_names(), $main_index));
+//                $field_names_str = implode(', ', $field_names_arr);
+//                $placeholder_str = implode(', ', array_map(function ($value) {
+//                    return ':'.$value;
+//                }, $field_names_arr));
+//                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+//            }
             $Connection = $this->get_connection($CR);
 
             $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
@@ -875,7 +877,7 @@ VALUES
             }
         } else {
             $record_data_to_save = [];
-            $field_names = $modified_field_names = $ActiveRecord::get_property_names();
+            $field_names = $modified_field_names = $ActiveRecord::get_column_names();
 
 //            if (self::SAVE_MODE == self::SAVE_MODE_MODIFIED) {
 //                $modified_field_names = $ActiveRecord->get_modified_field_names();

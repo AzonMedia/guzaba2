@@ -158,11 +158,29 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @var bool
      */
     protected bool $disable_method_hooks_flag = FALSE;
-    
+
     /**
      * @var bool
      */
-    //protected $validation_is_disabled_flag = FALSE;
+    private bool $read_lock_obtained_flag = FALSE;
+
+
+    /**
+     * To store what was initially provided as $index to the constructor.
+     * Will be returned by get_id() when the record_data is not yet populated.
+     * This may happen when DetaultCurrentUser is set to non 0.
+     * @var scalar
+     */
+    private /* scalar */ $requested_index = self::INDEX_NEW;
+
+
+    private bool $read_only_flag = FALSE;
+
+    /**
+     * Can be set to TRUE if the $permission_checks_disabled flag is passed to the constructor
+     * @var bool
+     */
+    private bool $permission_checks_disabled_flag = FALSE;
 
 
     /**
@@ -205,24 +223,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     protected static bool $orm_locking_enabled_flag = TRUE;
 
-    /**
-     * @var bool
-     */
-    private bool $read_lock_obtained_flag = FALSE;
 
-
-    /**
-     * To store what was initially provided as $index to the constructor.
-     * Will be returned by get_id() when the record_data is not yet populated.
-     * This may happen when DetaultCurrentUser is set to non 0.
-     * @var scalar
-     */
-    private /* scalar */ $requested_index = self::INDEX_NEW;
-
-
-    private bool $read_only_flag = FALSE;
-
-    private bool $permission_checks_disabled_flag = FALSE;
 
     /**
      * ActiveRecord constructor.
@@ -272,9 +273,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $Store = static::get_service('OrmStore');
             $this->Store = $Store;
         }
-        
-        //self::initialize_columns();
+
         $this->requested_index = $index;
+
+
+        //unset all properties of the object (only the child class properties)
+        //the property info has already been collected by initialize_structure()
+        $class_property_names = static::get_class_property_names();
+        foreach ($class_property_names as $class_property_name) {
+            unset($this->{$class_property_name});
+        }
+
 
         $primary_columns = static::get_primary_index_columns();
 
@@ -332,7 +341,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         if (isset($index[$primary_columns[0]]) && $index[$primary_columns[0]] === self::INDEX_NEW) {
-            $this->record_data = $this->Store::get_record_structure(static::get_columns_data());
+            //$this->record_data = Store::get_record_structure(static::get_columns_data());
+            $this->record_data = Store::get_record_structure(static::get_properties_data());
         //the new records are not referencing the OrmStore
             //no locking here either
         } else {
@@ -451,6 +461,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
+        }
+        //the $record_data needs to be "enriched" with the properties data
+        //the properties first need to be defined in the record_data array (if they dont exist)
+        //then if the class has _after_read hook it will populate these (usually these properties are dependant on the core properties stored in the Store (get_columns_data())
+        $class_properties_data = static::get_class_properties_data();
+        foreach ($class_properties_data as $class_properties_datum) {
+            if (!array_key_exists($class_properties_datum['name'], $this->record_data)) {
+                $this->record_data[$class_properties_datum['name']] = $class_properties_datum['default_value'];
+            }
         }
 
 
@@ -1034,7 +1053,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_columns_data(): array
     {
         $called_class = get_called_class();
-        //self::initialize_columns();
         return self::$columns_data[$called_class];
     }
 
@@ -1338,15 +1356,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $OrmStore = static::get_service('OrmStore');
         return $OrmStore->get_data_by(static::class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
     }
-
-//    public static function get_data_count_by(array $index, bool $use_like = FALSE) : int
-//    {
-//        $Store = static::get_service('OrmStore');
-//        //static::initialize_columns();
-//        $class_name = static::class;
-//        $data = $Store->get_data_count_by($class_name, $index, $use_like);
-//        return $data;
-//    }
 
     /**
      * Returns all ActiveRecord classes that are loaded by the Kernel in the provided namespace prefixes.
