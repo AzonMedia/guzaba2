@@ -592,6 +592,9 @@ WHERE
 
     public function get_meta_by_id(string $class_name, int $object_id): array
     {
+        if (!$class_name) {
+            throw new InvalidArgumentException(sprintf(t::_('No class_name is provided.')));
+        }
         if (!is_a($class_name, ActiveRecordInterface::class, TRUE)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class_name %s is not a %s.'), $class_name, ActiveRecordInterface::class));
         }

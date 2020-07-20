@@ -52,19 +52,19 @@ class Permission extends ActiveRecord implements PermissionInterface
      * Can be used instead of class_id
      * @var string
      */
-    public string $class_name;
+    public string $class_name = '';
 
     /**
      * Can be used instead of object_id
      * @var string
      */
-    public string $object_uuid;
+    public string $object_uuid = '';
 
     /**
      * Can be used instead of role_id
      * @var string
      */
-    public string $role_uuid;
+    public string $role_uuid = '';
 
     protected function _after_read(): void
     {
@@ -84,14 +84,38 @@ class Permission extends ActiveRecord implements PermissionInterface
         return $class_id;
     }
 
+    protected function _before_set_class_name(?string $class_name): ?string
+    {
+        if ($class_name) {
+            $this->class_id = self::get_class_id($class_name);
+        }
+        return $class_name;
+    }
+
     protected function _before_set_object_id(?int $object_id): ?int
     {
         if ($object_id) {
             /** @var Store $OrmStore */
             $OrmStore = self::get_service('OrmStore');
-            $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $object_id)['meta_object_uuid'];
+            $class_name = $this->class_name;
+            if (!$class_name && $this->class_id) {
+                $class_name = self::get_class_name($this->class_id);
+            }
+            if ($class_name) {
+                $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $object_id)['meta_object_uuid'];
+            }
         }
         return $object_id;
+    }
+
+    protected function _before_set_object_uuid(?string $object_uuid): ?string
+    {
+        if ($object_uuid) {
+            /** @var Store $OrmStore */
+            $OrmStore = self::get_service('OrmStore');
+            $this->object_id = $OrmStore->get_meta_by_uuid($object_uuid)['meta_object_id'];
+        }
+        return $object_uuid;
     }
 
     protected function _before_set_role_id(?int $role_id): ?int
@@ -100,6 +124,14 @@ class Permission extends ActiveRecord implements PermissionInterface
             $this->role_uuid = (new Role($role_id))->get_uuid();
         }
         return $role_id;
+    }
+
+    protected function _before_set_role_uuid(?string $role_uuid): ?string
+    {
+        if ($role_uuid) {
+            $this->role_id = (new Role($role_uuid))->get_id();
+        }
+        return $role_uuid;
     }
 
     protected function _before_write() : void
