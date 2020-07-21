@@ -39,7 +39,7 @@ trait ActiveRecordOverloading
     public function &__get(string $property) /* mixed */
     {
 
-
+    //why the below code is here... not needed
 //        if (self::uses_meta() && !$this->is_modified() && !$this->is_new()) {
 //            //if this is the first modification (and is not a new object - the new objects are not hooked)
 //            //then a new revision "0" needs to be created in the store and the record to be hooked to it
@@ -54,11 +54,6 @@ trait ActiveRecordOverloading
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
             call_user_func_array([$this,'_before_get_'.$property], []);
         }
-
-//        if ($property === 'page_slug') {
-//            print 'overloading data 2222:'.PHP_EOL;
-//            print_r($this->record_data);
-//        }
 
         if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];

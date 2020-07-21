@@ -497,6 +497,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
     {
+
         if (!$this->caching_enabled()) {
             return $this->FallbackStore->there_is_pointer_for_new_version();
         } else {

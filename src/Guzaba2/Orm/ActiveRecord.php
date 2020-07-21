@@ -318,7 +318,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 //try to do a lookup by object alias
                 try {
                     $ObjectAlias = new ObjectAlias( ['object_alias_class_id' => static::get_class_id(), 'object_alias_name' => $index] );
-                    $index = $ObjectAlias->object_alias_object_id;
+                    //$index = $ObjectAlias->object_alias_object_id;
+                    $index = [$primary_columns[0] => $ObjectAlias->object_alias_object_id];
                     //and proceed loading the object (it should already be cached as ObjectAlias creates the target object in order to check the permissions
                 } catch (RecordNotFoundException $Exception) {
                     //there is no such alias (at least not for an object of this class
@@ -458,8 +459,20 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         self::get_service('Events')::create_event($this, '_before_read');
 
 
+        //before the pointer is obtained check is the provided index the primary one
+        //if it is the primary it is OK to proceed
+        //if it is not the record must be first resolved and only then to proceed
+        $primary_columns = static::get_primary_index_columns();
+        if (array_keys($index) === array_keys($primary_columns)) {
+            //it is OK to proceed to the pointer lookup
+        } else {
+            //need to resovle the primary index and only then to proceed
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            $index = self::get_index_from_data($pointer['data']);
+        }
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
+
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
@@ -592,12 +605,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //not needed
 //        //CLASS_PROPERTIES - the returned data is as it is found in the store
 //        //it needs to be enriched with the current properties
-//        //print_r($pointer);
+
 //        foreach (self::get_class_property_names() as $class_property_name) {
-//            if (get_class($this) === \GuzabaPlatform\Cms\Models\Page::class) {
-//                print_r($this->record_data);
-//                print_r($pointer);
-//            }
 ////            if (!array_key_exists($class_property_name, $pointer['data'])) {
 //                $pointer['data'][$class_property_name] = $this->record_data[$class_property_name];
 ////            }
