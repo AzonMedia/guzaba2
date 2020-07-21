@@ -292,7 +292,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      */
     public static function validate_after_set_property_hook(string $class_name, string $method_name) : void
     {
-        $RMethod = new ReflectionMethod($class, $method);
+        $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
         }
@@ -329,7 +329,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      */
     public static function validate_before_get_property_hook(string $class_name, string $method_name) : void
     {
-        $RMethod = new ReflectionMethod($class, $method);
+        $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
         }
@@ -357,7 +357,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      */
     public static function validate_after_get_property_hook(string $class_name, string $method_name) : void
     {
-        $RMethod = new ReflectionMethod($class, $method);
+        $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must be dynamic.'), $class_name, $method_name));
         }

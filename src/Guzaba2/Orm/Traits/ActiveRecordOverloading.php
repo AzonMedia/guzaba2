@@ -39,25 +39,30 @@ trait ActiveRecordOverloading
     public function &__get(string $property) /* mixed */
     {
 
-        if (!$this->is_modified() && !$this->is_new()) {
-            //if this is the first modification (and is not a new object - the new objects are not hooked)
-            //then a new revision "0" needs to be created in the store and the record to be hooked to it
-            //this is needed instead of just keeping the changes local in the object in case the same object is created in another scope in the code
-            //this new object should see the modifications that were already done in the parent scope
-            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index());
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
-            $this->record_modified_data =& $pointer['modified'];
-        }
+
+//        if (self::uses_meta() && !$this->is_modified() && !$this->is_new()) {
+//            //if this is the first modification (and is not a new object - the new objects are not hooked)
+//            //then a new revision "0" needs to be created in the store and the record to be hooked to it
+//            //this is needed instead of just keeping the changes local in the object in case the same object is created in another scope in the code
+//            //this new object should see the modifications that were already done in the parent scope
+//            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index());
+//            $this->record_data =& $pointer['data'];
+//            $this->meta_data =& $pointer['meta'];
+//            $this->record_modified_data =& $pointer['modified'];
+//        }
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
             call_user_func_array([$this,'_before_get_'.$property], []);
         }
 
+//        if ($property === 'page_slug') {
+//            print 'overloading data 2222:'.PHP_EOL;
+//            print_r($this->record_data);
+//        }
+
         if (array_key_exists($property, $this->record_data)) {
             $ret = $this->record_data[$property];
         } else {
-            print_r($this->record_data);
             throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
@@ -88,7 +93,7 @@ trait ActiveRecordOverloading
         //must allow for properties that are class properties to be set
         //this is needed because these are initialized in _after_read
         if ($this->is_read_only() && !in_array($property, self::get_class_property_names())) {
-            throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
+            //throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
         }
 
         if (!array_key_exists($property, $this->record_data)) {
@@ -150,26 +155,24 @@ trait ActiveRecordOverloading
 
         if (is_float($this->record_data[$property]) && is_float($value)) {
             if (abs($this->record_data[$property] - $value) > 0.00001) {
-                //$this->record_modified_data[] = $property;
                 $is_modified = TRUE;
             }
         } else {
             if ($this->record_data[$property] !== $value) {
                 $is_modified = TRUE;
-                //$this->record_modified_data[] = $property;
             }
         }
 
-        if (!empty($is_modified)) {
+        //the data modification tracking is disabled during the _after_read() section as there the class properties are initialized
+        //and this initialization should not be tracked/counted as data modification
+        if (!empty($is_modified) && !$this->is_modified_data_tracking_disabled()) {
             if (!array_key_exists($property, $this->record_modified_data)) {
                 $this->record_modified_data[$property] = [];
             }
             $this->record_modified_data[$property][] = $old_value;
         }
 
-
         $this->assign_property_value($property, $value);
-
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
             call_user_func_array([$this,'_after_set_'.$property], [$value]);

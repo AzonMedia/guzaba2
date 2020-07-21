@@ -74,6 +74,9 @@ trait ActiveRecordStructure
                     if ($RProperty->hasType()) {
                         $type = $RProperty->getType()->getName();
                         $nullable = $RProperty->getType()->allowsNull();
+                        if ($nullable) {
+                            $default_value = NULL;
+                        }
                     } else {
                         //do not allow untyped properties
                         throw new RunTimeException(sprintf(t::_('The ActiveRecord class %s has a property %s which is missing type.'), $called_class, $RProperty->getName() ));

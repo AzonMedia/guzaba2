@@ -520,8 +520,18 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             return;
         }
         $class = get_class($ActiveRecord);
+
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
         $last_update_time = $ActiveRecord->get_meta_data()['meta_object_last_update_microtime'];
+
+        if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
+
+            //throw new LogicException(sprintf(t::_('For instance %s:%s there is no last_update_time %s found in the Memory->data array.'), $class, $lookup_index, $last_update_time ));
+            //the record may have been deleted
+            //nothing to do...
+            return;
+        }
+
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
             $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
         }

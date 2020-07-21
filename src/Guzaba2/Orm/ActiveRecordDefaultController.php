@@ -252,7 +252,6 @@ class ActiveRecordDefaultController extends ActiveRecordController
 //            if ($columns_data[$property_name]['php_type'] === "integer") {
 //                $property_value = (int) $property_value;
 //            }
-
             $this->ActiveRecord->{$property_name} = $property_value;
         }
 

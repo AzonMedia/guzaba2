@@ -182,6 +182,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     private bool $permission_checks_disabled_flag = FALSE;
 
+    /**
+     * @var bool
+     */
+    private bool $modified_data_tracking_disabled_flag = FALSE;
+
 
     /**
      * Contains the unified record structure for this class.
@@ -222,7 +227,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @var bool
      */
     protected static bool $orm_locking_enabled_flag = TRUE;
-
 
 
     /**
@@ -368,7 +372,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
 
 
-        if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
+//        if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
+//            $this->Store->free_pointer($this);
+//        }
+        if (!$this->is_new()) {
+            //even if it is deleted still try to free the pointer
             $this->Store->free_pointer($this);
         }
 
@@ -462,6 +470,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
         }
+
+        //CLASS_PROPERTIES
         //the $record_data needs to be "enriched" with the properties data
         //the properties first need to be defined in the record_data array (if they dont exist)
         //then if the class has _after_read hook it will populate these (usually these properties are dependant on the core properties stored in the Store (get_columns_data())
@@ -481,7 +491,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
         }
 
-
+        //TODO - check this should be moved before the pointer is obtained
         if (static::is_locking_enabled() && !$this->is_read_only()) {
             //if ($this->locking_enabled_flag) {
             $resource = MetaStore::get_key_by_object($this);
@@ -494,8 +504,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         $this->is_new_flag = FALSE;
 
+        $this->modified_data_tracking_disabled_flag = TRUE;
+
         //new Event($this, '_after_read');
         self::get_service('Events')::create_event($this, '_after_read');
+
 
         //_after_load() event
         if (method_exists($this, '_after_read') && !$this->are_method_hooks_disabled()) {
@@ -503,6 +516,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
 
+        $this->modified_data_tracking_disabled_flag = FALSE;
 
     }
 
@@ -565,22 +579,36 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_before_write');
         self::get_service('Events')::create_event($this, '_before_write');
 
+
         $this->validate();
 
-//        if (static::is_locking_enabled()) {
-//            $resource = MetaStore::get_key_by_object($this);
-//            //self::LockManager()->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-//            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-//        }
-
         static::get_service('OrmStore')->update_record($this);
+
+
 
         //reattach the pointer
         $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
 
+        //not needed
+//        //CLASS_PROPERTIES - the returned data is as it is found in the store
+//        //it needs to be enriched with the current properties
+//        //print_r($pointer);
+//        foreach (self::get_class_property_names() as $class_property_name) {
+//            if (get_class($this) === \GuzabaPlatform\Cms\Models\Page::class) {
+//                print_r($this->record_data);
+//                print_r($pointer);
+//            }
+////            if (!array_key_exists($class_property_name, $pointer['data'])) {
+//                $pointer['data'][$class_property_name] = $this->record_data[$class_property_name];
+////            }
+//        }
+
         $this->record_data =& $pointer['data'];
         $this->meta_data =& $pointer['meta'];
-        $this->record_modified_data = [];
+        //lets clear this after the write() is committed
+        //this way it will be available also in _after_write
+        //$this->record_modified_data = [];
+
 
         //setting the flag to FALSE means that the record has UUID & ID assigned
         //the record is not yet commited
@@ -628,6 +656,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //the flag is lowered only after the record is committed
         $this->was_new_flag = FALSE;
+        //the modified data will be cleared only after the transaction is over
+        $this->record_modified_data = [];
 
         return $this;
     }
@@ -1148,6 +1178,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return $this->permission_checks_disabled_flag;
     }
 
+    public function is_modified_data_tracking_disabled(): bool
+    {
+        return $this->modified_data_tracking_disabled_flag;
+    }
+
     /**
      * This is similar to self::get_record_data() but also invokes the property hooks.
      * @return array
@@ -1256,7 +1291,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return array_keys($this->record_modified_data);
     }
 
-    public function is_property_modified(string $property) : bool
+    public function is_property_modified(string $property): bool
     {
         if (!array_key_exists($property, $this->record_data)) {
             throw new RunTimeException(sprintf(t::_('Trying to check a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
@@ -1295,6 +1330,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             throw new RunTimeException(sprintf(t::_('The property "%s" on instnace of class "%s" (ORM class) is not modified and has no old value.'), $property, get_class($this)));
         }
         return $modified_data[ count($modified_data) - 1];
+    }
+
+    /**
+     * Returns the original value (before the first modification) of the property
+     * @param string $property
+     * @return mixed
+     * @throws ContextDestroyedException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
+    public function get_property_original_value(string $property) /* mixed */
+    {
+        $modified_data = $this->get_property_old_values($property);
+        if (!count($modified_data)) {
+            throw new RunTimeException(sprintf(t::_('The property "%s" on instnace of class "%s" (ORM class) is not modified and has no original value.'), $property, get_class($this)));
+        }
+        return $modified_data[0];
     }
 
     /**

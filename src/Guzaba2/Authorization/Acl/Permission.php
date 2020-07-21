@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Guzaba2\Authorization\Acl;
 
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
+use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
@@ -68,6 +69,8 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected function _after_read(): void
     {
+        //as modifying a permission record is not allowed (@see _before_write()) it is safe here not to check were these class properties modified
+        //it is pointless to have these modified if cant be saved...
         $this->class_name = self::get_class_name($this->class_id);
         /** @var Store $OrmStore */
         $OrmStore = self::get_service('OrmStore');
@@ -136,6 +139,11 @@ class Permission extends ActiveRecord implements PermissionInterface
 
     protected function _before_write() : void
     {
+
+        if (!$this->is_new()) {
+            throw new RunTimeException(sprintf(t::_('It is not allowed to modify permission records. The permissions are only granted (record created) and revoked (record deleted).')));
+        }
+
         if (!$this->class_id && $this->class_name) {
             $this->class_id = self::get_class_id($this->class_name);
         }
