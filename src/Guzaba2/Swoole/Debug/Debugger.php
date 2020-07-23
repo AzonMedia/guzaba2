@@ -7,6 +7,7 @@ use Azonmedia\Debug\Interfaces\CommandInterface;
 use Azonmedia\Debug\Interfaces\DebuggerInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Http\Server;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Kernel\Kernel;
@@ -128,6 +129,7 @@ class Debugger extends Base
             }
         };
         $this->DebugServer->handle($Function);
+
         $this->DebugServer->start();
     }
 

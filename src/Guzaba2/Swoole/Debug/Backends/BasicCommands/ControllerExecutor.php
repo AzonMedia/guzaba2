@@ -243,7 +243,12 @@ class ControllerExecutor extends Base implements CommandInterface
                 $QueueRequestHandler->add_middleware($Middleware);
             }
             $Request = $this->form_request($method, $route, $args);
+
+            //in Swoole 4.5.2 *maybe there is a change in 4.5) the current coroutine is a subcoroutine on another one
+            //and the init() method throws an exception if there is a parent coroutine
+            //so now it is allowed to initialize subcoroutine
             Coroutine::init($Request);
+
             /** @var Server $Server */
             $Server = self::get_service('Server');
             $Server->get_worker()->increment_served_console_requests();

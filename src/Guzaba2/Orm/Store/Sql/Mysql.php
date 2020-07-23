@@ -1288,7 +1288,8 @@ WHERE
             if (GeneralUtil::is_uuid( (string) $index['meta_object_uuid'])) {
                 $meta_data = $this->get_meta_by_uuid($index['meta_object_uuid']);
                 $object_id = $meta_data['meta_object_id'];
-                $w[] = $main_index[0] . ' = :object_id';
+                //$w[] = $main_index[0] . ' = :object_id';
+                $w[] = "main_table.{$main_index[0]} = :object_id";
                 $b['object_id'] = $object_id;
             } else {
                 //do a like search
@@ -1413,7 +1414,6 @@ WHERE
     {$sort_str}
     {$l_str}
 ";
-
 
     $q_count = "
 SELECT
