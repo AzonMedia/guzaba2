@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Transaction;
-
 
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -33,7 +33,7 @@ abstract class CompositeTransaction extends Transaction
     /** @var ScopeReference[] */
     private array $resource_scope_references = [];
 
-    protected function _before_destruct() : void
+    protected function _before_destruct(): void
     {
         //this is just in case here
         //in fact the destructor will not be invoked until the GC so this can not be relied upon
@@ -52,10 +52,10 @@ abstract class CompositeTransaction extends Transaction
     public function attach_transaction(Transaction $Transaction): void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
-            throw new InvalidArgumentException(sprintf(t::_('The transaction being attached is in status %1$s. It is not allowed to attach transactions with status other than %2$s.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
+            throw new InvalidArgumentException(sprintf(t::_('The transaction being attached is in status %1$s. It is not allowed to attach transactions with status other than %2$s.'), $Transaction->get_status(), self::STATUS['CREATED']));
         }
         if ($this->get_status() !== self::STATUS['CREATED']) {
-            throw new RunTimeException(sprintf(t::_('The distributed transaction is in status %1$s. It is not allowed to attach transactions to a distributed transaction that is in status different from %2$s.'), $this->get_status(), self::STATUS['CREATED'] ));
+            throw new RunTimeException(sprintf(t::_('The distributed transaction is in status %1$s. It is not allowed to attach transactions to a distributed transaction that is in status different from %2$s.'), $this->get_status(), self::STATUS['CREATED']));
         }
 
         $this->transactions[] = $Transaction;
@@ -70,7 +70,7 @@ abstract class CompositeTransaction extends Transaction
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
      */
-    public function get_transaction(string $transaction_class) : Transaction
+    public function get_transaction(string $transaction_class): Transaction
     {
         if (!$transaction_class) {
             throw new InvalidArgumentException(sprintf(t::_('There is no $transaction_class provided.')));
@@ -78,7 +78,7 @@ abstract class CompositeTransaction extends Transaction
         if (!class_exists($transaction_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $transaction_class %1$s does not exist. The provided argument must contain a valid class name (with namespace without leading slash).'), $transaction_class));
         }
-        $ReturnTransaction = NULL;
+        $ReturnTransaction = null;
         /** @var Transaction $Transaction */
         foreach ($this->transactions as $Transaction) {
             if (get_class($Transaction) === $Transaction) {
@@ -113,7 +113,7 @@ abstract class CompositeTransaction extends Transaction
     /**
      * @param string $savepoint
      */
-    public function execute_create_savepoint(string $savepoint) : void
+    public function execute_create_savepoint(string $savepoint): void
     {
         foreach ($this->transactions as $Transaction) {
             //$Transaction->begin();
@@ -167,7 +167,6 @@ abstract class CompositeTransaction extends Transaction
         if ($this->is_master()) {
             $this->clear_resource_scope_references();
         }
-
     }
 
     /**
@@ -201,6 +200,4 @@ abstract class CompositeTransaction extends Transaction
             $Transaction->release_savepoint($savepoint);
         }
     }
-
-
 }

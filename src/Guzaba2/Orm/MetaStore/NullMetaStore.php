@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Orm\MetaStore;
 
@@ -18,7 +18,7 @@ class NullMetaStore extends MetaStore
      * @param StoreInterface|null $FallbackStore
      * @throws InvalidArgumentException
      */
-    public function __construct(?StoreInterface $FallbackStore = NULL)
+    public function __construct(?StoreInterface $FallbackStore = null)
     {
         parent::__construct();
         if ($FallbackStore) {
@@ -30,20 +30,20 @@ class NullMetaStore extends MetaStore
      * @param string $class
      * @return int|null
      */
-    public function get_class_last_update_time(string $class) : ?int
+    public function get_class_last_update_time(string $class): ?int
     {
         //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
-        return NULL;
+        return null;
     }
 
     /**
      * Returns data when an instance from a class was last created or modified
      * @param string $class
      */
-    public function get_class_meta_data(string $class) : ?array
+    public function get_class_meta_data(string $class): ?array
     {
         //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s was found.'), $class ));
-        return NULL;
+        return null;
     }
 
     /**
@@ -51,7 +51,7 @@ class NullMetaStore extends MetaStore
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_class_meta_data(string $class, array $data) : void
+    public function set_class_meta_data(string $class, array $data): void
     {
         //it is expected to be called - do nothing
     }
@@ -61,17 +61,17 @@ class NullMetaStore extends MetaStore
      * @return array|null
      * @throws RecordNotFoundException
      */
-    public function get_meta_data(string $class, array $primary_index) : ?array
+    public function get_meta_data(string $class, array $primary_index): ?array
     {
         //throw new RecordNotFoundException(sprintf(t::_('No metadata for class %s, object_id %s was found.'), $class, print_r($primary_index, TRUE)));
-        return NULL;
+        return null;
     }
 
     /**
      * @param ActiveRecord $ActiveRecord
      * @return array|null
      */
-    public function get_meta_data_by_object(ActiveRecord $ActiveRecord) : ?array
+    public function get_meta_data_by_object(ActiveRecord $ActiveRecord): ?array
     {
         $key = self::get_key_by_object($ActiveRecord);
         return $this->get_meta_data($key);
@@ -82,9 +82,9 @@ class NullMetaStore extends MetaStore
      * @return float|null
      * @throws RecordNotFoundException
      */
-    public function get_last_update_time(string $class, array $primary_index) : ?int
+    public function get_last_update_time(string $class, array $primary_index): ?int
     {
-        $ret = NULL;
+        $ret = null;
         $key = self::get_key($class, $primary_index);
         $data = $this->get_meta_data($key, $primary_index);
         if (isset($data['object_last_update_microtime'])) {
@@ -98,7 +98,7 @@ class NullMetaStore extends MetaStore
      * @return float|null
      * @throws RecordNotFoundException
      */
-    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord) : ?int
+    public function get_last_update_time_by_object(ActiveRecord $ActiveRecord): ?int
     {
         $key = self::get_key_by_object($ActiveRecord);
         $data = $this->get_meta_data(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
@@ -112,7 +112,7 @@ class NullMetaStore extends MetaStore
      * @param array $data
      * @throws InvalidArgumentException
      */
-    public function set_meta_data(string $class, array $primary_index, array $data) : void
+    public function set_meta_data(string $class, array $primary_index, array $data): void
     {
 
         //it is expected to be called - do nothing
@@ -122,7 +122,7 @@ class NullMetaStore extends MetaStore
      * @param ActiveRecord $ActiveRecord
      * @param array $data
      */
-    public function set_meta_data_by_object(ActiveRecord $ActiveRecord, array $data) : void
+    public function set_meta_data_by_object(ActiveRecord $ActiveRecord, array $data): void
     {
         $key = self::get_key_by_object($ActiveRecord);
         $this->set_update_data($key, $data);

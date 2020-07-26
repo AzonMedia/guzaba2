@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Kernel;
 
@@ -33,8 +33,8 @@ class SourceStream
     protected $mode;
     protected $options;
 
-    protected bool $read_enabled = FALSE;
-    protected bool $write_enabled = FALSE;
+    protected bool $read_enabled = false;
+    protected bool $write_enabled = false;
 
     public const PROTOCOL = 'guzaba.source';
 
@@ -62,10 +62,10 @@ class SourceStream
     {
         ArrayUtil::validate_array($options, self::SUPPORTED_CLASS_OPTIONS, $errors);
         if ($errors) {
-            throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1$s. %2$s'), __METHOD__, implode(' ',$errors)));
+            throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1$s. %2$s'), __METHOD__, implode(' ', $errors)));
         }
         self::$class_options = $options;
-        $registry_dir = self::$class_options['registry_dir'] ?? NULL;
+        $registry_dir = self::$class_options['registry_dir'] ?? null;
         if ($registry_dir && file_exists($registry_dir)) {
             $Directory = new \RecursiveDirectoryIterator($registry_dir);
             $Iterator = new \RecursiveIteratorIterator($Directory);
@@ -97,7 +97,7 @@ class SourceStream
             case 'rb+':
             case 'r+':
                 //Open for reading and writing; place the file pointer at the beginning of the file.
-            $this->data = self::load_data($this->path);
+                $this->data = self::load_data($this->path);
                 $this->position = 0;
                 $this->read_enabled = true;
                 $this->write_enabled = true;
@@ -167,7 +167,7 @@ class SourceStream
      * @see  Kernel::get_runtime_configuration()).
      * Then on the second pass the actual class source is rewritten with the new runtime config and the source is returned.
      */
-    private static function load_data(string $path) : string
+    private static function load_data(string $path): string
     {
 
         //this is needed in case the same file is require()d again
@@ -182,7 +182,7 @@ class SourceStream
             //$cache_dir = '/home/local/PROJECTS/guzaba-platform-skeleton/app/startup_generated/classes';
             //$cache_path = str_replace('/home/local/PROJECTS/guzaba-platform-skeleton','',$path);
             $cache_path = $path;
-            $cache_path = $cache_dir.$cache_path;
+            $cache_path = $cache_dir . $cache_path;
             if (file_exists($cache_path)) {
                 /*
                 if (self::$registry_mtime) {
@@ -220,7 +220,7 @@ class SourceStream
 
 
         foreach (Kernel::get_registered_autoloader_paths() as $ns_base => $autoload_path) {
-            if (strpos($path, $autoload_path) !== FALSE) {
+            if (strpos($path, $autoload_path) !== false) {
                 $class_ns_base = $ns_base;
                 $class_autoload_path = $autoload_path;
                 break;
@@ -231,8 +231,8 @@ class SourceStream
             throw new \RuntimeException(sprintf('The file %s can not be loaded as it is not from whithin a registered autoload path.', $path));
         }
 
-        $class_name = str_replace( [$class_autoload_path, '.php'], '', $path);
-        $class_name = str_replace('/','\\', $class_name);
+        $class_name = str_replace([$class_autoload_path, '.php'], '', $path);
+        $class_name = str_replace('/', '\\', $class_name);
         if ($class_name[0] === '\\') {
             $class_name = substr($class_name, 1);
         }
@@ -244,24 +244,23 @@ class SourceStream
             //do not prepend the $class_ns_base - it is already part of the class name
             //this is because some packages contain the full directory hierarchy corresponding to the namespace
         } else {
-            $class_name = $class_ns_base.$class_name;
+            $class_name = $class_ns_base . $class_name;
         }
 
 
         $ns_arr = explode('\\', $class_name);
         $class_name_without_ns = array_pop($ns_arr);
         //TODO - replace the below with tokenizer
-        if (strpos($class_source, 'abstract class') !== FALSE) {
-            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'class '.$class_name_without_ns.'_without_config', $class_source);
+        if (strpos($class_source, 'abstract class') !== false) {
+            $class_without_config_source = str_replace('class ' . $class_name_without_ns, 'class ' . $class_name_without_ns . '_without_config', $class_source);
         } else {
-            $class_without_config_source = str_replace('class '.$class_name_without_ns, 'abstract class '.$class_name_without_ns.'_without_config', $class_source);
+            $class_without_config_source = str_replace('class ' . $class_name_without_ns, 'abstract class ' . $class_name_without_ns . '_without_config', $class_source);
         }
         //TODO - improve this - replace with tokenized
         //handle self::class
-        $class_without_config_source = str_replace('self::class', '\'\\'.$class_name.'\'', $class_without_config_source);
+        $class_without_config_source = str_replace('self::class', '\'\\' . $class_name . '\'', $class_without_config_source);
 
-        if (strpos($class_without_config_source, '<?php')===0) {
-
+        if (strpos($class_without_config_source, '<?php') === 0) {
             $class_without_config_source = substr($class_without_config_source, 5);
         }
         //before evaluating check for parse errors
@@ -273,16 +272,16 @@ class SourceStream
         }
 
 
-        $runtime_config = Kernel::get_runtime_configuration($class_name.'_without_config');
+        $runtime_config = Kernel::get_runtime_configuration($class_name . '_without_config');
 
         $to_be_replaced_str = 'protected const CONFIG_RUNTIME = [];';
-        $replacement_str = 'protected const CONFIG_RUNTIME = '.str_replace(PHP_EOL, ' ', var_export($runtime_config, TRUE)).';';//remove the new lines as this will change the line of the errors/exceptions
+        $replacement_str = 'protected const CONFIG_RUNTIME = ' . str_replace(PHP_EOL, ' ', var_export($runtime_config, true)) . ';';//remove the new lines as this will change the line of the errors/exceptions
 
         $class_source = str_replace($to_be_replaced_str, $replacement_str, $class_source);
 
         if (!empty($cache_path)) {
             if (!file_exists(dirname($cache_path))) {
-                mkdir(dirname($cache_path), 0777, TRUE);
+                mkdir(dirname($cache_path), 0777, true);
             }
             file_put_contents($cache_path, $class_source);
         }
@@ -322,7 +321,7 @@ class SourceStream
         if (!$this->write_enabled) {
             throw new RunTimeException(sprintf(t::_('The stream "%s" was opned in "%s" mode in which writing is not allowed.'), $this->path, $this->mode));
         }
-        $this->data = substr($this->data, 0, $this->position).$data;
+        $this->data = substr($this->data, 0, $this->position) . $data;
         $this->position += strlen($data);
 
         return strlen($data);
@@ -349,7 +348,7 @@ class SourceStream
         //just ignore this for now
     }
 
-    public function stream_seek($offset, $whence  = SEEK_SET)
+    public function stream_seek($offset, $whence = SEEK_SET)
     {
         switch ($whence) {
             case SEEK_SET:
@@ -402,8 +401,8 @@ class SourceStream
             'ctime'        => time(),
             11                => 512,
             'blksize'    => 512,
-            12                => ceil(strlen($this->data)/512),
-            'blocks'        => ceil(strlen($this->data)/512),
+            12                => ceil(strlen($this->data) / 512),
+            'blocks'        => ceil(strlen($this->data) / 512),
         ];
         return $ret;
     }

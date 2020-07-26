@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
@@ -27,12 +27,12 @@ class Middlewares extends Base implements \Iterator, \Countable
     /**
      * @return iterable
      */
-    public function get_middlewares() : iterable
+    public function get_middlewares(): iterable
     {
         return $this->middlewares;
     }
 
-    public function add_multiple(MiddlewareInterface ... $middlewares) : void
+    public function add_multiple(MiddlewareInterface ...$middlewares): void
     {
         foreach ($middlewares as $Middleware) {
             $this->add($Middleware);
@@ -52,14 +52,14 @@ class Middlewares extends Base implements \Iterator, \Countable
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function add(MiddlewareInterface $Middleware, /* MiddlewareInterface|string|null */ $BeforeMiddleware = NULL) : bool
+    public function add(MiddlewareInterface $Middleware, /* MiddlewareInterface|string|null */ $BeforeMiddleware = null): bool
     {
         if ($this->has_middleware($Middleware)) {
-            return FALSE;
+            return false;
         }
         if ($BeforeMiddleware) {
             if (!$this->has_middleware($BeforeMiddleware)) {
-                throw new RunTimeException(sprintf(t::_('The $BeforeMiddleware instance of class %s is not found in the middlewares list.'), is_object($BeforeMiddleware) ? get_class($BeforeMiddleware) : $BeforeMiddleware ));
+                throw new RunTimeException(sprintf(t::_('The $BeforeMiddleware instance of class %s is not found in the middlewares list.'), is_object($BeforeMiddleware) ? get_class($BeforeMiddleware) : $BeforeMiddleware));
             }
             $middlewares = [];
             if (is_string($BeforeMiddleware)) {
@@ -77,16 +77,16 @@ class Middlewares extends Base implements \Iterator, \Countable
                     $middlewares[] = $AddedMiddleware;
                 }
             } else {
-                throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $BeforeMiddleware argument of %s().'), gettype($BeforeMiddleware), __METHOD__ ));
+                throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $BeforeMiddleware argument of %s().'), gettype($BeforeMiddleware), __METHOD__));
             }
             $this->middlewares = $middlewares;
         } else {
             $this->middlewares[] = $Middleware;
         }
-        return TRUE;
+        return true;
     }
 
-    public function remove( /* MiddlewareInterface|string */ $Middleware) : bool
+    public function remove(/* MiddlewareInterface|string */ $Middleware): bool
     {
 
         if (is_string($Middleware)) {
@@ -95,27 +95,27 @@ class Middlewares extends Base implements \Iterator, \Countable
             }
         } elseif (is_object($Middleware)) {
             if (!($Middleware instanceof MiddlewareInterface)) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided middleware instance of class %s must implement the %s interface.'), get_class($Middleware) , MiddlewareInterface::class ));
+                throw new InvalidArgumentException(sprintf(t::_('The provided middleware instance of class %s must implement the %s interface.'), get_class($Middleware), MiddlewareInterface::class));
             }
         } else {
-            throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $BeforeMiddleware argument of %s().'), gettype($Middleware), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $BeforeMiddleware argument of %s().'), gettype($Middleware), __METHOD__));
         }
 
-        $ret = FALSE;
+        $ret = false;
 
-        foreach ($this->middlwares as $key=>$RegisteredMiddleware) {
+        foreach ($this->middlwares as $key => $RegisteredMiddleware) {
             if (is_string($Middleware)) {
                 if ($RegisteredMiddleware instanceof $Middleware) {
                     unset($this->middlewares[$key]);
                     $this->middlewares = array_values($this->middlewares);
-                    $ret = TRUE;
+                    $ret = true;
                     break;
                 }
             } elseif (is_object($Middleware)) {
                 if ($Middleware === $RegisteredMiddleware) {
                     unset($this->middlewares[$key]);
                     $this->middlewares = array_values($this->middlewares);
-                    $ret = TRUE;
+                    $ret = true;
                     break;
                 }
             } else {
@@ -131,33 +131,33 @@ class Middlewares extends Base implements \Iterator, \Countable
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function has_middleware( /* MiddlewareInterface|string */ $Middleware) : bool
+    public function has_middleware(/* MiddlewareInterface|string */ $Middleware): bool
     {
-        $ret = FALSE;
+        $ret = false;
         if (is_string($Middleware)) {
             if (!$Middleware) {
                 throw new InvalidArgumentException(sprintf(t::_('No middleware class provided to method %s().'), __METHOD__));
             }
             if (!class_exists($Middleware)) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not contain an existing class name.'), $Middleware, __METHOD__ ));
+                throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not contain an existing class name.'), $Middleware, __METHOD__));
             }
-            if (!is_a($Middleware, MiddlewareInterface::class, TRUE)) {
-                throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not implement %s.'), $Middleware, __METHOD__ , MiddlewareInterface::class));
+            if (!is_a($Middleware, MiddlewareInterface::class, true)) {
+                throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not implement %s.'), $Middleware, __METHOD__, MiddlewareInterface::class));
             }
 
             foreach ($this->middlewares as $AddedMiddleware) {
                 if ($Middleware === get_class($AddedMiddleware)) {
-                    $ret = TRUE;
+                    $ret = true;
                 }
             }
         } elseif ($Middleware instanceof MiddlewareInterface) {
             foreach ($this->middlewares as $AddedMiddleware) {
                 if ($Middleware === $AddedMiddleware) {
-                    $ret = TRUE;
+                    $ret = true;
                 }
             }
         } else {
-            throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $Middleware argument of %s().'), gettype($BeforeMiddleware), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('An unsupported type %s was provided to $Middleware argument of %s().'), gettype($BeforeMiddleware), __METHOD__));
         }
 
         return $ret;
@@ -170,15 +170,15 @@ class Middlewares extends Base implements \Iterator, \Countable
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function get_middleware(string $middleware_class) : ?MiddlewareInterface
+    public function get_middleware(string $middleware_class): ?MiddlewareInterface
     {
         if (!$middleware_class) {
             throw new InvalidArgumentException(sprintf(t::_('No middleware class provided to method %s().'), __METHOD__));
         }
         if (!class_exists($middleware_class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not contain an existing class name.'), $middleware_class, __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not contain an existing class name.'), $middleware_class, __METHOD__));
         }
-        $ret = NULL;
+        $ret = null;
         foreach ($this->middlewares as $Middleware) {
             if ($Middleware instanceof $middleware_class) {
                 $ret = $Middleware;
@@ -205,7 +205,7 @@ class Middlewares extends Base implements \Iterator, \Countable
 
     public function valid()
     {
-        return $this->current() !== FALSE;
+        return $this->current() !== false;
     }
 
     public function rewind()

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
@@ -51,8 +52,8 @@ trait ActiveRecordOverloading
 //            $this->record_modified_data =& $pointer['modified'];
 //        }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_'.$property)) {
-            call_user_func_array([$this,'_before_get_'.$property], []);
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_get_' . $property)) {
+            call_user_func_array([$this,'_before_get_' . $property], []);
         }
 
         if (array_key_exists($property, $this->record_data)) {
@@ -61,8 +62,8 @@ trait ActiveRecordOverloading
             throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_'.$property)) {
-            $ret = call_user_func_array([$this,'_after_get_'.$property], [$ret]);
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_get_' . $property)) {
+            $ret = call_user_func_array([$this,'_after_get_' . $property], [$ret]);
         }
         return $ret;
     }
@@ -82,7 +83,7 @@ trait ActiveRecordOverloading
      *
      * This also supports accessing dynamic properties (properties that are derived from other)
      */
-    public function __set(string $property, /* mixed */ $value) : void
+    public function __set(string $property, /* mixed */ $value): void
     {
         //if ($this->is_read_only()) {
         //must allow for properties that are class properties to be set
@@ -142,19 +143,19 @@ trait ActiveRecordOverloading
 
         $old_value = $this->record_data[$property];
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_'.$property)) {
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_' . $property)) {
             //call_user_func_array(array($this,'_before_set_'.$property),array($value));
-            $value = call_user_func_array([$this,'_before_set_'.$property], [$value]);
+            $value = call_user_func_array([$this,'_before_set_' . $property], [$value]);
         }
 
 
         if (is_float($this->record_data[$property]) && is_float($value)) {
             if (abs($this->record_data[$property] - $value) > 0.00001) {
-                $is_modified = TRUE;
+                $is_modified = true;
             }
         } else {
             if ($this->record_data[$property] !== $value) {
-                $is_modified = TRUE;
+                $is_modified = true;
             }
         }
 
@@ -169,8 +170,8 @@ trait ActiveRecordOverloading
 
         $this->assign_property_value($property, $value);
 
-        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_'.$property)) {
-            call_user_func_array([$this,'_after_set_'.$property], [$value]);
+        if (!$this->property_hooks_are_disabled() && method_exists($this, '_after_set_' . $property)) {
+            call_user_func_array([$this,'_after_set_' . $property], [$value]);
         }
     }
 
@@ -180,7 +181,7 @@ trait ActiveRecordOverloading
      * @param string $property The name of the property that is being accessed
      * @return bool
      */
-    public function __isset(string $property) : bool
+    public function __isset(string $property): bool
     {
         return array_key_exists($property, $this->record_data);
     }
@@ -195,7 +196,7 @@ trait ActiveRecordOverloading
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __unset(string $property) : void
+    public function __unset(string $property): void
     {
         throw new RunTimeException(sprintf(t::_('It is not allowed to unset overloaded properties on ORM classes.')));
     }
@@ -335,7 +336,7 @@ trait ActiveRecordOverloading
      * @throws \ReflectionException
      * @see self::__set()
      */
-    private function assign_property_value($property, $value) : void
+    private function assign_property_value($property, $value): void
     {
         $property_type = static::get_property_type($property, $is_nullable);
         if ($property_type !== gettype($value)) {
@@ -358,7 +359,6 @@ trait ActiveRecordOverloading
             } else {
                 //casting is needed
                 if (self::CONFIG_RUNTIME['cast_properties_on_assignment']) {
-
                     //check if a nonnumeric string is assigned to an integer or double
                     if (gettype($value) === 'string' && in_array($property_type, ['integer','int','double','float']) && !is_numeric($value) && $value !== '') { //empty string is treated like 0
                         //we should allow $500 and convert it to 500
@@ -366,12 +366,12 @@ trait ActiveRecordOverloading
                             $value = substr($value, 1);
                         }
                         //also 1,200.50 should be converted to 1200.50
-                        if (strpos($value, ',') !== FALSE) {
+                        if (strpos($value, ',') !== false) {
                             $value = str_replace(',', '', $value);
                         }
 
                         $value = trim($value);
-                    } elseif (gettype($value) === 'boolean' && in_array($property_type, ['integer','int']) ) {
+                    } elseif (gettype($value) === 'boolean' && in_array($property_type, ['integer','int'])) {
                         //perhaps a BOOL column in the BD which accepts only 1 & 0
                         $value = (int) $value;
                     }
@@ -387,7 +387,7 @@ trait ActiveRecordOverloading
                             throw new RunTimeException($message);
                         }
                         //we cant allow a string that parses to float (like "1.5") to be cast and assigned to an int
-                    } elseif (gettype($value) === 'string' && in_array($property_type, ['integer','int']) && strpos($value, '.') !== FALSE && $value !== '') { //empty string is treated like 0
+                    } elseif (gettype($value) === 'string' && in_array($property_type, ['integer','int']) && strpos($value, '.') !== false && $value !== '') { //empty string is treated like 0
                         $message = sprintf(t::_('Trying to assign a string value "%s" that contains a float number to property "%s" of an instance of class "%s". The property "%s" is of type "%s".'), $value, $property, get_class($this), $property, $property_type);
                         if (self::CONFIG_RUNTIME['add_validation_error_on_property_cast']) {
                             $this->add_validation_error($property, self::V_WRONGTYPE, $message);
@@ -404,7 +404,7 @@ trait ActiveRecordOverloading
                         }
                     }
                     if (!$value && $is_nullable) {
-                        $value = NULL;
+                        $value = null;
                     }
                     settype($value, $property_type);
                     $this->record_data[$property] = $value;
@@ -437,22 +437,21 @@ trait ActiveRecordOverloading
      * @param array $data
      * @return array
      */
-    public static function fix_record_data_types(array $data) : array
+    public static function fix_record_data_types(array $data): array
     {
         // altough we have lazy loading we need to store in record_data whatever we obtained - this will set the index (so get_index() works)
         $called_class = get_called_class();
         $ret = [];
-        foreach ($data as $key=>$value) {
+        foreach ($data as $key => $value) {
             //$type = static::get_column_type($key, $nullable);
             if (static::has_property($key)) {
                 $type = static::get_property_type($key, $nullable, $default_value);
-                if ($type === NULL) {
-                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key ));
+                if ($type === null) {
+                    throw new RunTimeException(sprintf(t::_('In the provided data to %s method there is a key named %s and the class %s does not have such a column.'), __METHOD__, $key));
                 }
                 settype($value, ($nullable && null === $value) ? 'null' : $type); //$this->_cast( ($nullable && null === $value) ? 'null' : $type , $value );
                 $ret[$key] = $value;
             }
-
         }
         return $ret;
     }
@@ -472,7 +471,7 @@ trait ActiveRecordOverloading
      * @param array $data_arr
      * @return array The provided array after the processing
      */
-    public static function fix_data_arr_empty_values_type(array $data_arr) : array
+    public static function fix_data_arr_empty_values_type(array $data_arr): array
     {
         //$columns_data = self::$columns_data;
         //$columns_data = static::get_columns_data();
@@ -481,7 +480,7 @@ trait ActiveRecordOverloading
 
 
 
-        foreach ($data_arr as $field_name=>$field_value) {
+        foreach ($data_arr as $field_name => $field_value) {
             if ($field_value === '') {
                 // there is no value - lets see what it has to be
                 // if it is an empty string '' and it is of type int it must be converted to NULL if allowed or 0 otherwise
@@ -495,11 +494,11 @@ trait ActiveRecordOverloading
                             // in this case we need to set it to 0
                             // even if the column is NULLable but threre is default value we must use the default value
 
-                            if ($columns_datum['default_value'] !== NULL) {
+                            if ($columns_datum['default_value'] !== null) {
                                 //we have a default value and we must use it
                                 $data_arr[$field_name] = $columns_datum['default_value'];
                             } elseif ($columns_datum['nullable']) {
-                                $data_arr[$field_name] = NULL;
+                                $data_arr[$field_name] = null;
                             } else {
                                 $data_arr[$field_name] = 0;
                             }
@@ -509,7 +508,7 @@ trait ActiveRecordOverloading
                         break;// we found our column
                     }
                 }
-            } elseif ($field_value === NULL) {
+            } elseif ($field_value === null) {
                 // we need to check does the column support this type
                 // if it doesnt we need to cast it to 0 or ''
                 // look for the field
@@ -519,7 +518,7 @@ trait ActiveRecordOverloading
                         $data_arr[$field_name] = '';
                     } elseif ($columns_data[$field_name]['php_type'] === 'int') {
                         $data_arr[$field_name] = 0;
-                    } elseif( $columns_data[$field_name]['php_type'] === 'float' || $columns_data[$field_name]['php_type'] === 'double') {
+                    } elseif ($columns_data[$field_name]['php_type'] === 'float' || $columns_data[$field_name]['php_type'] === 'double') {
                         $data_arr[$field_name] = 0.0;
                     } else {
                         // ignore for now - let it throw an error
@@ -561,30 +560,30 @@ trait ActiveRecordOverloading
 
     public function disable_property_hooks(): void
     {
-        $this->disable_property_hooks_flag = TRUE;
+        $this->disable_property_hooks_flag = true;
     }
 
     public function enable_property_hooks(): void
     {
-        $this->disable_property_hooks_flag = FALSE;
+        $this->disable_property_hooks_flag = false;
     }
 
-    public function property_hooks_are_disabled() : bool
+    public function property_hooks_are_disabled(): bool
     {
         return $this->disable_property_hooks_flag;
     }
 
-    public function disable_method_hooks() : void
+    public function disable_method_hooks(): void
     {
         $this->disable_method_hooks_flag = true;
     }
 
-    public function enable_method_hooks() : void
+    public function enable_method_hooks(): void
     {
         $this->disable_method_hooks_flag = false;
     }
 
-    public function method_hooks_are_disabled() : bool
+    public function method_hooks_are_disabled(): bool
     {
         return $this->disable_method_hooks_flag;
     }

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
 
@@ -27,11 +27,11 @@ class Structured extends Base implements StreamInterface
      * Will be lowered when the processing is over
      * @var bool
      */
-    protected bool $is_writable_flag = TRUE;
+    protected bool $is_writable_flag = true;
 
-    protected bool $is_readable_flag = TRUE;
+    protected bool $is_readable_flag = true;
 
-    protected bool $is_seekable_flag = TRUE;
+    protected bool $is_seekable_flag = true;
 
     public const JSON_ENCODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
 
@@ -64,7 +64,7 @@ class Structured extends Base implements StreamInterface
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         $ret = '';
         if ($this->isReadable()) {
@@ -77,7 +77,7 @@ class Structured extends Base implements StreamInterface
         return $ret;
     }
 
-    public static function getJsonFlags() : int
+    public static function getJsonFlags(): int
     {
         $flags = self::JSON_ENCODE_FLAGS;
         if (!Application::is_production()) {
@@ -91,7 +91,7 @@ class Structured extends Base implements StreamInterface
      *
      * @return void
      */
-    public function close() : void
+    public function close(): void
     {
         //does nothing
     }
@@ -105,11 +105,11 @@ class Structured extends Base implements StreamInterface
      */
     public function detach() /* ?resource */
     {
-        $this->is_writable_flag = FALSE;
-        $this->is_readable_flag = FALSE;
-        $this->stream = NULL;
+        $this->is_writable_flag = false;
+        $this->is_readable_flag = false;
+        $this->stream = null;
 
-        return NULL;
+        return null;
     }
 
     /**
@@ -117,7 +117,7 @@ class Structured extends Base implements StreamInterface
      *
      * @return int|null Returns the size in bytes if known, or null if unknown.
      */
-    public function getSize() : ?int
+    public function getSize(): ?int
     {
         //$size = count($this->structure);
         if (is_iterable($this->structure)) {
@@ -134,7 +134,7 @@ class Structured extends Base implements StreamInterface
      * @return int Position of the file pointer
      * @throws \RuntimeException on error.
      */
-    public function tell() : int
+    public function tell(): int
     {
         $position = 0;
         return $position;
@@ -145,9 +145,9 @@ class Structured extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function eof() : bool
+    public function eof(): bool
     {
-        return FALSE;
+        return false;
     }
 
     /**
@@ -155,7 +155,7 @@ class Structured extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isSeekable() : bool
+    public function isSeekable(): bool
     {
         return $this->is_seekable_flag;
     }
@@ -175,8 +175,7 @@ class Structured extends Base implements StreamInterface
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
-        //public function seek(int $offset, int $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET)
     {
         if (!$this->isSeekable()) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
@@ -196,7 +195,7 @@ class Structured extends Base implements StreamInterface
      * @link http://www.php.net/manual/en/function.fseek.php
      * @see seek()
      */
-    public function rewind() : void
+    public function rewind(): void
     {
         if (!$this->isSeekable()) {
             throw new RuntimeException(t::_('Can not rewind this stream.'));
@@ -208,7 +207,7 @@ class Structured extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isWritable() : bool
+    public function isWritable(): bool
     {
         return $this->is_writable_flag;
     }
@@ -223,8 +222,7 @@ class Structured extends Base implements StreamInterface
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function write(/* string */ $string) /* int */
-        //public function write(string $string) : int
+    public function write(/* string */ $string)
     {
         if (!$this->isWritable()) {
             throw new RuntimeException(t::_('Can not write to this stream.'));
@@ -238,7 +236,7 @@ class Structured extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isReadable() : bool
+    public function isReadable(): bool
     {
         return $this->is_readable_flag;
     }
@@ -256,8 +254,7 @@ class Structured extends Base implements StreamInterface
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function read(/* int */ $length) : string
-        //public function read(int $length) : string
+    public function read(/* int */ $length)
     {
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
@@ -276,7 +273,7 @@ class Structured extends Base implements StreamInterface
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function getContents() : string
+    public function getContents(): string
     {
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
@@ -298,10 +295,9 @@ class Structured extends Base implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
-        //public function getMetadata(?string $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = null)
     {
-        return NULL;
+        return null;
     }
 
     /**
@@ -310,7 +306,7 @@ class Structured extends Base implements StreamInterface
      * This can be used for reading and writing.
      * @return array
      */
-    public function &getStructure() : iterable
+    public function &getStructure(): iterable
     {
         return $this->structure;
     }

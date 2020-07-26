@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Event;
 
@@ -54,8 +54,7 @@ class Events extends Base implements EventsInterface
      * @return EventInterface
      * @throws InvalidArgumentException
      */
-    public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) : EventInterface
-    //public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = NULL) /* mixed */
+    public static function create_event(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed */ $return_value = null): EventInterface
     {
         //return (new Event($Subject, $event_name, $arguments, $return_value))->get_event_return();
         return new Event($Subject, $event_name, $arguments, $return_value);
@@ -69,20 +68,20 @@ class Events extends Base implements EventsInterface
      * @throws LogicException
      * @throws \ReflectionException
      */
-    public function add_object_callback(ObjectInternalIdInterface $Subject, string $event_name, callable $callback) : bool
+    public function add_object_callback(ObjectInternalIdInterface $Subject, string $event_name, callable $callback): bool
     {
         $callback_hash = GeneralUtil::get_callable_hash($callback);
         $subject_unique_id = $Subject->get_object_internal_id();
         if (isset($this->object_callbacks[$subject_unique_id][$event_name][$callback_hash])) {
             if ($this->object_callbacks[$subject_unique_id][$event_name][$callback_hash] === $callback) {
                 //it is already added
-                return FALSE;
+                return false;
             } else {
                 throw new LogicException(sprintf(t::_('There is already added callback which is different from the provided one.')));
             }
         }
         $this->object_callbacks[$subject_unique_id][$event_name][$callback_hash] = $callback;
-        return TRUE;
+        return true;
     }
 
     /**
@@ -90,7 +89,7 @@ class Events extends Base implements EventsInterface
      * @param string $event_name
      * @param callable|null $callback
      */
-    public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name, ?callable $callback) : void
+    public function remove_object_callback(ObjectInternalIdInterface $Subject, string $event_name, ?callable $callback): void
     {
         $subject_unique_id = $Subject->get_object_internal_id();
         if ($callback) { //unset only this callback
@@ -108,7 +107,7 @@ class Events extends Base implements EventsInterface
      * @param string $event_name
      * @return array
      */
-    public function get_object_callbacks(ObjectInternalIdInterface $Subject, string $event_name = '') : array
+    public function get_object_callbacks(ObjectInternalIdInterface $Subject, string $event_name = ''): array
     {
         $subject_unique_id = $Subject->get_object_internal_id();
         if ($event_name) {
@@ -127,19 +126,19 @@ class Events extends Base implements EventsInterface
      * @throws LogicException
      * @throws \ReflectionException
      */
-    public function add_class_callback(string $class, string $event_name, callable $callback) : bool
+    public function add_class_callback(string $class, string $event_name, callable $callback): bool
     {
         $callback_hash = GeneralUtil::get_callable_hash($callback);
         if (isset($this->class_callbacks[$class][$event_name][$callback_hash])) {
             if ($this->class_callbacks[$class][$event_name][$callback_hash] === $callback) {
                 //it is already added
-                return FALSE;
+                return false;
             } else {
                 throw new LogicException(sprintf(t::_('There is already added callback which is different from the provided one.')));
             }
         }
         $this->class_callbacks[$class][$event_name][$callback_hash] = $callback;
-        return TRUE;
+        return true;
     }
 
     /**
@@ -147,7 +146,7 @@ class Events extends Base implements EventsInterface
      * @param string $event_name
      * @param callable|null $callback
      */
-    public function remove_class_callback(string $class, string $event_name, ?callable $callback) : void
+    public function remove_class_callback(string $class, string $event_name, ?callable $callback): void
     {
         if ($callback) { //unset only this callback
             $callback_hash = GeneralUtil::get_callable_hash($callback);
@@ -164,7 +163,7 @@ class Events extends Base implements EventsInterface
      * @param string $event_name
      * @return array
      */
-    public function get_class_callbacks(string $class, string $event_name = '') : array
+    public function get_class_callbacks(string $class, string $event_name = ''): array
     {
 
         $event_callbacks = [];
@@ -178,5 +177,4 @@ class Events extends Base implements EventsInterface
         }
         return $event_callbacks;
     }
-
 }

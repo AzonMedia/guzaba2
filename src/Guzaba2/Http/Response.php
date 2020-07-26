@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -19,7 +20,6 @@ use Guzaba2\Http\Body\Stream;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
-
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -39,7 +39,7 @@ class Response extends Message implements ResponseInterface
 
     protected $status = StatusCode::HTTP_OK;//200
 
-    public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $Body = NULL)
+    public function __construct(int $status = StatusCode::HTTP_OK, array $headers = [], ?StreamInterface $Body = null)
     {
         parent::__construct();
         $this->checkStatus($status);
@@ -62,7 +62,7 @@ class Response extends Message implements ResponseInterface
      *
      * @return int Status code.
      */
-    public function getStatusCode() : int
+    public function getStatusCode(): int
     {
         return $this->status;
     }
@@ -88,8 +88,7 @@ class Response extends Message implements ResponseInterface
      * @throws \InvalidArgumentException For invalid status code arguments.
      * @throws InvalidArgumentException
      */
-    public function withStatus(/* int */ $code, /* string */ $reasonPhrase = '') /* self */
-    //public function withStatus(int $code, string $reasonPhrase = '') : self
+    public function withStatus(/* int */ $code, /* string */ $reasonPhrase = '')
     {
         $this->checkStatus($code);
 
@@ -117,12 +116,12 @@ class Response extends Message implements ResponseInterface
      * @link http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
      * @return string Reason phrase; must return an empty string if none present.
      */
-    public function getReasonPhrase() : string
+    public function getReasonPhrase(): string
     {
         return StatusCode::MESSAGES_MAP[$this->status];
     }
 
-    private function checkStatus(int $status) : void
+    private function checkStatus(int $status): void
     {
         if (!isset(StatusCode::MESSAGES_MAP[$status])) {
             throw new InvalidArgumentException(sprintf(t::_('Invalid HTTP status code %s provided.'), $status));
@@ -133,9 +132,9 @@ class Response extends Message implements ResponseInterface
      * {@inheritDoc}
      * @return string|null
      */
-    public function getContentType() : ?string
+    public function getContentType(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $content_type_headers = $this->getHeader('Content-Type');
         foreach ($content_type_headers as $content_type_header) {
             $ret = ContentType::get_content_type($content_type_header);

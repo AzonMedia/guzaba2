@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -85,7 +86,7 @@ class Uri extends Base implements UriInterface
     public function __construct(
         $scheme = '',
         $host = '',
-        $port = NULL,
+        $port = null,
         $path = '/',
         $query = '',
         $fragment = '',
@@ -95,7 +96,7 @@ class Uri extends Base implements UriInterface
         parent::__construct();
         $this->scheme = $scheme ? $this->filterScheme($scheme) : '';
         $this->host = $host;
-        $this->port = $port ? $this->filterPort($port) : NULL;
+        $this->port = $port ? $this->filterPort($port) : null;
         $this->path = empty($path) ? '/' : $this->filterPath($path);
         $this->query = $this->filterQuery($query);
         $this->fragment = $this->filterQuery($fragment);
@@ -111,7 +112,7 @@ class Uri extends Base implements UriInterface
      * @return self
      * @throws InvalidArgumentException
      */
-    public static function createFromString($uri) : self
+    public static function createFromString($uri): self
     {
         if (!is_string($uri) && !method_exists($uri, '__toString')) {
             throw new InvalidArgumentException('Uri must be a string');

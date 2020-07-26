@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Transaction;
@@ -87,20 +88,20 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     /**
      * @var string|null
      */
-    private ?string $rollback_reason = NULL;//NULL means not rolled back or reason unknown
+    private ?string $rollback_reason = null;//NULL means not rolled back or reason unknown
 
-    private ?\Exception $InterruptingException = NULL;
+    private ?\Exception $InterruptingException = null;
 
     /**
      * Was this transaction which initiated the rollback. If it was a parent one this should stay FALSE.
      * @var bool
      */
-    private bool $rollback_initiator_flag = FALSE;
+    private bool $rollback_initiator_flag = false;
 
     /***
      * @var Transaction|null
      */
-    private ?Transaction $ParentTransaction = NULL;
+    private ?Transaction $ParentTransaction = null;
 
     /**
      * Child transactions
@@ -139,8 +140,8 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $sibling_transactions = $this->ParentTransaction->get_children();
             if ($sibling_transactions) { //if there were previous nested transactions - check the status of the last one
                 $LastSiblingTransaction = $sibling_transactions[ count($sibling_transactions) - 1];
-                if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], TRUE )) {
-                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1$s is in status %2$s. Before the next nested transaction can be started the previous nested one must be in status %3$s or %4$s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK'] ));
+                if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], true)) {
+                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1$s is in status %2$s. Before the next nested transaction can be started the previous nested one must be in status %3$s or %4$s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']));
                 }
             }
             $this->ParentTransaction->add_child($this);
@@ -151,7 +152,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * If the transaction was rolled back because of an exception this will return the exception.
      * @return Throwable|null
      */
-    public function get_interrupting_exception() : ?Throwable
+    public function get_interrupting_exception(): ?Throwable
     {
         return $this->InterruptingException;
     }
@@ -159,15 +160,15 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     /**
      * @return string|null
      */
-    public function get_rollback_reason() : ?string
+    public function get_rollback_reason(): ?string
     {
         return $this->rollback_reason;
     }
 
-    private function add_child(Transaction $Transaction) : void
+    private function add_child(Transaction $Transaction): void
     {
         if ($Transaction->get_status() !== self::STATUS['CREATED']) {
-            throw new InvalidArgumentException(sprintf(t::_('Trying to add a child/nested transaction that is in status %1$s. Only transactions in status %2$s can be added as child/nested.'), $Transaction->get_status(), self::STATUS['CREATED'] ));
+            throw new InvalidArgumentException(sprintf(t::_('Trying to add a child/nested transaction that is in status %1$s. Only transactions in status %2$s can be added as child/nested.'), $Transaction->get_status(), self::STATUS['CREATED']));
         }
         $this->children[] = $Transaction;
     }
@@ -179,50 +180,50 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * @return bool
      * @throws InvalidArgumentException
      */
-    public function add_callback(string $event_name, callable $callback) : bool
+    public function add_callback(string $event_name, callable $callback): bool
     {
         self::validate_event($event_name);
         return parent::add_callback($event_name, $callback);
     }
 
-    public static function validate_event(string $event_name) : void
+    public static function validate_event(string $event_name): void
     {
         if (!isset(self::EVENT[$event_name])) {
-            throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2$s class supports %3$s events.'), $event_name, self::class, implode(', ', self::EVENT ) ));
+            throw new InvalidArgumentException(sprintf(t::_('Invalid event name %s1 is provided. The %2$s class supports %3$s events.'), $event_name, self::class, implode(', ', self::EVENT)));
         }
     }
 
-    public function has_parent() : bool
+    public function has_parent(): bool
     {
-        return $this->ParentTransaction ? TRUE : FALSE ;
+        return $this->ParentTransaction ? true : false ;
     }
 
-    public function get_parent() : ?Transaction
+    public function get_parent(): ?Transaction
     {
         return $this->ParentTransaction;
     }
 
-    public function is_master() : bool
+    public function is_master(): bool
     {
         return !$this->has_parent();
     }
 
-    public function get_master() : Transaction
+    public function get_master(): Transaction
     {
         $Transaction = $this;
-        while ( $Transaction->has_parent() ) {
+        while ($Transaction->has_parent()) {
             $Transaction = $Transaction->get_parent();
         }
         return $Transaction;
     }
 
-    public function get_nesting() : int
+    public function get_nesting(): int
     {
         /** @var int $nesting */
         $nesting = 0;
         /** @var Transaction $Transaction */
         $Transaction = $this;
-        while ($Transaction->has_parent() ) {
+        while ($Transaction->has_parent()) {
             $Transaction = $Transaction->get_parent();
             $nesting++;
         }
@@ -233,7 +234,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * Returns the nested transactions
      * @return Transaction[]
      */
-    public function get_children() : array
+    public function get_children(): array
     {
         return $this->children;
     }
@@ -242,22 +243,22 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * Alias of self::get_children()
      * @return array
      */
-    public function get_nested() : array
+    public function get_nested(): array
     {
         return $this->get_children();
     }
 
-    protected function get_savepoint_name() : string
+    protected function get_savepoint_name(): string
     {
         //return 'SP'.$this->get_object_internal_id();
         //the savepoint name reflects the nested level.
         //if on the same level a new transaction is started the same savepoint name will be reused overwriting the previous savepoint
         //having the savepoints named this way allows for a CompositeTransaction::rollback_to_savepoint() to work - the savepoints across all transactions are named the same.
         //there is no need to the savepoint names across the transactions to have different names - the are not using the same TransactionalResource
-        return 'SP_'.$this->get_nesting();
+        return 'SP_' . $this->get_nesting();
     }
 
-    public function begin() : void
+    public function begin(): void
     {
 
         $this->set_status(self::STATUS['STARTED']);
@@ -265,28 +266,26 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $this->set_current_transaction($this);
 
         if ($this->has_parent()) {
-            new Event($this,'_before_create_savepoint');
+            new Event($this, '_before_create_savepoint');
             $savepoint_name = $this->get_savepoint_name();
             $this->get_parent()->create_savepoint($savepoint_name);
-            new Event($this,'_after_create_savepoint');
+            new Event($this, '_after_create_savepoint');
         } else {
-            new Event($this,'_before_begin');
+            new Event($this, '_before_begin');
             $this->execute_begin();
-            new Event($this,'_after_begin');
+            new Event($this, '_after_begin');
         }
-
     }
 
-    protected function set_current_transaction(?Transaction $Transaction) : void
+    protected function set_current_transaction(?Transaction $Transaction): void
     {
         /** @var TransactionManager $TXM */
         $TXM = self::get_service('TransactionManager');
         if ($Transaction) {
             $TXM->set_current_transaction($Transaction);
         } else {
-            $TXM->set_current_transaction(NULL, $this->get_resource()->get_resource_id());
+            $TXM->set_current_transaction(null, $this->get_resource()->get_resource_id());
         }
-
     }
 
     /**
@@ -297,13 +296,13 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * @throws ContextDestroyedException
      * @throws ReflectionException
      */
-    public final function rollback() : void
+    final public function rollback(): void
     {
 
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
-        if (!in_array($initial_status, $allowed_statuses, TRUE )) {
-            throw new RunTimeException(sprintf(t::_('The transaction of class %1$s is currently in status %1$s and can not be rolled back. Only transactions in statuses %2$s can be rolled back.'), get_class($this), $initial_status, implode(', ', $allowed_statuses) ));
+        if (!in_array($initial_status, $allowed_statuses, true)) {
+            throw new RunTimeException(sprintf(t::_('The transaction of class %1$s is currently in status %1$s and can not be rolled back. Only transactions in statuses %2$s can be rolled back.'), get_class($this), $initial_status, implode(', ', $allowed_statuses)));
         }
 
         //rollback all children (no matter what is their status - started on saved ... should be saved)
@@ -316,10 +315,10 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $caller = StackTraceUtil::get_caller();
 
         //it may happen the scope reference for the transactional resource (db connection) to be destroyed before the scope reference for the transaction
-        if ($caller[0] === ScopeReference::class || is_a($caller[0], TransactionalResourceInterface::class, TRUE) ) {
+        if ($caller[0] === ScopeReference::class || is_a($caller[0], TransactionalResourceInterface::class, true)) {
             //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
             //print_r($caller);
-            $this->rollback_initiator_flag = TRUE;
+            $this->rollback_initiator_flag = true;
             $CurrentException = BaseException::getCurrentException();
             if ($CurrentException) {
                 $this->rollback_reason = self::ROLLBACK_REASON['EXCEPTION'];
@@ -340,7 +339,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             }
             $this->InterruptingException = $ParentTransaction->get_interrupting_exception();
         } else {
-            $this->rollback_initiator_flag = TRUE;
+            $this->rollback_initiator_flag = true;
             $this->rollback_reason = self::ROLLBACK_REASON['EXPLICIT'];//rollback() method explicitly invoked
         }
 
@@ -352,7 +351,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $this->set_current_transaction($this->get_parent());
         } else {
             $this->execute_rollback();
-            $this->set_current_transaction(NULL);
+            $this->set_current_transaction(null);
         }
         $this->set_status(self::STATUS['ROLLEDBACK']);
 
@@ -364,12 +363,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         }
     }
 
-    protected function rollback_to_savepoint(string $savepoint_name) : void
+    protected function rollback_to_savepoint(string $savepoint_name): void
     {
         $this->execute_rollback_to_savepoint($savepoint_name);
     }
 
-    protected function release_savepoint(string $savepoint) : void
+    protected function release_savepoint(string $savepoint): void
     {
         $this->execute_release_savepoint($savepoint);
     }
@@ -379,7 +378,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * or it is a child transaction that is rolled back because of the parent one.
      * @return bool
      */
-    public function is_rollback_initiator() : bool
+    public function is_rollback_initiator(): bool
     {
         return $this->rollback_initiator_flag;
     }
@@ -390,12 +389,12 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function commit() : void
+    public function commit(): void
     {
         $initial_status = $this->get_status();
         $allowed_statuses = [ self::STATUS['STARTED'], self::STATUS['SAVED'] ];
-        if (!in_array($initial_status, $allowed_statuses, TRUE )) {
-           throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1$s and can not be committed. Only transactions in statuses %2$s can be committed.'), $initial_status, implode(', ', $allowed_statuses) ));
+        if (!in_array($initial_status, $allowed_statuses, true)) {
+            throw new RunTimeException(sprintf(t::_('The transaction is currently in status %1$s and can not be committed. Only transactions in statuses %2$s can be committed.'), $initial_status, implode(', ', $allowed_statuses)));
         }
 
         if ($this->has_parent()) {
@@ -405,7 +404,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
             $this->execute_commit();
             //update the status of the nested transactions to committed only after the master one was committed
             $this->set_status(self::STATUS['COMMITTED']);
-            $this->set_current_transaction(NULL);
+            $this->set_current_transaction(null);
             new Event($this, '_after_commit');
         }
 
@@ -427,12 +426,11 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 //            $Transaction = NULL;
 //        }
 //        $this->children = [];
-        $Function = static function($Transaction) use (&$Function): void
-        {
+        $Function = static function ($Transaction) use (&$Function): void {
             foreach ($Transaction->children as $ChildTransaction) {
                 $Function($ChildTransaction);
-                $ChildTransaction->ParentTransaction = NULL;//remove a reference
-                $ChildTransaction = NULL;
+                $ChildTransaction->ParentTransaction = null;//remove a reference
+                $ChildTransaction = null;
             }
             $Transaction->children = [];
         };
@@ -443,7 +441,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
      * To be called by commit()
      * @throws InvalidArgumentException
      */
-    protected function save() : void
+    protected function save(): void
     {
 
         //no need to create savepoint here for the
@@ -458,7 +456,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     public function execute(callable $callable) /* mixed */
     {
         if ($this->get_status() !== self::STATUS['CREATED']) {
-            throw new RunTimeException(sprintf(t::_('The code can not be executed (%s($callable)) in the given transaction  as the transaction currently is in status %1$s. Only transactions in status %2$s can execute code.'), __METHOD__, $this->get_status(), self::STATUS['CREATED'] ));
+            throw new RunTimeException(sprintf(t::_('The code can not be executed (%s($callable)) in the given transaction  as the transaction currently is in status %1$s. Only transactions in status %2$s can execute code.'), __METHOD__, $this->get_status(), self::STATUS['CREATED']));
         }
         $this->begin();
         $ret = $callable();
@@ -466,25 +464,25 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         return $ret;
     }
 
-    public function create_savepoint(string $savepoint_name) : void
+    public function create_savepoint(string $savepoint_name): void
     {
         $this->execute_create_savepoint($savepoint_name);
     }
 
-    public function get_status() : string
+    public function get_status(): string
     {
         return $this->status;
     }
 
-    public function set_status(string $status) : void
+    public function set_status(string $status): void
     {
         $current_status = $this->get_status();
-        if (in_array($current_status, self::END_STATUSES, TRUE)) {
-            throw new InvalidArgumentException(sprintf(t::_('The current status of the transaction is %1$s. Transactions in statuses %s2 can not be changed. The provided status is %3$s.'), $current_status, implode(', ', self::END_STATUSES), $status ));
+        if (in_array($current_status, self::END_STATUSES, true)) {
+            throw new InvalidArgumentException(sprintf(t::_('The current status of the transaction is %1$s. Transactions in statuses %s2 can not be changed. The provided status is %3$s.'), $current_status, implode(', ', self::END_STATUSES), $status));
         }
         if ($status === self::STATUS['COMMITTED']) {
             $allowed_statuses = [self::STATUS['SAVED'], self::STATUS['STARTED'] ];
-            if (!in_array($current_status, $allowed_statuses )) {
+            if (!in_array($current_status, $allowed_statuses)) {
                 throw new InvalidArgumentException(sprintf(t::_('The provided $status %1$s can not be set as the current status of the transaction %s2 does not allow to transition to the provided status. Only %3$s statuses can transition to the provided status.'), $status, $current_status, implode(', ', $allowed_statuses)));
             }
         }
@@ -505,7 +503,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         $this->status = $status;
     }
 
-    public final function __destruct()
+    final public function __destruct()
     {
         new Event($this, '_before_destruct');
 
@@ -520,20 +518,19 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         parent::__destruct();
     }
 
-    abstract public function get_resource() : TransactionalResourceInterface ;
+    abstract public function get_resource(): TransactionalResourceInterface;
 
-    abstract protected function execute_begin() : void;
+    abstract protected function execute_begin(): void;
 
-    abstract protected function execute_commit() : void;
+    abstract protected function execute_commit(): void;
 
-    abstract protected function execute_save() : void ;
+    abstract protected function execute_save(): void;
 
-    abstract protected function execute_rollback() : void;
+    abstract protected function execute_rollback(): void;
 
-    abstract protected function execute_create_savepoint(string $savepoint) : void;
+    abstract protected function execute_create_savepoint(string $savepoint): void;
 
-    abstract protected function execute_rollback_to_savepoint(string $savepoint) : void;
+    abstract protected function execute_rollback_to_savepoint(string $savepoint): void;
 
-    abstract protected function execute_release_savepoint(string $savepoint) : void;
-
+    abstract protected function execute_release_savepoint(string $savepoint): void;
 }

@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Authorization;
-
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
@@ -33,7 +32,7 @@ class Role extends ActiveRecord
 
         //'load_in_memory'        => TRUE,
 
-        'no_permissions'        => TRUE,//the roles do not use permissions
+        'no_permissions'        => true,//the roles do not use permissions
 
         'services'              => [
             'ContextCache'
@@ -74,7 +73,7 @@ class Role extends ActiveRecord
      */
     public static function get_system_roles(): array
     {
-        return array_map(fn(array $record): self => new self($record['role_id']), self::get_system_roles_data() );
+        return array_map(fn(array $record): self => new self($record['role_id']), self::get_system_roles_data());
     }
 
     /**
@@ -83,7 +82,7 @@ class Role extends ActiveRecord
      */
     public static function get_system_roles_data(): array
     {
-        return self::get_data_by( ['role_is_user' => 0], 0, 0, FALSE, 'role_name' );
+        return self::get_data_by(['role_is_user' => 0], 0, 0, false, 'role_name');
     }
 
     /**
@@ -92,7 +91,7 @@ class Role extends ActiveRecord
      */
     public static function get_system_roles_ids(): iterable
     {
-        return array_map(fn(array $record): string => $record['role_id'], self::get_system_roles_data() );
+        return array_map(fn(array $record): string => $record['role_id'], self::get_system_roles_data());
     }
 
     /**
@@ -101,7 +100,7 @@ class Role extends ActiveRecord
      */
     public static function get_system_roles_uuids(): iterable
     {
-        return array_map(fn(array $record): string => $record['meta_object_uuid'], self::get_system_roles_data() );
+        return array_map(fn(array $record): string => $record['meta_object_uuid'], self::get_system_roles_data());
     }
 
     /**
@@ -117,7 +116,7 @@ class Role extends ActiveRecord
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function create(string $role_name, bool $role_is_user) : ActiveRecord
+    public static function create(string $role_name, bool $role_is_user): ActiveRecord
     {
         $Role = new self();
         $Role->role_name = $role_name;
@@ -134,7 +133,7 @@ class Role extends ActiveRecord
      * @return RolesHierarchy
      * @throws InvalidArgumentException
      */
-    public function grant_role(Role $Role) : RolesHierarchy
+    public function grant_role(Role $Role): RolesHierarchy
     {
         $this->check_permission('grant_role');
         return RolesHierarchy::create($this, $Role);
@@ -160,14 +159,13 @@ class Role extends ActiveRecord
         //TODO add a check for circular reference
         //the roles graph must be an acyclic graph
         $RoleHierarchy->delete();
-
     }
 
     public function inherits_role(Role $Role): bool
     {
         $role_id = $Role->get_id();
         $all_inherited_roles_ids = $this->get_all_inherited_roles_ids();
-        return in_array($role_id, $all_inherited_roles_ids, TRUE);
+        return in_array($role_id, $all_inherited_roles_ids, true);
     }
 
     /**
@@ -196,7 +194,7 @@ class Role extends ActiveRecord
      */
     public function get_inherited_roles_ids(): array
     {
-        return array_column( RolesHierarchy::get_data_by( ['role_id' => $this->get_id() ] ), 'inherited_role_id' );
+        return array_column(RolesHierarchy::get_data_by(['role_id' => $this->get_id() ]), 'inherited_role_id');
     }
 
     /**
@@ -212,13 +210,13 @@ class Role extends ActiveRecord
      */
     public function get_inherited_roles_names_and_uuids(): array
     {
-        return array_map( static function (Role $Role) : \stdClass {
+        return array_map(static function (Role $Role): \stdClass {
             $Object = new \stdClass();
             $Object->role_name = $Role->role_name;
             $Object->role_uuid = $Role->get_uuid();
             $Object->meta_object_uuid = $Role->get_uuid();
             return $Object;
-        }, $this->get_inherited_roles() );
+        }, $this->get_inherited_roles());
     }
 
     /**
@@ -229,7 +227,7 @@ class Role extends ActiveRecord
      */
     public function get_inherited_roles_uuids(): array
     {
-        return array_map(static fn (Role $Role) : string => $Role->get_uuid(), $this->get_inherited_roles() );
+        return array_map(static fn (Role $Role): string => $Role->get_uuid(), $this->get_inherited_roles());
     }
 
     /**
@@ -241,7 +239,7 @@ class Role extends ActiveRecord
      */
     public function get_inherited_roles(): array
     {
-        return array_map(static fn (int $role_id) : Role => new static($role_id), $this->get_inherited_roles_ids() );
+        return array_map(static fn (int $role_id): Role => new static($role_id), $this->get_inherited_roles_ids());
     }
 
     /**
@@ -258,7 +256,7 @@ class Role extends ActiveRecord
     {
         $role_id = $this->get_id();
         $ret = self::get_service('ContextCache')->get('all_inherited_roles', (string) $role_id);
-        if ($ret === NULL) {
+        if ($ret === null) {
             $ret[] = $role_id;
             foreach ($this->get_inherited_roles() as $InheritedRole) {
                 //$ret[] = $InheritedRole->get_all_inherited_roles_ids();
@@ -281,7 +279,7 @@ class Role extends ActiveRecord
      */
     public function get_all_inherited_roles_uuids(): array
     {
-        return array_map(static fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
+        return array_map(static fn (Role $Role): string => $Role->get_uuid(), $this->get_all_inherited_roles());
     }
 
     /**
@@ -294,7 +292,7 @@ class Role extends ActiveRecord
      * @throws ConfigurationException
      * @throws ReflectionException
      */
-    public function get_all_inherited_roles() : array
+    public function get_all_inherited_roles(): array
     {
 //        $ret = [];
 //        $ids = $this->get_all_inherited_roles_ids();
@@ -303,13 +301,13 @@ class Role extends ActiveRecord
 //        }
 //        return $ret;
         //return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_all_inherited_roles() );
-        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_all_inherited_roles_ids() );
+        return array_map(fn (int $role_id): Role => new static($role_id), $this->get_all_inherited_roles_ids());
     }
 
 
     public function get_inheriting_roles(): array
     {
-        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_inheriting_roles_ids() );
+        return array_map(fn (int $role_id): Role => new static($role_id), $this->get_inheriting_roles_ids());
     }
 
     /**
@@ -328,7 +326,7 @@ class Role extends ActiveRecord
         //in this basic class this will be done by using the ORM classes & methods only without direct (storage dependent) queries
         //if faster implementation is needed it is to be provided by a child class
         $ids = [];
-        $all_ids = array_column( RolesHierarchy::get_data_by( ['inherited_role_id' => $this->get_id() ] ), 'role_id' );
+        $all_ids = array_column(RolesHierarchy::get_data_by(['inherited_role_id' => $this->get_id() ]), 'role_id');
         foreach ($all_ids as $id) {
             $Role = new Role($id);
             if (!$Role->role_is_user) {
@@ -343,7 +341,7 @@ class Role extends ActiveRecord
      */
     public function get_inheriting_roles_uuids(): array
     {
-        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inheriting_roles() );
+        return array_map(fn (Role $Role): string => $Role->get_uuid(), $this->get_inheriting_roles());
     }
 
     /**
@@ -354,7 +352,7 @@ class Role extends ActiveRecord
      */
     public function get_all_inheriting_roles(): array
     {
-        return array_map(fn (int $role_id) : Role => new static($role_id), $this->get_all_inheriting_roles_ids() );
+        return array_map(fn (int $role_id): Role => new static($role_id), $this->get_all_inheriting_roles_ids());
     }
 
     /**
@@ -368,7 +366,7 @@ class Role extends ActiveRecord
     {
         $role_id = $this->get_id();
         $ret = self::get_service('ContextCache')->get('all_inheriting_roles', (string) $role_id);
-        if ($ret === NULL) {
+        if ($ret === null) {
             $ret = [];
             if (!$this->role_is_user) {
                 $ret[] = $role_id;
@@ -383,7 +381,7 @@ class Role extends ActiveRecord
 
     public function get_all_inheriting_roles_uuids(): array
     {
-        return array_map(fn (Role $Role) : string => $Role->get_uuid(), $this->get_inheriting_roles() );
+        return array_map(fn (Role $Role): string => $Role->get_uuid(), $this->get_inheriting_roles());
     }
 
     protected function _before_delete(): void
@@ -393,12 +391,12 @@ class Role extends ActiveRecord
         //$Transaction->begin();
 
         //remove all records of roles inheriting this one
-        $roles_hierarchies = RolesHierarchy::get_by( ['inherited_role_id' => $this->get_id() ] );
+        $roles_hierarchies = RolesHierarchy::get_by(['inherited_role_id' => $this->get_id() ]);
         foreach ($roles_hierarchies as $RolesHierarchy) {
             $RolesHierarchy->delete();
         }
         //remove all records of this role inheriting others
-        $roles_hierarchies = RolesHierarchy::get_by( ['role_id' => $this->get_id() ] );
+        $roles_hierarchies = RolesHierarchy::get_by(['role_id' => $this->get_id() ]);
         foreach ($roles_hierarchies as $RolesHierarchy) {
             $RolesHierarchy->delete();
         }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database;
@@ -18,7 +19,7 @@ class Transaction extends \Guzaba2\Transaction\Transaction
         parent::__construct($options);
     }
 
-    public function get_resource() : TransactionalResourceInterface
+    public function get_resource(): TransactionalResourceInterface
     {
         return $this->Connection;
     }
@@ -41,7 +42,6 @@ class Transaction extends \Guzaba2\Transaction\Transaction
     protected function execute_rollback(): void
     {
         $this->Connection->rollback_transaction();
-
     }
 
     protected function execute_create_savepoint(string $savepoint): void

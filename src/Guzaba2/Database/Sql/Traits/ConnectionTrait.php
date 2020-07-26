@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Traits;
@@ -8,7 +9,7 @@ use Guzaba2\Translator\Translator as t;
 
 trait ConnectionTrait
 {
-    public static function get_database() : string
+    public static function get_database(): string
     {
         return static::CONFIG_RUNTIME['database'];
     }
@@ -26,8 +27,8 @@ trait ConnectionTrait
     public static function array_placeholder(array $array, string $placeholder_name): string
     {
         $placeholders = [];
-        for ($aa = 0; $aa < count($array); $aa++ ) {
-            $placeholders[] = ':'.$placeholder_name.$aa;
+        for ($aa = 0; $aa < count($array); $aa++) {
+            $placeholders[] = ':' . $placeholder_name . $aa;
         }
         return implode(',', $placeholders);
     }
@@ -40,7 +41,7 @@ trait ConnectionTrait
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function prepare_params(array $params) : array
+    public static function prepare_params(array $params): array
     {
         foreach ($params as $param_name => $param_value) {
             if (is_array($param_value)) {
@@ -48,7 +49,7 @@ trait ConnectionTrait
                     throw new InvalidArgumentException(sprintf(t::_('The array for parameters %1$s is not an indexed array.'), $param_name));
                 }
                 for ($aa = 0; $aa < count($param_value); $aa++) {
-                    $params[$param_name.$aa] = $param_value[$aa];
+                    $params[$param_name . $aa] = $param_value[$aa];
                 }
                 unset($params[$param_name]);
             }

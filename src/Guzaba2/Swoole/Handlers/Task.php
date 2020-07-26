@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers;
 
@@ -93,7 +93,7 @@ class Task extends HandlerBase
         //havea global list with the currently running tasks
         $this->running_tasks[] = $task_id;
         //add an array holding requests for interrupting tasks
-        defer(function() use ($task_id) {
+        defer(function () use ($task_id) {
             //remove the task from running_tasks
         });
 
@@ -112,7 +112,7 @@ class Task extends HandlerBase
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      * @throws \ReflectionException
      */
-    public function __invoke(Server $Server, int $task_id, int $src_worker_id, IpcRequest $IpcRequest) : void
+    public function __invoke(Server $Server, int $task_id, int $src_worker_id, IpcRequest $IpcRequest): void
     {
         $this->handle($Server, $task_id, $src_worker_id, $IpcRequest);
     }

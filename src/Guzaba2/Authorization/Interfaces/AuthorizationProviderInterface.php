@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Interfaces;
@@ -21,9 +22,9 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool ;
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool;
 
-    public function role_can_on_class(Role $Role, string $action, string $class) : bool ;
+    public function role_can_on_class(Role $Role, string $action, string $class): bool;
 
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord.
@@ -31,9 +32,9 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool ;
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool;
 
-    public function current_role_can_on_class(string $action, string $class) : bool ;
+    public function current_role_can_on_class(string $action, string $class): bool;
 
     /**
      * Checks can the provided $role perform the $action on the object $ActiveRecord and if cant a PermissionDeniedException is thrown.
@@ -42,9 +43,9 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void ;
+    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord): void;
 
-    public function check_class_permission(string $action, string $class_name) : void ;
+    public function check_class_permission(string $action, string $class_name): void;
 
     /**
      * Grants a new object permission.
@@ -54,7 +55,7 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return PermissionInterface
      */
-    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : ?PermissionInterface ;
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): ?PermissionInterface;
 
     /**
      * Grants a new class permission.
@@ -64,7 +65,7 @@ interface AuthorizationProviderInterface
      * @param string $class_name
      * @return PermissionInterface
      */
-    public function grant_class_permission(Role $Role, string $action, string $class_name) : ?PermissionInterface ;
+    public function grant_class_permission(Role $Role, string $action, string $class_name): ?PermissionInterface;
 
     /**
      * Revokes an object permission.
@@ -72,7 +73,7 @@ interface AuthorizationProviderInterface
      * @param string $action
      * @param ActiveRecordInterface $ActiveRecord
      */
-    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void ;
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): void;
 
     /**
      * Revokes a class permission.
@@ -80,46 +81,45 @@ interface AuthorizationProviderInterface
      * @param string $action
      * @param string $class_name
      */
-    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void ;
+    public function revoke_class_permission(Role $Role, string $action, string $class_name): void;
 
     /**
      * Removes all permission records for the provided object.
      * To be used when the object is deleted.
      * @param ActiveRecordInterface $ActiveRecord
      */
-    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void ;
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord): void;
 
     /**
      * Removes all permission records for the provided class.
      * @param string $class_name
      */
-    public function delete_class_permissions(string $class_name) : void ;
+    public function delete_class_permissions(string $class_name): void;
 
     /**
      * Returns all permissions for the given ActiveRecord object.
      * @param ActiveRecordInterface|null $ActiveRecord
      * @return iterable
      */
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable ;
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable;
 
     /**
      * Returns all permissions for the given ActiveRecord class.
      * @param string $class_name
      * @return iterable
      */
-    public function get_permissions_by_class(string $class_name) : iterable ;
+    public function get_permissions_by_class(string $class_name): iterable;
 
     /**
      * Returns the class names of the ActiveRecord classes used by the Authorization implementation.
      * @return array
      */
-    public static function get_used_active_record_classes() : array ;
+    public static function get_used_active_record_classes(): array;
 
     /**
      * Returns the join chunk of the SQL query needed to enforce the permissions to be used in a custom query.
      * @param string $main_table The main table from the main query to which the join should be applied
      * @return string The join part of the stamement that needs to be included in the query
      */
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string ;
-
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string;
 }

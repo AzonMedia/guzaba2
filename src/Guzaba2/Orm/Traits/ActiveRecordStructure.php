@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
@@ -15,7 +16,7 @@ trait ActiveRecordStructure
      * @return array
      * @throws RunTimeException
      */
-    public static function get_structure() : array
+    public static function get_structure(): array
     {
         if (empty(static::CONFIG_RUNTIME['structure'])) {
             throw new RunTimeException(sprintf(t::_('Class %s doesn\'t have structure defined in its configuration'), static::class));
@@ -27,18 +28,16 @@ trait ActiveRecordStructure
      * To be called by ClassInitialization
      * @throws RunTimeException
      */
-    public static function initialize_structure() : void
+    public static function initialize_structure(): void
     {
         $Store = static::get_service('OrmStore');
 
         $called_class = get_called_class();
 
         if (empty(self::$columns_data[$called_class])) {
-
-
             $unified_columns_data = $Store->get_unified_columns_data($called_class);
             if (!count($unified_columns_data)) {
-                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class ));
+                throw new RunTimeException(sprintf(t::_('No data structure found for class %s. If you are using a StructuredStoreInterface please make sure the table defined in CONFIG_DEFAULTS[\'main_table\'] is correct or else that the class has defined CONFIG_DEFAULTS[\'structure\'].'), $called_class));
             }
 
             foreach ($unified_columns_data as $column_datum) {
@@ -48,7 +47,7 @@ trait ActiveRecordStructure
 
         if (empty(self::$primary_index_columns[$called_class])) {
             self::$primary_index_columns[$called_class] = [];
-            foreach (self::$columns_data[$called_class] as $column_name=>$column_data) {
+            foreach (self::$columns_data[$called_class] as $column_name => $column_data) {
                 if (!empty($column_data['primary'])) {
                     self::$primary_index_columns[$called_class][] = $column_name;
                 }
@@ -59,7 +58,7 @@ trait ActiveRecordStructure
             self::$properties_data[$called_class] = [];
             $RClass = new ReflectionClass($called_class);
             $default_properties = $RClass->getDefaultProperties();
-            foreach ( $RClass->getProperties() as $RProperty) {
+            foreach ($RClass->getProperties() as $RProperty) {
                 if ($RProperty->isPublic() && !$RProperty->isStatic()) {
 //                    if ($RProperty->isInitialized()) {
 //                        $default_value = $default_properties[$RProperty->getName()];
@@ -69,17 +68,17 @@ trait ActiveRecordStructure
                     if (array_key_exists($RProperty->getName(), $default_properties)) {
                         $default_value = $default_properties[$RProperty->getName()];
                     } else {
-                        $default_value = NULL;//this is not correct as the property may not even be nullable... but we need to have some value
+                        $default_value = null;//this is not correct as the property may not even be nullable... but we need to have some value
                     }
                     if ($RProperty->hasType()) {
                         $type = $RProperty->getType()->getName();
                         $nullable = $RProperty->getType()->allowsNull();
                         if ($nullable) {
-                            $default_value = NULL;
+                            $default_value = null;
                         }
                     } else {
                         //do not allow untyped properties
-                        throw new RunTimeException(sprintf(t::_('The ActiveRecord class %s has a property %s which is missing type.'), $called_class, $RProperty->getName() ));
+                        throw new RunTimeException(sprintf(t::_('The ActiveRecord class %s has a property %s which is missing type.'), $called_class, $RProperty->getName()));
                     }
 
                     self::$properties_data[$called_class][$RProperty->getName()] = [
@@ -109,7 +108,7 @@ trait ActiveRecordStructure
      * @return string
      * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_property_type(string $property_name, bool &$is_nullable = NULL, &$default_value = NULL) : string
+    public static function get_property_type(string $property_name, bool &$is_nullable = null, &$default_value = null): string
     {
         $class = get_called_class();
         if (!static::has_property($property_name)) {
@@ -127,7 +126,7 @@ trait ActiveRecordStructure
      * @return string
      * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_property_native_type(string $property_name) : string
+    public static function get_property_native_type(string $property_name): string
     {
         $class = get_called_class();
         if (!static::has_property($property_name)) {
@@ -158,7 +157,7 @@ trait ActiveRecordStructure
      * @return mixed
      * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function get_property_information(string $property_name) : array
+    public static function get_property_information(string $property_name): array
     {
         if (!static::has_property($property_name)) {
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));
@@ -172,7 +171,7 @@ trait ActiveRecordStructure
      * Returns an indexed array containing the names of all properties and columns.
      * @return array
      */
-    public static function get_property_names() : array
+    public static function get_property_names(): array
     {
         //return array_column(static::get_columns_data(), 'name');
         return array_column(static::get_properties_data(), 'name');
@@ -191,7 +190,7 @@ trait ActiveRecordStructure
         return array_column(static::get_class_properties_data(), 'name');
     }
 
-    public static function get_property_names_with_types() : array
+    public static function get_property_names_with_types(): array
     {
         $ret = [];
         //$columns_data = static::get_columns_data();
@@ -207,7 +206,7 @@ trait ActiveRecordStructure
      * @param string $property_name
      * @return bool
      */
-    public static function has_property(string $property_name) : bool
+    public static function has_property(string $property_name): bool
     {
         //return array_key_exists($property_name, static::get_columns_data());
         return array_key_exists($property_name, static::get_properties_data());
@@ -220,7 +219,7 @@ trait ActiveRecordStructure
      * @return bool
      * @throws RunTimeException If the provided $property_name is not supported by this object.
      */
-    public static function is_property_nullable(string $property_name) : bool
+    public static function is_property_nullable(string $property_name): bool
     {
         if (!self::has_property($property_name)) {
             throw new RunTimeException(sprintf(t::_('The object of class "%s" does not have a property/property named "%s".'), $class, $property_name));

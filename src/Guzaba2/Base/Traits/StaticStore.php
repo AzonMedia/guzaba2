@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
@@ -18,7 +18,7 @@ trait StaticStore
 {
     private $static_store = [];
 
-    public static function set_static(string $key, /* mixed */ $value) : void
+    public static function set_static(string $key, /* mixed */ $value): void
     {
         $class = get_called_class();
         //if (\Swoole\Coroutine::getCid() > 0) {
@@ -59,13 +59,13 @@ trait StaticStore
         return $ret;
     }
 
-    public static function isset_static(string $key) : bool
+    public static function isset_static(string $key): bool
     {
         $class = get_called_class();
         return Coroutine::issetData($class, $key);
     }
 
-    public static function unset_static(string $key) : void
+    public static function unset_static(string $key): void
     {
         $class = get_called_class();
         Coroutine::unsetData($class, $key);

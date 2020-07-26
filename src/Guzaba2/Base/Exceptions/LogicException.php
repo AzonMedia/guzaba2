@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -14,6 +15,7 @@ declare(strict_types=1);
  * @license        http://www.opensource.org/licenses/bsd-license.php BSD License
  * @author        Veselin Kenashkov <kenashkov@azonmedia.com>
  */
+
 namespace Guzaba2\Base\Exceptions;
 
 class LogicException extends BaseException

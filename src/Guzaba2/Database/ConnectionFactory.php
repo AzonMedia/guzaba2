@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database;
 
@@ -33,41 +33,39 @@ class ConnectionFactory extends Base implements ConnectionFactoryInterface
      * @return ConnectionInterface
      * @param-out ScopeReference|null $ScopeReference
      */
-    public function get_connection(string $class_name, ?ScopeReference &$ScopeReference) : ConnectionInterface
+    public function get_connection(string $class_name, ?ScopeReference &$_ScopeReference): ConnectionInterface
     {
-        return $this->ConnectionProvider->get_connection($class_name, $ScopeReference);
+        return $this->ConnectionProvider->get_connection($class_name, $_ScopeReference);
     }
 
-    public function free_connection(ConnectionInterface $Connection) : void
+    public function free_connection(ConnectionInterface $Connection): void
     {
         $this->ConnectionProvider->free_connection($Connection);
     }
 
-    public function stats(string $connection_class = '') : array
+    public function stats(string $connection_class = ''): array
     {
         return $this->ConnectionProvider->stats($connection_class);
     }
 
-    public function ping_connections(string $connection_class = '') : void
+    public function ping_connections(string $connection_class = ''): void
     {
         $this->ConnectionProvider->ping_connections($connection_class);
     }
 
-    public function close_all_connections() : void
+    public function close_all_connections(): void
     {
         $this->ConnectionProvider->close_all_connections();
     }
 
 
-    public function get_resource(string $class_name, &$ScopeReference = '') : ResourceInterface
+    public function get_resource(string $class_name, &$_ScopeReference = ''): ResourceInterface
     {
-        return $this->get_connection($class_name, $ScopeReference);
+        return $this->get_connection($class_name, $_ScopeReference);
     }
 
-    public function free_resource(ResourceInterface $Resource) : void
+    public function free_resource(ResourceInterface $Resource): void
     {
         $this->free_connection($Resource);
     }
-
-
 }

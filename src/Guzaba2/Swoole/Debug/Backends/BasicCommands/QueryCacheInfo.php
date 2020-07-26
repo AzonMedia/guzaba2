@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug\Backends\BasicCommands;
@@ -27,20 +28,20 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
 */
     ];
 
-    public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = NULL) : ?string
+    public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = null): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $class_name = self::get_class_name();
 
         $tok = strtok($command, ' ');
-        if ($tok !== FALSE) {
+        if ($tok !== false) {
             if (0 === strcasecmp('help', $tok) || 0 === strcasecmp($class_name, $tok)) {
                 $help_command = preg_replace("/^(\w+\s)/", "", $command);
                 if ($this->can_handle($help_command) || 0 === strcasecmp($class_name, $help_command)) {
                     $ret = self::help($help_command);
                     return $ret;
                 } else {
-                    return NULL;
+                    return null;
                 }
             }
         } else {
@@ -49,7 +50,7 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
 
 
         if ($this->can_handle($command)) {
-            $ret = 'Query Cache Store details:'.PHP_EOL;
+            $ret = 'Query Cache Store details:' . PHP_EOL;
             $structure = [];
 
             $QueryCacheStore = Kernel::get_service('MysqlOrmStore');
@@ -64,25 +65,25 @@ class QueryCacheInfo extends \Guzaba2\Swoole\Debug\Backends\BasicCommand
             $command_ret = call_user_func_array([ $PrimaryQueryCacheStore, self::$commands[$command]['method'] ], []);
             $ret .= implode(' --> ', $structure) . PHP_EOL;
             switch ($command) {
-                case 'show query cache' :
-                    $ret .= print_r($command_ret, TRUE);
+                case 'show query cache':
+                    $ret .= print_r($command_ret, true);
                     break;
-                case 'get qcache hits' :
+                case 'get qcache hits':
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
                     break;
-                case 'get qcache hits percentage' :
+                case 'get qcache hits percentage':
                     $ret .= sprintf(t::_('%s (%s): %s%%'), $class_name, $command, $command_ret);
                     break;
-                case 'get qcache misses' :
+                case 'get qcache misses':
                     $ret .= sprintf(t::_('%s (%s): %s'), $class_name, $command, $command_ret);
                     break;
-                case 'reset qcache stats' :
+                case 'reset qcache stats':
                     $ret .= sprintf(t::_('%s (%s): stats are reset.'), $class_name, $command);
                     break;
-                case 'reset query cache' :
+                case 'reset query cache':
                     $ret .= sprintf(t::_('%s (%s): query cache is reset.'), $class_name, $command);
                     break;
-                default :
+                default:
                     // error
                     break;
             }

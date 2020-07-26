@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Coroutine;
 
@@ -14,7 +14,8 @@ use Psr\Http\Message\RequestInterface;
  * Class Resources
  * A class representing the resources allocated to a coroutine.
  * To be set as a property to the coroutine context.
- * Do not modify to assign the $Context as a property to this class as this will create a circular reference and delay the object destruction (delaying the release of the resources).
+ * Do not modify to assign the $Context as a property to this class as this will create a circular reference
+ * and delay the object destruction (delaying the release of the resources).
  * @package Guzaba2\Coroutine
  */
 class Resources extends Base
@@ -60,7 +61,7 @@ class Resources extends Base
         $this->free_all_resources();
     }
 
-    public function get_backtrace() : array
+    public function get_backtrace(): array
     {
         return $this->created_backtrace;
     }
@@ -69,7 +70,7 @@ class Resources extends Base
      * Returns the coroutine ID to which this context is attached.
      * @return int
      */
-    public function get_cid() : int
+    public function get_cid(): int
     {
         return $this->cid;
     }
@@ -78,7 +79,7 @@ class Resources extends Base
      * Assign a resource to the coroutine context.
      * @param ResourceInterface $Resource
      */
-    public function assign_resource(ResourceInterface $Resource) : void
+    public function assign_resource(ResourceInterface $Resource): void
     {
         if (!in_array($Resource, $this->resources)) {
             $this->resources[] = $Resource;
@@ -89,9 +90,9 @@ class Resources extends Base
      * Unassign a resource from the coroutine context. This is to be called when the coroutine no longer uses this resource.
      * @param ResourceInterface $Resource
      */
-    public function unassign_resource(ResourceInterface $Resource) : void
+    public function unassign_resource(ResourceInterface $Resource): void
     {
-        foreach ($this->resources as $key=>$AssignedResource) {
+        foreach ($this->resources as $key => $AssignedResource) {
             if ($Resource === $AssignedResource) {
                 unset($this->resources[$key]);
             }
@@ -105,7 +106,7 @@ class Resources extends Base
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function get_resources(?string $resource_class = NULL) : array
+    public function get_resources(?string $resource_class = null): array
     {
         $ret = [];
         $all_resources = $this->resources;
@@ -133,10 +134,10 @@ class Resources extends Base
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function get_resource(string $resource_class) : ?ResourceInterface
+    public function get_resource(string $resource_class): ?ResourceInterface
     {
         $resources = $this->get_resources($resource_class);
-        $ret = $resources[0] ?? NULL;
+        $ret = $resources[0] ?? null;
         return $ret;
     }
 
@@ -144,7 +145,7 @@ class Resources extends Base
      * Frees all resources used by the coroutine if they werent freed manualyl before that.
      * To be called at coroutine end as a safety measure.
      */
-    public function free_all_resources() : void
+    public function free_all_resources(): void
     {
         while (count($this->resources)) {
             $Resource = array_pop($this->resources);

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
@@ -44,7 +44,7 @@ abstract class Mysql extends Base
         'longblob'                  => 'string',
     ];
 
-    public static function get_column_size(array $row) : int
+    public static function get_column_size(array $row): int
     {
         //TODO - test all types
         if (!empty($row['CHARACTER_MAXIMUM_LENGTH'])) {

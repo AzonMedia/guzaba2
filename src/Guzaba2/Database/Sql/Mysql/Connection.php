@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Database\Sql\Mysql;
-
 
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -35,7 +34,7 @@ abstract class Connection extends TransactionalConnection
      */
     protected string $original_query = '';
 
-    protected function prepare_statement(string $query, string $statement_class, Connection $Connection) : StatementInterface
+    protected function prepare_statement(string $query, string $statement_class, Connection $Connection): StatementInterface
     {
         if (!class_exists($statement_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $statement_class does not exist.'), $statement_class));
@@ -64,15 +63,15 @@ abstract class Connection extends TransactionalConnection
         return $Statement;
     }
 
-    public abstract function prepare(string $query) : StatementInterface ;
+    abstract public function prepare(string $query): StatementInterface;
 
-    public function close() : void
+    public function close(): void
     {
         parent::close();
         $this->NativeConnection->close();
     }
 
-    public function is_connected() : bool
+    public function is_connected(): bool
     {
         return $this->NativeConnection->connected;
     }
@@ -83,7 +82,7 @@ abstract class Connection extends TransactionalConnection
      * @param bool $use_like (whether to use = or LIKE)
      * @return string '=' or 'IS'
      */
-    public static function equals($value, bool $use_like = FALSE) : string
+    public static function equals($value, bool $use_like = false): string
     {
         if (is_null($value)) {
             return 'IS';
@@ -105,7 +104,7 @@ abstract class Connection extends TransactionalConnection
      *
      * @return int
      */
-    public function get_last_insert_id() : int
+    public function get_last_insert_id(): int
     {
         return $this->NativeConnection->insert_id;
     }
@@ -113,7 +112,7 @@ abstract class Connection extends TransactionalConnection
     /**
      * @return int
      */
-    public function get_affected_rows() : int
+    public function get_affected_rows(): int
     {
         return $this->NativeConnection->affected_rows;
     }
@@ -124,51 +123,51 @@ abstract class Connection extends TransactionalConnection
      *
      * @return int
      */
-    public function get_found_rows() : int
+    public function get_found_rows(): int
     {
         $q = "SELECT FOUND_ROWS() AS found_rows";
         return (int) $this->prepare($q)->execute()->fetchRow('found_rows');
     }
 
-    public function get_last_error() : string
+    public function get_last_error(): string
     {
         return $this->NativeConnection->error;
     }
 
 
-    public function get_last_error_number() : int
+    public function get_last_error_number(): int
     {
         return $this->NativeConnection->errno;
     }
 
-    public function get_connection_id_from_db() : string
+    public function get_connection_id_from_db(): string
     {
         $q = "SELECT CONNECTION_ID() AS connection_id";
         return (string) $this->prepare($q)->execute()->fetchRow('connection_id');
     }
 
-    public function begin_transaction() : void
+    public function begin_transaction(): void
     {
         $q = "START TRANSACTION";
         //$this->prepare($q)->execute();// Error: [1295] SQLSTATE[HY000] [1295] This command is not supported in the prepared statement protocol yet
         $this->NativeConnection->query($q);
     }
 
-    public function commit_transaction() : void
+    public function commit_transaction(): void
     {
         $q = "COMMIT";
         //$this->prepare($q)->execute();
         $this->NativeConnection->query($q);
     }
 
-    public function rollback_transaction() : void
+    public function rollback_transaction(): void
     {
         $q = "ROLLBACK";
         //$this->prepare($q)->execute();
         $this->NativeConnection->query($q);
     }
 
-    public function create_savepoint(string $savepoint_name) : void
+    public function create_savepoint(string $savepoint_name): void
     {
         self::validate_savepoint($savepoint_name);
         $q = "SAVEPOINT {$savepoint_name}";
@@ -176,7 +175,7 @@ abstract class Connection extends TransactionalConnection
         $this->NativeConnection->query($q);
     }
 
-    public function rollback_to_savepoint(string $savepoint_name) : void
+    public function rollback_to_savepoint(string $savepoint_name): void
     {
         self::validate_savepoint($savepoint_name);
         $q = "ROLLBACK TO SAVEPOINT {$savepoint_name}";
@@ -184,7 +183,7 @@ abstract class Connection extends TransactionalConnection
         $this->NativeConnection->query($q);
     }
 
-    public function release_savepoint(string $savepoint_name) : void
+    public function release_savepoint(string $savepoint_name): void
     {
         self::validate_savepoint($savepoint_name);
         $q = "RELEASE SAVEPOINT {$savepoint_name}";
@@ -197,7 +196,7 @@ abstract class Connection extends TransactionalConnection
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function validate_savepoint(string $savepoint_name) : void
+    public static function validate_savepoint(string $savepoint_name): void
     {
         if (!preg_match('/[a-zA-Z0-9_]*/', $savepoint_name)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided savepoint name %1$s is not valid. Only letters, numbers and _ are allowed.'), $savepoint_name));

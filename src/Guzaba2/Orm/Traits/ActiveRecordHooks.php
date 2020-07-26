@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Orm\Traits;
-
 
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
@@ -23,7 +22,7 @@ trait ActiveRecordHooks
      */
     protected static array $hooks = [];
 
-    public static function initialize_hooks() : void
+    public static function initialize_hooks(): void
     {
         $class_name = get_called_class();
         self::$hooks[$class_name] = [];
@@ -36,50 +35,50 @@ trait ActiveRecordHooks
         self::$hooks[$class_name]['crud'] = $class_name::get_crud_hooks();
     }
 
-    public static function has_property_hooks() : bool
+    public static function has_property_hooks(): bool
     {
         return self::has_get_property_hooks() || self::has_set_property_hooks() ;
     }
 
-    public static function has_get_property_hooks() : bool
+    public static function has_get_property_hooks(): bool
     {
         $class_name = get_called_class();
-        return count(self::$hooks[$class_name]['property'['get']]) ? TRUE : FALSE;
+        return count(self::$hooks[$class_name]['property'['get']]) ? true : false;
     }
 
-    public static function has_set_property_hooks() : bool
+    public static function has_set_property_hooks(): bool
     {
         $class_name = get_called_class();
-        return count(self::$hooks[$class_name]['property'['set']]) ? TRUE : FALSE;
+        return count(self::$hooks[$class_name]['property'['set']]) ? true : false;
     }
 
-    public static function has_validation_hooks() : bool
+    public static function has_validation_hooks(): bool
     {
         return self::has_dynamic_validation_hooks() || self::has_static_validation_hooks() ;
     }
 
-    public static function has_dynamic_validation_hooks() : bool
+    public static function has_dynamic_validation_hooks(): bool
     {
         $class_name = get_called_class();
-        return count(self::$hooks[$class_name]['validation']['dynamic']) ? TRUE : FALSE;
+        return count(self::$hooks[$class_name]['validation']['dynamic']) ? true : false;
     }
 
-    public static function has_static_validation_hooks() : bool
+    public static function has_static_validation_hooks(): bool
     {
         $class_name = get_called_class();
-        return count(self::$hooks[$class_name]['validation']['static']) ? TRUE : FALSE;
+        return count(self::$hooks[$class_name]['validation']['static']) ? true : false;
     }
 
-    public static function has_crud_hooks() : bool
+    public static function has_crud_hooks(): bool
     {
         $class_name = get_called_class();
-        return count(self::$hooks[$class_name]['crud']) ? TRUE : FALSE;
+        return count(self::$hooks[$class_name]['crud']) ? true : false;
     }
 
     /**
      * @return array
      */
-    public static function get_crud_hooks() : array
+    public static function get_crud_hooks(): array
     {
         $ret = [];
         $class_name = get_called_class();
@@ -94,21 +93,21 @@ trait ActiveRecordHooks
     /**
      * @return array
      */
-    public static function get_property_validation_hooks() : array
+    public static function get_property_validation_hooks(): array
     {
-        return array_merge(static::get_dynamic_property_validation_hooks(), static::get_static_property_validation_hooks() );
+        return array_merge(static::get_dynamic_property_validation_hooks(), static::get_static_property_validation_hooks());
     }
 
     /**
      * @return array
      */
-    public static function get_dynamic_property_validation_hooks() : array
+    public static function get_dynamic_property_validation_hooks(): array
     {
         $ret = [];
         $class_name = get_called_class();
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method_name = '_validate_'.$property;
+            $method_name = '_validate_' . $property;
             if (method_exists($class_name, $method_name)) {
                 $ret[] = $method_name;
             }
@@ -119,13 +118,13 @@ trait ActiveRecordHooks
     /**
      * @return array
      */
-    public static function get_static_property_validation_hooks() : array
+    public static function get_static_property_validation_hooks(): array
     {
         $ret = [];
         $class_name = get_called_class();
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method_name = '_validate_static_'.$property;
+            $method_name = '_validate_static_' . $property;
             if (method_exists($class_name, $method_name)) {
                 $ret[] = $method_name;
             }
@@ -138,7 +137,7 @@ trait ActiveRecordHooks
      * @param string $class_name
      * @return array
      */
-    public static function get_property_hooks() : array
+    public static function get_property_hooks(): array
     {
         $class_name = get_called_class();
 
@@ -152,7 +151,7 @@ trait ActiveRecordHooks
     /**
      * @return array
      */
-    public static function get_get_property_hooks() : array
+    public static function get_get_property_hooks(): array
     {
         $class_name = get_called_class();
 
@@ -166,7 +165,7 @@ trait ActiveRecordHooks
     /**
      * @return array
      */
-    public static function get_set_property_hooks() : array
+    public static function get_set_property_hooks(): array
     {
         $class_name = get_called_class();
 
@@ -182,14 +181,14 @@ trait ActiveRecordHooks
      * @param string $class_name
      * @return array
      */
-    public static function get_before_set_property_hooks() : array
+    public static function get_before_set_property_hooks(): array
     {
         $class_name = get_called_class();
 
         $ret = [];
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method = '_before_set_'.$property;
+            $method = '_before_set_' . $property;
             if (method_exists($class_name, $method)) {
                 $ret[] = $method;
             }
@@ -202,14 +201,14 @@ trait ActiveRecordHooks
      * @param string $class_name
      * @return array
      */
-    public static function get_after_set_property_hooks() : array
+    public static function get_after_set_property_hooks(): array
     {
         $class_name = get_called_class();
 
         $ret = [];
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method = '_after_set_'.$property;
+            $method = '_after_set_' . $property;
             if (method_exists($class_name, $method)) {
                 $ret[] = $method;
             }
@@ -222,14 +221,14 @@ trait ActiveRecordHooks
      * @param string $class_name
      * @return array
      */
-    public static function get_before_get_property_hooks() : array
+    public static function get_before_get_property_hooks(): array
     {
         $class_name = get_called_class();
 
         $ret = [];
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method = '_before_get_'.$property;
+            $method = '_before_get_' . $property;
             if (method_exists($class_name, $method)) {
                 $ret[] = $method;
             }
@@ -242,14 +241,14 @@ trait ActiveRecordHooks
      * @param string $class_name
      * @return array
      */
-    public static function get_after_get_property_hooks() : array
+    public static function get_after_get_property_hooks(): array
     {
         $class_name = get_called_class();
 
         $ret = [];
         $properties = $class_name::get_property_names();
         foreach ($properties as $property) {
-            $method = '_after_get_'.$property;
+            $method = '_after_get_' . $property;
             if (method_exists($class_name, $method)) {
                 $ret[] = $method;
             }

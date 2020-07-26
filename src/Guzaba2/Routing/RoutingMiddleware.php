@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Routing;
@@ -54,7 +55,7 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
      * Returns the router
      * @return RouterInterface
      */
-    public function get_router() : RouterInterface
+    public function get_router(): RouterInterface
     {
         return $this->Router;
     }
@@ -65,7 +66,7 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
+    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
         $Request = $this->Router->match_request($Request);
         $Response = $Handler->handle($Request);

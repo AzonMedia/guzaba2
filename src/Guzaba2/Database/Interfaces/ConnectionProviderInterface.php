@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Interfaces;
@@ -13,11 +14,11 @@ interface ConnectionProviderInterface extends ResourceFactoryInterface
      * @todo check if scope reference parameter is required
      * @return ConnectionInterface
      */
-    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface ;
+    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference): ConnectionInterface;
 
     public function free_connection(ConnectionInterface $Connection);
 
-    public function stats(string $connection_class = '') : array;
+    public function stats(string $connection_class = ''): array;
 
-    public function close_all_connections() : void ;
+    public function close_all_connections(): void;
 }

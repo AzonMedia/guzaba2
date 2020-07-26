@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
@@ -21,11 +22,11 @@ class Stream extends Base implements StreamInterface
      * Will be lowered when the processing is over
      * @var bool
      */
-    protected bool $is_writable_flag = TRUE;
+    protected bool $is_writable_flag = true;
 
-    protected bool $is_readable_flag = TRUE;
+    protected bool $is_readable_flag = true;
 
-    protected bool $is_seekable_flag = TRUE;
+    protected bool $is_seekable_flag = true;
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
@@ -38,7 +39,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __construct(/* resource */ $stream = NULL, string $content = '')
+    public function __construct(/* resource */ $stream = null, string $content = '')
     {
         parent::__construct();
 
@@ -68,7 +69,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         $ret = '';
         if ($this->isReadable()) {
@@ -81,7 +82,7 @@ class Stream extends Base implements StreamInterface
         return $ret;
     }
 
-    public function __sleep() : void
+    public function __sleep(): void
     {
         throw new RunTimeException(sprintf(t::_('The class %1$s can not be serialized.'), __CLASS__));
     }
@@ -91,7 +92,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return void
      */
-    public function close() : void
+    public function close(): void
     {
         fclose($this->stream);
     }
@@ -107,9 +108,9 @@ class Stream extends Base implements StreamInterface
     {
         $stream = $this->stream;
 
-        $this->is_writable_flag = FALSE;
-        $this->is_readable_flag = FALSE;
-        $this->stream = NULL;
+        $this->is_writable_flag = false;
+        $this->is_readable_flag = false;
+        $this->stream = null;
 
         return $stream;
     }
@@ -119,7 +120,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return int|null Returns the size in bytes if known, or null if unknown.
      */
-    public function getSize() : ?int
+    public function getSize(): ?int
     {
         $stats = fstat($this->stream);
         $size = isset($stats['size']) ? $stats['size'] : null;
@@ -135,7 +136,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function tell() : int
+    public function tell(): int
     {
         if (($position = ftell($this->stream)) === false) {
             throw new RunTimeException(t::_('Can not retrieve the position of the pointer in the stream.'));
@@ -148,7 +149,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function eof() : bool
+    public function eof(): bool
     {
         return feof($this->stream);
     }
@@ -158,7 +159,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isSeekable() : bool
+    public function isSeekable(): bool
     {
         return $this->is_seekable_flag;
     }
@@ -178,8 +179,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
-    //public function seek(int $offset, int $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET)
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
@@ -199,7 +199,7 @@ class Stream extends Base implements StreamInterface
      * @see seek()
      * @link http://www.php.net/manual/en/function.fseek.php
      */
-    public function rewind() : void
+    public function rewind(): void
     {
         if (!$this->isSeekable() || rewind($this->stream) === false) {
             throw new RuntimeException(t::_('Can not rewind this stream.'));
@@ -211,7 +211,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isWritable() : bool
+    public function isWritable(): bool
     {
         return $this->is_writable_flag;
     }
@@ -226,8 +226,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function write(/* string */ $string) /* int */
-    //public function write(string $string) : int
+    public function write(/* string */ $string)
     {
         //there is no need to use co::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
         if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
@@ -242,7 +241,7 @@ class Stream extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isReadable() : bool
+    public function isReadable(): bool
     {
         return $this->is_readable_flag;
     }
@@ -260,8 +259,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function read(/* int */ $length) : string
-    //public function read(int $length) : string
+    public function read(/* int */ $length)
     {
         if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
@@ -279,7 +277,7 @@ class Stream extends Base implements StreamInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function getContents() : string
+    public function getContents(): string
     {
         if (!$this->isReadable() || ($contents = stream_get_contents($this->stream)) === false) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
@@ -299,13 +297,12 @@ class Stream extends Base implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
-    //public function getMetadata(?string $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = null)
     {
         $meta = stream_get_meta_data($this->stream);
         if (is_null($key) === true) {
             return $meta;
         }
-        return isset($meta[$key]) ? $meta[$key] : NULL;
+        return isset($meta[$key]) ? $meta[$key] : null;
     }
 }

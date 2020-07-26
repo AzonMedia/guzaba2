@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole\Coroutine;
 
 class Server
@@ -21,19 +23,19 @@ class Server
         $new_reuse_port = $reuse_port;
     }
 
-    public function set(array $setting) : void
+    public function set(array $setting): void
     {
     }
 
-    public function handle(callable $fn) : void
+    public function handle(callable $fn): void
     {
     }
 
-    public function shutdown() : bool
+    public function shutdown(): bool
     {
     }
 
-    public function start() : bool
+    public function start(): bool
     {
     }
 }

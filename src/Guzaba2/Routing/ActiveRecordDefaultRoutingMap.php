@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Routing;
@@ -51,10 +52,10 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * @throws \ReflectionException
      * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      */
-    public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */ )
+    public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */)
     {
         if (!$ns_prefixes) {
-            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__));
         }
         $this->ns_prefixes = $ns_prefixes;
         //$this->route_prefix = $route_prefix;
@@ -64,11 +65,9 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
         $active_record_classes = ActiveRecord::get_active_record_classes($this->ns_prefixes);
 
         foreach ($active_record_classes as $loaded_class) {
-
             $routing = $loaded_class::get_routes();
 
             if ($routing) {
-
                 //some validation
                 foreach ($routing as $path => $route) {
                     foreach ($route as $method => $controller) {
@@ -77,7 +76,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                                 throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not exist.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0]));
                             }
                             if (!method_exists($controller[0], $controller[1])) {
-                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not have a method %5$s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1] ));
+                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not have a method %5$s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1]));
                             }
                         }
                     }
@@ -101,7 +100,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                 //if ($supported_languages) {
                 if (count($supported_languages) > 1) {
                     foreach ($routing as $path => $value) {
-                        $routing['/{language}'.$path] = $value;
+                        $routing['/{language}' . $path] = $value;
                     }
                 }
 
@@ -112,20 +111,19 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                 $routing_meta_data[$route] = ['orm_class' => $loaded_class];
                 if ($route[-1] === '/') {
                     //add the same route without trailing /
-                    $route_wo_trailing_slash = substr($route, 0, strlen($route) -1);
+                    $route_wo_trailing_slash = substr($route, 0, strlen($route) - 1);
                     $routing_meta_data[ $route_wo_trailing_slash ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
                 } else {
                     //add the same route with trailing /
-                    $routing_meta_data[ $route.'/' ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
+                    $routing_meta_data[ $route . '/' ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
                 }
-
             } // end if $routing
         } // end foreach
 
         parent::__construct($routing_map, $routing_meta_data);
     }
 
-    public function get_processed_models() : array
+    public function get_processed_models(): array
     {
         return $this->processed_models;
     }

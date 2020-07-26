@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers;
 
@@ -67,7 +67,7 @@ class PipeMessage extends HandlerBase
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __construct(\Guzaba2\Swoole\Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL, ?ResponseInterface $ServerErrorResponse = NULL)
+    public function __construct(\Guzaba2\Swoole\Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = null, ?ResponseInterface $ServerErrorResponse = null)
     {
         parent::__construct($HttpServer);
 
@@ -114,17 +114,16 @@ class PipeMessage extends HandlerBase
         if ($IpcRequest instanceof IpcRequestWithResponse) { //this is a response (pingback to a IpcRequest sent earlier)
             $this->HttpServer->set_ipc_request_response($IpcRequest->get_response(), $IpcRequest->get_response()->get_request_id(), $src_worker_id);
         } else { //this is a request from another worker
-
             $IpcRequest->setServer($this->HttpServer);
             $time = time();
             $server_params = [
-                'ipc_request'           => TRUE,
+                'ipc_request'           => true,
                 'src_worker_id'         => $src_worker_id,
                 'request_uri'           => $IpcRequest->getUri()->getPath(),
                 'path_info'             => $IpcRequest->getUri()->getPath(),
                 'request_time'          => $time,
                 'request_time_float'    => microtime(true),
-                'server_protocol'       => 'HTTP/'.$IpcRequest->getProtocolVersion(),
+                'server_protocol'       => 'HTTP/' . $IpcRequest->getProtocolVersion(),
                 'server_port'           => $IpcRequest->getUri()->getPort(),
                 'remote_port'           => $IpcRequest->getUri()->getPort(),//43826
                 'remote_addr'           => '127.0.0.1',
@@ -158,9 +157,8 @@ class PipeMessage extends HandlerBase
             $Response = $QueueRequestHandler->handle($IpcRequest);
 
             if ($IpcRequest->requires_response()) {
-
                 if ($Response->getStatusCode() !== StatusCode::HTTP_OK) {
-                    $NewBody = new Structured( ['message' => $Response->getBody()->getContents()] );
+                    $NewBody = new Structured(['message' => $Response->getBody()->getContents()]);
                     $Response = $Response->withBody($NewBody);
                 }
 
@@ -168,7 +166,6 @@ class PipeMessage extends HandlerBase
                 $IpcRequestWithResponse = new IpcRequestWithResponse($IpcResponse);
                 $Server->sendMessage($IpcRequestWithResponse, $src_worker_id);
             }
-
         }
         new Event($this, '_after_handle', func_get_args());
     }
@@ -185,7 +182,7 @@ class PipeMessage extends HandlerBase
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      * @throws \ReflectionException
      */
-    public function __invoke(Server $Server, int $src_worker_id, IpcRequest $IpcRequest) : void
+    public function __invoke(Server $Server, int $src_worker_id, IpcRequest $IpcRequest): void
     {
         $this->handle($Server, $src_worker_id, $IpcRequest);
     }

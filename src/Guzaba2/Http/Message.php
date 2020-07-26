@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -59,7 +60,7 @@ abstract class Message extends Base implements MessageInterface
      *
      * @return string HTTP protocol version.
      */
-    public function getProtocolVersion() : string
+    public function getProtocolVersion(): string
     {
         return $this->protocolVersion;
     }
@@ -78,8 +79,7 @@ abstract class Message extends Base implements MessageInterface
      * @return static
      * @throws InvalidArgumentException if the http version is an invalid number
      */
-    public function withProtocolVersion(/* string */ $version) /* self */
-    //public function withProtocolVersion(string $version) : self
+    public function withProtocolVersion(/* string */ $version)
     {
         if (!isset(self::$validProtocolVersions[$version])) {
             throw new InvalidArgumentException(
@@ -118,7 +118,7 @@ abstract class Message extends Base implements MessageInterface
      *     key MUST be a header name, and each value MUST be an array of strings
      *     for that header.
      */
-    public function getHeaders() : array
+    public function getHeaders(): array
     {
         return $this->headers;
     }
@@ -131,8 +131,7 @@ abstract class Message extends Base implements MessageInterface
      *     name using a case-insensitive string comparison. Returns false if
      *     no matching header name is found in the message.
      */
-    public function hasHeader(/* string */ $name) /* string */
-    //public function hasHeader(string $name) : string
+    public function hasHeader(/* string */ $name)
     {
         return array_key_exists($name, $this->headers);
     }
@@ -151,8 +150,7 @@ abstract class Message extends Base implements MessageInterface
      *    header. If the header does not appear in the message, this method MUST
      *    return an empty array.
      */
-    public function getHeader(/* string */ $name) : array
-    //public function getHeader(string $name) : array
+    public function getHeader(/* string */ $name)
     {
         $ret = [];
         $name = strtolower($name);
@@ -184,8 +182,7 @@ abstract class Message extends Base implements MessageInterface
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
      */
-    public function getHeaderLine(/* string */  $name) : string
-    //public function getHeaderLine(string $name) : string
+    public function getHeaderLine(/* string */  $name)
     {
         return implode(',', array_key_exists($name, $this->headers) ? $this->headers[$name] : []);
     }
@@ -205,8 +202,7 @@ abstract class Message extends Base implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withHeader(/* string */ $name, /* mixed */ $value) : self
-    //public function withHeader(string $name, /* mixed */ $value) : self
+    public function withHeader(/* string */ $name, /* mixed */ $value)
     {
         $Message = clone $this;
         if (!is_array($value)) {
@@ -234,8 +230,7 @@ abstract class Message extends Base implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
-    public function withAddedHeader(/* string */ $name, /* mixed */ $value) : self
-    //public function withAddedHeader(string $name, /* mixed */ $value) : self
+    public function withAddedHeader(/* string */ $name, /* mixed */ $value)
     {
         $Message = clone $this;
 
@@ -258,8 +253,7 @@ abstract class Message extends Base implements MessageInterface
      * @param string $name Case-insensitive header field name to remove.
      * @return static
      */
-    public function withoutHeader(/* string */ $name) : self
-    //public function withoutHeader(string $name) : self
+    public function withoutHeader(/* string */ $name)
     {
         $Message = clone $this;
 
@@ -278,7 +272,7 @@ abstract class Message extends Base implements MessageInterface
      *
      * @return StreamInterface Returns the body as a stream.
      */
-    public function getBody() : StreamInterface
+    public function getBody(): StreamInterface
     {
         return $this->Body;
     }
@@ -296,7 +290,7 @@ abstract class Message extends Base implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
-    public function withBody(StreamInterface $Body) : self
+    public function withBody(StreamInterface $Body): self
     {
         $Message = clone $this;
         $Body->rewind();
@@ -323,7 +317,7 @@ abstract class Message extends Base implements MessageInterface
      * @throws \InvalidArgumentException for invalid header names or values.
      */
 
-    public function withHeaders(array $headers) : self
+    public function withHeaders(array $headers): self
     {
         $Message = clone $this;
         $Message->headers = [];
@@ -338,7 +332,7 @@ abstract class Message extends Base implements MessageInterface
      * @param array $headers
      * @return Message
      */
-    public function withAddedHeaders(array $headers) : self
+    public function withAddedHeaders(array $headers): self
     {
         $Message = clone $this;
         foreach ($headers as $header_name => $header_value) {
@@ -358,7 +352,7 @@ abstract class Message extends Base implements MessageInterface
      * Uses the Headers to retrieve this.
      * @return string|null
      */
-    abstract public function getContentType() : ?string;
+    abstract public function getContentType(): ?string;
 
     /**
      * {@inheritDoc}

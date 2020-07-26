@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
@@ -34,7 +35,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         'validate_structure_source',
     ];
 
-    public static function run_all_validations() : array
+    public static function run_all_validations(): array
     {
         $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
         foreach (self::VALIDATION_METHODS as $method_name) {
@@ -48,7 +49,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @throws ClassValidationException
      * @param array $ns_prefixes
      */
-    public static function validate_validation_hooks(array $ns_prefixes) : void
+    public static function validate_validation_hooks(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -67,43 +68,43 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @throws ClassValidationException
      * @throws \ReflectionException
      */
-    public static function validate_property_validation_hook(string $class, string $method) : void
+    public static function validate_property_validation_hook(string $class, string $method): void
     {
         $RMethod = new ReflectionMethod($class, $method);
 
         if ($RMethod->isStatic()) { // the _validate_static_ are static
             if (!$RMethod->isPublic()) {
-                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method));
             }
 
             if ($RMethod->getNumberOfParameters() !== 1) {
-                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept a single argument (the value that is being validated).'), $class, $method ));
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept a single argument (the value that is being validated).'), $class, $method));
             }
             $expected_type = $class::get_property_type(str_replace('_validate_static_', '', $method));
             $RParam = $RMethod->getParameters()[0];
             $RType = $RParam->getType();
             if (!$RType) {
-                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type));
             }
             if ($RType->getName() !== $expected_type) {
-                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+                throw new ClassValidationException(sprintf(t::_('The static method %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
             }
         } else {
             if (!$RMethod->isProtected()) {
-                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method));
             }
 
             if ($RMethod->getNumberOfParameters()) {
-                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method ));
+                throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method));
             }
         }
 
         $RType = $RMethod->getReturnType();
         if (!$RType) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type defined and it must be a nullable %s.'), $class, $method, ValidationFailedExceptionInterface::class ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type defined and it must be a nullable %s.'), $class, $method, ValidationFailedExceptionInterface::class));
         }
         if ($RType->getName() !== ValidationFailedExceptionInterface::class) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must return a nullable %s.'), $class, $method, ValidationFailedExceptionInterface::class ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must return a nullable %s.'), $class, $method, ValidationFailedExceptionInterface::class));
         }
         if (!$RType->allowsNull()) {
             throw new ClassValidationException(sprintf(t::_('The method %s::%s() must allow for NULL to be returned.'), ValidationFailedExceptionInterface::class));
@@ -115,7 +116,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param array $ns_prefixes
      * @throws ClassValidationException
      */
-    public static function validate_validation_rules(array $ns_prefixes) : void
+    public static function validate_validation_rules(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -126,7 +127,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
                 }
                 ArrayUtil::validate_array($property_validation_rules, ActiveRecordInterface::PROPERTY_VALIDATION_SUPPORTED_RULES, $errors);
                 if ($errors) {
-                    throw new ClassValidationException(sprintf(t::_('The class %s has invalid validation rules for property %s. The errors are: %s'), $active_record_class, $property_name, implode(' ', $errors) ));
+                    throw new ClassValidationException(sprintf(t::_('The class %s has invalid validation rules for property %s. The errors are: %s'), $active_record_class, $property_name, implode(' ', $errors)));
                 }
             }
         }
@@ -136,7 +137,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * Validates the CRUD hooks (_before_write(), _after_delete() etc).
      * These must be protected and return void
      */
-    public static function validate_crud_hooks(array $ns_prefixes) : void
+    public static function validate_crud_hooks(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -153,26 +154,25 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @throws ClassValidationException
      * @throws \ReflectionException
      */
-    public static function validate_crud_hook(string $class, string $method) : void
+    public static function validate_crud_hook(string $class, string $method): void
     {
         $RMethod = new ReflectionMethod($class, $method);
         if (!$RMethod->isProtected()) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be protected.'), $class, $method));
         }
         if ($RMethod->getNumberOfParameters()) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must not accept any arguments.'), $class, $method));
         }
-        if($RMethod->isStatic()) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be dynamic.'), $class, $method ));
+        if ($RMethod->isStatic()) {
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must be dynamic.'), $class, $method));
         }
         $RType = $RMethod->getReturnType();
         if (!$RType) {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type and it must be set to void.'), $class, $method ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type and it must be set to void.'), $class, $method));
         }
         if ($RType->getName() !== 'void') {
-            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type void.'), $class, $method ));
+            throw new ClassValidationException(sprintf(t::_('The method %s::%s() must have return type void.'), $class, $method));
         }
-
     }
 
     /**
@@ -181,12 +181,12 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @throws ClassValidationException
      * @throws \ReflectionException
      */
-    public static function validate_properties(array $ns_prefixes) : void
+    public static function validate_properties(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
             $RClass = new ReflectionClass($active_record_class);
-            if (is_a($active_record_class, ActiveRecordController::class, TRUE)) {
+            if (is_a($active_record_class, ActiveRecordController::class, true)) {
                 continue;//as the Controller is now also an ActiveRecord this check needs to be suppressed. These are expected to have properties.
             }
             //it is now allowed the ActiveRecord children to have dynamic properties
@@ -206,7 +206,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * It is allowed these to come from a parent class.
      * @param array $ns_prefixes
      */
-    public static function validate_structure_source(array $ns_prefixes) : void
+    public static function validate_structure_source(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -225,7 +225,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param array $ns_prefixes
      * @throws ClassValidationException
      */
-    public static function validate_property_hooks(array $ns_prefixes) : void
+    public static function validate_property_hooks(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -253,7 +253,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param string $class_name
      * @param string $method_name
      */
-    public static function validate_before_set_property_hook(string $class_name, string $method_name) : void
+    public static function validate_before_set_property_hook(string $class_name, string $method_name): void
     {
         $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
@@ -270,10 +270,10 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         $RParam = $RMethod->getParameters()[0];
         $RType = $RParam->getType();
         if (!$RType) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type));
         }
         if ($RType->getName() !== $expected_type) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
         }
 
         $RType = $RMethod->getReturnType();
@@ -281,7 +281,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s.'), $class_name, $method_name, $expected_type));
         }
         if ($RType->getName() !== $expected_type) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ));
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
         }
     }
 
@@ -290,7 +290,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param string $class_name
      * @param string $method_name
      */
-    public static function validate_after_set_property_hook(string $class_name, string $method_name) : void
+    public static function validate_after_set_property_hook(string $class_name, string $method_name): void
     {
         $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
@@ -307,10 +307,10 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         $RParam = $RMethod->getParameters()[0];
         $RType = $RParam->getType();
         if (!$RType) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type));
         }
         if ($RType->getName() !== $expected_type) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
         }
 
         $RType = $RMethod->getReturnType();
@@ -318,7 +318,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void.'), $class_name, $method_name));
         }
         if ($RType->getName() !== 'void') {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName() ));
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName()));
         }
     }
 
@@ -327,7 +327,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param string $class_name
      * @param string $method_name
      */
-    public static function validate_before_get_property_hook(string $class_name, string $method_name) : void
+    public static function validate_before_get_property_hook(string $class_name, string $method_name): void
     {
         $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
@@ -345,7 +345,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void.'), $class_name, $method_name));
         }
         if ($RType->getName() !== 'void') {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName() ));
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type void. The current type is %s.'), $class_name, $method_name, $RType->getName()));
         }
     }
 
@@ -355,7 +355,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
      * @param string $class_name
      * @param string $method_name
      */
-    public static function validate_after_get_property_hook(string $class_name, string $method_name) : void
+    public static function validate_after_get_property_hook(string $class_name, string $method_name): void
     {
         $RMethod = new ReflectionMethod($class_name, $method_name);
         if ($RMethod->isStatic()) {
@@ -372,10 +372,10 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
         $RParam = $RMethod->getParameters()[0];
         $RType = $RParam->getType();
         if (!$RType) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s.'), $class_name, $method_name, $expected_type));
         }
         if ($RType->getName() !== $expected_type) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ) );
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must accept an argument of type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
         }
 
         $RType = $RMethod->getReturnType();
@@ -383,8 +383,7 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
             throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s.'), $class_name, $method_name, $expected_type));
         }
         if ($RType->getName() !== $expected_type) {
-            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName() ));
+            throw new ClassValidationException(sprintf(t::_('The property hook %s::%s() must have return type %s. The current type is %s.'), $class_name, $method_name, $expected_type, $RType->getName()));
         }
     }
-
 }

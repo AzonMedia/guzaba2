@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
@@ -17,11 +17,10 @@ class StatementMysqli extends Statement implements StatementInterface
      */
     public const STRING_AS_BLOB_LIMIT = 2000;
 
-    public function execute(array $parameters = []) : self
+    public function execute(array $parameters = []): self
     {
 
         if ($parameters && $this->params) {
-            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
             throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
         }
 
@@ -34,7 +33,7 @@ class StatementMysqli extends Statement implements StatementInterface
         $sql = $this->get_query();
 
         $statement_group_str = $this->get_statement_group_as_string();
-        if ($statement_group_str === NULL) {
+        if ($statement_group_str === null) {
             throw new RunTimeException(sprintf(t::_('The statement for query %s can not be determined of which type is (DQL, DML etc...).'), $sql));
         }
 
@@ -47,17 +46,17 @@ class StatementMysqli extends Statement implements StatementInterface
             $this->NativeStatement->bind_param(self::get_types_for_binding($position_parameters), ...$position_parameters);
         }
 
-        $exec_start_time = microtime(TRUE);
+        $exec_start_time = microtime(true);
 
         $ret = $this->NativeStatement->execute();
-        if ($ret === FALSE) {
+        if ($ret === false) {
             $this->handle_error();//will throw exception
         }
 
-        $exec_end_time = microtime(TRUE);
+        $exec_end_time = microtime(true);
         $Apm = self::get_service('Apm');
-        $Apm->increment_value('cnt_'.strtolower($statement_group_str).'_statements', 1);
-        $Apm->increment_value('time_'.strtolower($statement_group_str).'_statements', $exec_end_time - $exec_start_time);
+        $Apm->increment_value('cnt_' . strtolower($statement_group_str) . '_statements', 1);
+        $Apm->increment_value('time_' . strtolower($statement_group_str) . '_statements', $exec_end_time - $exec_start_time);
 
         return $this;
     }
@@ -67,11 +66,11 @@ class StatementMysqli extends Statement implements StatementInterface
         return $this->fetchAll();
     }
 
-    public function fetchAll() : array
+    public function fetchAll(): array
     {
         $result = $this->NativeStatement->get_result();
         $data = [];
-        while($row = $result->fetch_assoc()) {
+        while ($row = $result->fetch_assoc()) {
             $data[] = $row;
         }
         return $data;
@@ -91,7 +90,7 @@ class StatementMysqli extends Statement implements StatementInterface
      * @param array $position_parameters
      * @return array
      */
-    public static function get_types_for_binding(array $position_parameters) : string
+    public static function get_types_for_binding(array $position_parameters): string
     {
         $types = '';
         foreach ($position_parameters as $position_parameter) {
@@ -110,7 +109,7 @@ class StatementMysqli extends Statement implements StatementInterface
                     $types .= 'b';//binary
                 }
             } else {
-                throw new InvalidArgumentException(sprintf(t::_('An unsupported parameter type of %s is provided for binding.'), gettype($position_parameter) ));
+                throw new InvalidArgumentException(sprintf(t::_('An unsupported parameter type of %s is provided for binding.'), gettype($position_parameter)));
             }
         }
         return $types;

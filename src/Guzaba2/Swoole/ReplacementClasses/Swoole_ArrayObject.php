@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole;
 
 class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
@@ -10,11 +12,11 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
         $this->array = $array;
     }
 
-    public function isEmpty() : bool
+    public function isEmpty(): bool
     {
     }
 
-    public function count() : int
+    public function count(): int
     {
     }
 
@@ -26,7 +28,7 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function valid() : bool
+    public function valid(): bool
     {
     }
 
@@ -42,19 +44,19 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function set($key, $value) : self
+    public function set($key, $value): self
     {
     }
 
-    public function delete($key) : self
+    public function delete($key): self
     {
     }
 
-    public function remove($value, bool $strict = true, bool $loop = false) : self
+    public function remove($value, bool $strict = true, bool $loop = false): self
     {
     }
 
-    public function clear() : self
+    public function clear(): self
     {
     }
 
@@ -74,11 +76,11 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function exists($key) : bool
+    public function exists($key): bool
     {
     }
 
-    public function contains($value, bool $strict = true) : bool
+    public function contains($value, bool $strict = true): bool
     {
     }
 
@@ -94,15 +96,15 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function join(string $glue = '') : \Swoole\StringObject
+    public function join(string $glue = ''): \Swoole\StringObject
     {
     }
 
-    public function serialize() : \Swoole\StringObject
+    public function serialize(): \Swoole\StringObject
     {
     }
 
-    public function unserialize($string) : self
+    public function unserialize($string): self
     {
     }
 
@@ -122,7 +124,7 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function insert(int $offset, $value) : self
+    public function insert(int $offset, $value): self
     {
     }
 
@@ -134,7 +136,7 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function slice($offset, ?int $length = NULL, bool $preserve_keys = false) : self
+    public function slice($offset, ?int $length = null, bool $preserve_keys = false): self
     {
     }
 
@@ -142,11 +144,11 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function each(callable $fn) : self
+    public function each(callable $fn): self
     {
     }
 
-    public function map(callable $fn) : self
+    public function map(callable $fn): self
     {
     }
 
@@ -154,91 +156,91 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    public function keys(?int $search_value = NULL, $strict = false) : self
+    public function keys(?int $search_value = null, $strict = false): self
     {
     }
 
-    public function values() : self
+    public function values(): self
     {
     }
 
-    public function column($column_key, $index) : self
+    public function column($column_key, $index): self
     {
     }
 
-    public function unique(int $sort_flags = Swoole\SORT_STRING) : self
+    public function unique(int $sort_flags = Swoole\SORT_STRING): self
     {
     }
 
-    public function reverse(bool $preserve_keys = false) : self
+    public function reverse(bool $preserve_keys = false): self
     {
     }
 
-    public function chunk(int $size, bool $preserve_keys = false) : self
+    public function chunk(int $size, bool $preserve_keys = false): self
     {
     }
 
-    public function flip() : self
+    public function flip(): self
     {
     }
 
-    public function filter(callable $fn, int $flag = 0) : self
+    public function filter(callable $fn, int $flag = 0): self
     {
     }
 
-    public function multiSort(int $sort_order = Swoole\SORT_ASC, int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function multiSort(int $sort_order = Swoole\SORT_ASC, int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function asort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function asort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function arsort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function arsort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function krsort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function krsort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function ksort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function ksort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function natcasesort() : self
+    public function natcasesort(): self
     {
     }
 
-    public function natsort() : self
+    public function natsort(): self
     {
     }
 
-    public function rsort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function rsort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function shuffle() : self
+    public function shuffle(): self
     {
     }
 
-    public function sort(int $sort_flags = Swoole\SORT_REGULAR) : self
+    public function sort(int $sort_flags = Swoole\SORT_REGULAR): self
     {
     }
 
-    public function uasort(callable $value_compare_func) : self
+    public function uasort(callable $value_compare_func): self
     {
     }
 
-    public function uksort(callable $value_compare_func) : self
+    public function uksort(callable $value_compare_func): self
     {
     }
 
-    public function usort(callable $value_compare_func) : self
+    public function usort(callable $value_compare_func): self
     {
     }
 
-    public function __toArray() : array
+    public function __toArray(): array
     {
     }
 
@@ -246,11 +248,11 @@ class ArrayObject implements \ArrayAccess, \Serializable, \Countable, \Iterator
     {
     }
 
-    protected static function detectStringType(string $value) : \Swoole\StringObject
+    protected static function detectStringType(string $value): \Swoole\StringObject
     {
     }
 
-    protected static function detectArrayType(array $value) : self
+    protected static function detectArrayType(array $value): self
     {
     }
 }

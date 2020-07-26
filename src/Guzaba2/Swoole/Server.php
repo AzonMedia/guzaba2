@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
@@ -155,7 +156,7 @@ class Server extends \Guzaba2\Http\Server
      */
     private array $ipc_responses = [];
 
-    private ?float $start_microtime = NULL;
+    private ?float $start_microtime = null;
 
     /**
      * @var float[]
@@ -182,7 +183,7 @@ class Server extends \Guzaba2\Http\Server
         $this->port = $port;
         $this->dispatch_mode = $options['dispatch_mode'] ?? self::SWOOLE_DEFAULTS['dispatch_mode'];
 
-        if ($options['worker_num'] === NULL) {
+        if ($options['worker_num'] === null) {
             //$options['worker_num'] = swoole_cpu_num() * 2;
             //TODO - https://github.com/AzonMedia/guzaba2/issues/22
             $options['worker_num'] = swoole_cpu_num();
@@ -200,7 +201,7 @@ class Server extends \Guzaba2\Http\Server
         }
 
         if (empty($options['task_enable_coroutine'])) {
-            $options['task_enable_coroutine'] = TRUE;//always true... no matter what is provided
+            $options['task_enable_coroutine'] = true;//always true... no matter what is provided
         }
 
         $this->options = $options;
@@ -242,7 +243,7 @@ class Server extends \Guzaba2\Http\Server
      */
     public function get_worker(): WorkerInterface
     {
-        if ($this->get_start_microtime() === NULL) {
+        if ($this->get_start_microtime() === null) {
             throw new RunTimeException(sprintf(t::_('The server is not yet started. There are no workers.')));
         }
         return $this->Worker;
@@ -259,7 +260,7 @@ class Server extends \Guzaba2\Http\Server
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public static function validate_server_configuration_options(array $options) : void
+    public static function validate_server_configuration_options(array $options): void
     {
         foreach ($options as $option_name => $option_value) {
             if (!in_array($option_name, self::SUPPORTED_OPTIONS)) {
@@ -267,7 +268,7 @@ class Server extends \Guzaba2\Http\Server
             }
         }
 
-        if (array_key_exists('task_enable_coroutine', $options) && $options['task_enable_coroutine'] !== TRUE) {
+        if (array_key_exists('task_enable_coroutine', $options) && $options['task_enable_coroutine'] !== true) {
             throw new InvalidArgumentException(sprintf(t::_('It is not allowed to disable the coroutines in the task workers (task_enable_coroutine = FALSE).')));
         }
 
@@ -280,13 +281,13 @@ class Server extends \Guzaba2\Http\Server
         }
         if (!empty($options['upload_tmp_dir'])) {
             if (!file_exists($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s does not exist. It must be a writable directory.'), $options['upload_tmp_dir']));
             }
             if (!is_dir($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is a file. It must be a writable directory.'), $options['upload_tmp_dir']));
             }
             if (!is_writeable($options['upload_tmp_dir'])) {
-                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory.'), $options['upload_tmp_dir'] ));
+                throw new RunTimeException(sprintf(t::_('The upload_tmp_dir path %s exists but it is not writeable. It must be a writable directory.'), $options['upload_tmp_dir']));
             }
         }
 
@@ -311,24 +312,24 @@ class Server extends \Guzaba2\Http\Server
             throw new RunTimeException(sprintf(t::_('The "daemonize" option is set but there is no "log_file" option specified.')));
         }
         if (!empty($options['daemonize']) && file_exists($options['log_file']) && !is_writable($options['log_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.'), $options['log_file'] ));
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s exists but is not writable. Please check the filesystem permissions. File file must be writable by the user executing the server.'), $options['log_file']));
         }
         if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
-            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'] , dirname($options['log_file']) ));
+            throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'], dirname($options['log_file'])));
         }
     }
 
-    public function get_host() : string
+    public function get_host(): string
     {
         return $this->host;
     }
 
-    public function get_port() : int
+    public function get_port(): int
     {
         return $this->port;
     }
 
-    public function start() : void
+    public function start(): void
     {
         //before entering in coroutine mode it is a good idea to disable the blocking functions:
         //https://wiki.swoole.com/wiki/page/1006.html
@@ -344,9 +345,9 @@ class Server extends \Guzaba2\Http\Server
 
         //just before the server is started enable the coroutine hooks (not earlier as these will be in place but we will not be in coroutine cotext yet and this will trigger an error - for example when exec() is used)
         self::get_service('Events')->create_event($this, '_before_start');
-        \Swoole\Runtime::enableCoroutine(TRUE);//we will be running everything in coroutine context and makes sense to enable all hooks
+        \Swoole\Runtime::enableCoroutine(true);//we will be running everything in coroutine context and makes sense to enable all hooks
 
-        $this->start_microtime = microtime(TRUE);
+        $this->start_microtime = microtime(true);
         $this->SwooleHttpServer->start();
         //self::get_service('Events')->create_event($this, '_after_start');//no code is being executed after the server is started... the next code that is being executed is in the worker start or Start handler
     }
@@ -365,44 +366,44 @@ class Server extends \Guzaba2\Http\Server
         $this->worker_start_times[$worker_id] = $time;
     }
 
-    public function get_worker_start_time(?int $worker_id = NULL): ?float
+    public function get_worker_start_time(?int $worker_id = null): ?float
     {
-        if ($worker_id === NULL) {
+        if ($worker_id === null) {
             $worker_id = $this->get_worker_id();
         }
-        return $this->worker_start_times[$worker_id] ?? NULL ;
+        return $this->worker_start_times[$worker_id] ?? null ;
     }
 
-    private function print_server_start_messages() : void
+    private function print_server_start_messages(): void
     {
         //Kernel::printk(Kernel::FRAMEWORK_BANNER);
         Kernel::printk(PHP_EOL);
 
         //TODO - add option for setting the timezone of the application, and time format
-        Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s at %s %s').PHP_EOL, $this->host, $this->port, date('Y-m-d H:i:s'), date_default_timezone_get() ));
+        Kernel::printk(sprintf(t::_('Starting Swoole HTTP server on %s:%s at %s %s') . PHP_EOL, $this->host, $this->port, date('Y-m-d H:i:s'), date_default_timezone_get()));
 
         if (!empty($this->options['document_root'])) {
-            Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s').PHP_EOL, $this->options['document_root']));
+            Kernel::printk(sprintf(t::_('Static serving is enabled and document_root is set to %s') . PHP_EOL, $this->options['document_root']));
         }
 
         //$debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
         //Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
-        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s'), $this->options['worker_num'], $this->options['task_worker_num'] ).PHP_EOL );
+        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s'), $this->options['worker_num'], $this->options['task_worker_num']) . PHP_EOL);
         $WorkerStartHandler = $this->get_handler('WorkerStart');
         if ($WorkerStartHandler->debug_ports_enabled()) {
             $base_port = $WorkerStartHandler->get_base_debug_port();
-            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->get_total_workers() - 1).PHP_EOL);
+            Kernel::printk(sprintf(t::_('Worker debug ports enabled: %s - %s'), $base_port, $base_port + $this->get_total_workers() - 1) . PHP_EOL);
         }
         if (!empty($this->options['open_http2_protocol'])) {
-            Kernel::printk(sprintf(t::_('HTTP2 enabled')).PHP_EOL);
+            Kernel::printk(sprintf(t::_('HTTP2 enabled')) . PHP_EOL);
         }
         if (!empty($this->options['ssl_cert_file'])) {
-            Kernel::printk(sprintf(t::_('HTTPS enabled')).PHP_EOL);
+            Kernel::printk(sprintf(t::_('HTTPS enabled')) . PHP_EOL);
         }
         if (!empty($this->options['daemonize'])) {
-            Kernel::printk(sprintf(t::_('DEAMONIZED, log file: %s'), $this->options['log_file']).PHP_EOL);
+            Kernel::printk(sprintf(t::_('DEAMONIZED, log file: %s'), $this->options['log_file']) . PHP_EOL);
         }
-        Kernel::printk(sprintf(t::_('End of startup messages - Swoole server is now serving requests')).PHP_EOL );
+        Kernel::printk(sprintf(t::_('End of startup messages - Swoole server is now serving requests')) . PHP_EOL);
         Kernel::printk(PHP_EOL);
     }
 
@@ -411,7 +412,7 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer->stop();
     }
 
-    public function on(string $event_name, callable $callable) : void
+    public function on(string $event_name, callable $callable): void
     {
         $this->handlers[$event_name] = $callable;
         $this->SwooleHttpServer->on($event_name, $callable);
@@ -422,12 +423,12 @@ class Server extends \Guzaba2\Http\Server
      * @param string $event_name
      * @return callable|null
      */
-    public function get_handler(string $event_name) : ?callable
+    public function get_handler(string $event_name): ?callable
     {
         //return $this->handlers[$event_name] ?? NULL;
-        $ret = NULL;
-        foreach ($this->handlers as $handler_name=>$callable) {
-            if (strtolower($handler_name)===strtolower($event_name)) {
+        $ret = null;
+        foreach ($this->handlers as $handler_name => $callable) {
+            if (strtolower($handler_name) === strtolower($event_name)) {
                 $ret = $callable;
                 break;
             }
@@ -451,7 +452,7 @@ class Server extends \Guzaba2\Http\Server
         return range(0, $this->get_total_workers() - 1);
     }
 
-    public function get_worker_pid() : int
+    public function get_worker_pid(): int
     {
         return $this->SwooleHttpServer->worker_pid;
     }
@@ -528,7 +529,7 @@ class Server extends \Guzaba2\Http\Server
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function get_document_root() : ?string
+    public function get_document_root(): ?string
     {
         //return $this->option_is_set('document_root') ? $this->get_option('document_root'): NULL;
         return $this->get_option('document_root');
@@ -568,10 +569,10 @@ class Server extends \Guzaba2\Http\Server
         if (isset($this->ipc_responses[$ipc_request_id][$src_worker_id])) {
             Kernel::log(sprintf(t::_('There is already has IpcResponse for IpcRequest ID %1$s from worker %2$s.'), $ipc_request_id, $src_worker_id), LogLevel::NOTICE);
         }
-        if ( !( $IpcResponse->getBody()) instanceof Structured) {
-            throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1$s but is of class %2$s.'), Structured::class, get_class($IpcResponse->getBody()) ));
+        if (!( $IpcResponse->getBody()) instanceof Structured) {
+            throw new LogicException(sprintf(t::_('The IpcResponse Body is not of class %1$s but is of class %2$s.'), Structured::class, get_class($IpcResponse->getBody())));
         }
-        $IpcResponse->set_received_microtime(microtime(TRUE));
+        $IpcResponse->set_received_microtime(microtime(true));
         $this->ipc_responses[$ipc_request_id][$src_worker_id] = $IpcResponse;
     }
 
@@ -590,20 +591,20 @@ class Server extends \Guzaba2\Http\Server
     {
         new Event($this, '_before_send_ipc_request', func_get_args());
 
-        $ret = NULL;
+        $ret = null;
 
         $this->validate_destination_worker_id($dest_worker_id);
         if ($timeout > self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
             throw new InvalidArgumentException(sprintf(t::_('The maximum timeout for awaiting an IpcResponse is %1$s seconds.'), self::CONFIG_RUNTIME['ipc_responses_cleanup_time']));
         }
 
-        $microtime_start = microtime(TRUE);
+        $microtime_start = microtime(true);
         $request_id = $IpcRequest->get_request_id();
-        $IpcRequest->set_requires_response(TRUE);
+        $IpcRequest->set_requires_response(true);
 
         if ($this->SwooleHttpServer->sendMessage($IpcRequest, $dest_worker_id)) {
             while (true) {
-                if (microtime(TRUE) > $microtime_start + $timeout) {
+                if (microtime(true) > $microtime_start + $timeout) {
                     //return NULL;
                     goto ret;
                 }
@@ -645,9 +646,9 @@ class Server extends \Guzaba2\Http\Server
         //remove the worker_id of the current one - a message can not be sent to itself (if this worker needs to execute the same command this needs to be done separately)
         //@see ActiveRecordController::execute_multicast_request()
         $current_worker_id = $this->get_worker_id();
-        $key = array_search($current_worker_id, $dest_worker_ids, TRUE);
-        if ($key === FALSE) {
-            throw new LogicException(sprintf(t::_('The ID %1$s of the current worker is not found in the list of IDs of all the workers.'), $current_worker_id ));
+        $key = array_search($current_worker_id, $dest_worker_ids, true);
+        if ($key === false) {
+            throw new LogicException(sprintf(t::_('The ID %1$s of the current worker is not found in the list of IDs of all the workers.'), $current_worker_id));
         }
         unset($dest_worker_ids[$key]);
         $dest_worker_ids = array_values($dest_worker_ids);
@@ -674,12 +675,11 @@ class Server extends \Guzaba2\Http\Server
             return [];
         }
         foreach ($dest_worker_ids as $dest_worker_id) {
-            $callables[] = function() use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
+            $callables[] = function () use ($IpcRequest, $dest_worker_id, $timeout): ?IpcResponseInterface {
                 return $this->send_ipc_request($IpcRequest, $dest_worker_id, $timeout);
             };
         }
         return Coroutine::executeMulti(...$callables);
-
     }
 
     /**
@@ -711,7 +711,7 @@ class Server extends \Guzaba2\Http\Server
 //        }
         $this->validate_worker_id($dest_worker_id);
         if ($dest_worker_id === $this->get_worker_id()) {
-            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1$s.'), $this->get_worker_id() ));
+            throw new InvalidArgumentException(sprintf(t::_('It is not possible to send IPC message to the same $dest_worker_id as the current worker_id %1$s.'), $this->get_worker_id()));
         }
     }
 
@@ -746,7 +746,7 @@ class Server extends \Guzaba2\Http\Server
 
         foreach ($this->ipc_responses as $ipc_request_id => $worker_data) {
             foreach ($worker_data as $worker_id => $IpcResponse) {
-                if ($IpcResponse->get_received_microtime() < microtime(TRUE) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
+                if ($IpcResponse->get_received_microtime() < microtime(true) - self::CONFIG_RUNTIME['ipc_responses_cleanup_time']) {
                     unset($this->ipc_responses[$ipc_request_id][$worker_id]);
                 }
             }

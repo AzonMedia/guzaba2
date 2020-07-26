@@ -1,19 +1,20 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Nosql\MongoDb;
 
-use \MongoDB\Driver\Manager;
-use \MongoDB\Driver\Query;
-use \MongoDB\Driver\BulkWrite;
-use \MongoDB\Driver\WriteConcern;
-use \MongoDB\Driver\Command;
-
+use MongoDB\Driver\Manager;
+use MongoDB\Driver\Query;
+use MongoDB\Driver\BulkWrite;
+use MongoDB\Driver\WriteConcern;
+use MongoDB\Driver\Command;
 use Guzaba2\Database\Connection;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Exceptions\QueryException;
 use Guzaba2\Database\Exceptions\ConnectionException;
+
 // use Guzaba2\Coroutine\Coroutine;
 // use Guzaba2\Database\ConnectionFactory;
 // use Guzaba2\Database\Interfaces\ConnectionInterface;
@@ -54,8 +55,6 @@ abstract class ConnectionCoroutine extends Connection
     {
         $this->connect($options);
         parent::__construct();
-
-
     }
 
     private function connect(array $options)
@@ -99,7 +98,7 @@ abstract class ConnectionCoroutine extends Connection
      * @return array
      * @throws \MongoDB\Driver\Exception\Exception
      */
-    public function query($collection, array $filter = array(), array $options = array()) : array
+    public function query($collection, array $filter = array(), array $options = array()): array
     {
         // if (!$this->get_coroutine_id()) {
         //     throw new RunTimeException(sprintf(t::_('Attempting to run query to collection "%s" with filter: "%s" on a connection that is not assigned to any coroutine.'), $collection, print_r($filter, TRUE)));
@@ -141,11 +140,10 @@ abstract class ConnectionCoroutine extends Connection
             $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
             //$r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
             $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
-
         } catch (MongoDB\Driver\Exception\BulkWriteException $Exception) {
             $error_code = $Exception->getWriteResult()->getWriteErrors()[0]->getCode();
 
-            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $Exception->getMessage()), '', []);
+            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, true), $error_code, $Exception->getMessage()), '', []);
         }
 
         return $result;
@@ -164,7 +162,7 @@ abstract class ConnectionCoroutine extends Connection
      *
      * @return void
      */
-    public function update(array $filter, string $collection, array $data, bool $upsert = false, bool $multi = false) : void
+    public function update(array $filter, string $collection, array $data, bool $upsert = false, bool $multi = false): void
     {
         $bulk = new BulkWrite();
 
@@ -178,11 +176,10 @@ abstract class ConnectionCoroutine extends Connection
             $writeConcern = new WriteConcern(WriteConcern::MAJORITY, 100);
             //$r = $this->Manager->executeBulkWrite(self::CONFIG_RUNTIME['database'] . '.' . $collection, $bulk, $writeConcern);
             $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
-
         } catch (MongoDB\Driver\Exception\BulkWriteException $Exception) {
             $error_code = $Exception->getWriteResult()->getWriteErrors()[0]->getCode();
 
-            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, TRUE), $error_code, $Exception->getMessage()), '', []);
+            throw new QueryException(null, '', $error_code, sprintf(t::_('Preparing query to collection "%s" with filter: "%s" failed with error: [%s] %s .'), $collection, print_r($filter, true), $error_code, $Exception->getMessage()), '', []);
         }
     }
 
@@ -194,7 +191,7 @@ abstract class ConnectionCoroutine extends Connection
      *
      * @return void
      */
-    public function delete(array $filter, string $collection, bool $limit = true) : void
+    public function delete(array $filter, string $collection, bool $limit = true): void
     {
         $bulk = new BulkWrite();
 
@@ -208,15 +205,15 @@ abstract class ConnectionCoroutine extends Connection
         $r = $this->Manager->executeBulkWrite($this->options['database'] . '.' . $collection, $bulk, $writeConcern);
     }
 
-    public function ping() : bool
+    public function ping(): bool
     {
-        $ret = FALSE;
+        $ret = false;
         $command = new Command(['ping' => 1]);
 
         try {
             //$cursor = $this->Manager->executeCommand(self::CONFIG_RUNTIME['database'], $command);
             $cursor = $this->Manager->executeCommand($this->options['database'], $command);
-            $ret = TRUE;
+            $ret = true;
         } catch (MongoDB\Driver\Exception $Exception) {
             throw new RunTimeException($Exceptions->getMessage());
         }
@@ -224,20 +221,20 @@ abstract class ConnectionCoroutine extends Connection
         return $ret;
     }
 
-    public function close() : void
+    public function close(): void
     {
         // cannot close MongoDB Connection
     }
 
-    public function get_autoincrement_value($collection_name) : int
+    public function get_autoincrement_value($collection_name): int
     {
         $command = new Command([
             //'findandmodify' => self::CONFIG_RUNTIME['AI_table'],
             'findandmodify' => $this->options['AI_table'],
             'query' => ['_id' => $collection_name],
             'update' => ['$inc' => ['AI' => 1]],
-            'new' => TRUE,
-            'upsert' => TRUE,
+            'new' => true,
+            'upsert' => true,
             'fields' => ['AI' => 1]
         ]);
 
@@ -251,13 +248,13 @@ abstract class ConnectionCoroutine extends Connection
         return $next_id;
     }
 
-    public function set_autoincrement_value($collection_name, $object_id) : void
+    public function set_autoincrement_value($collection_name, $object_id): void
     {
         $this->update(
             ['_id' => $collection_name],
             self::CONFIG_RUNTIME['AI_table'],
             ['AI' => $object_id],
-            TRUE
+            true
         );
     }
 

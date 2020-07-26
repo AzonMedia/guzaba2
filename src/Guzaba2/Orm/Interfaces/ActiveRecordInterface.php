@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Interfaces;
@@ -36,32 +37,32 @@ interface ActiveRecordInterface extends BaseInterface
 
     public const INDEX_NEW = 0;
     
-    public static function get_routes() : ?iterable ;
+    public static function get_routes(): ?iterable;
 
-    public static function get_main_table() : string ;
+    public static function get_main_table(): string;
 
-    public static function get_temporal_class() : string ;
+    public static function get_temporal_class(): string;
 
-    public function is_new() : bool ;
+    public function is_new(): bool;
 
-    public function get_uuid() : string;
+    public function get_uuid(): string;
 
     public function get_id();
 
-    public function get_primary_index() : array;
+    public function get_primary_index(): array;
 
     //public function read() : void;
 
-    public function write() : ActiveRecordInterface;
+    public function write(): ActiveRecordInterface;
 
-    public function delete() : void;
+    public function delete(): void;
 
 
-    public function check_permission(string $action) : void ;
+    public function check_permission(string $action): void;
 
-    public function current_role_can(string $action) : bool ;
+    public function current_role_can(string $action): bool;
 
-    public function role_can(Role $Role, string $action) : bool ;
+    public function role_can(Role $Role, string $action): bool;
 
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL): array ;
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array;
 }

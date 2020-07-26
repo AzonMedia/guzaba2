@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -37,7 +38,7 @@ trait SupportsObjectInternalId
     /**
      * Sets the object internal ID. To be called from the base class constructor.
      */
-    protected function set_object_internal_id() : void
+    protected function set_object_internal_id(): void
     {
         $this->object_internal_id = self::generate_unique_id(ObjectInternalIdInterface::UNIQUE_ID_LENGTH);
     }
@@ -46,7 +47,7 @@ trait SupportsObjectInternalId
      * Returns the unique object id.
      * @return string
      */
-    public function get_object_internal_id() : string
+    public function get_object_internal_id(): string
     {
         return $this->object_internal_id;
     }
@@ -56,9 +57,9 @@ trait SupportsObjectInternalId
      * @param int $length The length of the random string part of the ID
      * @return string
      */
-    protected static function generate_unique_id(int $length) : string
+    protected static function generate_unique_id(int $length): string
     {
-        $ret = microtime(TRUE).'_'.self::generate_random_string($length);
+        $ret = microtime(true) . '_' . self::generate_random_string($length);
         return $ret;
     }
 
@@ -66,15 +67,15 @@ trait SupportsObjectInternalId
      * @param int $length
      * @return string
      */
-    protected static function generate_random_string(int $length) : string
+    protected static function generate_random_string(int $length): string
     {
         $str = '';
         static $list_length;
-        if ($list_length === NULL) {
+        if ($list_length === null) {
             $list_length = strlen(ObjectInternalIdInterface::DEFAULT_CHARACTERS_LIST);
         }
         for ($aa = 0; $aa < $length; $aa++) {
-            $str .= ObjectInternalIdInterface::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length-1)];
+            $str .= ObjectInternalIdInterface::DEFAULT_CHARACTERS_LIST[mt_rand(0, $list_length - 1)];
         }
 
         return $str;

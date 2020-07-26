@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole;
 
 class StringObject
@@ -11,7 +13,7 @@ class StringObject
         $new_string = $string;
     }
 
-    public function length() : int
+    public function length(): int
     {
     }
 
@@ -35,27 +37,27 @@ class StringObject
     {
     }
 
-    public function lower() : self
+    public function lower(): self
     {
     }
 
-    public function upper() : self
+    public function upper(): self
     {
     }
 
-    public function trim() : self
+    public function trim(): self
     {
     }
 
-    public function lrim() : self
+    public function lrim(): self
     {
     }
 
-    public function rtrim() : self
+    public function rtrim(): self
     {
     }
 
-    public function substr(int $offset, $length) : self
+    public function substr(int $offset, $length): self
     {
     }
 
@@ -63,35 +65,35 @@ class StringObject
     {
     }
 
-    public function replace(string $search, string $replace, &$count = NULL) : self
+    public function replace(string $search, string $replace, &$count = null): self
     {
     }
 
-    public function startsWith(string $needle) : bool
+    public function startsWith(string $needle): bool
     {
     }
 
-    public function contains(string $subString) : bool
+    public function contains(string $subString): bool
     {
     }
 
-    public function endsWith(string $needle) : bool
+    public function endsWith(string $needle): bool
     {
     }
 
-    public function split(string $delimiter, int $limit = Swoole\PHP_INT_MAX) : \Swoole\ArrayObject
+    public function split(string $delimiter, int $limit = Swoole\PHP_INT_MAX): \Swoole\ArrayObject
     {
     }
 
-    public function char(int $index) : string
+    public function char(int $index): string
     {
     }
 
-    public function chunkSplit(int $chunkLength = 1, string $chunkEnd = '') : self
+    public function chunkSplit(int $chunkLength = 1, string $chunkEnd = ''): self
     {
     }
 
-    public function chunk($splitLength = 1) : \Swoole\ArrayObject
+    public function chunk($splitLength = 1): \Swoole\ArrayObject
     {
     }
 
@@ -99,11 +101,11 @@ class StringObject
     {
     }
 
-    public function __toString() : string
+    public function __toString(): string
     {
     }
 
-    protected static function detectArrayType(array $value) : \Swoole\ArrayObject
+    protected static function detectArrayType(array $value): \Swoole\ArrayObject
     {
     }
 }

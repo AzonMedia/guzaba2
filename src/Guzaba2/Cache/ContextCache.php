@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Cache;
 
@@ -39,7 +39,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function set(string $prefix, string $key, /* mixed*/ $data) : void
+    public function set(string $prefix, string $key, /* mixed*/ $data): void
     {
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
@@ -64,7 +64,7 @@ class ContextCache extends Base implements CacheInterface
      * @throws ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function delete(string $prefix, string $key) : void
+    public function delete(string $prefix, string $key): void
     {
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
@@ -76,14 +76,12 @@ class ContextCache extends Base implements CacheInterface
             } else {
                 unset($Context->{self::class}[$prefix]);
             }
-
         } else {
             if ($key) {
                 unset($this->cache[$prefix][$key]);
             } else {
                 unset($this->cache[$prefix][$key]);
             }
-
         }
     }
 
@@ -104,9 +102,9 @@ class ContextCache extends Base implements CacheInterface
             if (!property_exists($Context, self::class)) {
                 $Context->{self::class} = [];
             }
-            $ret = $Context->{self::class}[$prefix][$key] ?? NULL;
+            $ret = $Context->{self::class}[$prefix][$key] ?? null;
         } else {
-            $ret = $this->cache[$prefix][$key] ?? NULL;
+            $ret = $this->cache[$prefix][$key] ?? null;
         }
         return $ret;
     }
@@ -120,20 +118,20 @@ class ContextCache extends Base implements CacheInterface
      * @throws ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function exists(string $prefix, string $key) : bool
+    public function exists(string $prefix, string $key): bool
     {
-        $ret = FALSE;
+        $ret = false;
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
             if (!property_exists($Context, self::class)) {
                 $Context->{self::class} = [];
             }
             if (array_key_exists($prefix, $Context->{self::class}) && array_key_exists($key, $Context->{self::class}[$key])) {
-                $ret = TRUE;
+                $ret = true;
             }
         } else {
             if (array_key_exists($prefix, $this->cache) && array_key_exists($key, $this->cache[$prefix])) {
-                $ret = TRUE;
+                $ret = true;
             }
         }
         return $ret;

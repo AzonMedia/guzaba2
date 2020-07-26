@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug;
@@ -82,7 +83,7 @@ class Debugger extends Base
         $this->set_prompt($this->substitute_prompt_vars(self::CONFIG_RUNTIME['prompt']));
 
 
-        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($this->worker_id), FALSE);
+        $this->DebugServer = new \Swoole\Coroutine\Server($this->HttpServer->get_host(), $this->get_worker_port($this->worker_id), false);
 //        $server->handle(function (Swoole\Coroutine\Server\Connection $conn) use ($server) {
 //            while(true) {
 //                $data = $conn->recv();
@@ -91,7 +92,7 @@ class Debugger extends Base
 //                $conn->send("world\n");
 //            }
 //        });
-        $Function = function (\Swoole\Coroutine\Server\Connection $Connection) : void {
+        $Function = function (\Swoole\Coroutine\Server\Connection $Connection): void {
             while (true) {
                 //print $Connection->exportSocket()->fd.' '.microtime(TRUE).PHP_EOL;
                 /** @var \Swoole\Coroutine\Socket $Socket */
@@ -107,14 +108,14 @@ class Debugger extends Base
                     $Connection->close();
                     return;
                 } else {
-                    $set_prompt_to = NULL;
+                    $set_prompt_to = null;
                     $response = $this->Debugger->handle($command, $this->get_prompt(), $set_prompt_to);
 
                     //Kernel::printk('Debugger response: '.$response.PHP_EOL);
-                    if ($response === NULL && $command) {
+                    if ($response === null && $command) {
                         $response = sprintf(t::_('Unknown command %s provided. Try "help" or "quit".'), $command);
                     }
-                    if ($set_prompt_to !== NULL) {
+                    if ($set_prompt_to !== null) {
                         if ($set_prompt_to === '{RESTORE}') {
                             $this->restore_prompt();
                         } else {
@@ -133,9 +134,9 @@ class Debugger extends Base
         $this->DebugServer->start();
     }
 
-    protected function substitute_prompt_vars(string $prompt) : string
+    protected function substitute_prompt_vars(string $prompt): string
     {
-        $replacement = ( $this->is_task_worker_flag ? 'TW' : 'W' ).$this->worker_id;
+        $replacement = ( $this->is_task_worker_flag ? 'TW' : 'W' ) . $this->worker_id;
         $prompt = str_replace('{WORKER_ID}', $replacement, $prompt);
         $prompt = str_replace('{COROUTINE_ID}', \Swoole\Coroutine::getCid(), $prompt);
         return $prompt;
@@ -144,13 +145,13 @@ class Debugger extends Base
     /**
      * Allows the prompt to be changed from the various debugger backends/command handlers
      */
-    public function set_prompt(string $prompt) : void
+    public function set_prompt(string $prompt): void
     {
         //$this->prompts = $prompt;
         array_push($this->prompt_stack, $prompt);
     }
 
-    public function restore_prompt() : void
+    public function restore_prompt(): void
     {
         if (count($this->prompt_stack) > 1) {
             array_pop($this->prompt_stack);
@@ -159,7 +160,7 @@ class Debugger extends Base
         }
     }
 
-    public function get_prompt() : string
+    public function get_prompt(): string
     {
         return $this->prompt_stack[ count($this->prompt_stack) - 1];
     }
@@ -169,7 +170,7 @@ class Debugger extends Base
      * @param int $worker_id
      * @return int
      */
-    public function get_worker_port(int $worker_id) : int
+    public function get_worker_port(int $worker_id): int
     {
         return $this->base_debug_port + $worker_id;
     }
@@ -200,7 +201,7 @@ class Debugger extends Base
      * @throws InvalidArgumentException
      * @throws \ReflectionException
      */
-    public static function get_debug_command_classes() : array
+    public static function get_debug_command_classes(): array
     {
         $ret = [];
         $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
@@ -211,12 +212,12 @@ class Debugger extends Base
             }
         }
         //also get all classes from Azomedia\Debug namespace
-        $package_base_path = dirname( ( new \ReflectionClass(\Azonmedia\Debug\Debugger::class))->getFileName() );//azonmedia/debug is a dependency so should exist...
-        $basic_commands_path = $package_base_path.'/Backends/BasicCommands';
-        $files = glob($basic_commands_path.'/*.php');
+        $package_base_path = dirname(( new \ReflectionClass(\Azonmedia\Debug\Debugger::class))->getFileName());//azonmedia/debug is a dependency so should exist...
+        $basic_commands_path = $package_base_path . '/Backends/BasicCommands';
+        $files = glob($basic_commands_path . '/*.php');
         foreach ($files as $file) {
             require_once($file);
-            $class = 'Azonmedia\\Debug\\Backends\\BasicCommands\\'.basename($file,'.php');
+            $class = 'Azonmedia\\Debug\\Backends\\BasicCommands\\' . basename($file, '.php');
             $ret[] = $class;
         }
         return $ret;

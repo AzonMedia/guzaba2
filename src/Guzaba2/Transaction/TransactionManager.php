@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Transaction;
@@ -18,7 +19,7 @@ class TransactionManager extends Base
 
     private array $current_transactions = [];
 
-    public function set_current_transaction(?Transaction $Transaction, string $transaction_type = '') : void
+    public function set_current_transaction(?Transaction $Transaction, string $transaction_type = ''): void
     {
 
         if ($Transaction && $transaction_type) {
@@ -35,12 +36,12 @@ class TransactionManager extends Base
         $this->current_transactions[$transaction_type] = $Transaction;
     }
 
-    public function get_current_transaction(string $transaction_type) : ?Transaction
+    public function get_current_transaction(string $transaction_type): ?Transaction
     {
-        return $this->current_transactions[$transaction_type] ?? NULL;
+        return $this->current_transactions[$transaction_type] ?? null;
     }
 
-    public function get_all_current_transactions() : array
+    public function get_all_current_transactions(): array
     {
         return $this->current_transactions;
     }
@@ -88,5 +89,4 @@ class TransactionManager extends Base
 //    {
 //
 //    }
-
 }

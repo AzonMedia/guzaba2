@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Cache;
-
 
 use Guzaba2\Base\Base;
 use Guzaba2\Cache\Interfaces\CacheInterface;
@@ -19,7 +18,6 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
      */
     public function set(string $prefix, string $key, /* mixed*/ $data): void
     {
-
     }
 
     /**
@@ -28,9 +26,8 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
      * @param string $key
      * @throws RunTimeException
      */
-    public function delete(string $prefix, string $key ): void
+    public function delete(string $prefix, string $key): void
     {
-
     }
 
     /**
@@ -40,7 +37,6 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
      */
     public function get(string $prefix, string $key) /* mixed */
     {
-
     }
 
     /**
@@ -50,12 +46,10 @@ class ApcuCache extends Base implements CacheInterface, ProcessCacheInterface
      */
     public function exists(string $prefix, string $key): bool
     {
-
     }
 
     public function get_stats(string $prefix = ''): array
     {
-
     }
 
     public function clear_cache(string $prefix = '', int $percentage = 100): int

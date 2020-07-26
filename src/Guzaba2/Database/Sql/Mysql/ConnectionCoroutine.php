@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
@@ -50,7 +50,7 @@ abstract class ConnectionCoroutine extends Connection
      * @throws \ReflectionException
      * @throws RunTimeException
      */
-    public function __construct(array $options, ?callable $after_connect_callback = NULL)
+    public function __construct(array $options, ?callable $after_connect_callback = null)
     {
         $this->connect($options);
         parent::__construct($after_connect_callback);
@@ -63,38 +63,42 @@ abstract class ConnectionCoroutine extends Connection
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    private function connect(array $options) : void
+    private function connect(array $options): void
     {
         $this->NativeConnection = new \Swoole\Coroutine\Mysql();
 
         //$ret = $this->NativeConnection->connect(static::CONFIG_RUNTIME);
         //$config = array_merge( ['strict_mode' => TRUE, 'fetch_mode' => TRUE ], static::CONFIG_RUNTIME);
         //let the fetch_mode to be configurable
-        $config = ['strict_type' => TRUE];//but strict_type must be always TRUE
+        $config = ['strict_type' => true];//but strict_type must be always TRUE
         $config = array_merge($options, $config);
         static::validate_options($options);
         $this->options = $config;
-        //$config = array_filter($config, fn(string $key) : bool => in_array($key, self::SUPPORTED_OPTIONS), ARRAY_FILTER_USE_KEY );
-//        foreach ($config as $key=>$value) {
-//            if (!in_array($key, self::SUPPORTED_OPTIONS)) {
-//                throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, \Swoole\Coroutine\Mysql::class, implode(', ', self::SUPPORTED_OPTIONS) ));
-//            }
-//        }
+
         if (!array_key_exists('fetch_mode', $config)) {
-            $config['fetch_mode'] = FALSE;//better to be false by default as having it to true allows for a connection to be returned to the pool without all the data to have been fetched.
+            //better to be false by default as having it to true allows for a connection to be returned to the pool without all the data to have been fetched.
+            $config['fetch_mode'] = false;
         }
 
         $ret = $this->NativeConnection->connect($config);
 
         if (!$ret) {
-            throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->NativeConnection->connect_errno, $this->NativeConnection->connect_error));
+            $message = t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .');
+            throw new ConnectionException(sprintf(
+                $message,
+                get_class($this),
+                self::CONFIG_RUNTIME['host'],
+                self::CONFIG_RUNTIME['port'],
+                $this->NativeConnection->connect_errno,
+                $this->NativeConnection->connect_error
+            ));
         }
     }
 
     /**
      * @return bool
      */
-    public function get_fetch_mode() : bool
+    public function get_fetch_mode(): bool
     {
         //return $this->NativeConnection->serverInfo['fetch_mode'];
         return $this->get_options()['fetch_mode'];
@@ -109,9 +113,10 @@ abstract class ConnectionCoroutine extends Connection
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function prepare(string $query) : StatementInterface
+    public function prepare(string $query): StatementInterface
     {
-        if (!$this->get_coroutine_id() && $this->get_connection_id() !== NULL) { //if there is no connection ID allow to prepare as this is the SELECT CONNECTION_ID() query (or other initialization query run at connect)
+        if (!$this->get_coroutine_id() && $this->get_connection_id() !== null) {
+            //if there is no connection ID allow to prepare as this is the SELECT CONNECTION_ID() query (or other initialization query run at connect)
             throw new RunTimeException(sprintf(t::_('Attempting to prepare a statement for query "%s" on a connection that is not assigned to any coroutine.'), $query));
         }
         $Statement = $this->prepare_statement($query, StatementCoroutine::class, $this);
@@ -129,14 +134,14 @@ abstract class ConnectionCoroutine extends Connection
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public static function execute_parallel_queries(array $queries_data) : array
+    public static function execute_parallel_queries(array $queries_data): array
     {
         $callables = [];
         foreach ($queries_data as $query_data) {
             $query = $query_data['query'];
             $params = $query_data['params'];
             $called_class = get_called_class();
-            $callables[] = static function () use ($query, $params, $called_class) : iterable {
+            $callables[] = static function () use ($query, $params, $called_class): iterable {
                 $Connection = static::get_service('ConnectionFactory')->get_connection($called_class, $CR);
                 $Statement = $Connection->prepare($query);
                 $Statement->execute($params);

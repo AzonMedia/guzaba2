@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole\Table;
 
 class Row implements \ArrayAccess

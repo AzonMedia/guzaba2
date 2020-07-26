@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
-
 
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Response;
@@ -23,7 +23,7 @@ class IpcResponse extends Response implements IpcResponseInterface
 
     private string $request_id;
 
-    private ?float $received_microtime = NULL;
+    private ?float $received_microtime = null;
 
     /**
      * The ID of the worker producing the response
@@ -37,7 +37,7 @@ class IpcResponse extends Response implements IpcResponseInterface
         /** @var Server $Server */
         $Server = self::get_service('Server');
         $this->source_worker_id = $Server->get_worker_id();
-        foreach ($Response as $property=>$value) {
+        foreach ($Response as $property => $value) {
             $this->{$property} = $value;
         }
     }

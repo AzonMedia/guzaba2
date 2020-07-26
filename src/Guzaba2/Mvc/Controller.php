@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
@@ -75,7 +76,6 @@ abstract class Controller extends Base implements ControllerInterface
     public function __construct(RequestInterface $Request)
     {
         $this->Request = $Request;
-
     }
 
 //    /**
@@ -102,9 +102,9 @@ abstract class Controller extends Base implements ControllerInterface
      * This will allow for the routes to be changed without code modification.
      * @return iterable|null
      */
-    public static function get_routes() : ?iterable
+    public static function get_routes(): ?iterable
     {
-        return static::CONFIG_RUNTIME['routes'] ?? NULL;
+        return static::CONFIG_RUNTIME['routes'] ?? null;
     }
 
     /**
@@ -114,7 +114,7 @@ abstract class Controller extends Base implements ControllerInterface
      * @return array
      * @throws InvalidArgumentException
      */
-    public static function get_controller_classes(array $ns_prefixes = []) : array
+    public static function get_controller_classes(array $ns_prefixes = []): array
     {
         /*
         $loaded_classes = Kernel::get_loaded_classes();
@@ -140,10 +140,10 @@ abstract class Controller extends Base implements ControllerInterface
         }
         static $controller_classes = [];
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
-        if (!array_key_exists( $args_hash, $controller_classes ) ) {
+        if (!array_key_exists($args_hash, $controller_classes)) {
             $classes = Kernel::get_classes($ns_prefixes, ControllerInterface::class);
             //$classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ActiveRecordDefaultController::class, ControllerInterface::class]) );
-            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecordController::class, Controller::class, ControllerInterface::class]) );
+            $classes = array_filter($classes, fn(string $class): bool => !in_array($class, [ActiveRecordController::class, Controller::class, ControllerInterface::class]));
             $controller_classes[$args_hash] = $classes;
         }
         return $controller_classes[$args_hash];
@@ -156,7 +156,7 @@ abstract class Controller extends Base implements ControllerInterface
      * @return array
      * @throws InvalidArgumentException
      */
-    public static function get_controller_classes_role_can_perform(Role $Role, array $ns_prefixes = []) : array
+    public static function get_controller_classes_role_can_perform(Role $Role, array $ns_prefixes = []): array
     {
         $ret = [];
         if (!$ns_prefixes) {
@@ -172,26 +172,25 @@ abstract class Controller extends Base implements ControllerInterface
     }
 
 
-    public static function register_after_hook(string $controller_class_name, string $event_name, callable $hook_callable) : void
+    public static function register_after_hook(string $controller_class_name, string $event_name, callable $hook_callable): void
     {
 
         //TODO add a check on the callable signature - must accept a single ResponseInterface argument and return ResponseInterface
 
         $Events = self::get_service('Events');
-        $Callback = static function(Event $Event) use ($Events, $hook_callable) : ResponseInterface
-        {
+        $Callback = static function (Event $Event) use ($Events, $hook_callable): ResponseInterface {
 
             $arguments = [ $Event->get_return_value() ];
 
             if (is_array($hook_callable)) {
-                $BeforeEvent = $Events::create_event($hook_callable[0], '_before_'.$hook_callable[1], [$Event->get_return_value()], NULL );
+                $BeforeEvent = $Events::create_event($hook_callable[0], '_before_' . $hook_callable[1], [$Event->get_return_value()], null);
                 $arguments = $BeforeEvent->get_event_return();
             }
 
             $HookResponse = $hook_callable(...$arguments);
 
             if (is_array($hook_callable)) {
-                $AfterEvent = $Events::create_event($hook_callable[0], '_after_'.$hook_callable[1], [], $HookResponse);
+                $AfterEvent = $Events::create_event($hook_callable[0], '_after_' . $hook_callable[1], [], $HookResponse);
                 $HookResponse = $AfterEvent->get_event_return() ?? $HookResponse;
             }
 

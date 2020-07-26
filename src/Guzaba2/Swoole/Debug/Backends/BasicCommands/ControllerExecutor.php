@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug\Backends\BasicCommands;
@@ -20,6 +21,8 @@ use Guzaba2\Http\RequestHandler;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
 use Guzaba2\Http\Uri;
+use Guzaba2\Kernel\Kernel;
+use Guzaba2\Mvc\Controller;
 use Guzaba2\Swoole\Debug\Backends\BasicCommand;
 use Guzaba2\Swoole\Server;
 use Guzaba2\Translator\Translator as t;
@@ -97,10 +100,10 @@ class ControllerExecutor extends Base implements CommandInterface
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = NULL): ?string
+    public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = null): ?string
     {
-        $ret = NULL;
-        $command_arr = explode(' ',$command);
+        $ret = null;
+        $command_arr = explode(' ', $command);
         //if ($command === 'help '.GeneralUtil::get_class_name(static::class)) {
         if ($command_arr[0] === 'help') {
             if (
@@ -114,10 +117,16 @@ class ControllerExecutor extends Base implements CommandInterface
         } elseif ($command_arr[0] === 'accept') {
             $ret = $this->handle_accept($command);
         } elseif ($command_arr[0] === 'execute') {
-            $method = $this->extract_method($command);
-            $route = $this->extract_route($command);
-            $arguments = $this->extract_arguments($command);
-            $ret = $this->handle_execute($method, $route, $arguments);
+            try {
+                $method = $this->extract_method($command);
+                $route = $this->extract_route($command);
+                $arguments = $this->extract_arguments($command);
+                $ret = $this->handle_execute($method, $route, $arguments);
+            } catch (\Exception $Exception) {
+                //$ret = Controller::get_structured_servererror_response( [ 'message' => $Exception->getMessage() ] );
+                $ret = json_encode([ 'message' => $Exception->getMessage() ], Structured::getJsonFlags());
+                Kernel::exception_handler($Exception);//this is an unexpected error - always print the backtrace
+            }
         }
         return $ret;
     }
@@ -131,13 +140,13 @@ class ControllerExecutor extends Base implements CommandInterface
      */
     private function extract_method(string $command): string
     {
-        $command_arr = explode(' ',$command);
+        $command_arr = explode(' ', $command);
         if (!isset($command_arr[1])) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1$s does not contain method.'), $command));
+            throw new InvalidArgumentException(sprintf(t::_('The command "%1$s" does not contain method.'), $command));
         }
         $method = strtolower($command_arr[1]);
         if (!in_array($method, self::SUPPORTED_SUBCOMMANDS)) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1$s contains an invalid method %2$s.'), $command, $method));
+            throw new InvalidArgumentException(sprintf(t::_('The command "%1$s" contains an invalid method "%2$s".'), $command, $method));
         }
         return $method;
     }
@@ -152,12 +161,12 @@ class ControllerExecutor extends Base implements CommandInterface
      */
     private function extract_route(string $command): string
     {
-        $command_arr = explode(' ',$command);
+        $command_arr = explode(' ', $command);
         if (!isset($command_arr[2])) {
             throw new InvalidArgumentException(sprintf(t::_('No route is provided.')));
         }
         $route = $command_arr[2];
-        if ($route[0]!=='/') {
+        if ($route[0] !== '/') {
             throw new InvalidArgumentException(sprintf(t::_('The provided command %1$s contains an invalid route $2s. The route must begin with /.'), $command, $route));
         }
         return $route;
@@ -170,17 +179,17 @@ class ControllerExecutor extends Base implements CommandInterface
      */
     private function extract_arguments(string $command): array
     {
-        $command_arr = explode(' ',$command);
+        $command_arr = explode(' ', $command);
         $args = [];
         if (isset($command_arr[3])) {
             //there are some arguments provided;
             //try json first
             try {
-                $args = json_decode($command_arr[3], TRUE,512, JSON_THROW_ON_ERROR);
+                $args = json_decode($command_arr[3], true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $Exception) {
                 for ($aa = 2; $aa < count($command_arr); $aa++) {
-                    $arg_arr = explode('=',$command_arr[$aa]);
-                    $args[$arg_arr[0]] = $arg_arr[1] ?? NULL;
+                    $arg_arr = explode('=', $command_arr[$aa]);
+                    $args[$arg_arr[0]] = $arg_arr[1] ?? null;
                 }
             }
         }
@@ -202,7 +211,7 @@ class ControllerExecutor extends Base implements CommandInterface
         }
         $accept_type = strtolower($command_arr[1]);
         if (!isset(self::SUPPORTED_CONTENT_TYPES[$accept_type])) {
-            throw new InvalidArgumentException(sprintf(t::_('The command %1$s contains an unsupported accept content type %2$s. The supported accept content types are %3$s.'), $command, $accept_type, implode(',', array_keys(self::SUPPORTED_CONTENT_TYPES)) ));
+            throw new InvalidArgumentException(sprintf(t::_('The command %1$s contains an unsupported accept content type %2$s. The supported accept content types are %3$s.'), $command, $accept_type, implode(',', array_keys(self::SUPPORTED_CONTENT_TYPES))));
         }
         $this->accept_content_type = self::SUPPORTED_CONTENT_TYPES[$accept_type];
 
@@ -228,8 +237,6 @@ class ControllerExecutor extends Base implements CommandInterface
 
         $ret = '';
         if (self::has_service('Middlewares')) {
-
-
             $message = t::_('Content not found or request not understood. The request contains a method and route that could not be found.');
             $Body = new Stream();
             $Body->write($message);
@@ -286,7 +293,7 @@ class ControllerExecutor extends Base implements CommandInterface
         /** @var Server $Server */
         $Server = self::get_service('Server');
         $server_params = [
-            'console_request'       => TRUE,
+            'console_request'       => true,
             'request_uri'           => $route,
             'path_info'             => $route,
             'request_time'          => $time,
@@ -323,11 +330,11 @@ class ControllerExecutor extends Base implements CommandInterface
     public static function handles_commands(): string
     {
         $class_name = GeneralUtil::get_class_name(static::class);
-        $ret = sprintf(t::_('%1$s available commands:'), $class_name ).PHP_EOL;
+        $ret = sprintf(t::_('%1$s available commands:'), $class_name) . PHP_EOL;
         //$ret .= 'accept CONTENT_TYPE'.PHP_EOL;
         //$ret .= 'execute METHOD ROUTE [ARGS]'.PHP_EOL;
-        $ret .= sprintf(t::_('%1$s METHOD ROUTE [ARGS] - executes a controller with the provided METHOD, ROUTE and optional ARGS'), 'execute').PHP_EOL;
-        $ret .= sprintf(t::_('%1$s CONTENT_TYPE - sets the content type for the response'), 'accept').PHP_EOL;
+        $ret .= sprintf(t::_('%1$s METHOD ROUTE [ARGS] - executes a controller with the provided METHOD, ROUTE and optional ARGS'), 'execute') . PHP_EOL;
+        $ret .= sprintf(t::_('%1$s CONTENT_TYPE - sets the content type for the response'), 'accept') . PHP_EOL;
         return $ret;
     }
 
@@ -337,12 +344,12 @@ class ControllerExecutor extends Base implements CommandInterface
      * @return string
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function help(?string $command = NULL): string
+    public static function help(?string $command = null): string
     {
         $class_name = GeneralUtil::get_class_name(static::class);
-        if (NULL === $command) {
+        if (null === $command) {
             return sprintf(t::_('%1$s - allows for controllers execution - type help %2$s to see available commands'), $class_name, strtolower($class_name));
-        } else if (0 === strcasecmp($class_name, $command)) {
+        } elseif (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();
         } else {
             if (isset(self::COMMANDS_HELP[$command])) {
@@ -350,7 +357,6 @@ class ControllerExecutor extends Base implements CommandInterface
             } else {
                 return sprintf(t::_('Unknown command %1$s provided to help.'), $command);
             }
-
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Base\Interfaces;
 
@@ -15,5 +15,5 @@ interface ObjectInternalIdInterface
      * Returns the unique object id.
      * @return string
      */
-    public function get_object_internal_id() : string;
+    public function get_object_internal_id(): string;
 }

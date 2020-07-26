@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
@@ -28,7 +29,6 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Guzaba2\Mvc\Traits\ResponseFactories;
 
-
 /**
  * Class Controller
  * A base class representing a controller. All controllers should inherit this class.
@@ -36,10 +36,7 @@ use Guzaba2\Mvc\Traits\ResponseFactories;
  * @package Guzaba2\Mvc
  */
 //abstract class Controller extends ActiveRecord
-class ActiveRecordController extends ActiveRecord //shouldnt be really instantiated
-//it is possible to inherit ActiveRecord but this causes names collisions (and possible other issues with properties)
-//abstract class Controller extends Base
-implements ControllerInterface
+class ActiveRecordController extends ActiveRecord implements ControllerInterface //shouldnt be really instantiated //it is possible to inherit ActiveRecord but this causes names collisions (and possible other issues with properties) //abstract class Controller extends Base
 {
 
     protected const CONFIG_DEFAULTS = [
@@ -61,9 +58,9 @@ implements ControllerInterface
      * @var RequestInterface
      */
     // private ?RequestInterface $Request = NULL;
-    private $Request = NULL;
+    private $Request = null;
 
-    private ?ResponseInterface $Response = NULL;
+    private ?ResponseInterface $Response = null;
 
     /**
      * Controller constructor.
@@ -80,7 +77,7 @@ implements ControllerInterface
      * @throws \ReflectionException
      */
     //public function __construct(RequestInterface $Request)
-    public function __construct($Request = NULL)
+    public function __construct($Request = null)
     {
         $this->Request = $Request;
 //        if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated
@@ -93,15 +90,14 @@ implements ControllerInterface
 //            parent::__construct( 0 );
 //        }
 
-        if ($Request === NULL) { //it is accessed as ActiveRecord and then it needs to be instantiated
-            parent::__construct( ['controller_class' => get_class($this)] );
+        if ($Request === null) { //it is accessed as ActiveRecord and then it needs to be instantiated
+            parent::__construct(['controller_class' => get_class($this)]);
         } else { //it remains as a new record meaning no "read" permission will be checked
-            parent::__construct( 0 );
+            parent::__construct(0);
         }
-
     }
 
-    public function __toString() : string
+    public function __toString(): string
     {
         // TODO: Implement __toString() method.
         return get_class($this);
@@ -134,7 +130,7 @@ implements ControllerInterface
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public static function get_routes() : ?iterable
+    public static function get_routes(): ?iterable
     {
         //return static::CONFIG_RUNTIME['routes'];
         if (array_key_exists('routes', static::CONFIG_RUNTIME)) {
@@ -153,7 +149,7 @@ implements ControllerInterface
      * @return ResponseInterface
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_action(string $method, array $arguments = []) : ResponseInterface
+    public function execute_action(string $method, array $arguments = []): ResponseInterface
     {
         return (new ExecutorMiddleware())->execute_controller_method($this, $method, $arguments);
     }
@@ -166,7 +162,7 @@ implements ControllerInterface
      * @return array
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_structured_action(string $method, array $arguments = [], ?int &$status_code = NULL) : array
+    public function execute_structured_action(string $method, array $arguments = [], ?int &$status_code = null): array
     {
         //return $this->execute_action($method, $arguments)->getBody()->getStructure();
         $Response = $this->execute_action($method, $arguments);
@@ -184,7 +180,7 @@ implements ControllerInterface
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments = [], ?int &$status_code = NULL) : array
+    public function execute_controller_action_structured(string $controller_class, string $method, array $arguments = [], ?int &$status_code = null): array
     {
         //return $this->execute_controller_action($controller_class, $method, $arguments)->getBody()->getStructure();
         $Response = $this->execute_controller_action($controller_class, $method, $arguments);
@@ -202,19 +198,19 @@ implements ControllerInterface
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function execute_controller_action(string $controller_class, string $method, array $arguments = []) : ResponseInterface
+    public function execute_controller_action(string $controller_class, string $method, array $arguments = []): ResponseInterface
     {
         if (!class_exists($controller_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %1$s does not exist.'), $controller_class));
         }
-        if (!is_a($controller_class, ActiveRecordController::class, TRUE)) {
+        if (!is_a($controller_class, ActiveRecordController::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %1$s is not a %2$s.'), ActiveRecordController::class));
         }
         if (!method_exists($controller_class, $method)) {
             throw new InvalidArgumentException(sprintf(t::_('The controller class %1$s does not have a method $2s.'), $controller_class, $method));
         }
         $controller_callable = [ new $controller_class($this->get_request()), $method ];
-        return self::execute_controller( $controller_callable, $arguments);
+        return self::execute_controller($controller_callable, $arguments);
     }
 
     /**
@@ -240,9 +236,9 @@ implements ControllerInterface
 
         /** @var Server $Server */
         $Server = self::get_service('Server');
-        $worker_ids = range(0, $Server->get_total_workers()-1 );//the workers IDs start from 0
+        $worker_ids = range(0, $Server->get_total_workers() - 1);//the workers IDs start from 0
 
-        return $this->execute_multicast_request($worker_ids,$method, $route, $controller_class, $action, $arguments = []);
+        return $this->execute_multicast_request($worker_ids, $method, $route, $controller_class, $action, $arguments = []);
     }
 
     /**
@@ -285,7 +281,7 @@ implements ControllerInterface
                 if ($IpcResponse->getStatusCode() === StatusCode::HTTP_OK) {
                     $ret[$from_worker_id]['data'] = $IpcResponse->getBody()->getStructure();
                 } else {
-                    $ret[$from_worker_id]['data'] = sprintf(t::_('Worker ID %1$s returned HTTP status code %2$s.'), $from_worker_id, $IpcResponse->getStatusCode() );
+                    $ret[$from_worker_id]['data'] = sprintf(t::_('Worker ID %1$s returned HTTP status code %2$s.'), $from_worker_id, $IpcResponse->getStatusCode());
                 }
             }
         }
@@ -313,5 +309,4 @@ implements ControllerInterface
 
         return $ret;
     }
-
 }

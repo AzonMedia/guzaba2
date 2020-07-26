@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -70,8 +71,8 @@ abstract class Kernel
     public const FRAMEWORK_VERSION = '2-dev';
 
     public const RUN_OPTIONS_DEFAULTS = [
-        'disable_all_class_load'            => FALSE,
-        'disable_all_class_validation'      => FALSE,
+        'disable_all_class_load'            => false,
+        'disable_all_class_validation'      => false,
     ];
 
     public const EXIT_SUCCESS = 0;
@@ -131,7 +132,7 @@ BANNER;
      * Is the kernel initialized
      * @var bool
      */
-    protected static bool $is_initialized_flag = FALSE;
+    protected static bool $is_initialized_flag = false;
 
     /**
      * ['class_name'] => 'parent' => X, 'children' => [Z, Y]
@@ -157,14 +158,14 @@ BANNER;
     /**
      * @var Server
      */
-    protected static ?Server $HttpServer = NULL;
+    protected static ?Server $HttpServer = null;
 
     /**
      * @var Watchdog
      */
     public static Watchdog $Watchdog;
 
-    private static ?float $init_microtime = NULL;
+    private static ?float $init_microtime = null;
 
     public const APM_DATA_STRUCTURE = [
         'worker_pid'                            => 0,
@@ -187,7 +188,7 @@ BANNER;
         'time_cached_dql_statements'            => 0,
 
         //counter added in pdoStatement::fetchAllAsArray()
-        'time_fetching_data'					=> 0,//to measure fetchAll and similar - see swoole\mysql fetch_mode - if FALSE then the fetch is done as part of the execute()
+        'time_fetching_data'                    => 0,//to measure fetchAll and similar - see swoole\mysql fetch_mode - if FALSE then the fetch is done as part of the execute()
 
         //counter added in pdoStatement::execute()
         'cnt_dml_statements'                    => 0,
@@ -222,8 +223,8 @@ BANNER;
         'cnt_file_writes'                       => 0,
         'time_file_writes'                      => 0,
 
-        'cnt_acquired_locks'					=> 0,
-        'time_acquired_locks'					=> 0,
+        'cnt_acquired_locks'                    => 0,
+        'time_acquired_locks'                   => 0,
 
         'time_in_transactions'                  => 0,
         'time_in_commits'                       => 0,
@@ -241,7 +242,7 @@ BANNER;
     /// PUBLIC METHODS ///
     //////////////////////
 
-    public static function set_init_microtime(float $microtime) : void
+    public static function set_init_microtime(float $microtime): void
     {
         self::$init_microtime = $microtime;
     }
@@ -253,8 +254,8 @@ BANNER;
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger, array $options = []): void
     {
 
-        if (self::$init_microtime === NULL) {
-            self::$init_microtime = microtime(TRUE);
+        if (self::$init_microtime === null) {
+            self::$init_microtime = microtime(true);
         }
 
         self::$Registry = $Registry;
@@ -269,7 +270,7 @@ BANNER;
         self::register_autoloader_path(self::FRAMEWORK_NAME, self::$framework_root_dir);
 
 
-        spl_autoload_register([__CLASS__, 'autoloader'], TRUE, TRUE);//prepend before Composer's autoloader
+        spl_autoload_register([__CLASS__, 'autoloader'], true, true);//prepend before Composer's autoloader
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
         register_shutdown_function([__CLASS__,'fatal_error_handler']);
@@ -280,7 +281,7 @@ BANNER;
 
         stream_wrapper_register(SourceStream::PROTOCOL, SourceStream::class);
 
-        self::$is_initialized_flag = TRUE;
+        self::$is_initialized_flag = true;
 
         self::print_initialization_messages();
     }
@@ -295,13 +296,13 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function run(callable $callable, array $options = []) : int
+    public static function run(callable $callable, array $options = []): int
     {
         if (!self::is_initialized()) {
             throw new \Exception(t::_('Kernel is not initialized. Please execute Kernel::initialize() first.'));
         }
 
-        self::printk(t::_('Kernel::run() invoked').PHP_EOL);
+        self::printk(t::_('Kernel::run() invoked') . PHP_EOL);
         self::printk(PHP_EOL);
 
         $ret = 0;
@@ -314,12 +315,12 @@ BANNER;
 //            }
 //        }
             $run_options_validation = [];
-            foreach (self::RUN_OPTIONS_DEFAULTS as $option=>$value) {
+            foreach (self::RUN_OPTIONS_DEFAULTS as $option => $value) {
                 $run_options_validation[$option] = gettype($value);
             }
             ArrayUtil::validate_array($options, $run_options_validation, $errors);
             if ($errors) {
-                throw new \InvalidArgumentException(sprintf(t::_('Kernel options error: %s'), implode(' ', $errors) ));
+                throw new \InvalidArgumentException(sprintf(t::_('Kernel options error: %s'), implode(' ', $errors)));
             }
 
             $options += self::RUN_OPTIONS_DEFAULTS;
@@ -327,20 +328,20 @@ BANNER;
             //it is really a bad idea to skip the class load
             //if (!$options['disable_all_class_load']) {
             self::load_all_classes();
-            $loaded_classes_info = t::_('Loaded all classes from:').PHP_EOL;
+            $loaded_classes_info = t::_('Loaded all classes from:') . PHP_EOL;
             foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix => $fs_path) {
-                $loaded_classes_info .= str_repeat(' ',4).'- '.$fs_path.PHP_EOL;
+                $loaded_classes_info .= str_repeat(' ', 4) . '- ' . $fs_path . PHP_EOL;
             }
             self::printk($loaded_classes_info);
             self::printk(PHP_EOL);
             //}
 
             $initialization_classes = self::run_all_initializations();
-            $initializations_info = t::_('Initializations run:').PHP_EOL;
+            $initializations_info = t::_('Initializations run:') . PHP_EOL;
             foreach ($initialization_classes as $initialization_class => $initialization_methods) {
-                $initializations_info .= str_repeat(' ',4).'- '.$initialization_class.PHP_EOL;
+                $initializations_info .= str_repeat(' ', 4) . '- ' . $initialization_class . PHP_EOL;
                 foreach ($initialization_methods as $initialization_method) {
-                    $initializations_info .= str_repeat(' ',8).'- '.$initialization_method.'()'.PHP_EOL;
+                    $initializations_info .= str_repeat(' ', 8) . '- ' . $initialization_method . '()' . PHP_EOL;
                 }
             }
             self::printk($initializations_info);
@@ -348,11 +349,11 @@ BANNER;
 
             if (!$options['disable_all_class_validation']) {
                 $validation_classes = self::run_all_validations();
-                $validations_info = t::_('Validations run:').PHP_EOL;
+                $validations_info = t::_('Validations run:') . PHP_EOL;
                 foreach ($validation_classes as $validation_class => $validation_methods) {
-                    $validations_info .= str_repeat(' ',4).'- '.$validation_class.PHP_EOL;
+                    $validations_info .= str_repeat(' ', 4) . '- ' . $validation_class . PHP_EOL;
                     foreach ($validation_methods as $validation_method) {
-                        $validations_info .= str_repeat(' ',8).'- '.$validation_method.'()'.PHP_EOL;
+                        $validations_info .= str_repeat(' ', 8) . '- ' . $validation_method . '()' . PHP_EOL;
                     }
                 }
                 self::printk($validations_info);
@@ -376,14 +377,14 @@ BANNER;
     /**
      * @param ContainerInterface $Container
      */
-    public static function set_di_container(ContainerInterface $Container) : void
+    public static function set_di_container(ContainerInterface $Container): void
     {
         self::$Container = $Container;
         $Container->initialize();
         //self::printk(sprintf('All global services are initialized.').PHP_EOL);
     }
 
-    public static function get_di_container() : ?ContainerInterface
+    public static function get_di_container(): ?ContainerInterface
     {
         return self::$Container;
     }
@@ -391,7 +392,7 @@ BANNER;
     /**
      * @param Watchdog $Watchdog
      */
-    public static function set_watchdog(Watchdog $Watchdog) : void
+    public static function set_watchdog(Watchdog $Watchdog): void
     {
         self::$Watchdog = $Watchdog;
     }
@@ -399,7 +400,7 @@ BANNER;
     /**
      * @param Server $HttpServer
      */
-    public static function set_http_server(Server $HttpServer) : void
+    public static function set_http_server(Server $HttpServer): void
     {
         self::$HttpServer = $HttpServer;
     }
@@ -407,7 +408,7 @@ BANNER;
     /**
      * @return Server|null
      */
-    public static function get_http_server() : ?Server
+    public static function get_http_server(): ?Server
     {
         return self::$HttpServer;
     }
@@ -420,7 +421,7 @@ BANNER;
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public static function get_worker_id() : int
+    public static function get_worker_id(): int
     {
 //Returns -1 if there is Server set but it is not yet started (meaning not executing in worker).
 //        if (!isset(self::$HttpServer)) {
@@ -442,7 +443,7 @@ BANNER;
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public static function get_service(string $id) : object
+    public static function get_service(string $id): object
     {
         if (!isset(self::$Container)) {
             throw new RunTimeException(sprintf(t::_('There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.')));
@@ -459,7 +460,7 @@ BANNER;
      * @throws \ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public static function has_service(string $id) : bool
+    public static function has_service(string $id): bool
     {
         if (!isset(self::$Container)) {
             throw new RunTimeException(sprintf(t::_('There is no Dependency Injection container set (Kernel::set_di_container()). The services are not available.')));
@@ -483,12 +484,12 @@ BANNER;
     /**
      * @return bool
      */
-    public static function is_initialized() : bool
+    public static function is_initialized(): bool
     {
         return self::$is_initialized_flag;
     }
 
-    public static function get_init_microtime() : float
+    public static function get_init_microtime(): float
     {
         return self::$init_microtime;
     }
@@ -496,14 +497,14 @@ BANNER;
     /**
      * @return LoggerInterface
      */
-    public static function get_logger() : LoggerInterface
+    public static function get_logger(): LoggerInterface
     {
         return self::$Logger;
     }
 
-    public static function get_main_log_file() : ?string
+    public static function get_main_log_file(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $handlers = self::get_logger()->getHandlers();
         foreach ($handlers as $Handler) {
             if ($Handler instanceof StreamHandler) {
@@ -522,9 +523,9 @@ BANNER;
      * Returns the log level as string as per LogLevel
      * @return string
      */
-    public static function get_log_level() : ?string
+    public static function get_log_level(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $Logger = self::get_logger();
         $handlers = $Logger->getHandlers();
         foreach ($handlers as $Handler) {
@@ -540,9 +541,9 @@ BANNER;
         return $ret;
     }
 
-    public static function get_main_log_file_handler() : ?StreamHandler
+    public static function get_main_log_file_handler(): ?StreamHandler
     {
-        $ret = NULL;
+        $ret = null;
         $Logger = self::get_logger();
         $handlers = $Logger->getHandlers();
         foreach ($handlers as $Handler) {
@@ -558,14 +559,14 @@ BANNER;
         return $ret;
     }
 
-    public static function dump(/* mixed */ $var) : void
+    public static function dump(/* mixed */ $var): void
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
-        $str = var_dump($var, TRUE);
+        $str = var_dump($var, true);
         if ($frame) {
             //$str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
-            $str .= sprintf(t::_('printed in %s#%s'), $frame['file'], $frame['line'] ).PHP_EOL;
+            $str .= sprintf(t::_('printed in %s#%s'), $frame['file'], $frame['line']) . PHP_EOL;
         }
         $str .= PHP_EOL;
         print $str;
@@ -576,9 +577,9 @@ BANNER;
      * Terminates the execution and prints the provided message
      * @param string $message
      */
-    public static function stop(string $message, int $exit_code = self::EXIT_GENERAL_ERROR) : void
+    public static function stop(string $message, int $exit_code = self::EXIT_GENERAL_ERROR): void
     {
-        print $message.PHP_EOL;
+        print $message . PHP_EOL;
         die($exit_code);//in swoole context in worker / coroutine this will throw Swoole\ExitException
     }
 
@@ -592,7 +593,7 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function exception_handler(\Throwable $Exception, ?int $exit_code = NULL): void
+    public static function exception_handler(\Throwable $Exception, ?int $exit_code = null): void
     {
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
         //then disable the locking for this coroutine
@@ -616,7 +617,7 @@ BANNER;
 
         self::log($output, LogLevel::EMERGENCY);
 
-        if ($exit_code !== NULL) {
+        if ($exit_code !== null) {
             die($exit_code);
         } else {
             //when NULL is provided just print the message but do not exit
@@ -628,7 +629,6 @@ BANNER;
                 die((string) $Exception);
             }
         }
-
     }
 
     /**
@@ -663,13 +663,13 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function fatal_error_handler() : void
+    public static function fatal_error_handler(): void
     {
         $Server = self::get_http_server();
         if ($Server) {
             self::printk(sprintf(t::_('Worker %1$s shutdown'), $Server->get_worker_id()));
         } else {
-            self::printk(sprintf(t::_('Main process shutdown') ));
+            self::printk(sprintf(t::_('Main process shutdown')));
         }
 
         $error = error_get_last();
@@ -684,9 +684,9 @@ BANNER;
         self::$Logger->debug($content, $context);
     }
 
-    public static function bt(array $context = []) : void
+    public static function bt(array $context = []): void
     {
-        $bt = print_r(Coroutine::getSimpleBacktrace(), TRUE);
+        $bt = print_r(Coroutine::getSimpleBacktrace(), true);
         self::$Logger->debug($bt, $context);
     }
 
@@ -699,22 +699,22 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function printk(string $message) : void
+    public static function printk(string $message): void
     {
         //TODO - would be nice if this can also print to any connected debugger session...
         //better - instead there can be Console sessions attached for these messages (which is different from debug session)
-        if (self::$init_microtime === NULL) {
-            self::$init_microtime = microtime(TRUE);
+        if (self::$init_microtime === null) {
+            self::$init_microtime = microtime(true);
         }
 
         if (trim($message)) {
-            $microtime = microtime(TRUE);
+            $microtime = microtime(true);
             $microtime_diff = round($microtime - self::$init_microtime, self::MICROTIME_ROUNDING);
             if (self::get_http_server()) {
                 $worker_id = self::get_worker_id();
                 if ($worker_id != -1) {
                     //$worker_str = ' Worker #'.$worker_id;
-                    $worker_str = ' '.sprintf(t::_('Worker #%s'), $worker_id);
+                    $worker_str = ' ' . sprintf(t::_('Worker #%s'), $worker_id);
                 } else {
                     $worker_str = t::_('Startup');
                 }
@@ -748,7 +748,7 @@ BANNER;
      * @param string $message
      * @return int
      */
-    private static function write_to_log(string $message) : int
+    private static function write_to_log(string $message): int
     {
         $ret = 0;
         $handlers = self::get_logger()->getHandlers();
@@ -773,7 +773,7 @@ BANNER;
      * @param int $flags
      * @return int
      */
-    public static function file_put_contents(string $file, string $contents, int $flags = 0) : int
+    public static function file_put_contents(string $file, string $contents, int $flags = 0): int
     {
         if (\Swoole\Coroutine::getCid() > 0) {
             $ret = \Swoole\Coroutine\System::writeFile($file, $contents, $flags);
@@ -787,7 +787,7 @@ BANNER;
      * @param string $file
      * @return string
      */
-    public static function file_get_contents(string $file) : string
+    public static function file_get_contents(string $file): string
     {
         if (\Swoole\Coroutine::getCid() > 0) {
             $ret = \Swoole\Coroutine\System::readFile($file);
@@ -822,12 +822,12 @@ BANNER;
      * @param string $class
      * @return string|null
      */
-    public static function get_component_by_class(string $class) : ?string
+    public static function get_component_by_class(string $class): ?string
     {
-        $ret = NULL;
-        foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix=>$path) {
+        $ret = null;
+        foreach (Kernel::get_registered_autoloader_paths() as $ns_prefix => $path) {
             if (strpos($class, $ns_prefix) === 0) {
-                $ret = $ns_prefix.'\\Component';
+                $ret = $ns_prefix . '\\Component';
                 break 1;
             }
         }
@@ -844,11 +844,11 @@ BANNER;
      * @param string|null $error
      * @return bool
      */
-    public static function check_syntax(string $path, ?string &$error = NULL) : bool
+    public static function check_syntax(string $path, ?string &$error = null): bool
     {
         exec("php -l {$path} 2>&1", $output, $return);
         $error = $output[0];
-        return $return ? TRUE : FALSE;
+        return $return ? true : false;
 //        $ret = FALSE;
 //        $output = \shell_exec("php -l {$path} 2>&1");
 //        if (strpos($output, 'No syntax errors detected') === FALSE) {
@@ -857,17 +857,17 @@ BANNER;
 //        return $ret;
     }
 
-    public static function get_runtime_configuration(string $class_name) : array
+    public static function get_runtime_configuration(string $class_name): array
     {
         $runtime_config = [];
 
         try {
             $RClass = new ReflectionClass($class_name);
         } catch (\ReflectionException $Exception) {
-            $message = sprintf(t::_('[DEBUG] Dumping registered autoloader paths because of %s exception due autoloading:'), get_class($Exception) );
+            $message = sprintf(t::_('[DEBUG] Dumping registered autoloader paths because of %s exception due autoloading:'), get_class($Exception));
             $paths = self::get_registered_autoloader_paths();
             foreach ($paths as $reg_ns => $reg_path) {
-                $message .= PHP_EOL.' - '.$reg_ns.': '.$reg_path;
+                $message .= PHP_EOL . ' - ' . $reg_ns . ': ' . $reg_path;
             }
             $message .= PHP_EOL;
             self::printk($message);
@@ -875,7 +875,6 @@ BANNER;
         }
 
         if ($RClass->implementsInterface(ConfigInterface::class)) {
-            
             //if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnStaticProperty('CONFIG_RUNTIME')) {
             if ($RClass->hasOwnConstant('CONFIG_DEFAULTS') && $RClass->hasOwnConstant('CONFIG_RUNTIME')) {
                 $default_config = (new \ReflectionClassConstant($class_name, 'CONFIG_DEFAULTS'))->getValue();
@@ -913,7 +912,7 @@ BANNER;
 
                 $registry_config = self::$Registry->get_class_config_values($real_class_name);
 
-                foreach ($default_config as $key_name=>$key_value) {
+                foreach ($default_config as $key_name => $key_value) {
                     if (array_key_exists($key_name, $registry_config)) {
                         if (is_array($key_value)) {
                             $runtime_config[$key_name] = array_replace_recursive($key_value, $registry_config[$key_name]);
@@ -941,10 +940,9 @@ BANNER;
 
 
 
-                self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, TRUE));
+                self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, true));
                 // the word FINAL is required here as it announces for final write in the file, when "return" is added
                 self::$Registry->add_to_runtime_files($real_class_name, $runtime_config, "FINAL CONFIG_RUNTIME");
-
             } else {
                 //this class is not defining config values - will have access to the parent::CONFIG_RUNTIME
             }
@@ -954,12 +952,12 @@ BANNER;
         return $runtime_config;
     }
 
-    public static function get_class_structure() : array
+    public static function get_class_structure(): array
     {
         return self::$class_structure;
     }
 
-    public static function get_class_all_children(string $class_name) : array
+    public static function get_class_all_children(string $class_name): array
     {
         $children = [];
         $Function = static function ($class_name) use (&$Function, &$children) {
@@ -973,7 +971,7 @@ BANNER;
         return $children;
     }
 
-    public static function get_class_children(string $class) : array
+    public static function get_class_children(string $class): array
     {
         $children = [];
         foreach (self::$class_structure[$class]['children'] as $class_child) {
@@ -986,16 +984,16 @@ BANNER;
      * @param string $class
      * @return string|null
      */
-    public static function get_class_parent(string $class) : ?string
+    public static function get_class_parent(string $class): ?string
     {
-        return isset(self::$class_structure[$class]['parent']) ? self::$class_structure[$class]['parent']['name'] : NULL;
+        return isset(self::$class_structure[$class]['parent']) ? self::$class_structure[$class]['parent']['name'] : null;
     }
 
     /**
      * @param string $class
      * @return array
      */
-    public static function get_class_all_parents(string $class) : array
+    public static function get_class_all_parents(string $class): array
     {
         $ret = [];
         do {
@@ -1005,7 +1003,7 @@ BANNER;
             }
             $ret[] = $parent_class['name'];
             $class = $parent_class['name'];
-        } while (TRUE);
+        } while (true);
         return $ret;
     }
 
@@ -1017,7 +1015,7 @@ BANNER;
      * @return array
      * @throws InvalidArgumentException
      */
-    public static function get_classes(array $ns_prefixes = [], string $class = '') : array
+    public static function get_classes(array $ns_prefixes = [], string $class = ''): array
     {
         $ret = [];
         if (!$ns_prefixes) {
@@ -1030,12 +1028,12 @@ BANNER;
 
         foreach ($ns_prefixes as $ns_prefix) {
             foreach ($loaded_classes as $class_path => $loaded_class) {
-                if (strpos($loaded_class, '_without_config') !== FALSE) {
+                if (strpos($loaded_class, '_without_config') !== false) {
                     continue;
                 }
-                if ( strpos($loaded_class, $ns_prefix) === 0) {
+                if (strpos($loaded_class, $ns_prefix) === 0) {
                     if ($class) {
-                        if (is_a($loaded_class, $class, TRUE)) {
+                        if (is_a($loaded_class, $class, true)) {
                             if ($loaded_class === $class) {
                                 continue;
                             }
@@ -1056,28 +1054,27 @@ BANNER;
      * @see self::register_autoloader_path()
      * @return void
      */
-    public static function load_all_classes() : void
+    public static function load_all_classes(): void
     {
-        foreach (self::$autoloader_lookup_paths as $namespace_base=>$autoload_lookup_path) {
+        foreach (self::$autoloader_lookup_paths as $namespace_base => $autoload_lookup_path) {
             $Directory = new \RecursiveDirectoryIterator($autoload_lookup_path);
             $Iterator = new \RecursiveIteratorIterator($Directory);
             $Regex = new \RegexIterator($Iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
             foreach ($Regex as $path => $match) {
-
                 $class_name = str_replace($autoload_lookup_path, '', $path);
-                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('\\\\', '\\', $class_name);
                 $class_name = str_replace('/', '\\', $class_name);
-                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('\\\\', '\\', $class_name);
                 $class_name = str_replace($namespace_base, '', $class_name);//some may contain it
-                $class_name = str_replace('\\\\','\\', $class_name);
-                $class_name = $namespace_base.'\\'.$class_name;
-                $class_name = str_replace('\\\\','\\', $class_name);
+                $class_name = str_replace('\\\\', '\\', $class_name);
+                $class_name = $namespace_base . '\\' . $class_name;
+                $class_name = str_replace('\\\\', '\\', $class_name);
                 $class_name = str_replace('.php', '', $class_name);
 
                 //we also need to check again already included files
                 //as including a certain file may trigger the autoload and load other classes that will be included a little later
                 $included_files = get_included_files();
-                if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL.'://'.$path, $included_files)) {
+                if (in_array($path, $included_files) || in_array(SourceStream::PROTOCOL . '://' . $path, $included_files)) {
                     //skip this file - it is already included
                     continue;
                 }
@@ -1091,15 +1088,14 @@ BANNER;
      * Returns a two-dimensional associative array: class_name=>['method1','method2']
      * @return array
      */
-    public static function run_all_validations() : array
+    public static function run_all_validations(): array
     {
         $validation_classes = [];
         foreach (self::$loaded_classes as $loaded_class) {
             if (
-                is_a($loaded_class, ClassDeclarationValidationInterface::class, TRUE)
+                is_a($loaded_class, ClassDeclarationValidationInterface::class, true)
                 && $loaded_class !== ClassDeclarationValidationInterface::class
             ) {
-
                 $methods_run = $loaded_class::run_all_validations();
                 $validation_classes[$loaded_class] = $methods_run;
             }
@@ -1107,15 +1103,14 @@ BANNER;
         return $validation_classes;
     }
 
-    public static function run_all_initializations() : array
+    public static function run_all_initializations(): array
     {
         $initialization_classes = [];
         foreach (self::$loaded_classes as $loaded_class) {
             if (
-                is_a($loaded_class, ClassInitializationInterface::class, TRUE)
+                is_a($loaded_class, ClassInitializationInterface::class, true)
                 && $loaded_class !== ClassInitializationInterface::class
             ) {
-
                 $methods_run = $loaded_class::run_all_initializations();
                 $initialization_classes[$loaded_class] = $methods_run;
             }
@@ -1128,7 +1123,7 @@ BANNER;
      * Returns an associative array with $class_path=>$class_name
      * @return array
      */
-    public static function get_loaded_classes() : array
+    public static function get_loaded_classes(): array
     {
         return self::$loaded_classes;
     }
@@ -1140,15 +1135,15 @@ BANNER;
      * @return string|null
      * @throws InvalidArgumentException
      */
-    public static function get_class_path(string $class_name) : ?string
+    public static function get_class_path(string $class_name): ?string
     {
         if ($class_name && !class_exists($class_name) && !interface_exists($class_name)) {
             throw new InvalidArgumentException(sprintf('Class/interface %s does not exist.', $class_name));
         }
         $ret = array_search($class_name, self::$loaded_classes);
-        if ($ret === FALSE) {
+        if ($ret === false) {
             //throw new InvalidArgumentException(sprintf('The provided class %s is not loaded through the Kernel::autoload().', $class_name));
-            $ret = NULL;
+            $ret = null;
         }
         return $ret;
     }
@@ -1171,15 +1166,15 @@ BANNER;
         $Logger = self::get_logger();
         if (\Swoole\Coroutine::getCid() > 0) {
             //$message = 'Coroutine #'.\Swoole\Coroutine::getCid().': '.$message;
-            $message = sprintf(t::_('Coroutine #%s: %s'), \Swoole\Coroutine::getCid(), $message );
+            $message = sprintf(t::_('Coroutine #%s: %s'), \Swoole\Coroutine::getCid(), $message);
         }
         if (self::get_http_server()) {
             //$message = 'Worker #'.self::get_worker_id().': '.$message;
-            $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message );
+            $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message);
         }
 
         $Logger->log($level, $message, $context);
-        return TRUE;
+        return true;
     }
 
 
@@ -1191,38 +1186,37 @@ BANNER;
     /**
      * Just prints initialization messages.
      */
-    protected static function print_initialization_messages() : void
+    protected static function print_initialization_messages(): void
     {
         self::printk(PHP_EOL);
         self::printk(self::FRAMEWORK_BANNER);
         self::printk(PHP_EOL);
 
-        Kernel::printk(sprintf(t::_('Initialization at: %s %s %s'), self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get() ).PHP_EOL);
+        Kernel::printk(sprintf(t::_('Initialization at: %s %s %s'), self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get()) . PHP_EOL);
 
-        Kernel::printk(sprintf(t::_('Versions: PHP %s, Swoole %s, Guzaba %s').PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
-        Kernel::printk(SysUtil::get_basic_sysinfo().PHP_EOL);
+        Kernel::printk(sprintf(t::_('Versions: PHP %s, Swoole %s, Guzaba %s') . PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        Kernel::printk(SysUtil::get_basic_sysinfo() . PHP_EOL);
 
         self::printk(PHP_EOL);
 
         $registry_backends = self::$Registry->get_backends();
-        $registry_str = t::_('Registry backends:').PHP_EOL;
+        $registry_str = t::_('Registry backends:') . PHP_EOL;
         foreach ($registry_backends as $RegistryBackend) {
-            $registry_str .= str_repeat(' ',4).'- '.get_class($RegistryBackend).PHP_EOL;
+            $registry_str .= str_repeat(' ', 4) . '- ' . get_class($RegistryBackend) . PHP_EOL;
         }
         self::printk($registry_str);
         self::printk(PHP_EOL);
 
 
         $handlers = self::$Logger->getHandlers();
-        $error_handlers_str = t::_('Logger Handlers:').PHP_EOL;
+        $error_handlers_str = t::_('Logger Handlers:') . PHP_EOL;
         foreach ($handlers as $Handler) {
-            $error_handlers_str .= str_repeat(' ',4).'- '.get_class($Handler).' : '.$Handler->getUrl().' : '.self::$Logger::getLevelName($Handler->getLevel()).PHP_EOL;
+            $error_handlers_str .= str_repeat(' ', 4) . '- ' . get_class($Handler) . ' : ' . $Handler->getUrl() . ' : ' . self::$Logger::getLevelName($Handler->getLevel()) . PHP_EOL;
         }
         Kernel::printk($error_handlers_str);
         self::printk(PHP_EOL);
-        self::printk(t::_('Kernel is initialized').PHP_EOL);
+        self::printk(t::_('Kernel is initialized') . PHP_EOL);
         self::printk(PHP_EOL);
-
     }
 
     /**
@@ -1236,21 +1230,20 @@ BANNER;
      */
     protected static function autoloader(string $class_name): bool
     {
-        $ret = FALSE;
+        $ret = false;
 
-        foreach (self::$autoloader_lookup_paths as $namespace_base=>$lookup_path) {
+        foreach (self::$autoloader_lookup_paths as $namespace_base => $lookup_path) {
             //needed because swoole is not available on windows and CI may run on windows.
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
                 continue;
             }
 
             if (strpos($class_name, $namespace_base) === 0) {
-
                 if ($namespace_base === self::FRAMEWORK_NAME) {
-                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', $class_name).'.php';
+                    $formed_class_path = $lookup_path . '/' . str_replace('\\', '/', $class_name) . '.php';
                     $class_path = realpath($formed_class_path);
                 } else {
-                    $formed_class_path = $lookup_path.'/'.str_replace('\\', '/', str_replace($namespace_base, '', $class_name)).'.php';
+                    $formed_class_path = $lookup_path . '/' . str_replace('\\', '/', str_replace($namespace_base, '', $class_name)) . '.php';
                     $class_path = realpath($formed_class_path);
                 }
 
@@ -1263,18 +1256,17 @@ BANNER;
                     }
                     self::initialize_class($class_name);
                     self::$loaded_classes[$class_path] = $class_name;
-                    $ret = TRUE;
+                    $ret = true;
 
                     $parent_class = get_parent_class($class_name);
                     if (!$parent_class) {
-                        $parent_class = NULL;
+                        $parent_class = null;
                         self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => $parent_class, 'children' => [] ];
                     } else {
                         self::$class_structure[$class_name] = ['name' => $class_name, 'parent' => &self::$class_structure[$parent_class], 'children' => [] ];
                     }
 
                     self::$class_structure[$parent_class]['children'][] =& self::$class_structure[$class_name];
-
                 } else {
                     //$message = sprintf(t::_('Class %s (path %s) is not found (or not readable).'), $class_name, $class_path);
                     //$message = sprintf('Class %s (path %s) is not found (path does not exist or not readable).', $class_name, $class_path);
@@ -1304,7 +1296,7 @@ BANNER;
     protected static function require_class(string $class_path, string $class_name) /* mixed */
     {
 
-        $ret = NULL;
+        $ret = null;
 
         try {
             if (\Swoole\Coroutine::getCid() > 0) {
@@ -1314,16 +1306,15 @@ BANNER;
             }
 
             //TODO - he below is a very primitive check - needs to be improved and use tokenizer
-            if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== FALSE) {
+            if ($class_name != SourceStream::class && $class_name != self::class && strpos($class_source, 'protected const CONFIG_RUNTIME =') !== false) {
                 //use stream instead of eval because of the error reporting - it becomes more obscure with eval()ed code
-                $ret = require_once(SourceStream::PROTOCOL.'://'.$class_path);
+                $ret = require_once(SourceStream::PROTOCOL . '://' . $class_path);
             } else {
                 $ret = require_once($class_path);
             }
         } catch (\Throwable $exception) {
-
-            self::printk('ERROR IN CLASS GENERATION'.PHP_EOL);
-            self::printk($exception->getMessage().' in file '.$exception->getFile().'#'.$exception->getLine().PHP_EOL.$exception->getTraceAsString().PHP_EOL);
+            self::printk('ERROR IN CLASS GENERATION' . PHP_EOL);
+            self::printk($exception->getMessage() . ' in file ' . $exception->getFile() . '#' . $exception->getLine() . PHP_EOL . $exception->getTraceAsString() . PHP_EOL);
         }
 
 
@@ -1335,7 +1326,7 @@ BANNER;
      * @param string $class_name
      * @throws \ReflectionException
      */
-    protected static function initialize_class(string $class_name) : void
+    protected static function initialize_class(string $class_name): void
     {
         $RClass = new ReflectionClass($class_name);
 
@@ -1373,5 +1364,4 @@ BANNER;
 //    {
 //        return false;
 //    }
-
 }

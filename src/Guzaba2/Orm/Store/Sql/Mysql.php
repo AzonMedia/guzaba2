@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store\Sql;
@@ -28,14 +29,12 @@ use Guzaba2\Cache\Interfaces\CacheStatsInterface;
 use Guzaba2\Orm\Store\Interfaces\TransactionalStoreInterface;
 use Guzaba2\Orm\Store\NullStore;
 use Guzaba2\Kernel\Kernel as Kernel;
-
 use Guzaba2\Database\Sql\Mysql\Mysql as MysqlDB;
 use Guzaba2\Resources\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 use Guzaba2\Transaction\TransactionManager;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
-
 
 /**
  * Class Mysql
@@ -96,7 +95,7 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
     {
         parent::__construct();
         if (!$connection_class) {
-            throw new InvalidArgumentException(sprintf(t::_('The Store %s needs $connection_class argument provided.'), get_class($this) ));
+            throw new InvalidArgumentException(sprintf(t::_('The Store %s needs $connection_class argument provided.'), get_class($this)));
         }
         $this->FallbackStore = $FallbackStore ?? new NullStore();
         if (!class_exists($connection_class)) {
@@ -114,7 +113,7 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
         $this->update_classes_data();
     }
 
-    private function load_classes_data() : void
+    private function load_classes_data(): void
     {
         $Connection = $this->get_connection($CR);
         $q = "
@@ -132,7 +131,7 @@ ORDER BY
         }
     }
 
-    private function update_classes_data() : void
+    private function update_classes_data(): void
     {
         $this->load_classes_data();
         $active_record_classes = ActiveRecord::get_active_record_classes(array_keys(Kernel::get_registered_autoloader_paths()));
@@ -144,7 +143,7 @@ ORDER BY
         $this->load_classes_data();//reload the data
     }
 
-    private function insert_new_class(string $class_name) : void
+    private function insert_new_class(string $class_name): void
     {
         $Connection = $this->get_connection($CR);
         $q = "
@@ -175,7 +174,7 @@ VALUES
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function has_class_data(string $class_name) : bool
+    public function has_class_data(string $class_name): bool
     {
         if (!$class_name) {
             throw new InvalidArgumentException(sprintf(t::_('No $class_name argument provided.')));
@@ -194,7 +193,7 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function get_class_data(string $class_name) : array
+    public function get_class_data(string $class_name): array
     {
         if (!$this->has_class_data($class_name)) {
             throw new RunTimeException(sprintf(t::_('The Mysql store has no data for class %1$s.'), $class_name));
@@ -206,9 +205,9 @@ VALUES
      * @param int $class_id
      * @return string|null
      */
-    public function get_class_name(int $class_id) : ?string
+    public function get_class_name(int $class_id): ?string
     {
-        $ret = NULL;
+        $ret = null;
         if (!$class_id) {
             throw new InvalidArgumentException(sprintf(t::_('No class_id provided.')));
         }
@@ -229,9 +228,9 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function get_class_id(string $class_name) : ?int
+    public function get_class_id(string $class_name): ?int
     {
-        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_id'] : NULL ;
+        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_id'] : null ;
     }
 
     /**
@@ -242,9 +241,9 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function get_class_uuid(string $class_name) : ?string
+    public function get_class_uuid(string $class_name): ?string
     {
-        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_uuid'] : NULL ;
+        return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_uuid'] : null ;
     }
 
     /**
@@ -252,7 +251,7 @@ VALUES
      * @return ConnectionInterface
      * @throws RunTimeException
      */
-    public function get_connection(?ScopeReference &$ScopeReference) : ConnectionInterface
+    public function get_connection(?ScopeReference &$ScopeReference): ConnectionInterface
     {
 
 //        if (Coroutine::inCoroutine()) {
@@ -285,7 +284,7 @@ VALUES
      * Returns a connection class based on whether the code is in coroutine context or not.
      * @return string
      */
-    public function get_connection_class() : string
+    public function get_connection_class(): string
     {
         if (Coroutine::inCoroutine()) {
             $connection_class = $this->connection_class;
@@ -304,7 +303,7 @@ VALUES
      * @throws BadMethodCallException
      * @throws \ReflectionException
      */
-    public function get_unified_columns_data(string $class) : array
+    public function get_unified_columns_data(string $class): array
     {
         if (!isset($this->unified_columns_data[$class])) {
             // TODO check deeper for a structured store
@@ -331,7 +330,7 @@ VALUES
      * @throws BadMethodCallException
      * @throws \ReflectionException
      */
-    public function get_storage_columns_data(string $class) : array
+    public function get_storage_columns_data(string $class): array
     {
 
         if (!isset($this->storage_columns_data[$class])) {
@@ -343,7 +342,7 @@ VALUES
             }
         }
         if (empty($this->storage_columns_data[$class])) {
-            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s with main table %s. Please check is the main table for the class and table prefix set correctly in the connection config.'), $class, $class::get_main_table() ));
+            throw new RunTimeException(sprintf(t::_('No columns information was obtained for class %s with main table %s. Please check is the main table for the class and table prefix set correctly in the connection config.'), $class, $class::get_main_table()));
         }
 
         return $this->storage_columns_data[$class];
@@ -357,7 +356,7 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    protected final function get_unified_columns_data_by_table_name(string $table_name) : array
+    final protected function get_unified_columns_data_by_table_name(string $table_name): array
     {
         $storage_structure_arr = $this->get_storage_columns_data_by_table_name($table_name);
 
@@ -372,7 +371,7 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    protected final function get_storage_columns_data_by_table_name(string $table_name) : array
+    final protected function get_storage_columns_data_by_table_name(string $table_name): array
     {
 
         $Connection = $this->get_connection($CR);
@@ -391,11 +390,11 @@ ORDER BY
     ";
         $s = $Connection->prepare($q);
         $s->table_schema = $Connection::get_database();
-        $s->table_name = $Connection::get_tprefix().$table_name;
+        $s->table_name = $Connection::get_tprefix() . $table_name;
         $ret = $s->execute()->fetchAll();
 
         if (!$ret) {
-            throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix().$table_name ));
+            throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix() . $table_name));
         }
 
         $q = "
@@ -410,7 +409,7 @@ WHERE
         ";
         $s = $Connection->prepare($q);
         $s->table_schema = $Connection::get_database();
-        $s->table_name = $Connection::get_tprefix().$table_name;
+        $s->table_name = $Connection::get_tprefix() . $table_name;
         $keys_ret = $s->execute()->fetchAll();
 
         foreach ($keys_ret as $key_row) {
@@ -418,24 +417,24 @@ WHERE
                 if ($row['COLUMN_NAME'] === $key_row['COLUMN_NAME']) {
                     $row['COLUMN_KEY_NAME'] = $key_row['CONSTRAINT_NAME'];
                     if ($key_row['REFERENCED_TABLE_SCHEMA']) {
-                        $row['COLUMN_KEY_REFERENCE'] = $key_row['REFERENCED_TABLE_SCHEMA'].'.'.$key_row['REFERENCED_TABLE_NAME'].'.'.$key_row['REFERENCED_COLUMN_NAME'];//TODO - improve this
+                        $row['COLUMN_KEY_REFERENCE'] = $key_row['REFERENCED_TABLE_SCHEMA'] . '.' . $key_row['REFERENCED_TABLE_NAME'] . '.' . $key_row['REFERENCED_COLUMN_NAME'];//TODO - improve this
                     }
                 }
             }
         }
 
         //mysql store specific implementation - it uses class_id instead of class_name
-        $has_class_id_column = FALSE;
+        $has_class_id_column = false;
         foreach ($ret as &$row) {
             if ($row['COLUMN_NAME'] === 'class_id') {
-                $has_class_id_column = TRUE;
+                $has_class_id_column = true;
                 break;
             }
         }
-        $has_class_name_column = FALSE;
+        $has_class_name_column = false;
         foreach ($ret as &$row) {
             if ($row['COLUMN_NAME'] === 'class_name') {
-                $has_class_name_column = TRUE;
+                $has_class_name_column = true;
                 break;
             }
         }
@@ -455,7 +454,7 @@ ORDER BY
     ";
             $s = $Connection->prepare($q);
             $s->table_schema = $Connection::get_database();
-            $s->table_name = $Connection::get_tprefix().'classes';
+            $s->table_name = $Connection::get_tprefix() . 'classes';
             $classes_columns = $s->execute()->fetchAll();
             $class_column = [];
             foreach ($classes_columns as $classes_column) {
@@ -467,7 +466,6 @@ ORDER BY
             if ($class_column) {
                 //$ret[] = $class_column;
             }
-
         }
 
         return $ret;
@@ -483,10 +481,10 @@ ORDER BY
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function unify_columns_data(array $storage_structure_arr) : array
+    public function unify_columns_data(array $storage_structure_arr): array
     {
         $ret = [];
-        for ($aa=0; $aa<count($storage_structure_arr); $aa++) {
+        for ($aa = 0; $aa < count($storage_structure_arr); $aa++) {
             $column_structure_arr = $storage_structure_arr[$aa];
             $ret[$aa] = [
                 'name'                  => strtolower($column_structure_arr['COLUMN_NAME']),
@@ -496,7 +494,7 @@ ORDER BY
                 'nullable'              => $column_structure_arr['IS_NULLABLE'] === 'YES',
                 'column_id'             => (int) $column_structure_arr['ORDINAL_POSITION'],
                 'primary'               => $column_structure_arr['COLUMN_KEY'] === 'PRI',
-                'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? NULL : $column_structure_arr['COLUMN_DEFAULT'],
+                'default_value'         => $column_structure_arr['COLUMN_DEFAULT'] === 'NULL' ? null : $column_structure_arr['COLUMN_DEFAULT'],
                 'autoincrement'         => $column_structure_arr['EXTRA'] === 'auto_increment',
                 'key_name'              => $column_structure_arr['COLUMN_KEY_NAME'],
                 'key_reference'         => $column_structure_arr['COLUMN_KEY_REFERENCE'],
@@ -512,17 +510,17 @@ ORDER BY
         return $ret;
     }
 
-    public static function get_meta_table() : string
+    public static function get_meta_table(): string
     {
         return self::CONFIG_RUNTIME['meta_table'];
     }
 
-    public static function get_class_table() : string
+    public static function get_class_table(): string
     {
         return self::CONFIG_RUNTIME['class_table'];
     }
 
-    public function get_meta(string $class_name, /* scalar */ $object_id) : array
+    public function get_meta(string $class_name, /* scalar */ $object_id): array
     {
         $Connection = $this->get_connection($CR);
 //        $q = "
@@ -563,7 +561,7 @@ WHERE
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws RunTimeException
      */
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
         if (!GeneralUtil::is_uuid($uuid)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1$s is not a valid UUID.'), $uuid));
@@ -585,7 +583,7 @@ WHERE
         unset($data['class_uuid_binary']);
         if (!count($data)) {
             //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
-            $data = $this->FallbackStore->get_meta_by_uuid( $uuid);
+            $data = $this->FallbackStore->get_meta_by_uuid($uuid);
         }
         return $data;
     }
@@ -595,7 +593,7 @@ WHERE
         if (!$class_name) {
             throw new InvalidArgumentException(sprintf(t::_('No class_name is provided.')));
         }
-        if (!is_a($class_name, ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class_name, ActiveRecordInterface::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class_name %s is not a %s.'), $class_name, ActiveRecordInterface::class));
         }
         if (!$object_id) {
@@ -624,7 +622,7 @@ WHERE
         unset($data['class_uuid_binary']);
         if (!count($data)) {
             //throw new RunTimeException(sprintf(t::_('No meta data is found for object with UUID %s.'), $uuid));
-            $data = $this->FallbackStore->get_meta_by_id( $class_name, $object_id);
+            $data = $this->FallbackStore->get_meta_by_id($class_name, $object_id);
         }
         return $data;
     }
@@ -636,7 +634,7 @@ WHERE
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    protected function update_meta(ActiveRecordInterface $ActiveRecord) : void
+    protected function update_meta(ActiveRecordInterface $ActiveRecord): void
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
@@ -645,7 +643,7 @@ WHERE
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
-        $object_last_update_microtime = (int) microtime(TRUE) * 1_000_000;
+        $object_last_update_microtime = (int) microtime(true) * 1_000_000;
 
 
 //        $q = "
@@ -696,15 +694,15 @@ WHERE
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    protected function create_meta(ActiveRecordInterface $ActiveRecord) : string
+    protected function create_meta(ActiveRecordInterface $ActiveRecord): string
     {
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
-        $object_create_microtime = microtime(TRUE) * 1_000_000;
+        $object_create_microtime = microtime(true) * 1_000_000;
 
         $uuid = Uuid::uuid4();
-        $uuid_binary = $uuid->getBytes(); 
+        $uuid_binary = $uuid->getBytes();
 
 
 //        $q = "
@@ -766,7 +764,7 @@ VALUES
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
 
 
@@ -785,7 +783,7 @@ VALUES
         $record_data = $ActiveRecord->get_record_data();
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_id();
-        if ($ActiveRecord->is_new() ) {
+        if ($ActiveRecord->is_new()) {
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
@@ -797,37 +795,37 @@ VALUES
             //temporary fix
             //if (true) {
             //temporary fix end
-                if (!$ActiveRecord::uses_autoincrement()) {
-                    //TODO IVO
-                    $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
-                    $field_names_arr = array_unique(array_merge($partition_fields, $main_index));
-                    $field_names_str = implode(', ', $field_names_arr);
-                    $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
-                    $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
-                } else {
-                    $field_names_arr = $ActiveRecord::get_column_names();//this includes the full index
+            if (!$ActiveRecord::uses_autoincrement()) {
+                //TODO IVO
+                $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
+                $field_names_arr = array_unique(array_merge($partition_fields, $main_index));
+                $field_names_str = implode(', ', $field_names_arr);
+                $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
+                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+            } else {
+                $field_names_arr = $ActiveRecord::get_column_names();//this includes the full index
 
-                    //implementation detail of Mysql store
-                    if (
-                        in_array('class_name', $field_names_arr, TRUE)
-                        && $ActiveRecord::has_property('class_id')
-                        && $record_data_to_save['class_name']
-                        && !$record_data_to_save['class_id']
-                    ) {
-                        $record_data_to_save['class_id'] = $this->get_class_id($record_data_to_save['class_name']);
-                    }
+                //implementation detail of Mysql store
+                if (
+                    in_array('class_name', $field_names_arr, true)
+                    && $ActiveRecord::has_property('class_id')
+                    && $record_data_to_save['class_name']
+                    && !$record_data_to_save['class_id']
+                ) {
+                    $record_data_to_save['class_id'] = $this->get_class_id($record_data_to_save['class_name']);
+                }
 
 //                    if (array_key_exists($main_index[0], $record_data_to_save)) {
 //                        unset($record_data_to_save[$main_index[0]]);
 //                    }
 
-                    $field_names_str = implode(', ', $field_names_arr);
-                    $placeholder_str = implode(', ', array_map(function ($value) {
-                        return ':'.$value;
-                    }, $field_names_arr));
+                $field_names_str = implode(', ', $field_names_arr);
+                $placeholder_str = implode(', ', array_map(function ($value) {
+                    return ':' . $value;
+                }, $field_names_arr));
 
-                    $data_arr = $record_data_to_save;
-                }
+                $data_arr = $record_data_to_save;
+            }
 //            } else {
 //                // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
 //                $field_names_arr = array_unique(array_merge($ActiveRecord::get_property_names(), $main_index));
@@ -839,7 +837,7 @@ VALUES
 //            }
             $Connection = $this->get_connection($CR);
 
-            $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
+            $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
 
 
             $q = "
@@ -927,12 +925,12 @@ VALUES
 
                 $Connection = $this->get_connection($CR);
 
-                $data_arr = $ActiveRecord->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix().$ActiveRecord::get_main_table());
+                $data_arr = $ActiveRecord->fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
 
-                foreach ($data_arr as $key=>$value) {
-                    $data_arr['insert_'.$key] = $value;
+                foreach ($data_arr as $key => $value) {
+                    $data_arr['insert_' . $key] = $value;
                     if (!in_array($key, array_values($main_index))) {
-                        $data_arr['update_'.$key] = $value;
+                        $data_arr['update_' . $key] = $value;
                     }
                     unset($data_arr[$key]);
                 }
@@ -974,7 +972,6 @@ ON DUPLICATE KEY UPDATE
                 $this->update_meta($ActiveRecord);
                 //$uuid = $ActiveRecord->get_uuid();
             }
-
         }
         //$ret = array_merge($record_data, $this->get_meta());
 
@@ -986,7 +983,7 @@ ON DUPLICATE KEY UPDATE
         //$this->is_new = FALSE;
         //this flag will be updated in activerecord::save()
         //return $uuid;
-        $ret = ['data' => $record_data, 'meta' => $ActiveRecord::uses_meta() ? $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() ) : [] ];
+        $ret = ['data' => $record_data, 'meta' => $ActiveRecord::uses_meta() ? $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id()) : [] ];
 
         return $ret;
     }
@@ -1002,7 +999,7 @@ ON DUPLICATE KEY UPDATE
      * @throws RecordNotFoundException
      * @throws \ReflectionException
      */
-    public function &get_data_pointer(string $class, array $index) : array
+    public function &get_data_pointer(string $class, array $index): array
     {
         if (array_key_exists('<', $index)) {
             if (!$index['<']) {
@@ -1018,23 +1015,23 @@ ON DUPLICATE KEY UPDATE
         }
         if (array_key_exists('<', $index) && array_key_exists('>', $index)) {
             if ($index['<'] === $index['>']) {
-                throw new InvalidArgumentException(sprintf(t::_('Both sorting keys "<" and ">" are provided and both use the same column %1$s.'), $index['<'] ));
+                throw new InvalidArgumentException(sprintf(t::_('Both sorting keys "<" and ">" are provided and both use the same column %1$s.'), $index['<']));
             }
         }
-        $sort_by = NULL;
-        $sort_desc = FALSE;
+        $sort_by = null;
+        $sort_desc = false;
         if (array_key_exists('<', $index)) {
             $sort_by = $index['<'];
-            $sort_desc = FALSE;
+            $sort_desc = false;
             unset($index['<']);
         }
         if (array_key_exists('>', $index)) {
             $sort_by = $index['>'];
-            $sort_desc = TRUE;
+            $sort_desc = true;
             unset($index['>']);
         }
         //string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL
-        $data = $this->get_data_by($class, $index, 0, 0, FALSE, $sort_by, $sort_desc);
+        $data = $this->get_data_by($class, $index, 0, 0, false, $sort_by, $sort_desc);
 
         if (count($data)) {
             $primary_index = $class::get_index_from_data($data[0]);
@@ -1054,7 +1051,7 @@ ON DUPLICATE KEY UPDATE
 //            foreach ($structure_data as $structure_datum) {
 //                $column_names
 //            }
-            foreach ($data[0] as $column_name=>$column_datum) {
+            foreach ($data[0] as $column_name => $column_datum) {
                 if (in_array($column_name, $column_names)) {
                     $record_data[$column_name] = $column_datum;
                 }
@@ -1081,7 +1078,7 @@ ON DUPLICATE KEY UPDATE
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         $data = $this->get_data_pointer($class, $primary_index);
         return $data;
@@ -1092,21 +1089,21 @@ ON DUPLICATE KEY UPDATE
      * @param array $primary_index
      * @return bool
      */
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
         //this store doesnt use pointers
-        return FALSE;
+        return false;
     }
 
     /**
      * @param ActiveRecordInterface $ActiveRecord
      */
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
         //does nothing
     }
 
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         return [];
     }
@@ -1222,7 +1219,7 @@ WHERE
      * @throws BadMethodCallException
      * @throws \ReflectionException
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
     {
 
         //initialization
@@ -1254,10 +1251,10 @@ WHERE
         }
 
         $sort_direction = [
-            TRUE => 'DESC',
-            FALSE => 'ASC',
+            true => 'DESC',
+            false => 'ASC',
         ];
-        if ($sort_by !== NULL) {
+        if ($sort_by !== null) {
             $sort_str = " ORDER BY " . $sort_by . " " . $sort_direction[$sort_desc];
         }
 
@@ -1283,9 +1280,7 @@ WHERE
          * to perform the SELECT operation and ignores the rest of the $index keys
          */
         if (array_key_exists('meta_object_uuid', $index)) {
-
-
-            if (GeneralUtil::is_uuid( (string) $index['meta_object_uuid'])) {
+            if (GeneralUtil::is_uuid((string) $index['meta_object_uuid'])) {
                 $meta_data = $this->get_meta_by_uuid($index['meta_object_uuid']);
                 $object_id = $meta_data['meta_object_id'];
                 //$w[] = $main_index[0] . ' = :object_id';
@@ -1301,7 +1296,6 @@ WHERE
                     //either provide an exact UUID or $use_like = TRUE
                     throw new InvalidArgumentException(sprintf(t::_('An invalid/partial UUID "%s" provided and the $use_like argument is set to FALSE.'), $index['meta_object_uuid']));
                 }
-
             }
         } else {
             //an implementation detail of MySQL store is to replace class_name lookups to by class_id for performance reasons
@@ -1309,7 +1303,7 @@ WHERE
                 $index['class_id'] = $this->get_class_id($index['class_name']);
                 unset($index['class_name']);
             }
-            foreach ($index as $field_name=>$field_value) {
+            foreach ($index as $field_name => $field_value) {
                 if (!is_string($field_name)) {
                     //perhaps get_instance was provided like this [1,2] instead of ['col1'=>1, 'col2'=>2]... The first notation may get supported in future by inspecting the columns and assume the order in which the primary index is provided to be correct and match it
                     throw new RunTimeException(sprintf(t::_('It seems wrong values were provided to object instance. The provided array must contain keys with the column names and values instead of just values. Please use new %s([\'col1\'=>1, \'col2\'=>2]) instead of new %s([1,2]).'), $class, $class, $class));
@@ -1325,7 +1319,7 @@ WHERE
                 } else {
                     $w[] = "main_table.{$field_name} {$Connection::equals($field_value, $use_like)} :{$field_name}";
                     if ($use_like) {
-                        $b[$field_name] = "%".$field_value."%";
+                        $b[$field_name] = "%" . $field_value . "%";
                     } else {
                         $b[$field_name] = $field_value;
                     }
@@ -1336,8 +1330,8 @@ WHERE
                 $w[] = "1";
             }
         }
-        $full_main_table_name = $Connection::get_tprefix().$table_name;
-        $roles_table = $Connection::get_tprefix().Role::get_main_table();
+        $full_main_table_name = $Connection::get_tprefix() . $table_name;
+        $roles_table = $Connection::get_tprefix() . Role::get_main_table();
         $from_str = "`$full_main_table_name` AS main_table";
         if ($class::uses_permissions()) {
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
@@ -1353,11 +1347,10 @@ WHERE
 
 
         // JOIN meta data
-        $meta_table = $Connection::get_tprefix().$this::get_meta_table();
-        $class_table = $Connection::get_tprefix().$this::get_class_table();
+        $meta_table = $Connection::get_tprefix() . $this::get_meta_table();
+        $class_table = $Connection::get_tprefix() . $this::get_class_table();
         // -- meta.meta_class_name = :meta_class_name
         if ($class::uses_meta()) {
-
             $select_str .= "
             , meta.meta_object_uuid
             , meta.meta_class_id
@@ -1415,7 +1408,7 @@ WHERE
     {$l_str}
 ";
 
-    $q_count = "
+        $q_count = "
 SELECT
     COUNT(*) as total_found_rows
 FROM
@@ -1426,7 +1419,6 @@ WHERE
 
 
         if ($limit) {
-
             if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
                 $connection_class = get_class($Connection);
                 unset($CR);//release the connection
@@ -1446,7 +1438,6 @@ WHERE
             }
 
             $total_found_rows = $count[0]['total_found_rows'];
-
         } else {
             $Statement = $Connection->prepare($q_data);
             $Statement->execute($b);
@@ -1470,7 +1461,7 @@ WHERE
     /**
      * @return int
      */
-    public function get_hits() : int
+    public function get_hits(): int
     {
         return $this->hits;
     }
@@ -1478,7 +1469,7 @@ WHERE
     /**
      * @return int
      */
-    public function get_misses() : int
+    public function get_misses(): int
     {
         return $this->misses;
     }
@@ -1486,7 +1477,8 @@ WHERE
     /**
      * @return float
      */
-    public function get_hits_percentage() : float {
+    public function get_hits_percentage(): float
+    {
         $ret = 0.0;
         $hits = $this->get_hits();
         $misses = $this->get_misses();
@@ -1502,7 +1494,7 @@ WHERE
     /**
      *
      */
-    public function reset_hits() : void
+    public function reset_hits(): void
     {
         $this->hits = 0;
     }
@@ -1510,7 +1502,7 @@ WHERE
     /**
      *
      */
-    public function reset_misses() : void
+    public function reset_misses(): void
     {
         $this->misses = 0;
     }
@@ -1518,7 +1510,7 @@ WHERE
     /**
      *
      */
-    public function reset_stats() : void
+    public function reset_stats(): void
     {
         $this->reset_hits();
         $this->reset_misses();

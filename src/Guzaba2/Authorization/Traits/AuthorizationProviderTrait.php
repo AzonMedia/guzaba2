@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Traits;
@@ -20,7 +21,7 @@ trait AuthorizationProviderTrait
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
     {
 
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -35,7 +36,7 @@ trait AuthorizationProviderTrait
         return $this->role_can($Role, $action, $ActiveRecord);
     }
 
-    public function current_role_can_on_class(string $action, string $class) : bool
+    public function current_role_can_on_class(string $action, string $class): bool
     {
         if (!class_exists($class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s does not exist.')));
@@ -57,19 +58,19 @@ trait AuthorizationProviderTrait
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void
+    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord): void
     {
-        if (!$this->current_role_can($action, $ActiveRecord) ) {
+        if (!$this->current_role_can($action, $ActiveRecord)) {
             $Role = self::get_service('CurrentUser')->get()->get_role();
-            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform %s() on object %s:%s.'), $Role->role_name, $action, get_class($ActiveRecord), $ActiveRecord->get_uuid() ));
+            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform action %s() on object %s:%s.'), $Role->role_name, $action, get_class($ActiveRecord), $ActiveRecord->get_uuid()));
         }
     }
 
-    public function check_class_permission(string $action, string $class_name) : void
+    public function check_class_permission(string $action, string $class_name): void
     {
-        if (!$this->current_role_can_on_class($action, $class_name) ) {
+        if (!$this->current_role_can_on_class($action, $class_name)) {
             $Role = self::get_service('CurrentUser')->get()->get_role();
-            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform %s() on class %s.'), $Role->role_name, $action, $class_name ));
+            throw new PermissionDeniedException(sprintf(t::_('Role %s is not allowed to perform action %s() on class %s.'), $Role->role_name, $action, $class_name));
         }
     }
 }

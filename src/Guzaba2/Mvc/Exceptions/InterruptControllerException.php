@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Mvc\Exceptions;
@@ -17,17 +18,16 @@ class InterruptControllerException extends BaseException
         $this->Response = $Response;
         $message = sprintf(t::_('This is not a real exception but just an execution interrupt.'));
         $code = 0;
-        $previous = NULL;
+        $previous = null;
         parent::__construct($message, $code, $previous);
-
     }
 
-    public function getResponse() : ResponseInterface
+    public function getResponse(): ResponseInterface
     {
         return $this->Response;
     }
 
-    public function get_response() : ResponseInterface
+    public function get_response(): ResponseInterface
     {
         return $this->getResponse();
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http\Body;
@@ -28,11 +29,11 @@ class Str extends Base implements StreamInterface
      * Will be lowered when the processing is over
      * @var bool
      */
-    protected $is_writable_flag = TRUE;
+    protected $is_writable_flag = true;
 
-    protected $is_readable_flag = TRUE;
+    protected $is_readable_flag = true;
 
-    protected $is_seekable_flag = TRUE;
+    protected $is_seekable_flag = true;
 
     protected const DEFAULT_DOCTYPE = '<!doctype html>';
 
@@ -64,7 +65,7 @@ class Str extends Base implements StreamInterface
      * @return string
      * @throws RunTimeException
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         $ret = '';
         if ($this->isReadable()) {
@@ -82,7 +83,7 @@ class Str extends Base implements StreamInterface
      *
      * @return void
      */
-    public function close() : void
+    public function close(): void
     {
         //does nothing
     }
@@ -96,11 +97,11 @@ class Str extends Base implements StreamInterface
      */
     public function detach() /* ?resource */
     {
-        $this->is_writable_flag = FALSE;
-        $this->is_readable_flag = FALSE;
-        $this->stream = NULL;
+        $this->is_writable_flag = false;
+        $this->is_readable_flag = false;
+        $this->stream = null;
 
-        return NULL;
+        return null;
     }
 
     /**
@@ -108,7 +109,7 @@ class Str extends Base implements StreamInterface
      *
      * @return int|null Returns the size in bytes if known, or null if unknown.
      */
-    public function getSize() : ?int
+    public function getSize(): ?int
     {
         $size = strlen($this->string);
         return $size;
@@ -120,7 +121,7 @@ class Str extends Base implements StreamInterface
      * @return int Position of the file pointer
      * @throws \RuntimeException on error.
      */
-    public function tell() : int
+    public function tell(): int
     {
         if (($position = ftell($this->stream)) === false) {
             throw new RunTimeException(t::_('Can not retrieve the position of the pointer in the stream.'));
@@ -133,7 +134,7 @@ class Str extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function eof() : bool
+    public function eof(): bool
     {
         return feof($this->stream);
     }
@@ -143,7 +144,7 @@ class Str extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isSeekable() : bool
+    public function isSeekable(): bool
     {
         return $this->is_seekable_flag;
     }
@@ -161,8 +162,7 @@ class Str extends Base implements StreamInterface
      * @throws RuntimeException on failure.
      *
      */
-    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET) : void
-        //public function seek(int $offset, int $whence = SEEK_SET) : void
+    public function seek(/* int */ $offset, /* int */ $whence = SEEK_SET)
     {
         if (!$this->isSeekable() || fseek($this->stream, $offset, $whence)) {
             throw new RunTimeException(t::_('Can not seek this stream.'));
@@ -179,7 +179,7 @@ class Str extends Base implements StreamInterface
      * @link http://www.php.net/manual/en/function.fseek.php
      * @throws RuntimeException on failure.
      */
-    public function rewind() : void
+    public function rewind(): void
     {
         if (!$this->isSeekable()) {
             throw new RuntimeException(t::_('Can not rewind this stream.'));
@@ -191,7 +191,7 @@ class Str extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isWritable() : bool
+    public function isWritable(): bool
     {
         return $this->is_writable_flag;
     }
@@ -203,8 +203,7 @@ class Str extends Base implements StreamInterface
      * @return int Returns the number of bytes written to the stream.
      * @throws RuntimeException on failure.
      */
-    public function write(/* string */ $string) /* int */
-        //public function write(string $string) : int
+    public function write(/* string */ $string)
     {
         //there is no need to use Swoole\Coroutine\System::fwrite() as it is a memory stream (and also fwrite cant be used with memory stream)
         //if (!$this->isWritable() || ($size = fwrite($this->stream, $string)) === false) {
@@ -221,7 +220,7 @@ class Str extends Base implements StreamInterface
      *
      * @return bool
      */
-    public function isReadable() : bool
+    public function isReadable(): bool
     {
         return $this->is_readable_flag;
     }
@@ -236,8 +235,7 @@ class Str extends Base implements StreamInterface
      *     if no bytes are available.
      * @throws RuntimeException if an error occurs.
      */
-    public function read(/* int */ $length) : string
-        //public function read(int $length) : string
+    public function read(/* int */ $length)
     {
         if (!$this->isReadable() || ($str = fread($this->stream, $length)) === false) {
             throw new RuntimeException(t::_('Can not read from this stream.'));
@@ -252,7 +250,7 @@ class Str extends Base implements StreamInterface
      * @throws RuntimeException if unable to read or an error occurs while
      *     reading.
      */
-    public function getContents() : string
+    public function getContents(): string
     {
         if (!$this->isReadable()) {
             throw new RuntimeException(t::_('Can not get the contents of this stream.'));
@@ -273,13 +271,12 @@ class Str extends Base implements StreamInterface
      *     provided. Returns a specific key value if a key is provided and the
      *     value is found, or null if the key is not found.
      */
-    public function getMetadata(/* ?string */ $key = NULL) /* mixed */
-        //public function getMetadata(?string $key = NULL) /* mixed */
+    public function getMetadata(/* ?string */ $key = null)
     {
         $meta = stream_get_meta_data($this->stream);
         if (is_null($key) === true) {
             return $meta;
         }
-        return isset($meta[$key]) ? $meta[$key] : NULL;
+        return isset($meta[$key]) ? $meta[$key] : null;
     }
 }

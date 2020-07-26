@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Interfaces;
 
@@ -8,15 +8,15 @@ use Guzaba2\Resources\Interfaces\ResourceInterface;
 
 interface ConnectionInterface extends ResourceInterface
 {
-    public function close() : void;
+    public function close(): void;
 
     /**
      * Returns an associative array with the used connection options.
      * @return array
      */
-    public function get_options() : array ;
+    public function get_options(): array;
 
-    public static function get_supported_options() : array ;
+    public static function get_supported_options(): array;
 
     //public function free() : void;
 

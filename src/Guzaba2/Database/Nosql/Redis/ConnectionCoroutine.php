@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Nosql\Redis;
 
@@ -224,8 +224,6 @@ abstract class ConnectionCoroutine extends Connection
     {
         $this->connect($options);
         parent::__construct();
-
-
     }
 
     public function get_connection_id_from_db(): string
@@ -234,7 +232,7 @@ abstract class ConnectionCoroutine extends Connection
     }
 
     //the redis method is connect($host, $port, $serialize)
-    private function connect(array $options) : void
+    private function connect(array $options): void
     {
         static::validate_options($options);
 
@@ -276,23 +274,22 @@ abstract class ConnectionCoroutine extends Connection
 
         $statement_str = StatementTypes::get_statement_type($name);
 
-        $exec_start_time = microtime(TRUE);
+        $exec_start_time = microtime(true);
 
         $ret = call_user_func_array([$this->RedisCo, $name], $arguments);
 
-        $exec_end_time = microtime(TRUE);
+        $exec_end_time = microtime(true);
         $Apm = self::get_service('Apm');
-        $Apm->increment_value('cnt_nosql_'.strtolower($statement_str).'_statements', 1);
-        $Apm->increment_value('time_nosql_'.strtolower($statement_str).'_statements', $exec_end_time - $exec_start_time);
+        $Apm->increment_value('cnt_nosql_' . strtolower($statement_str) . '_statements', 1);
+        $Apm->increment_value('time_nosql_' . strtolower($statement_str) . '_statements', $exec_end_time - $exec_start_time);
 
         return $ret;
-
     }
 
     /**
      * Closes redis connection
      */
-    public function close() : void
+    public function close(): void
     {
         $this->RedisCo->close();
     }

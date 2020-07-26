@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Application;
@@ -35,29 +36,28 @@ abstract class Application extends Base
     public function __construct()
     {
         if (!in_array(self::CONFIG_RUNTIME['deployment'], static::DEPLOYMENT)) {
-            $allowed_str = implode(', ', array_map(fn($deployment) => '"'.$deployment['name'].'"',static::DEPLOYMENT));
+            $allowed_str = implode(', ', array_map(fn($deployment) => '"' . $deployment['name'] . '"', static::DEPLOYMENT));
             throw new RunTimeException(sprintf('The application deployment type is set to an invalid value of "%s". The valid types are %s.', static::CONFIG_RUNTIME['deployment'], $allowed_str));
         }
         parent::__construct();
-
     }
 
-    public static function get_deployment() : string
+    public static function get_deployment(): string
     {
         return strtolower(self::CONFIG_RUNTIME['deployment']);
     }
 
-    public static function is_production() : bool
+    public static function is_production(): bool
     {
         return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['PRODUCTION']);
     }
 
-    public static function is_development() : bool
+    public static function is_development(): bool
     {
         return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['DEVELOPMENT']);
     }
 
-    public static function is_staging() : bool
+    public static function is_staging(): bool
     {
         return strtolower(self::CONFIG_RUNTIME['deployment']) === strtolower(self::DEPLOYMENT['STAGING']);
     }

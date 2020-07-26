@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Mvc\Traits;
@@ -30,7 +31,7 @@ trait ResponseFactories
      * Factory for creating HTTP
      * @return ResponseInterface
      */
-    public static function get_structured_ok_response(iterable $structure = []) : ResponseInterface
+    public static function get_structured_ok_response(iterable $structure = []): ResponseInterface
     {
 //        if (!$structure) {
 //            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
@@ -39,13 +40,13 @@ trait ResponseFactories
         return $Response;
     }
 
-    public static function get_stream_ok_response(string $content) : ResponseInterface
+    public static function get_stream_ok_response(string $content): ResponseInterface
     {
-        $Response = new Response(StatusCode::HTTP_OK, [], new Stream(NULL, $content));
+        $Response = new Response(StatusCode::HTTP_OK, [], new Stream(null, $content));
         return $Response;
     }
 
-    public static function get_string_ok_response(string $content) : ResponseInterface
+    public static function get_string_ok_response(string $content): ResponseInterface
     {
         $Response = new Response(StatusCode::HTTP_OK, [], new Str($content));
         return $Response;
@@ -53,7 +54,7 @@ trait ResponseFactories
 
 
 
-    public static function get_structured_notfound_response(array $structure = []) : ResponseInterface
+    public static function get_structured_notfound_response(array $structure = []): ResponseInterface
     {
         if (!$structure) {
             $structure['message'] = sprintf(t::_('The requested resource does not exist.'));
@@ -62,7 +63,7 @@ trait ResponseFactories
         return $Response;
     }
 
-    public static function get_structured_badrequest_response(array $structure = []) : ResponseInterface
+    public static function get_structured_badrequest_response(array $structure = []): ResponseInterface
     {
 //        if (!$structure) {
 //            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
@@ -71,7 +72,7 @@ trait ResponseFactories
         return $Response;
     }
 
-    public static function get_structured_servererror_response(array $structure = []) : ResponseInterface
+    public static function get_structured_servererror_response(array $structure = []): ResponseInterface
     {
 //        if (!$structure) {
 //            throw new InvalidArgumentException(sprintf(t::_('It is required to provide structure to the response.')));
@@ -80,7 +81,7 @@ trait ResponseFactories
         return $Response;
     }
 
-    public static function get_structured_forbidden_response(array $structure = []) : ResponseInterface
+    public static function get_structured_forbidden_response(array $structure = []): ResponseInterface
     {
         if (!$structure) {
             $structure['message'] = sprintf(t::_('You are not allowed to perform the requested action.'));
@@ -89,7 +90,7 @@ trait ResponseFactories
         return $Response;
     }
 
-    public static function get_structured_unauthorized_response(array $structure = []) : ResponseInterface
+    public static function get_structured_unauthorized_response(array $structure = []): ResponseInterface
     {
         if (!$structure) {
             $structure['message'] = sprintf(t::_('The requested action requires authentication.'));

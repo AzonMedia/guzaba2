@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -41,7 +42,7 @@ class RewritingMiddleware extends Base implements MiddlewareInterface
         $this->Rewriter = $Rewriter;
     }
 
-    public function get_rewriter() : RewriterInterface
+    public function get_rewriter(): RewriterInterface
     {
         return $this->Rewriter;
     }

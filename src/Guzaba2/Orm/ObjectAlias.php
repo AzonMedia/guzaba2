@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
@@ -28,7 +29,7 @@ class ObjectAlias extends ActiveRecord
 
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'object_aliases',
-        'no_permissions'            => TRUE,//the permissions of the main object will be used
+        'no_permissions'            => true,//the permissions of the main object will be used
         //'no_meta'                   => TRUE,//meta is good to have to know when an alias was added/modified
 
     ];
@@ -72,23 +73,23 @@ class ObjectAlias extends ActiveRecord
     protected function _validate_object_alias_name(): ?ValidationFailedExceptionInterface
     {
         if (!$this->object_alias_name) {
-            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is no alias name provided.') ));
+            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is no alias name provided.')));
         }
         try {
-            $ObjectAlias = new static( ['object_alias_name' => $this->object_alias_name] );
-            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name ));
+            $ObjectAlias = new static(['object_alias_name' => $this->object_alias_name]);
+            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name));
         } catch (RecordNotFoundException $Exception) {
             //OK
         } catch (PermissionDeniedException $Exception) {
             //SECURITY - since duplicate aliases are not allowed this will expose that there is already an alias with this name even if the current user has no permission to access the related object
-            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name ));
+            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name));
         }
 
-        if (strpos('/', $this->object_alias_name) !== FALSE) {
-            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name ));
+        if (strpos('/', $this->object_alias_name) !== false) {
+            return new ValidationFailedException($this, 'object_alias_name', sprintf(t::_('There is already an alias named %s.'), $this->object_alias_name));
         }
 
-        return NULL;
+        return null;
     }
 
     //TODO implement:

@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
-
 
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -48,22 +48,22 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
         $this->count = count($this->objects);
     }
 
-    public function get_class() : string
+    public function get_class(): string
     {
         return $this->class;
     }
 
-    public function first() : ?ActiveRecordInterface
+    public function first(): ?ActiveRecordInterface
     {
-        return $this->objects ? $this->objects[0] : NULL ;
+        return $this->objects ? $this->objects[0] : null ;
     }
 
-    public function last() : ?ActiveRecordInterface
+    public function last(): ?ActiveRecordInterface
     {
-        return $this->objects ? $this->objects[ count($this->objects) - 1] : NULL ;
+        return $this->objects ? $this->objects[ count($this->objects) - 1] : null ;
     }
 
-    public function count() : int
+    public function count(): int
     {
         return $this->count;
     }
@@ -78,47 +78,47 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
         return key($this->objects);
     }
 
-    public function next() : void
+    public function next(): void
     {
         next($this->objects);
     }
 
-    public function rewind () : void
+    public function rewind(): void
     {
         reset($this->objects);
     }
 
-    public function valid () : bool
+    public function valid(): bool
     {
-        return $this->current() !== FALSE;
+        return $this->current() !== false;
     }
 
 
-    public function offsetExists( /* mxied */$offset ) : bool
+    public function offsetExists(/* mxied */$offset): bool
     {
         self::validate_offset($offset);
         return array_key_exists($offset, $this->objects);
     }
 
-    public function offsetGet( /* mixed */ $offset ) /* mixed */
+    public function offsetGet(/* mixed */ $offset) /* mixed */
     {
         self::validate_offset($offset);
         return $this->objects[$offset];
     }
 
-    public function offsetSet( /* mixed */ $offset , /* mixed */ $value ) : void
+    public function offsetSet(/* mixed */ $offset, /* mixed */ $value): void
     {
         self::validate_offset($offset);
         if (!is_object($value)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $value is of type %1$s. Only objects (of class %s) are accepted.'), gettype($value), $this->get_class() ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $value is of type %1$s. Only objects (of class %s) are accepted.'), gettype($value), $this->get_class()));
         }
         if (!($value instanceof $this->class)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $value is an object of class %s. Only objects of class %s are accepted.'), $this->get_class($value), $this->get_class() ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $value is an object of class %s. Only objects of class %s are accepted.'), $this->get_class($value), $this->get_class()));
         }
         $this->objects[$offset] = $value;
     }
 
-    public function offsetUnset ( /* mixed */ $offset ) : void
+    public function offsetUnset(/* mixed */ $offset): void
     {
         //throw new RunTimeException(sprintf(t::_('It is not allowed to unset elements from an ActiveRecordCollection.')));
         self::validate_offset($offset);
@@ -128,11 +128,10 @@ class ActiveRecordCollection extends Base implements \Iterator, \Countable, \Arr
         unset($this->objects, $offset);
     }
 
-    private static function validate_offset(/* mixed */ $offset) : void
+    private static function validate_offset(/* mixed */ $offset): void
     {
         if (!is_int($offset)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $offset is of type %1$s. Only integers are accepted.'), gettype($offset) ));
+            throw new InvalidArgumentException(sprintf(t::_('The provided $offset is of type %1$s. Only integers are accepted.'), gettype($offset)));
         }
     }
-
 }

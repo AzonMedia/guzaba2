@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
@@ -21,19 +22,19 @@ trait ActiveRecordAuthorization
      * Will throw if the current role is not allowed to perform the provided $action on this object
      * @param string $action
      */
-    public function check_permission(string $action) : void
+    public function check_permission(string $action): void
     {
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled()) {
             static::get_service('AuthorizationProvider')->check_permission($action, $this);
         }
         return;
     }
 
-    public static function check_class_permission(string $action) : void
+    public static function check_class_permission(string $action): void
     {
         $class = get_called_class();
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
-            static::get_service('AuthorizationProvider')->check_class_permission($action, $class );
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
+            static::get_service('AuthorizationProvider')->check_class_permission($action, $class);
         }
         return;
     }
@@ -43,15 +44,15 @@ trait ActiveRecordAuthorization
      * @param string $action
      * @return bool
      */
-    public function current_role_can(string $action) : bool
+    public function current_role_can(string $action): bool
     {
-        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can($action, $this) : TRUE;
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can($action, $this) : true;
     }
 
-    public static function current_role_can_on_class(string $action) : bool
+    public static function current_role_can_on_class(string $action): bool
     {
         $class = get_called_class();
-        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can_on_class($action, $class) : TRUE;
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can_on_class($action, $class) : true;
     }
 
     /**
@@ -60,9 +61,9 @@ trait ActiveRecordAuthorization
      * @param string $action
      * @return bool
      */
-    public function role_can(Role $Role, string $action) : bool
+    public function role_can(Role $Role, string $action): bool
     {
-        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->role_can($Role, $action, $this) : TRUE;
+        return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->role_can($Role, $action, $this) : true;
     }
 
     /**
@@ -70,18 +71,18 @@ trait ActiveRecordAuthorization
      * By default all classes use permissions, with the ones (the permission records them selves and the roles & roles hierarchy) do not by having CONFIG_RUNTIME['no_permissions'] = TRUE
      * @return bool
      */
-    public static function uses_permissions() : bool
+    public static function uses_permissions(): bool
     {
-        return empty(static::CONFIG_RUNTIME['no_permissions']) && !is_a(get_called_class(), ActiveRecordHistoryInterface::class, TRUE);
+        return empty(static::CONFIG_RUNTIME['no_permissions']) && !is_a(get_called_class(), ActiveRecordHistoryInterface::class, true);
     }
 
     /**
      * Deletes all permission records associated with this object.
      * To be used in self::delete()
      */
-    private function delete_permissions() : void
+    private function delete_permissions(): void
     {
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
             self::get_service('AuthorizationProvider')->delete_permissions($this);
         }
     }
@@ -92,10 +93,10 @@ trait ActiveRecordAuthorization
      * @param string $action
      * @return PermissionInterface|null
      */
-    public function grant_permission(Role $Role, string $action) : ?PermissionInterface
+    public function grant_permission(Role $Role, string $action): ?PermissionInterface
     {
-        $ret = NULL;
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        $ret = null;
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
             $ret = self::get_service('AuthorizationProvider')->grant_permission($Role, $action, $this);
         }
         return $ret;
@@ -107,11 +108,12 @@ trait ActiveRecordAuthorization
      * @param string $action
      * @return PermissionInterface|null
      */
-    public function grant_class_permission(Role $Role, string $action) : ?PermissionInterface
+    public static function grant_class_permission(Role $Role, string $action): ?PermissionInterface
     {
-        $ret = NULL;
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
-            $ret = self::get_service('AuthorizationProvider')->grant_class_permission($Role, $action, get_class($this));
+        $ret = null;
+        $class = get_called_class();
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
+            $ret = self::get_service('AuthorizationProvider')->grant_class_permission($Role, $action, $class);
         }
         return $ret;
     }
@@ -121,9 +123,9 @@ trait ActiveRecordAuthorization
      * @param Role $Role
      * @param string $action
      */
-    public function revoke_permission(Role $Role, string $action) : void
+    public function revoke_permission(Role $Role, string $action): void
     {
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
             self::get_service('AuthorizationProvider')->revoke_permission($Role, $action, $this);
         }
     }
@@ -133,18 +135,18 @@ trait ActiveRecordAuthorization
      * @param Role $Role
      * @param string $action
      */
-    public function revoke_class_permission(Role $Role, string $action) : void
+    public static function revoke_class_permission(Role $Role, string $action): void
     {
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() ) {
-            self::get_service('AuthorizationProvider')->revoke_class_permission($Role, $action, get_class($this));
+        $class = get_called_class();
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
+            self::get_service('AuthorizationProvider')->revoke_class_permission($Role, $action, $class);
         }
     }
 
 
     //this is not yet supported
-    public function change_owner() : void
+    public function change_owner(): void
     {
-
     }
 
     /**
@@ -155,7 +157,7 @@ trait ActiveRecordAuthorization
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_class_actions() : array
+    public static function get_class_actions(): array
     {
         $class = get_called_class();
         $ret = self::get_standard_actions();
@@ -175,7 +177,7 @@ trait ActiveRecordAuthorization
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_object_actions() : array
+    public static function get_object_actions(): array
     {
         $class = get_called_class();
         $ret = self::get_standard_actions();
@@ -194,22 +196,21 @@ trait ActiveRecordAuthorization
      * @param \ReflectionMethod $RMethod
      * @return bool
      */
-    protected static function is_method_action(\ReflectionMethod $RMethod) : bool
+    protected static function is_method_action(\ReflectionMethod $RMethod): bool
     {
-        $ret = FALSE;
+        $ret = false;
         $doc_comment = $RMethod->getDocComment();
         if (
             $doc_comment
             && (
-                strpos($doc_comment,'@check_permission') !== FALSE
-                || strpos($doc_comment,'@check_permissions') !== FALSE
-                || strpos($doc_comment, '@is_action') !== FALSE
+                strpos($doc_comment, '@check_permission') !== false
+                || strpos($doc_comment, '@check_permissions') !== false
+                || strpos($doc_comment, '@is_action') !== false
 
             )
         ) {
-            $ret = TRUE;
+            $ret = true;
         }
         return $ret;
     }
-
 }

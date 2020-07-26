@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\ConnectionProviders;
 
@@ -65,7 +65,7 @@ class Pool extends Provider
     /**
      * To be called immediately before going in coroutine mode.
      */
-    public function close_all_connections() : void
+    public function close_all_connections(): void
     {
         foreach ($this->single_connections as $Connection) {
             $Connection->close();
@@ -74,7 +74,7 @@ class Pool extends Provider
 
         foreach ($this->available_connections as $Channel) {
             $length = $Channel->length();
-            for ($i = 0; $i < $length; $i ++) {
+            for ($i = 0; $i < $length; $i++) {
                 $Connection = $Channel->pop();
                 $Connection->close();
             }
@@ -95,7 +95,7 @@ class Pool extends Provider
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @param-out $ScopeReference
      */
-    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference) : ConnectionInterface
+    public function get_connection(string $connection_class, ?ScopeReference &$ScopeReference): ConnectionInterface
     {
 
         //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -113,7 +113,6 @@ class Pool extends Provider
         //no connection assigned to the current coroutine was found - assign a new one
         if (empty($Connection)) {
             $Connection = $this->get_new_connection($connection_class);
-
         }
 
         $Connection->increment_scope_counter();
@@ -135,7 +134,7 @@ class Pool extends Provider
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function free_connection(ConnectionInterface $Connection) : void
+    public function free_connection(ConnectionInterface $Connection): void
     {
 //        if (!Coroutine::inCoroutine()) {
 //            throw new RunTimeException(sprintf(t::_('Connections can be freed in the Pool only in Coroutine context.')));
@@ -155,7 +154,7 @@ class Pool extends Provider
         }
     }
 
-    public function stats(string $connection_class = '') : array
+    public function stats(string $connection_class = ''): array
     {
         $ret = [];
         if ($connection_class) {
@@ -181,10 +180,10 @@ class Pool extends Provider
      * ping all available connections more often than the connection timeout
      * to be sure that they will stay alive forever
      */
-    public function ping_connections(string $connection_class = '') : void
+    public function ping_connections(string $connection_class = ''): void
     {
         if (!Coroutine::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__));
         }
         if ($connection_class && array_key_exists($connection_class, $this->available_connections)) {
             $connection_classes = [$connection_class];
@@ -197,7 +196,7 @@ class Pool extends Provider
         foreach ($connection_classes as $connection_class) {
             $length = $this->available_connections[$connection_class]->length();
 
-            for ($i = 0; $i < $length; $i ++) {
+            for ($i = 0; $i < $length; $i++) {
                 $Connection = $this->available_connections[$connection_class]->pop();
 
                 try {
@@ -213,13 +212,13 @@ class Pool extends Provider
         }
     }
 
-    private function initialize_connections(string $connection_class) : void
+    private function initialize_connections(string $connection_class): void
     {
         if (!Coroutine::inCoroutine()) {
-            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__ ));
+            throw new RunTimeException(sprintf(t::_('The method %s can be used only in coroutine context.'), __METHOD__));
         }
         $this->available_connections[$connection_class] = new Channel(self::CONFIG_RUNTIME['max_connections']);
-        for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections'] ; $aa++) {
+        for ($aa = 0; $aa < self::CONFIG_RUNTIME['max_connections']; $aa++) {
             $Connection = new $connection_class();
             //$Connection->set_created_from_factory(TRUE);
             $this->available_connections[$connection_class]->push($Connection);
@@ -234,7 +233,7 @@ class Pool extends Provider
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    private function get_new_connection(string $connection_class) : ConnectionInterface
+    private function get_new_connection(string $connection_class): ConnectionInterface
     {
 //        if (\Swoole\Coroutine::getCid() === -1) {
 //            throw new RunTimeException(sprintf(t::_('Connections can be obtained from the Pool only in Coroutine context.')));
@@ -250,16 +249,16 @@ class Pool extends Provider
             }
             // increment the time for waiting for free connection
 
-            $time_start_waiting = (double) microtime(TRUE);
+            $time_start_waiting = (double) microtime(true);
 
             $Connection = $this->available_connections[$connection_class]->pop();//blocks and waits until one is available if there are no available ones
 
-            $time_end_waiting = (double) microtime(TRUE);
+            $time_end_waiting = (double) microtime(true);
             //$eps = 0.0001;
             $time_waiting_for_connection = $time_end_waiting - $time_start_waiting;
 
             //if (self::has_service('Apm') && abs($time_waiting_for_connection) > $eps )  {
-            if (self::has_service('Apm') && abs($time_waiting_for_connection) > Kernel::MICROTIME_EPS )  {
+            if (self::has_service('Apm') && abs($time_waiting_for_connection) > Kernel::MICROTIME_EPS) {
                 $Apm = self::get_service('Apm');
                 $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
             }

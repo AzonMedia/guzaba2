@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
-
 
 use Azonmedia\Patterns\ScopeReference;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -46,7 +46,7 @@ class Transaction extends CompositeTransaction
             if ($Store instanceof TransactionalResourceInterface) {
                 $Transaction = $Store->new_transaction($TR, $options);
                 $TR->remove_callbacks();//it is safe to detach this ScopeReference as there will be a master ScopeReference for the CompositeTransaction itself
-                $TR = NULL;
+                $TR = null;
                 //$this->attach_transaction($Transaction);//needs to be in reverse order - first commit in the outermost store
                 $transactions[] = $Transaction;
             } elseif ($Store instanceof TransactionalStoreInterface) {
@@ -55,7 +55,7 @@ class Transaction extends CompositeTransaction
                 //print 'COnn ID: '.$Connection->get_object_internal_id().PHP_EOL;
                 $Transaction = $Connection->new_transaction($TR);
                 $TR->remove_callbacks();
-                $TR = NULL;
+                $TR = null;
                 $transactions[] = $Transaction;
                 //$this->connection_references[] = $CR;//the connection reference must be preserved and keep this connection attached to this coroutine
                 if ($this->is_master()) {
@@ -71,7 +71,6 @@ class Transaction extends CompositeTransaction
         foreach ($transactions as $Transaction) {
             $this->attach_transaction($Transaction);
         }
-
     }
 
 

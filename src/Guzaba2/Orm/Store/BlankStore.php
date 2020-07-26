@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store;
@@ -17,7 +18,7 @@ use Guzaba2\Translator\Translator as t;
  */
 class BlankStore extends Store implements StoreInterface
 {
-    public function __construct(?StoreInterface $FallbackStore = NULL)
+    public function __construct(?StoreInterface $FallbackStore = null)
     {
         parent::__construct();
         if ($FallbackStore) {
@@ -39,7 +40,7 @@ class BlankStore extends Store implements StoreInterface
 
     public function get_storage_columns_data(string $class): array
     {
-        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class, Guzaba2\Orm\ActiveRecordInterface::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
         }
 
@@ -57,31 +58,31 @@ class BlankStore extends Store implements StoreInterface
      * @return array
      * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $lookup_index): array
     {
         return $this->get_storage_columns_data($class);
     }
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
         return ['data' => $ActiveRecord->get_record_data(), 'meta' => $ActiveRecord->get_meta_data()];
     }
 
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         return $this->get_data_pointer($class, $primary_index);
     }
 
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
-        return FALSE;
+        return false;
     }
 
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
     }
 
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         return [];
     }
@@ -101,7 +102,7 @@ class BlankStore extends Store implements StoreInterface
      * @param  string $uuid
      * @return array - class and id
      */
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
 
         return [];
@@ -112,7 +113,7 @@ class BlankStore extends Store implements StoreInterface
      * @param  string $uuid
      * @return array - class and id
      */
-    public function get_meta_by_id(string $class_name, int $object_id) : array
+    public function get_meta_by_id(string $class_name, int $object_id): array
     {
 
         return [];

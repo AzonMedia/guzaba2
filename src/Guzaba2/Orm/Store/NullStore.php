@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store;
@@ -19,7 +20,7 @@ use Guzaba2\Translator\Translator as t;
  */
 class NullStore extends Store implements StoreInterface
 {
-    public function __construct(?StoreInterface $FallbackStore = NULL)
+    public function __construct(?StoreInterface $FallbackStore = null)
     {
         parent::__construct();
         if ($FallbackStore) {
@@ -50,7 +51,7 @@ class NullStore extends Store implements StoreInterface
      * @param  string $uuid
      * @return array - class and id
      */
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
         $this->throw_not_found_exception_by_uuid($uuid);
         return [];
@@ -61,7 +62,7 @@ class NullStore extends Store implements StoreInterface
      * @param  string $uuid
      * @return array - class and id
      */
-    public function get_meta_by_id(string $class_name, int $object_id) : array
+    public function get_meta_by_id(string $class_name, int $object_id): array
     {
         $this->throw_not_found_exception($class_name, $object_id);
         return [];
@@ -73,32 +74,32 @@ class NullStore extends Store implements StoreInterface
      * @return array
      * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $lookup_index) : array
+    public function &get_data_pointer(string $class, array $lookup_index): array
     {
         $this->throw_not_found_exception($class, $lookup_index);
         return [];
     }
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
         throw new RunTimeException(sprintf(t::_('ORM Store %s does not support updating records.'), __CLASS__));
     }
 
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         return $this->get_data_pointer($class, $primary_index);
     }
 
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
-        return FALSE;
+        return false;
     }
 
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
     }
 
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         return [];
     }

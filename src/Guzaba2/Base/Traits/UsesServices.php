@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
@@ -17,9 +17,9 @@ trait UsesServices
      */
     public static function uses_services(): bool
     {
-        $ret = FALSE;
+        $ret = false;
         $called_class = get_called_class();
-        if (defined($called_class.'::CONFIG_RUNTIME')) {
+        if (defined($called_class . '::CONFIG_RUNTIME')) {
             $ret = !empty(static::CONFIG_RUNTIME['services']);
         }
         return $ret;
@@ -37,12 +37,12 @@ trait UsesServices
         $cache = [];
         $called_class = get_called_class();
         if (!array_key_exists($called_class, $cache)) {
-            $cache[$called_class] = static::uses_services() ? in_array($service_name, static::get_services()) : FALSE;
+            $cache[$called_class] = static::uses_services() ? in_array($service_name, static::get_services()) : false;
         }
         return $cache[$called_class];
     }
 
-    public static function has_service(string $service_name) : bool
+    public static function has_service(string $service_name): bool
     {
         return Kernel::has_service($service_name);
     }
@@ -54,13 +54,13 @@ trait UsesServices
     {
         $ret = [];
         $called_class = get_called_class();
-        if (defined($called_class.'::CONFIG_RUNTIME')) {
+        if (defined($called_class . '::CONFIG_RUNTIME')) {
             $ret = static::CONFIG_RUNTIME['services'];
         }
         return $ret;
     }
 
-    public static function get_service(string $service_name) : object
+    public static function get_service(string $service_name): object
     {
         $called_class = get_called_class();
         if (!static::uses_service($service_name)) {
@@ -71,7 +71,7 @@ trait UsesServices
         return $ret;
     }
 
-    public function add_callback(string $event_name, callable $callback) : bool
+    public function add_callback(string $event_name, callable $callback): bool
     {
         /** @var Events $Events */
         $Events = self::get_service('Events');

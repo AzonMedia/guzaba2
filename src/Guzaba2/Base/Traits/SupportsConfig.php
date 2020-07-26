@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
@@ -12,7 +12,7 @@ trait SupportsConfig
 {
     //private static bool $is_configured_flag = FALSE;
 
-    public static function has_runtime_configuration() : bool
+    public static function has_runtime_configuration(): bool
     {
         $called_class = get_called_class();
         //return defined($called_class.'::CONFIG_RUNTIME');
@@ -24,13 +24,13 @@ trait SupportsConfig
      * To be invoked only by the Kernel
      * @return array
      */
-    public static function get_runtime_configuration() : array
+    public static function get_runtime_configuration(): array
     {
         //TODO add a check to allow to be called only by the Kernel
         //return static::CONFIG_RUNTIME;
         $called_class = get_called_class();
         $runtime_config = [];
-        if (defined($called_class.'::CONFIG_RUNTIME')) {
+        if (defined($called_class . '::CONFIG_RUNTIME')) {
             $runtime_config = $called_class::CONFIG_RUNTIME;
         }
         return $runtime_config;
@@ -46,7 +46,7 @@ trait SupportsConfig
         return static::CONFIG_RUNTIME[$key];
     }
 
-    public static function has_config_key(string $key) : bool
+    public static function has_config_key(string $key): bool
     {
         return array_key_exists($key, static::CONFIG_RUNTIME);
     }

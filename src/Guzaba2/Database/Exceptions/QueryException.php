@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Exceptions;
@@ -122,7 +123,7 @@ class QueryException extends DatabaseException
      *
      * @return string Additional debug data regarding the bound parameters.
      */
-    public function getDebugData() : string
+    public function getDebugData(): string
     {
         return $this->debugdata;
     }

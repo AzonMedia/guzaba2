@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Ip;
@@ -33,7 +34,7 @@ class IpFilter
         $this->SwooleTable->create();
     }
 
-    public function ip_is_blacklisted(string $ip) : bool
+    public function ip_is_blacklisted(string $ip): bool
     {
         // test with blacklisted ip
         // if (empty($this->SwooleTable->get($ip))) {
@@ -48,9 +49,9 @@ class IpFilter
         // }
 
         if (empty($this->SwooleTable->get($ip))) {
-            return FALSE;
+            return false;
         } else {
-            return TRUE;
+            return true;
         }
     }
 }

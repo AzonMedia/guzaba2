@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Rbac;
 
@@ -27,7 +27,7 @@ class Operation extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function create(ActiveRecordInterface $Object, string $action, string $operation_description = '') : ActiveRecord
+    public static function create(ActiveRecordInterface $Object, string $action, string $operation_description = ''): ActiveRecord
     {
 
         if ($Object->is_new() || !$Object->get_id()) {
@@ -47,11 +47,11 @@ class Operation extends ActiveRecord
      * @param string $class_name
      * @param string $action
      */
-    public static function create_class_operation(string $class_name, string $action, string $operation_description = '') : ActiveRecord
+    public static function create_class_operation(string $class_name, string $action, string $operation_description = ''): ActiveRecord
     {
         $Operation = new self();
         $Operation->class_name = $class_name;
-        $Operation->object_id = NULL;
+        $Operation->object_id = null;
         $Operation->operation_description = $operation_description;
         $Operation->write();
         return $Operation;

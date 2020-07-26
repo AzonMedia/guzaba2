@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -66,7 +67,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     /**
      * @var ServerInterface|null
      */
-    protected ?ServerInterface $Server = NULL;
+    protected ?ServerInterface $Server = null;
 
     /**
     * @var null|array|object
@@ -75,11 +76,11 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
 
     public function __construct(
         $method = Method::METHODS_MAP[Method::HTTP_GET],
-        ?UriInterface $uri = NULL,
+        ?UriInterface $uri = null,
         array $headers = [],
         array $cookies = [],
         array $server_params = [],
-        ?StreamInterface $Body = NULL,
+        ?StreamInterface $Body = null,
         array $uploaded_files = []
     ) {
         $method = strtoupper($method);
@@ -100,17 +101,17 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
         parent::__construct();
     }
 
-    public function setServer(ServerInterface $Server) : void
+    public function setServer(ServerInterface $Server): void
     {
         $this->Server = $Server;
     }
 
-    public function set_server(ServerInterface $Server) : void
+    public function set_server(ServerInterface $Server): void
     {
         $this->setServer($Server);
     }
 
-    public function getServer() : ?ServerInterface
+    public function getServer(): ?ServerInterface
     {
         return $this->Server;
     }
@@ -177,7 +178,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      * @throws InvalidArgumentException
      */
-    public function withRequestTarget($request_target) : self
+    public function withRequestTarget($request_target): self
     {
         if (preg_match('#\s#', $request_target)) {
             throw new InvalidArgumentException(
@@ -194,7 +195,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return string Returns the request method.
      */
-    public function getMethod() : string
+    public function getMethod(): string
     {
         return $this->method;
     }
@@ -204,7 +205,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * Returns the constant of the method as per Guzaba2\Http\Method::METHODS_MAP
      * @return int
      */
-    public function getMethodConstant() : int
+    public function getMethodConstant(): int
     {
         $method_const = array_search(strtoupper($this->getMethod()), Method::METHODS_MAP);
         return $method_const;
@@ -226,7 +227,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
     //public function withMethod(string $method) : self
-    public function withMethod(/* string */ $method) : self
+    public function withMethod(/* string */ $method): self
     {
         $request = clone $this;
         $request->method = $method;
@@ -242,7 +243,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return UriInterface Returns a UriInterface instance
      *     representing the URI of the request.
      */
-    public function getUri() : UriInterface
+    public function getUri(): UriInterface
     {
         return $this->uri;
     }
@@ -278,7 +279,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      */
     //public function withUri(UriInterface $uri, bool $preserveHost = false) : self
-    public function withUri(UriInterface $uri, /* bool */ $preserveHost = FALSE) : self
+    public function withUri(UriInterface $uri, /* bool */ $preserveHost = false): self
     {
         $request = clone $this;
         $request->uri = $uri;
@@ -305,7 +306,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return array
      */
-    public function getServerParams() : array
+    public function getServerParams(): array
     {
         return $this->server_params;
     }
@@ -316,7 +317,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @param $server_params
      * @return $this
      */
-    public function withServerParams($server_params) : self
+    public function withServerParams($server_params): self
     {
         $clone = clone $this;
         $clone->server_params = $server_params;
@@ -334,7 +335,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return array
      */
-    public function getCookieParams() : array
+    public function getCookieParams(): array
     {
         return $this->cookies;
     }
@@ -356,7 +357,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @param array $cookies Array of key/value pairs representing cookies.
      * @return static
      */
-    public function withCookieParams(array $cookies) : self
+    public function withCookieParams(array $cookies): self
     {
         $clone = clone $this;
         $clone->cookies = $cookies;
@@ -376,7 +377,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return array
      */
-    public function getQueryParams() : array
+    public function getQueryParams(): array
     {
         if (is_array($this->query_params)) {
             return $this->query_params;
@@ -410,7 +411,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *     $_GET.
      * @return static
      */
-    public function withQueryParams(array $query) : self
+    public function withQueryParams(array $query): self
     {
         $request = clone $this;
         $request->query_params = $query;
@@ -429,7 +430,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return array An array tree of UploadedFileInterface instances; an empty
      *     array MUST be returned if no data is present.
      */
-    public function getUploadedFiles() : array
+    public function getUploadedFiles(): array
     {
         return $this->uploaded_files;
     }
@@ -445,7 +446,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      * @throws \InvalidArgumentException if an invalid structure is provided.
      */
-    public function withUploadedFiles(array $uploaded_files) : self
+    public function withUploadedFiles(array $uploaded_files): self
     {
         $clone = clone $this;
         $clone->uploaded_files = $uploaded_files;
@@ -476,7 +477,6 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     public function getParsedBody() /* mixed */
     {
         if (!$this->parsedBody) {
-
             $body_contents = $this->getBody()->getContents();
             $this->getBody()->rewind();
             if ($body_contents) {
@@ -486,7 +486,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                         throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
                         break;
                     case ContentType::TYPE_JSON:
-                        $this->parsedBody = json_decode($body_contents, TRUE);
+                        $this->parsedBody = json_decode($body_contents, true);
                         break;
                     case ContentType::TYPE_SOAP:
                         throw new NotImplementedException(sprintf('Parsing a SOAP request body is not implemented.'));
@@ -506,7 +506,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                             $structure = $Body->getStructure();
                             $this->parsedBody = $structure;
                         } else {
-                            throw new RunTimeException(sprintf('PHP/native request provided but the Body is not of class %1$s but is %2$s.', Structured::class, get_class($Body) ));
+                            throw new RunTimeException(sprintf('PHP/native request provided but the Body is not of class %1$s but is %2$s.', Structured::class, get_class($Body)));
                         }
                         break;
                     default:
@@ -515,9 +515,8 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
             } else {
                 $this->parsedBody = [];
             }
-
         }
-        return $this->parsedBody ?? NULL;
+        return $this->parsedBody ?? null;
     }
 
     /**
@@ -548,7 +547,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @throws \InvalidArgumentException if an unsupported argument type is
      *     provided.
      */
-    public function withParsedBody(/* mixed */ $data) : self
+    public function withParsedBody(/* mixed */ $data): self
     {
         $this->parsedBody = $data;
 
@@ -567,7 +566,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      *
      * @return array Attributes derived from the request.
      */
-    public function getAttributes() : array
+    public function getAttributes(): array
     {
         return $this->attributes;
     }
@@ -588,7 +587,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return mixed
      */
     //public function getAttribute(string $name, /* mixed */ $default = NULL) /* mixed */
-    public function getAttribute(/* string */ $name, /* mixed */ $default = NULL) /* mixed */
+    public function getAttribute(/* string */ $name, /* mixed */ $default = null) /* mixed */
     {
         $ret = $default;
         if (array_key_exists($name, $this->attributes)) {
@@ -613,7 +612,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      */
     //public function withAttribute(string $name, /* mixed */ $value) : self
-    public function withAttribute(/* string */ $name, /* mixed */ $value) : self
+    public function withAttribute(/* string */ $name, /* mixed */ $value): self
     {
         $Request = clone $this;
         $Request->attributes[$name] = $value;
@@ -635,7 +634,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @return static
      */
     //public function withoutAttribute(string $name) : self
-    public function withoutAttribute(/* string */ $name) : self
+    public function withoutAttribute(/* string */ $name): self
     {
         $Request = clone $this;
         unset($this->attributes[$name]);
@@ -651,9 +650,9 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * {@inheritDoc}
      * @return string|null
      */
-    public function getContentType() : ?string
+    public function getContentType(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $content_type_headers = $this->getHeader('Accept');
         foreach ($content_type_headers as $content_type_header) {
             $ret = ContentType::get_content_type($content_type_header);
@@ -668,29 +667,29 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * Check is the requested/accepted content JSON
      * @return bool
      */
-    public function isContentJson() : bool
+    public function isContentJson(): bool
     {
         $content_type = $this->getContentType();
-        return stripos($content_type, 'json') !== FALSE ? TRUE : FALSE;
+        return stripos($content_type, 'json') !== false ? true : false;
     }
 
-    public function isContentHtml() : bool
+    public function isContentHtml(): bool
     {
         $content_type = $this->getContentType();
-        return stripos($content_type, 'html') !== FALSE ? TRUE : FALSE;
+        return stripos($content_type, 'html') !== false ? true : false;
     }
 
-    public function isContentXml() : bool
+    public function isContentXml(): bool
     {
         $content_type = $this->getContentType();
-        return stripos($content_type, 'xml') !== FALSE ? TRUE : FALSE;
+        return stripos($content_type, 'xml') !== false ? true : false;
     }
 
     /**
      * @param mixed $offset
      * @return bool
      */
-    public function offsetExists(/* scalar */ $offset) : bool
+    public function offsetExists(/* scalar */ $offset): bool
     {
         // TODO: Implement offsetExists() method.
         return array_key_exists($offset, $this->query_params);
@@ -711,7 +710,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @param mixed $value
      * @throws RunTimeException
      */
-    public function offsetSet(/* scalar */ $offset, /* mixed */ $value) : void
+    public function offsetSet(/* scalar */ $offset, /* mixed */ $value): void
     {
         throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
     }
@@ -720,18 +719,18 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
      * @param mixed $offset
      * @throws RunTimeException
      */
-    public function offsetUnset(/* scalar */ $offset) : void
+    public function offsetUnset(/* scalar */ $offset): void
     {
         throw new RunTimeException(sprintf(t::_('The Request object is immutable - it is not allowed to modify the request params.')));
     }
 
-    public function count() : int
+    public function count(): int
     {
         return count($this->query_params);
     }
 
     //@implements \Iterator
-    public function rewind() : void
+    public function rewind(): void
     {
         reset($this->query_params);
     }
@@ -758,7 +757,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
     }
 
     //@implements \Iterator
-    public function valid() : bool
+    public function valid(): bool
     {
         $var = $this->current() !== false;
         return $var;

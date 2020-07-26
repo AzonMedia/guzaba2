@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\ConnectionProviders;
 
@@ -22,28 +22,28 @@ class Basic extends Provider
         parent::__construct();
     }
 
-    public function get_connection(string $class_name, ?ScopeReference &$ScopeReference) : ConnectionInterface
+    public function get_connection(string $class_name, ?ScopeReference &$ScopeReference): ConnectionInterface
     {
-        $ScopeReference = NULL;//not used
+        $ScopeReference = null;//not used
         $Connection = new $class_name();
         //$Connection->set_created_from_factory(TRUE);
         $Connection->assign_to_coroutine(Coroutine::getCid());
         return $Connection;
     }
 
-    public function free_connection(ConnectionInterface $Connection) : void
+    public function free_connection(ConnectionInterface $Connection): void
     {
         $Connection->close();
         $Connection->unassign_from_coroutine();
-        $Connection = NULL;
+        $Connection = null;
     }
 
-    public function close_all_connections() : void
+    public function close_all_connections(): void
     {
         //does nothing - there is nothing to close
     }
 
-    public function stats(string $connection_class = '') : array
+    public function stats(string $connection_class = ''): array
     {
         return [];
     }

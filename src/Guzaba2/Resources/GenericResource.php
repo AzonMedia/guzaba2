@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Resources;
 
@@ -132,7 +132,7 @@ class GenericResource extends Base
             }
 
             // this is for incrementing the time_used_connections in unassign_from_coroutine()
-            $this->resource_obtained_time = microtime(TRUE);
+            $this->resource_obtained_time = microtime(true);
         }
     }
 
@@ -153,12 +153,12 @@ class GenericResource extends Base
 
         $this->coroutine_id = 0;
         if (Coroutine::getcid()) { //if we are in coroutine context
-            $this->resource_released_time = microtime(TRUE);
+            $this->resource_released_time = microtime(true);
             $Context = Coroutine::getContext();
             // increment the used connection time (APM)
             if (self::has_service('Apm')) { //the service may not be defined by the Di
                 $Apm = self::get_service('Apm');
-                $Apm->increment_value('time_used_connections', ($this->resource_released_time - $this->resource_obtained_time) );
+                $Apm->increment_value('time_used_connections', ($this->resource_released_time - $this->resource_obtained_time));
             }
 
             $Context->{Resources::class}->unassign_resource($this);

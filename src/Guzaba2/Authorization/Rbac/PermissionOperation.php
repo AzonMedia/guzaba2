@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Authorization\Rbac;
-
 
 use Guzaba2\Orm\ActiveRecord;
 
@@ -23,7 +22,7 @@ class PermissionOperation extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function create(Permission $Permission, Operation $Operation) : ActiveRecord
+    public static function create(Permission $Permission, Operation $Operation): ActiveRecord
     {
         $PermissionOperation = new self();
         $PermissionOperation->permission_id = $Permission->get_id();

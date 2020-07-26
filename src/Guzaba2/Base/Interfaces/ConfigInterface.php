@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Base\Interfaces;
@@ -23,13 +24,11 @@ interface ConfigInterface
     //and the child class must obtain the current runtime configuration of its parent not the initial runtime config that was set by the kernel
     //because of this a method accessible by the kernel is needed
 
-    public static function has_runtime_configuration() : bool ;
+    public static function has_runtime_configuration(): bool;
 
-    public static function get_runtime_configuration() : array ;
+    public static function get_runtime_configuration(): array;
 
-    public static function has_config_key(string $key) : bool ;
+    public static function has_config_key(string $key): bool;
 
-    public static function get_config_key(string $key) /* mixed */ ;
-
-
+    public static function get_config_key(string $key) /* mixed */;
 }

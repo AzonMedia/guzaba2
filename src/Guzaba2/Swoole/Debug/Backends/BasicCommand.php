@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Debug\Backends;
@@ -10,23 +11,23 @@ use Azonmedia\Debug\Interfaces\CommandInterface;
 
 abstract class BasicCommand implements CommandInterface
 {
-    abstract public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = NULL) : ?string;
+    abstract public function handle(string $command, string $current_prompt, ?string &$change_prompt_to = null): ?string;
 
     public static function get_class_name()
     {
-        if (FALSE !== ($pos = strrpos(static::class, "\\"))) {
+        if (false !== ($pos = strrpos(static::class, "\\"))) {
             return substr(static::class, $pos + 1);
         }
 
         return static::class;
     }
 
-    public function can_handle(string $command) : bool
+    public function can_handle(string $command): bool
     {
         return array_key_exists($command, static::$commands);
     }
 
-    public static function handles_commands() : string
+    public static function handles_commands(): string
     {
         $ret = sprintf(t::_('%s available commands:%s'), static::get_class_name(), PHP_EOL);
 
@@ -37,13 +38,13 @@ abstract class BasicCommand implements CommandInterface
         return $ret;
     }
 
-    public static function help(?string $command = NULL) : string
+    public static function help(?string $command = null): string
     {
         $class_name = static::get_class_name();
 
-        if (NULL === $command) {
+        if (null === $command) {
             return sprintf(t::_('%s - shows details about %s - type help %s to see available commands'), $class_name, $class_name, strtolower($class_name));
-        } else if (0 === strcasecmp($class_name, $command)) {
+        } elseif (0 === strcasecmp($class_name, $command)) {
             return static::handles_commands();
         } else {
             return sprintf(t::_('%s: %s'), $command, static::$commands[$command]['help_str']);

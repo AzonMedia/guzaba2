@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Guzaba2\Swoole;
-
 
 use Guzaba2\Http\Method;
 use Guzaba2\Swoole\Interfaces\IcpRequestWithResponseInterface;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
@@ -47,7 +48,6 @@ use Guzaba2\Orm\Traits\ActiveRecordIterator;
 use Guzaba2\Orm\Traits\ActiveRecordValidation;
 use ReflectionException;
 
-
 /**
  * Class ActiveRecord
  * @package Guzaba2\Orm
@@ -90,11 +90,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
          * - strign values which are numeric to int or float if the column is int or float
          * - bool values to int is the column is int (this is probably a BOOL column which is INT size 1 - this is how MySQL defines a BOOL column - no real bool type)
          */
-        'cast_properties_on_assignment'         => TRUE,
+        'cast_properties_on_assignment'         => true,
 
-        'log_notice_on_property_cast'           => FALSE,
-        'throw_exception_on_property_cast'      => FALSE,
-        'add_validation_error_on_property_cast' => FALSE,
+        'log_notice_on_property_cast'           => false,
+        'throw_exception_on_property_cast'      => false,
+        'add_validation_error_on_property_cast' => false,
 
 
     ];
@@ -123,12 +123,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @var bool
      */
-    protected bool $is_new_flag = TRUE;
+    protected bool $is_new_flag = true;
 
     /**
      * @var bool
      */
-    protected bool $was_new_flag = FALSE;
+    protected bool $was_new_flag = false;
 
     /**
      * @var array
@@ -148,7 +148,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @var bool
      */
-    protected bool $disable_property_hooks_flag = FALSE;
+    protected bool $disable_property_hooks_flag = false;
     
     /**
      * Are the method hooks like _before_save enabled or not.
@@ -157,12 +157,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      *
      * @var bool
      */
-    protected bool $disable_method_hooks_flag = FALSE;
+    protected bool $disable_method_hooks_flag = false;
 
     /**
      * @var bool
      */
-    private bool $read_lock_obtained_flag = FALSE;
+    private bool $read_lock_obtained_flag = false;
 
 
     /**
@@ -174,18 +174,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     private /* scalar */ $requested_index = self::INDEX_NEW;
 
 
-    private bool $read_only_flag = FALSE;
+    private bool $read_only_flag = false;
 
     /**
      * Can be set to TRUE if the $permission_checks_disabled flag is passed to the constructor
      * @var bool
      */
-    private bool $permission_checks_disabled_flag = FALSE;
+    private bool $permission_checks_disabled_flag = false;
 
     /**
      * @var bool
      */
-    private bool $modified_data_tracking_disabled_flag = FALSE;
+    private bool $modified_data_tracking_disabled_flag = false;
 
 
     /**
@@ -226,7 +226,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @see self::is_locking_enabled()
      * @var bool
      */
-    protected static bool $orm_locking_enabled_flag = TRUE;
+    protected static bool $orm_locking_enabled_flag = true;
 
 
     /**
@@ -244,7 +244,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws ContextDestroyedException
      */
     //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
-    public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = FALSE, bool $permission_checks_disabled = FALSE, ?StoreInterface $Store = NULL)
+    public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = false, bool $permission_checks_disabled = false, ?StoreInterface $Store = null)
     {
         parent::__construct();
 
@@ -259,7 +259,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
             if ($Request && $Request->getMethodConstant() === Method::HTTP_GET) {
-                $this->read_only_flag = TRUE;
+                $this->read_only_flag = true;
             }
         }
 
@@ -310,26 +310,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     throw new InvalidArgumentException($message);
                 }
                 //} elseif (strlen((string)$index) === 36) {
-            } elseif (GeneralUtil::is_uuid( (string) $index)) {
+            } elseif (GeneralUtil::is_uuid((string) $index)) {
                 //this is UUID
                 //$index = ['object_uuid' => $index];
                 $index = ['meta_object_uuid' => $index];
             } elseif (is_string($index)) {
                 //try to do a lookup by object alias
                 try {
-                    $ObjectAlias = new ObjectAlias( ['object_alias_class_id' => static::get_class_id(), 'object_alias_name' => $index] );
+                    $ObjectAlias = new ObjectAlias(['object_alias_class_id' => static::get_class_id(), 'object_alias_name' => $index]);
                     //$index = $ObjectAlias->object_alias_object_id;
                     $index = [$primary_columns[0] => $ObjectAlias->object_alias_object_id];
                     //and proceed loading the object (it should already be cached as ObjectAlias creates the target object in order to check the permissions
                 } catch (RecordNotFoundException $Exception) {
                     //there is no such alias (at least not for an object of this class
-                    throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this) ));
+                    throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this)));
                 } //SECURITY - leave the PermissionDeniedException to pop... it will expose that such an object does exist but is consistent with the rest of the logic
             } else {
-                throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this) ));
+                throw new RunTimeException(sprintf(t::_('An unsupported type "%s" with value "%s" was supplied for the index of object of class "%s".'), gettype($index), $index, get_class($this)));
             }
-
-
         } elseif (is_array($index)) {
             // no check for count($this->index)==count(self::$primary_index_columns) as an array with some criteria may be supplied instead of index
             // no change
@@ -351,12 +349,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //the new records are not referencing the OrmStore
             //no locking here either
         } else {
-
             $this->read($index);
-
-
         }
-
     }
 
     /**
@@ -364,7 +358,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param iterable $data
      * @return ActiveRecordInterface
      */
-    public static function get_from_record(iterable $data) : ActiveRecordInterface
+    public static function get_from_record(iterable $data): ActiveRecordInterface
     {
         //TODO implement
     }
@@ -397,11 +391,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $resource = MetaStore::get_key_by_object($this);
             static::get_service('LockManager')->release_lock($resource);
 
-            $this->read_lock_obtained_flag = FALSE;
+            $this->read_lock_obtained_flag = false;
         }
     }
 
-    public function __toString() : string
+    public function __toString(): string
     {
         //return MetaStore::get_key_by_object($this);
         //return $this->as_array();
@@ -417,15 +411,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return $this->as_array();
     }
 
-    public static function get_temporal_class() : string
+    public static function get_temporal_class(): string
     {
-        return get_called_class().self::CONFIG_RUNTIME['temporal_class_suffix'];
+        return get_called_class() . self::CONFIG_RUNTIME['temporal_class_suffix'];
     }
 
-    public function as_array() : array
+    public function as_array(): array
     {
         //return ['data' => $this->get_property_data(), 'meta' => $this->get_meta_data()];
-        return array_merge( $this->get_property_data(), $this->get_meta_data() );
+        return array_merge($this->get_property_data(), $this->get_meta_data());
     }
 
     /**
@@ -437,13 +431,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
      */
-    public function read(/* int|string|array */ $index) : void
+    public function read(/* int|string|array */ $index): void
     {
 
 
 
         if (!is_string($index) && !is_int($index) && !is_array($index)) {
-            throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'),__METHOD__, gettype($index) ));
+            throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'), __METHOD__, gettype($index)));
         }
 
 //        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !$this->are_permission_checks_disabled() ) {
@@ -472,7 +466,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
-
             $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
@@ -501,7 +494,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->check_permission('read');
 
         if (!count($this->meta_data)) {
-            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, TRUE)));
+            throw new LogicException(sprintf(t::_('No metadata is found/loaded for object of class %s with ID %s.'), get_class($this), print_r($index, true)));
         }
 
         //TODO - check this should be moved before the pointer is obtained
@@ -512,12 +505,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
             static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
 
-            $this->read_lock_obtained_flag = TRUE;
+            $this->read_lock_obtained_flag = true;
         }
 
-        $this->is_new_flag = FALSE;
+        $this->is_new_flag = false;
 
-        $this->modified_data_tracking_disabled_flag = TRUE;
+        $this->modified_data_tracking_disabled_flag = true;
 
         //new Event($this, '_after_read');
         self::get_service('Events')::create_event($this, '_after_read');
@@ -529,8 +522,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
 
-        $this->modified_data_tracking_disabled_flag = FALSE;
-
+        $this->modified_data_tracking_disabled_flag = false;
     }
 
     /**
@@ -542,7 +534,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
      */
-    public function write() : ActiveRecordInterface
+    public function write(): ActiveRecordInterface
     {
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
@@ -555,7 +547,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
+            throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id()));
         }
 
 //read_only is set in constructor() if method is GET
@@ -622,15 +614,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //setting the flag to FALSE means that the record has UUID & ID assigned
         //the record is not yet commited
         if ($this->is_new_flag) {
-            $this->is_new_flag = FALSE;
-            $this->was_new_flag = TRUE;
+            $this->is_new_flag = false;
+            $this->was_new_flag = true;
         }
 
         if (! ($this instanceof LogEntry)) {
             if ($this->was_new()) {
                 $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
             } else {
-                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names()) ));
+                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names())));
             }
         }
 
@@ -642,7 +634,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $Role = $CurrentUser->get()->get_role();
             //create permission records for each action this record supports
             $object_actions = self::get_object_actions();
-            foreach($object_actions as $object_action) {
+            foreach ($object_actions as $object_action) {
                 $AuthorizationProvider->grant_permission($Role, $object_action, $this);
             }
         }
@@ -664,7 +656,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         //the flag is lowered only after the record is committed
-        $this->was_new_flag = FALSE;
+        $this->was_new_flag = false;
         //the modified data will be cleared only after the transaction is over
         $this->record_modified_data = [];
 
@@ -678,7 +670,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
 
         if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to delete a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ));
+            throw new RunTimeException(sprintf(t::_('Trying to delete a read-only instance of class %s with id %s.'), get_class($this), $this->get_id()));
         }
 
 //read_only is set in constructor() if method is GET
@@ -727,7 +719,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $OrmStore = static::get_service('OrmStore');
         $OrmStore->remove_record($this);
 
-        $this->add_log_entry('delete', sprintf(t::_('The object with ID %1$s and UUID %2$s was deleted.'), $id, $uuid ));
+        $this->add_log_entry('delete', sprintf(t::_('The object with ID %1$s and UUID %2$s was deleted.'), $id, $uuid));
 
 
         //new Event($this, '_after_delete');
@@ -752,7 +744,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return bool
      */
-    public static function has_main_table_defined() : bool
+    public static function has_main_table_defined(): bool
     {
         return isset(static::CONFIG_RUNTIME['main_table']);
     }
@@ -763,14 +755,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
      */
-    public static function get_main_table() : string
+    public static function get_main_table(): string
     {
         if (empty(static::CONFIG_RUNTIME['main_table'])) {
-            throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class() ));
+            throw new RunTimeException(sprintf(t::_('The class %s does not define CONFIG_DEFAULTS[\'main_table\'] but is using a StructuredStore.'), get_called_class()));
         }
         $class = get_called_class();
-        if (is_a($class, ActiveRecordTemporalInterface::class, TRUE)) {
-            $ret = static::CONFIG_RUNTIME['main_table'].self::CONFIG_RUNTIME['temporal_table_suffix'];
+        if (is_a($class, ActiveRecordTemporalInterface::class, true)) {
+            $ret = static::CONFIG_RUNTIME['main_table'] . self::CONFIG_RUNTIME['temporal_table_suffix'];
         } else {
             $ret = static::CONFIG_RUNTIME['main_table'];
         }
@@ -780,7 +772,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return bool
      */
-    public static function has_structure_defined() : bool
+    public static function has_structure_defined(): bool
     {
         return isset(static::CONFIG_RUNTIME['structure']);
     }
@@ -788,7 +780,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return array
      */
-    public static function get_validation_rules() : array
+    public static function get_validation_rules(): array
     {
         $ret = [];
         if (isset(static::CONFIG_RUNTIME['validation'])) {
@@ -806,7 +798,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static final function get_by_uuid(string $uuid) : ActiveRecord
+    final public static function get_by_uuid(string $uuid): ActiveRecord
     {
         if (!GeneralUtil::is_uuid($uuid)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $uuid argument %1$s is not a valid UUID.'), $uuid));
@@ -825,10 +817,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return new $meta_data['meta_class_name']($object_id);
     }
 
-    public function _before_change_context() : void
+    public function _before_change_context(): void
     {
         if ($this->is_modified()) {
-            $message = sprintf(t::_('It is not allowed to pass modified but unsaved ActiveRecord objects between coroutines. The object of class %s with index %s is modified but unsaved.'), get_class($this), print_r($this->get_primary_index(), TRUE));
+            $message = sprintf(t::_('It is not allowed to pass modified but unsaved ActiveRecord objects between coroutines. The object of class %s with index %s is modified but unsaved.'), get_class($this), print_r($this->get_primary_index(), true));
             throw new RunTimeException($message);
         }
     }
@@ -836,27 +828,27 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * Based on the REST method type the locking may be disabled if the request is read only.
      */
-    public static function enable_locking() : void
+    public static function enable_locking(): void
     {
         //cant use a local static var - this is shared between the coroutines
         //self::set_static('locking_enabled_flag', TRUE);
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Context->orm_locking_enabled_flag = TRUE;
+            $Context->orm_locking_enabled_flag = true;
         } else {
-            self::$orm_locking_enabled_flag = TRUE;
+            self::$orm_locking_enabled_flag = true;
         }
     }
 
-    public static function disable_locking() : void
+    public static function disable_locking(): void
     {
         //cant use a local static var - this is shared between the coroutines
         //self::set_static('locking_enabled_flag', FALSE);
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Context->orm_locking_enabled_flag = FALSE;
+            $Context->orm_locking_enabled_flag = false;
         } else {
-            self::$orm_locking_enabled_flag = FALSE;
+            self::$orm_locking_enabled_flag = false;
         }
     }
 
@@ -866,34 +858,30 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function is_locking_enabled() : bool
+    public static function is_locking_enabled(): bool
     {
         //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
         //return self::get_static('locking_enabled_flag');
 
         $called_class = get_called_class();
         if (!empty(self::CONFIG_RUNTIME['orm_locking_disabled'])) { //the ORM locking is disabled for this specific class
-            return FALSE;
+            return false;
         }
 
-        if (Coroutine::inCoroutine() ) {
-
+        if (Coroutine::inCoroutine()) {
             try {
                 $Context = Coroutine::getContext();
-                if (property_exists($Context,'orm_locking_enabled_flag')) {
+                if (property_exists($Context, 'orm_locking_enabled_flag')) {
                     $ret = $Context->orm_locking_enabled_flag;
                 } else {
                     $ret = self::$orm_locking_enabled_flag;
                 }
             } catch (ContextDestroyedException $Exception) {
                 //$ret = self::$orm_locking_enabled_flag;
-                $ret = FALSE;
+                $ret = false;
                 //it is OK - the coroutine is over and this destructor is invoked as part of the context cleanup
                 //at this stage all locks have been released
             }
-
-
-
         } else {
             $ret = self::$orm_locking_enabled_flag;
         }
@@ -947,11 +935,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function get_class_id(?string $class_name = ''): ?int
     {
-        $class_id = NULL;
+        $class_id = null;
         if (!$class_name) {
             $class_name = get_called_class();
             if ($class_name === __CLASS__) {
-                throw new RunTimeException(sprintf(t::_('The method %s is to be called on a class extending %s, not on %s it self.'), __METHOD__, __CLASS__, __CLASS__ ));
+                throw new RunTimeException(sprintf(t::_('The method %s is to be called on a class extending %s, not on %s it self.'), __METHOD__, __CLASS__, __CLASS__));
             }
         }
 
@@ -1000,7 +988,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * The returned index is always converted to an array with column_name=>$value even if scalar was provided.
      * @return array
      */
-    public function get_requested_index() : array
+    public function get_requested_index(): array
     {
         $ret = [];
         if (is_array($this->requested_index)) {
@@ -1019,7 +1007,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Only objects with a single scalar primary index have UUIDs.
      * @return mixed
      */
-    public function get_uuid() : string
+    public function get_uuid(): string
     {
         $ret = $this->meta_data['meta_object_uuid'];
         return $ret;
@@ -1030,7 +1018,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * For all purposes in the framework this method is to be used.
      * @return array
      */
-    public function get_primary_index() : array
+    public function get_primary_index(): array
     {
         $ret = [];
         $primary_index_columns = static::get_primary_index_columns();
@@ -1049,7 +1037,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public static function get_index_from_data(array $data): ?array
     {
         $called_class = get_called_class();
-        $ret = NULL;
+        $ret = null;
         $primary_columns = static::get_primary_index_columns();
         foreach ($primary_columns as $primary_column) {
             if (!array_key_exists($primary_column, $data)) {
@@ -1067,9 +1055,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param array $data
      * @return string|null
      */
-    public static function get_uuid_from_data(array $data) : ?string
+    public static function get_uuid_from_data(array $data): ?string
     {
-        $ret = NULL;
+        $ret = null;
         if (isset($data['meta_object_uuid'])) {
             $ret = $data['meta_object_uuid'];
         }
@@ -1080,7 +1068,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Returns an indexed array with the name of the primary columns.
      * @return array
      */
-    public static function get_primary_index_columns() : array
+    public static function get_primary_index_columns(): array
     {
         $called_class = get_called_class();
         return self::$primary_index_columns[$called_class];
@@ -1111,21 +1099,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * @return bool
      */
-    public static function uses_autoincrement() : bool
+    public static function uses_autoincrement(): bool
     {
-        $ret = FALSE;
+        $ret = false;
         foreach (static::get_columns_data() as $column_datum) {
-            if (isset($column_datum['autoincrement']) && $column_datum['autoincrement'] === TRUE) {
-                $ret = TRUE;
+            if (isset($column_datum['autoincrement']) && $column_datum['autoincrement'] === true) {
+                $ret = true;
                 break;
             }
         }
         return $ret;
     }
 
-    public static function get_default_route() : ?string
+    public static function get_default_route(): ?string
     {
-        return static::CONFIG_RUNTIME['default_route'] ?? NULL;
+        return static::CONFIG_RUNTIME['default_route'] ?? null;
     }
     
     //public static function get_meta_table() : string
@@ -1141,7 +1129,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * The record may have been submitted to be saved to the DB and have UUID & ID but may not be actually be saved as it may be part of a transaction which can get rolled back.
      * @return bool
      */
-    public function is_new() : bool
+    public function is_new(): bool
     {
         return $this->is_new_flag;
     }
@@ -1157,32 +1145,32 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return $this->was_new_flag;
     }
 
-    public function is_modified() : bool
+    public function is_modified(): bool
     {
-        return count($this->record_modified_data) ? TRUE : FALSE;
+        return count($this->record_modified_data) ? true : false;
     }
     
-    public function disable_method_hooks() : void
+    public function disable_method_hooks(): void
     {
         $this->disable_method_hooks_flag = true;
     }
 
-    public function enable_method_hooks() : void
+    public function enable_method_hooks(): void
     {
         $this->disable_method_hooks_flag = false;
     }
 
-    public function are_method_hooks_disabled() : bool
+    public function are_method_hooks_disabled(): bool
     {
         return $this->disable_method_hooks_flag;
     }
 
-    public function is_read_only() : bool
+    public function is_read_only(): bool
     {
         return $this->read_only_flag;
     }
 
-    public function are_permission_checks_disabled() : bool
+    public function are_permission_checks_disabled(): bool
     {
         return $this->permission_checks_disabled_flag;
     }
@@ -1196,7 +1184,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * This is similar to self::get_record_data() but also invokes the property hooks.
      * @return array
      */
-    public function get_property_data() : array
+    public function get_property_data(): array
     {
         $ret = [];
         foreach ($this->get_property_names() as $property) {
@@ -1210,7 +1198,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * To take into account the _before_get and _after_get hooks please use self::get_property_data()
      * @return array
      */
-    public function get_record_data() : array
+    public function get_record_data(): array
     {
         return $this->record_data;
     }
@@ -1222,25 +1210,25 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public function set_record_data(array $record_data) : void
+    public function set_record_data(array $record_data): void
     {
         $property_names = $this->get_property_names();
         $record_data_property_names = array_keys($record_data);
         //$record_data_property_names must be a subset of $property_names
         //if (array_intersect($record_data_property_names, $property_names) !== $record_data_property_names) {
         if ($diff = array_diff($record_data_property_names, $property_names)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided $record_data argument contains invalid keys %1$s.'), implode(', ', $diff) ) );
+            throw new InvalidArgumentException(sprintf(t::_('The provided $record_data argument contains invalid keys %1$s.'), implode(', ', $diff)));
         }
 
         $this->record_data = array_replace($this->record_data, $record_data);
     }
 
-    public static function uses_meta() : bool
+    public static function uses_meta(): bool
     {
-        return empty(static::CONFIG_RUNTIME['no_meta']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, TRUE);
+        return empty(static::CONFIG_RUNTIME['no_meta']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true);
     }
 
-    public function get_meta_data() : array
+    public function get_meta_data(): array
     {
         $ret = $this->meta_data;
         return $ret;
@@ -1254,14 +1242,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws ReflectionException
      * @throws ContextDestroyedException
      */
-    public static function get_routes() : ?iterable
+    public static function get_routes(): ?iterable
     {
-        $ret = NULL;
+        $ret = null;
         $called_class = get_called_class();
         //if (array_key_exists('route', static::CONFIG_RUNTIME)) {
         if ($called_class::has_runtime_configuration() && array_key_exists('route', static::CONFIG_RUNTIME)) {
             if (static::CONFIG_RUNTIME['route'][0] !== '/') {
-                throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class() ));
+                throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class()));
             }
             $default_route = static::CONFIG_RUNTIME['route'];
             $ret = [
@@ -1271,17 +1259,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     Method::HTTP_GET                            => [ActiveRecordDefaultController::class, 'list'],
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_action_create'],
                 ],
-                $default_route.'/{uuid}'                    => [
+                $default_route . '/{uuid}'                    => [
                     //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'crud_action_read'],
                     Method::HTTP_GET                           => [ActiveRecordDefaultController::class, 'crud_action_read'],
                     Method::HTTP_PUT | Method::HTTP_PATCH       => [ActiveRecordDefaultController::class, 'crud_action_update'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_action_delete'],
                 ],
-                $default_route.'/{uuid}/permission'         => [
+                $default_route . '/{uuid}/permission'         => [
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_grant_permission'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_revoke_permission'],
                 ],
-                $default_route.'/class-permission'          => [
+                $default_route . '/class-permission'          => [
                     Method::HTTP_POST                           => [ActiveRecordDefaultController::class, 'crud_grant_class_permission'],
                     Method::HTTP_DELETE                         => [ActiveRecordDefaultController::class, 'crud_revoke_class_permission'],
                 ],
@@ -1294,7 +1282,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * Returns the property names of the modified properties
      * @return array Indexed array with property names
      */
-    public function get_modified_properties_names() : array
+    public function get_modified_properties_names(): array
     {
         //return $this->record_modified_data;
         return array_keys($this->record_modified_data);
@@ -1316,7 +1304,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
      */
-    public function get_property_old_values(string $property) : array
+    public function get_property_old_values(string $property): array
     {
         if (!array_key_exists($property, $this->record_data)) {
             throw new RunTimeException(sprintf(t::_('Trying to get old values for a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
@@ -1364,7 +1352,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * To be used on the records using autoincrement.
      * To be called classes implementing the StoreInterface.
      */
-    public function update_primary_index(/* int | string */ $index) : void
+    public function update_primary_index(/* int | string */ $index): void
     {
         // the index is autoincrement and it is not yet set
         $main_index = static::get_primary_index_columns();
@@ -1380,11 +1368,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     /**
      * Returns all ActiveRecord objects that match the given criteria
-     * @param  array  $index array of $property_name => $value 
+     * @param  array  $index array of $property_name => $value
      * @return iterable  list of ActiveRecord objects
      * @throws RunTimeException
      */
-    public static function get_by(array $index = []) : iterable
+    public static function get_by(array $index = []): iterable
     {
         $class_name = static::class;
         $data = static::get_data_by($index);
@@ -1412,7 +1400,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      */
     //public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : array
+    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
     {
         /** @var StoreInterface $OrmStore */
         $OrmStore = static::get_service('OrmStore');
@@ -1426,51 +1414,51 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return array Indexed array with class names
      * @throws InvalidArgumentException
      */
-    public static function get_active_record_classes(array $ns_prefixes) : array
+    public static function get_active_record_classes(array $ns_prefixes): array
     {
         static $active_record_classes = [];
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
-        if (!array_key_exists( $args_hash, $active_record_classes ) ) {
+        if (!array_key_exists($args_hash, $active_record_classes)) {
             $classes = Kernel::get_classes($ns_prefixes, ActiveRecordInterface::class);
-            $classes = array_filter( $classes, fn(string $class) : bool => !in_array($class, [ActiveRecord::class, ActiveRecordInterface::class] ) && ( new ReflectionClass($class) )->isInstantiable()  );
+            $classes = array_filter($classes, fn(string $class): bool => !in_array($class, [ActiveRecord::class, ActiveRecordInterface::class]) && ( new ReflectionClass($class) )->isInstantiable());
             $active_record_classes[$args_hash] = $classes;
         }
         return $active_record_classes[$args_hash];
     }
 
-    public static function get_active_record_temporal_classes(array $ns_prefixes) : array
+    public static function get_active_record_temporal_classes(array $ns_prefixes): array
     {
         static $active_record_temporal_classes = [];
         $args_hash = md5(ArrayUtil::array_as_string($ns_prefixes));
-        if (!array_key_exists( $args_hash, $active_record_temporal_classes ) ) {
+        if (!array_key_exists($args_hash, $active_record_temporal_classes)) {
             $active_record_temporal_classes[$args_hash] = Kernel::get_classes($ns_prefixes, ActiveRecordTemporalInterface::class);
         }
         return $active_record_temporal_classes[$args_hash];
     }
 
-    public static function is_loaded_in_memory() : bool
+    public static function is_loaded_in_memory(): bool
     {
         return !empty(static::CONFIG_RUNTIME['load_in_memory']);
     }
 
-    public static function initialize_in_memory() : void
+    public static function initialize_in_memory(): void
     {
         $class = get_called_class();
         $OrmStore = self::get_service('OrmStore');
         $data = $OrmStore->get_data_by($class, []);//get everything
     }
 
-    public static function get_standard_actions() : array
+    public static function get_standard_actions(): array
     {
         return self::STANDARD_ACTIONS;
     }
 
-    public static function data_to_collection(array $data) : ActiveRecordCollection
+    public static function data_to_collection(array $data): ActiveRecordCollection
     {
         return new ActiveRecordCollection(get_called_class(), $data);
     }
 
-    public static function get_store() : StoreInterface
+    public static function get_store(): StoreInterface
     {
         /** @var StoreInterface $Store */
         $Store = self::get_service('OrmStore');
@@ -1498,6 +1486,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //        return $Transaction;
         //it is not an issue that a new instance of OrmTransactionalResource is created every time as this is not really holding any resource
         //the only method that is needed is get_resource_id() and this is Coroutine dependent not instance dependent
-        return (new OrmTransactionalResource)->new_transaction($ScopeReference, $options);
+        return (new OrmTransactionalResource())->new_transaction($ScopeReference, $options);
     }
 }

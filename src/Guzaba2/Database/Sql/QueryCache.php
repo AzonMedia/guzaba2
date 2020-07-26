@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql;
@@ -27,7 +28,7 @@ class QueryCache extends Base
     //protected const CACHE_RESULT_MATRICES_UP_TO_ELEMENTS = 10000;
 
     protected const CONFIG_DEFAULTS = [
-        'cache_queries_containing_rand'         => FALSE,
+        'cache_queries_containing_rand'         => false,
         'cache_result_matrices_up_to_elements'  => 10000,
     ];
 
@@ -58,14 +59,14 @@ class QueryCache extends Base
      */
     public function update_table_modification_microtime(string $table, int $add_time = 0): void
     {
-        $microtime = ($add_time + microtime(TRUE) ) * 1_000_000;
+        $microtime = ($add_time + microtime(true) ) * 1_000_000;
         $microtime = (int) $microtime;
-        $this->TimeCache->set('table',$table, $microtime);//no TTL for the table update time - the tables are a limited amount and small data is cached
+        $this->TimeCache->set('table', $table, $microtime);//no TTL for the table update time - the tables are a limited amount and small data is cached
     }
 
     public function get_table_modification_microtime(string $table): ?int
     {
-        return $this->TimeCache->get('table',$table);
+        return $this->TimeCache->get('table', $table);
     }
 
     public function update_tables_modification_microtime(string $sql, int $add_time = 0): void
@@ -106,8 +107,8 @@ class QueryCache extends Base
 
     public function get_cached_data(string $sql, array $params): ?iterable
     {
-        $ret = NULL;
-        $cache_enabled = TRUE;
+        $ret = null;
+        $cache_enabled = true;
 
 //TODO - implement
 //        if (TransactionManager::getCurrentTransaction(MemoryTransaction::class)) {
@@ -129,13 +130,13 @@ class QueryCache extends Base
 
         if (!count($tables)) {
             //no tabled were found - this query cant be cached
-            $cache_enabled = FALSE;
+            $cache_enabled = false;
         }
 
         //queries containing RAND() cant be cached either
         //if (stripos($sql,'rand()') !== FALSE) {
         if (preg_match('/RAND\s*\(\)/i', $sql) && !self::CONFIG_RUNTIME['cache_queries_containing_rand']) {
-            $cache_enabled = FALSE;
+            $cache_enabled = false;
         }
 
         if ($cache_enabled) {
@@ -151,7 +152,7 @@ class QueryCache extends Base
                     //$table_updated_microtime = (int) self::cache()->get_value($table_key);
                     $table_updated_microtime = self::get_table_modification_microtime($table);
                     if (!isset($query_data['cached_microtime']) || $table_updated_microtime >= $query_data['cached_microtime']) {
-                        $cache_enabled = FALSE;//there is a table that was updated after this query was cached
+                        $cache_enabled = false;//there is a table that was updated after this query was cached
                         break;
                     }
                 }
@@ -160,7 +161,7 @@ class QueryCache extends Base
 
         if ($cache_enabled && $query_data) {
             $ret = $query_data;
-            Kernel::log(sprintf(t::_('%1$s: The result of query "%2$s" was found in cache.'), __CLASS__, substr($sql, 0, 200).'...' ), LogLevel::DEBUG);
+            Kernel::log(sprintf(t::_('%1$s: The result of query "%2$s" was found in cache.'), __CLASS__, substr($sql, 0, 200) . '...'), LogLevel::DEBUG);
         }
 
         return $ret;

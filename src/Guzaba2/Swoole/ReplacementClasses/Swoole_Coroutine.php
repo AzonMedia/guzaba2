@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole;
 
 class Coroutine
@@ -44,7 +46,7 @@ class Coroutine
     {
     }
 
-    public static function getPcid(?int $cid = NULL)
+    public static function getPcid(?int $cid = null)
     {
     }
 
@@ -52,7 +54,7 @@ class Coroutine
     {
     }
 
-    public static function getBackTrace($cid, $options, $limit=0)
+    public static function getBackTrace($cid, $options, $limit = 0)
     {
     }
 

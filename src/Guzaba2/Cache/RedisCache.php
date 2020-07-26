@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Cache;
@@ -15,9 +16,8 @@ class RedisCache extends Base implements CacheInterface, IndependentCacheInterfa
      * @param $data
      * @throws RunTimeException
      */
-    public function set(string $prefix, string $key, /* mixed*/ $data) : void
+    public function set(string $prefix, string $key, /* mixed*/ $data): void
     {
-
     }
 
     /**
@@ -26,9 +26,8 @@ class RedisCache extends Base implements CacheInterface, IndependentCacheInterfa
      * @param string $key
      * @throws RunTimeException
      */
-    public function delete(string $prefix, string $key ) : void
+    public function delete(string $prefix, string $key): void
     {
-
     }
 
     /**
@@ -38,7 +37,6 @@ class RedisCache extends Base implements CacheInterface, IndependentCacheInterfa
      */
     public function get(string $prefix, string $key) /* mixed */
     {
-
     }
 
     /**
@@ -46,9 +44,8 @@ class RedisCache extends Base implements CacheInterface, IndependentCacheInterfa
      * @param string $key
      * @return bool
      */
-    public function exists(string $prefix, string $key) : bool
+    public function exists(string $prefix, string $key): bool
     {
-
     }
 
     public function get_stats(string $prefix = ''): array

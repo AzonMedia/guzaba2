@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Ip;
@@ -16,9 +17,9 @@ class FilteringMiddleware extends Base implements MiddlewareInterface
         parent::__construct();
     }
 
-    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
+    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
-    	if (strtolower($Request->getUri()->getHost()) === strtolower('localhost')) {
+        if (strtolower($Request->getUri()->getHost()) === strtolower('localhost')) {
             //just for test - it is not allowed to access the app from localhost - use IP
             $Body = new Stream();
             $Body->write('You are not allowed to access the server over "localhost". Please use the IP instead.');

@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Orm\MetaStore;
 
@@ -37,7 +37,7 @@ abstract class MetaStore extends Base implements MetaStoreInterface
         }
     }
 
-    public static function get_key(string $class, array $primary_index) : string
+    public static function get_key(string $class, array $primary_index): string
     {
         $lookup_index = Store::form_lookup_index($primary_index);
 
@@ -49,12 +49,11 @@ abstract class MetaStore extends Base implements MetaStoreInterface
             $class_hash = crc32($class);
         } else {
             $class_hash = md5($class);
-
         }
-        return $class_hash.self::KEY_SEPARATOR.$lookup_index;
+        return $class_hash . self::KEY_SEPARATOR . $lookup_index;
     }
 
-    public static function get_key_by_object(ActiveRecordInterface $ActiveRecord) : string
+    public static function get_key_by_object(ActiveRecordInterface $ActiveRecord): string
     {
         return self::get_key(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
     }

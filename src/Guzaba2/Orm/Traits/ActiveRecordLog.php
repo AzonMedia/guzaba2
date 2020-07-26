@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
-
 
 use Guzaba2\Log\LogEntry;
 

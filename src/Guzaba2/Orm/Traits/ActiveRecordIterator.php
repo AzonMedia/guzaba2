@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
@@ -15,35 +16,40 @@ trait ActiveRecordIterator
 
     private array $record_and_meta_data = [];
 
-    private function init_record_and_meta_data() : void
+    private function init_record_and_meta_data(): void
     {
         if (empty($this->record_and_meta_data)) {
             $this->record_and_meta_data = array_merge($this->record_data, $this->meta_data);
         }
     }
 
-    public function rewind() {
+    public function rewind()
+    {
         $this->init_record_and_meta_data();
         reset($this->record_and_meta_data);
     }
 
-    public function current() {
+    public function current()
+    {
         $this->init_record_and_meta_data();
         return current($this->record_and_meta_data);
     }
 
-    public function key() {
+    public function key()
+    {
         $this->init_record_and_meta_data();
         return key($this->record_and_meta_data);
     }
 
-    public function next() {
+    public function next()
+    {
         $this->init_record_and_meta_data();
         next($this->record_and_meta_data);
     }
 
-    public function valid() {
+    public function valid()
+    {
         $this->init_record_and_meta_data();
-        return $this->current() !== FALSE;
+        return $this->current() !== false;
     }
 }

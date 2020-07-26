@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Resources\Interfaces;
@@ -9,5 +10,5 @@ interface ResourceInterface
 
     //public function decrement_scope_counter() : void ;
 
-    public function get_resource_id() : string ;
+    public function get_resource_id(): string;
 }

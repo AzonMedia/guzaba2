@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
@@ -41,7 +42,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         'route'                 => '/acl-permission',
         //instead the individual routes for the objects are to be used
         //'load_in_memory'        => TRUE,//testing
-        'no_permissions'    => TRUE,//the permissions records themselves cant use permissions
+        'no_permissions'    => true,//the permissions records themselves cant use permissions
         'services'          => [
 
         ],
@@ -59,7 +60,7 @@ class Permission extends ActiveRecord implements PermissionInterface
      * Can be used instead of object_id
      * @var string
      */
-    public string $object_uuid = '';
+    public ?string $object_uuid = null;
 
     /**
      * Can be used instead of role_id
@@ -74,7 +75,9 @@ class Permission extends ActiveRecord implements PermissionInterface
         $this->class_name = self::get_class_name($this->class_id);
         /** @var Store $OrmStore */
         $OrmStore = self::get_service('OrmStore');
-        $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $this->object_id)['meta_object_uuid'];
+        if ($this->object_id !== null) {
+            $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $this->object_id)['meta_object_uuid'];
+        }
 
         $this->role_uuid = (new Role($this->role_id))->get_uuid();
     }
@@ -137,7 +140,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         return $role_uuid;
     }
 
-    protected function _before_write() : void
+    protected function _before_write(): void
     {
 
         if (!$this->is_new()) {
@@ -157,7 +160,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         if (!$this->action_name) {
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('No action name provided.')));
         }
-        if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create' ) {
+        if (!method_exists($this->class_name, $this->action_name) && $this->action_name !== 'create') {
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The class %s does not have a method %s.'), $this->class_name, $this->action_name));
         }
 
@@ -173,7 +176,7 @@ class Permission extends ActiveRecord implements PermissionInterface
 
         //before creating a Permission record check does the object on which it is created has the appropriate grnat_permission permission
         try {
-            if ($this->object_id === NULL) {
+            if ($this->object_id === null) {
                 $class_name = $this->class_name;
                 $class_name::check_class_permission('grant_permission');
             } else {
@@ -185,39 +188,37 @@ class Permission extends ActiveRecord implements PermissionInterface
         }
 
 
-        if ( $this->action_name !== 'create') {
-            if (! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic() ) {
+        if ($this->action_name !== 'create') {
+            if (! (new \ReflectionMethod($this->class_name, $this->action_name) )->isPublic()) {
                 throw new ValidationFailedException($this, 'action_name', sprintf(t::_('The method %s::%s is not public. The methods to which permissions are granted/associated must be public.'), $this->class_name, $this->action_name));
             }
         }
 
         //TODO - may add locking here that is released in after_save
         try {
-            $Permission = new self( [
+            $Permission = new self([
                 'role_id'       => $this->role_id,
                 'class_name'    => $this->class_name,
                 'object_id'     => $this->object_id,
                 'action_name'   => $this->action_name,
-            ] );
+            ]);
 
             throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
         } catch (RecordNotFoundException $Exception) {
             //no duplicates
         }
-
     }
 
-    protected function _before_delete() : void
+    protected function _before_delete(): void
     {
         try {
             //(new $this->class_name($this->object_id))->check_permission('chmod');
-            if ($this->object_id === NULL) {
+            if ($this->object_id === null) {
                 $class_name = $this->class_name;
                 $class_name::check_class_permission('revoke_permission');
             } else {
                 (new $this->class_name($this->object_id))->check_permission('revoke_permission');
             }
-
         } catch (RecordNotFoundException $Exception) {
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
         }
@@ -233,7 +234,7 @@ class Permission extends ActiveRecord implements PermissionInterface
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = '') : ActiveRecordInterface
+    public static function create(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, string $permission_description = ''): ActiveRecordInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();
@@ -258,12 +259,12 @@ class Permission extends ActiveRecord implements PermissionInterface
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      */
-    public static function create_class_permission(Role $Role, string $action, string $class_name, string $permission_description='') : ActiveRecordInterface
+    public static function create_class_permission(Role $Role, string $action, string $class_name, string $permission_description = ''): ActiveRecordInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();
         $Permission->class_name = $class_name;
-        $Permission->object_id = NULL;
+        $Permission->object_id = null;
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
         $Permission->write();

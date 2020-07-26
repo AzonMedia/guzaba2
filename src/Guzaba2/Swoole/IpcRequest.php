@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
@@ -46,7 +47,7 @@ class IpcRequest extends Request implements IpcRequestInterface
      * Should a response be returned back to the calling worker.
      * @var bool
      */
-    private bool $requires_response_flag = FALSE;
+    private bool $requires_response_flag = false;
 
     /**
      * The request will be executed as this user.
@@ -74,7 +75,7 @@ class IpcRequest extends Request implements IpcRequestInterface
      * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
      * @throws \ReflectionException
      */
-    public function __construct( /* int|string */ $method, string $route, iterable $args = [], string $user_uuid = '')
+    public function __construct(/* int|string */ $method, string $route, iterable $args = [], string $user_uuid = '')
     {
         if (!$method) {
             throw new InvalidArgumentException(sprintf(t::_('No $method is provided.')));
@@ -87,10 +88,10 @@ class IpcRequest extends Request implements IpcRequestInterface
             $method = Method::METHODS_MAP[$method];
         } elseif (is_string($method)) {
             if (!Method::is_valid_method($method)) {
-                throw new InvalidArgumentException(sprintf(t::_('Invalid method string %1$s is provided. The valid method names are %2$s.'), implode(',', array_values(Method::METHODS_MAP)) ));
+                throw new InvalidArgumentException(sprintf(t::_('Invalid method string %1$s is provided. The valid method names are %2$s.'), implode(',', array_values(Method::METHODS_MAP))));
             }
         } else {
-            throw new InvalidArgumentException(sprintf(t::_('Wrong type %1$s provided for $method. Only int and string are supported.'), gettype($method) ));
+            throw new InvalidArgumentException(sprintf(t::_('Wrong type %1$s provided for $method. Only int and string are supported.'), gettype($method)));
         }
 
         if (!$route) {
@@ -116,7 +117,6 @@ class IpcRequest extends Request implements IpcRequestInterface
             } catch (PermissionDeniedException $Exception) {
                 throw new LogicException(sprintf(t::_('The user with UUID %1$s can not be read. Please check the permissions.'), $user_uuid));
             }
-
         }
         $this->user_uuid = $user_uuid;
 
@@ -145,11 +145,10 @@ class IpcRequest extends Request implements IpcRequestInterface
         if (self::has_service('Router')) {
             /** @var RouterInterface $Router */
             $Router = self::get_service('Router');
-            if ($Router->match_request($this)->getAttribute('controller_callable') === NULL) {
+            if ($Router->match_request($this)->getAttribute('controller_callable') === null) {
                 throw new InvalidArgumentException(sprintf(t::_('The provided route %1$s seems invalid (can not be routed).'), $route));
             }
         }
-
     }
 
     public function get_source_worker_id(): int

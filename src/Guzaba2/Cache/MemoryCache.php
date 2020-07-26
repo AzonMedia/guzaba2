@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Cache;
@@ -26,7 +27,7 @@ class MemoryCache extends Base implements CacheInterface
      * @param string $key
      * @param $data
      */
-    public function set(string $prefix, string $key, /* mixed*/ $data) : void
+    public function set(string $prefix, string $key, /* mixed*/ $data): void
     {
         if (!array_key_exists($prefix, $this->cache)) {
             $this->cache[$prefix] = [];
@@ -40,7 +41,7 @@ class MemoryCache extends Base implements CacheInterface
      * @param string $key
      * @throws RunTimeException
      */
-    public function delete(string $prefix, string $key ) : void
+    public function delete(string $prefix, string $key): void
     {
         unset($this->cache[$prefix][$key]);
     }
@@ -53,7 +54,7 @@ class MemoryCache extends Base implements CacheInterface
      */
     public function get(string $prefix, string $key) /* mixed */
     {
-        return $this->cache[$prefix][$key] ?? NULL;
+        return $this->cache[$prefix][$key] ?? null;
     }
 
     /**
@@ -61,7 +62,7 @@ class MemoryCache extends Base implements CacheInterface
      * @param string $key
      * @return bool
      */
-    public function exists(string $prefix, string $key) : bool
+    public function exists(string $prefix, string $key): bool
     {
         return array_key_exists($prefix, $this->cache) && array_key_exists($key, $this->cache[$prefix]) ;
     }
@@ -72,7 +73,7 @@ class MemoryCache extends Base implements CacheInterface
             $ret = ['elements' => isset($this->cache[$prefix]) ? count($this->cache[$prefix]) : 0 ];
         } else {
             $ret = 0;
-            foreach ($this->cache as $prefix=>$data) {
+            foreach ($this->cache as $prefix => $data) {
                 $ret += count($data);
             }
         }
@@ -107,7 +108,7 @@ class MemoryCache extends Base implements CacheInterface
                 $entries_to_clean = round($total_entries * $percentage / 100, 1);
                 //assuming the oldest added are to be clean using for each and cleaning the first $entries_to_be_clean should be OK
                 $cleared_entries = 0;
-                foreach ($this->cache[$prefix] as $key=>$value) {
+                foreach ($this->cache[$prefix] as $key => $value) {
                     unset($this->cache[$prefix][$key]);
                     $cleared_entries++;
                     if ($cleared_entries === $entries_to_clean) {
@@ -115,10 +116,9 @@ class MemoryCache extends Base implements CacheInterface
                     }
                 }
             }
-
         } else {
             $cleared_entries = 0;
-            foreach ($this->cache as $prefix=>$data) {
+            foreach ($this->cache as $prefix => $data) {
                 $cleared_entries += count($data);
             }
             $this->cache = [];

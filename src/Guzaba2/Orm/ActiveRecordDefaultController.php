@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
@@ -19,7 +20,6 @@ use Guzaba2\Http\Method;
 use http\Exception\InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Guzaba2\Kernel\Kernel;
-
 
 /**
  * Class ActiveRecordDefaultController
@@ -56,20 +56,18 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @throws \Azonmedia\Exceptions\RunTimeException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function _init(?string $uuid = NULL, ?string $crud_class_name = NULL, ?string $language = NULL) : ?ResponseInterface
-    //public function _init(?string $uuid = NULL) : ?ResponseInterface
+    public function _init(?string $uuid = null, ?string $crud_class_name = null, ?string $language = null)
     {
         if ($language) {
-            t::set_target_language($language, $this->get_request() );
+            t::set_target_language($language, $this->get_request());
         }
 
         $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
 
         if (!$uuid) {
-
             if ($crud_class_name) {
                 if (strpos($crud_class_name, '-')) {
-                    $crud_class_name = str_replace('-','\\', $crud_class_name);
+                    $crud_class_name = str_replace('-', '\\', $crud_class_name);
                 }
             } elseif (!empty($route_meta_data['orm_class'])) {
                 $crud_class_name = $route_meta_data['orm_class'];
@@ -80,11 +78,11 @@ class ActiveRecordDefaultController extends ActiveRecordController
                 $struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class and no $class_name was provided.'), $this->get_request()->getUri()->getPath());
                 //$struct['message'] = sprintf(t::_('The accessed route %s does not correspond to an ActiveRecord class.'), $this->get_request()->getUri()->getPath());
                 $Response = parent::get_structured_badrequest_response($struct);
-                $Response = $Response->withHeader('data-origin','orm-specific');
+                $Response = $Response->withHeader('data-origin', 'orm-specific');
                 return $Response;
             }
 
-            if ( in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ] , TRUE)  ) {
+            if (in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
                 //$this->ActiveRecord = new $route_meta_data['orm_class']();
                 $this->ActiveRecord = new $crud_class_name();
             } else {
@@ -92,10 +90,9 @@ class ActiveRecordDefaultController extends ActiveRecordController
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No UUID provided.'));
                 $Response = parent::get_structured_badrequest_response($struct);
-                $Response = $Response->withHeader('data-origin','orm-specific');
+                $Response = $Response->withHeader('data-origin', 'orm-specific');
                 return $Response;
             }
-
         } else {
             try {
                 //even if $uuid is in UUID format still try the get_by_alias as the provided UUID may actually be an alias.
@@ -115,24 +112,24 @@ class ActiveRecordDefaultController extends ActiveRecordController
                 $struct = [];
                 $struct['message'] = sprintf(t::_('No object with the provided UUID/alias %s is found.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
-                $Response = $Response->withHeader('data-origin','orm-specific');
+                $Response = $Response->withHeader('data-origin', 'orm-specific');
                 return $Response;
             } catch (PermissionDeniedException $Exception) {
                 $struct = [];
                 $struct['message'] = sprintf(t::_('You are not allowed to read the object with UUID/alias %s.'), $uuid);
                 $Response = parent::get_structured_badrequest_response($struct);
-                $Response = $Response->withHeader('data-origin','orm-specific');
+                $Response = $Response->withHeader('data-origin', 'orm-specific');
                 return $Response;
             }
         }
-        return NULL;
+        return null;
     }
 
     /**
      * Used by the OPTIONS method without uuid - returns true
      * @return ResponseInterface
      */
-    public function options() : ResponseInterface
+    public function options(): ResponseInterface
     {
         $struct = [true];
         $Response = parent::get_structured_ok_response($struct);
@@ -144,7 +141,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @param string $uuid
      * @return ResponseInterface
      */
-    public function crud_action_read(string $uuid) : ResponseInterface
+    public function crud_action_read(string $uuid): ResponseInterface
     {
 
         $struct = [];
@@ -152,7 +149,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
         $struct = $this->ActiveRecord->as_array();
         //$struct = $this->ActiveRecord;//also works
         $Response = parent::get_structured_ok_response($struct);
-        $Response = $Response->withHeader('data-origin','orm-specific');
+        $Response = $Response->withHeader('data-origin', 'orm-specific');
         return $Response;
     }
 
@@ -167,13 +164,13 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @throws RunTimeException
      * @throws \ReflectionException
      */
-    public function crud_action_create() : ResponseInterface
+    public function crud_action_create(): ResponseInterface
     {
 
         //because this method handles multiple types of records the expected params can not be listed in the method signature
         $body_arguments = $this->get_request()->getParsedBody();
 
-        if ($body_arguments === NULL) {
+        if ($body_arguments === null) {
             $struct = [];
             $struct['message'] = sprintf(t::_('The provided request could not be parsed.'));
             $Response = parent::get_structured_badrequest_response($struct);
@@ -187,11 +184,11 @@ class ActiveRecordDefaultController extends ActiveRecordController
         //$columns_data = $this->ActiveRecord::get_columns_data();
         $columns_data = $this->ActiveRecord::get_properties_data();
 
-        foreach ($body_arguments as $property_name=>$property_value) {
+        foreach ($body_arguments as $property_name => $property_value) {
             if ($property_name === 'crud_class_name') {
                 continue;
             }
-            if (!$this->ActiveRecord::has_property($property_name) ) {
+            if (!$this->ActiveRecord::has_property($property_name)) {
                 $message = sprintf(t::_('The ActiveRecord class %s has no property %s.'), get_class($this->ActiveRecord), $property_name);
                 $Response = self::get_structured_badrequest_response(['message' => $message]);
                 return $Response;
@@ -207,7 +204,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
         $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
-        $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid );
+        $message = sprintf(t::_('A new object of class %s was created with ID %s and UUID %s.'), get_class($this->ActiveRecord), $id, $uuid);
         $struct = [
             'message'   => $message,
             //'class'     => get_class($this->ActiveRecord),
@@ -233,13 +230,13 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @throws RunTimeException
      * @throws \ReflectionException
      */
-    public function crud_action_update(string $uuid) : ResponseInterface
+    public function crud_action_update(string $uuid): ResponseInterface
     {
         $body_arguments = $this->get_request()->getParsedBody();
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
         //$columns_data = $this->ActiveRecord::get_columns_data();
         $columns_data = $this->ActiveRecord::get_properties_data();
-        foreach ($body_arguments as $property_name=>$property_value) {
+        foreach ($body_arguments as $property_name => $property_value) {
             if ($property_name === 'crud_class_name') {
                 continue;
             }
@@ -258,7 +255,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
         $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();
         $uuid = $this->ActiveRecord->get_uuid();
-        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord) );
+        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was updated.'), $id, $uuid, get_class($this->ActiveRecord));
         $struct = [
             'message' => $message,
             //'id' => $id,
@@ -266,9 +263,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
             'operation' => 'update'
         ];
         $struct += self::form_object_struct($this->ActiveRecord);
-        $Response = self::get_structured_ok_response( $struct );
+        $Response = self::get_structured_ok_response($struct);
         return $Response;
-
     }
 
     /**
@@ -279,12 +275,12 @@ class ActiveRecordDefaultController extends ActiveRecordController
      * @throws RunTimeException
      * @throws \ReflectionException
      */
-    public function crud_action_delete(string $uuid) : ResponseInterface
+    public function crud_action_delete(string $uuid): ResponseInterface
     {
         //$uuid = $this->ActiveRecord->get_uuid();
         //$id = $this->ActiveRecord->get_id();
 
-        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid(), get_class($this->ActiveRecord) );
+        $message = sprintf(t::_('The object with ID %s and UUID %s of class %s was deleted.'), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid(), get_class($this->ActiveRecord));
         $struct = [
             'message'       => $message,
             //'id'            => $id,
@@ -293,16 +289,16 @@ class ActiveRecordDefaultController extends ActiveRecordController
         ];
         $struct += self::form_object_struct($this->ActiveRecord);
         $this->ActiveRecord->delete();
-        $Response = parent::get_structured_ok_response( $struct );
+        $Response = parent::get_structured_ok_response($struct);
         return $Response;
     }
 
-    public function crud_grant_permission(string $role_uuid, string $action_name) : ResponseInterface
+    public function crud_grant_permission(string $role_uuid, string $action_name): ResponseInterface
     {
         $Role = new Role($role_uuid);
         $Permission = $this->ActiveRecord->grant_permission($Role, $action_name);
         if ($Permission) {
-            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was granted.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid() );
+            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was granted.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid());
             $struct = [
                 'message'           => $message,
 //                'class'             => get_class($this->ActiveRecord),
@@ -316,7 +312,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
             ];
         } else {
-            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
 //                'class'             => get_class($this->ActiveRecord),
@@ -330,12 +326,12 @@ class ActiveRecordDefaultController extends ActiveRecordController
         return $Response;
     }
 
-    public function crud_grant_class_permission(string $role_uuid, string $action_name) : ResponseInterface
+    public function crud_grant_class_permission(string $role_uuid, string $action_name): ResponseInterface
     {
         $Role = new Role($role_uuid);
-        $Permission = $this->ActiveRecord->grant_class_permission($Role, $action_name);
+        $Permission = $this->ActiveRecord::grant_class_permission($Role, $action_name);
         if ($Permission) {
-            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was granted.'), $action_name, get_class($this->ActiveRecord) );
+            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was granted.'), $action_name, get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -345,7 +341,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
             ];
         } else {
-            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -361,8 +357,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
     {
         $Role = new Role($role_uuid);
         $this->ActiveRecord->revoke_permission($Role, $action_name);
-        if ( $this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions() ) {
-            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was revoked.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid() );
+        if ($this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions()) {
+            $message = sprintf(t::_('The permission to execute %s on object of class %s with ID %s and UUID %s was revoked.'), $action_name, get_class($this->ActiveRecord), $this->ActiveRecord->get_id(), $this->ActiveRecord->get_uuid());
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -372,7 +368,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
             ];
         } else {
-            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -386,12 +382,12 @@ class ActiveRecordDefaultController extends ActiveRecordController
         return $Response;
     }
 
-    public function crud_revoke_class_permission(string $role_uuid, string $action_name) : ResponseInterface
+    public function crud_revoke_class_permission(string $role_uuid, string $action_name): ResponseInterface
     {
         $Role = new Role($role_uuid);
-        $this->ActiveRecord->revoke_class_permission($Role, $action_name);
-        if ( $this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions() ) {
-            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was revoked.'), $action_name, get_class($this->ActiveRecord) );
+        $this->ActiveRecord::revoke_class_permission($Role, $action_name);
+        if ($this->ActiveRecord::uses_service('AuthorizationProvider') && $this->ActiveRecord::uses_permissions()) {
+            $message = sprintf(t::_('The permission to execute %s on all objects of class %s was revoked.'), $action_name, get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -399,7 +395,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
             ];
         } else {
-            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord) );
+            $message = sprintf(t::_('The class %s does not use permissions, no action was taken.'), get_class($this->ActiveRecord));
             $struct = [
                 'message'           => $message,
                 //'class'             => get_class($this->ActiveRecord),
@@ -412,14 +408,14 @@ class ActiveRecordDefaultController extends ActiveRecordController
     }
 
     //TODO implement pagination
-    public function list(int $offset = 0, int $limit = 0) : ResponseInterface
+    public function list(int $offset = 0, int $limit = 0): ResponseInterface
     {
         $data = $this->ActiveRecord::get_data_by([]);
         $Response = parent::get_structured_ok_response($data);
         return $Response;
     }
 
-    private static function form_object_struct(ActiveRecordInterface $ActiveRecord) : array
+    private static function form_object_struct(ActiveRecordInterface $ActiveRecord): array
     {
         $ret = [];
         $ret['class'] = get_class($ActiveRecord);

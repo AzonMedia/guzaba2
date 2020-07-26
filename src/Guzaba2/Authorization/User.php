@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
@@ -37,11 +38,11 @@ class User extends ActiveRecord implements UserInterface
         'route'                     => '/user',
         'validation'                => [
             'user_name'                 => [
-                'required'              => TRUE,
+                'required'              => true,
                 //'max_length'            => 200,//this comes from the DB
             ],
             'role_id'                   => [
-                'required'              => TRUE,
+                'required'              => true,
                 //'validation_method'     => [User::class, '_validate_role_id'],//can be sete explicitly or if there is a static method _validate_role_id it will be executed
             ],
         ],
@@ -115,9 +116,9 @@ class User extends ActiveRecord implements UserInterface
      * @throws ReflectionException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    public function get_role() : Role
+    public function get_role(): Role
     {
-        return new Role( (int) $this->role_id);
+        return new Role((int) $this->role_id);
     }
 
 //    /**
@@ -206,9 +207,9 @@ class User extends ActiveRecord implements UserInterface
             try {
                 $Role = new Role($this->role_id);
                 if (!$Role->role_is_user) {
-                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2$s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name ));
+                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2$s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name));
                 }
-                return NULL;
+                return null;
             } catch (RecordNotFoundException $Exception) {
                 return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role_id %1$s set for user %2$s does not exist.'), $this->role_id, $this->user_name));
             } //Roles do not use permissions so no need to catch PermissionDeniedException
@@ -232,12 +233,12 @@ class User extends ActiveRecord implements UserInterface
                 $User = new static(['user_name' => $this->user_name]);
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
             } catch (RecordNotFoundException $Exception) {
-                return NULL;
+                return null;
             } catch (PermissionDeniedException $Exception) {
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
             }
         }
-        return NULL;
+        return null;
     }
 
     /**
@@ -259,12 +260,12 @@ class User extends ActiveRecord implements UserInterface
                 $User = new static(['user_email' => $this->user_email]);
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
             } catch (RecordNotFoundException $Exception) {
-                return NULL;
+                return null;
             } catch (PermissionDeniedException $Exception) {
                 return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
             }
         }
-        return NULL;
+        return null;
     }
 
     /**
@@ -277,11 +278,11 @@ class User extends ActiveRecord implements UserInterface
      * @throws MultipleValidationFailedException
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      */
-    protected function _before_write() : void
+    protected function _before_write(): void
     {
         if ($this->is_new()) {
             //a new primary role needs to be created for this user
-            $Role = Role::create($this->user_name, TRUE);
+            $Role = Role::create($this->user_name, true);
             $this->role_id = $Role->get_id();
         }
         if ($this->is_property_modified('user_name')) {
@@ -310,10 +311,10 @@ class User extends ActiveRecord implements UserInterface
         $Transaction->begin();
 
         $this->check_permission('enable');
-        $this->user_is_disabled = FALSE;
+        $this->user_is_disabled = false;
         $this->write();
 
-        $this->add_log_entry('enable',sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
+        $this->add_log_entry('enable', sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
 
         $Transaction->commit();
     }
@@ -333,12 +334,11 @@ class User extends ActiveRecord implements UserInterface
         $Transaction->begin();
 
         $this->check_permission('disable');
-        $this->user_is_disabled = TRUE;
+        $this->user_is_disabled = true;
         $this->write();
 
-        $this->add_log_entry('enable',sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
+        $this->add_log_entry('enable', sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
 
         $Transaction->commit();
     }
-
 }

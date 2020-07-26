@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Cache;
@@ -15,7 +16,6 @@ class SwooleTableCache extends Base implements CacheInterface, ProcessCacheInter
 
     public function __construct()
     {
-
     }
 
     /**
@@ -24,9 +24,8 @@ class SwooleTableCache extends Base implements CacheInterface, ProcessCacheInter
      * @param $data
      * @throws RunTimeException
      */
-    public function set(string $prefix, string $key, /* mixed*/ $data) : void
+    public function set(string $prefix, string $key, /* mixed*/ $data): void
     {
-
     }
 
     /**
@@ -35,9 +34,8 @@ class SwooleTableCache extends Base implements CacheInterface, ProcessCacheInter
      * @param string $key
      * @throws RunTimeException
      */
-    public function delete(string $prefix, string $key ) : void
+    public function delete(string $prefix, string $key): void
     {
-
     }
 
     /**
@@ -47,7 +45,6 @@ class SwooleTableCache extends Base implements CacheInterface, ProcessCacheInter
      */
     public function get(string $prefix, string $key) /* mixed */
     {
-
     }
 
     /**
@@ -55,9 +52,8 @@ class SwooleTableCache extends Base implements CacheInterface, ProcessCacheInter
      * @param string $key
      * @return bool
      */
-    public function exists(string $prefix, string $key) : bool
+    public function exists(string $prefix, string $key): bool
     {
-
     }
 
     public function get_stats(string $prefix = ''): array

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Event;
@@ -40,19 +41,19 @@ class Event implements ConfigInterface, EventInterface
 
     protected array $arguments = [];
 
-    protected /* mixed */ $return_value = NULL;
+    protected /* mixed */ $return_value = null;
 
-    protected ?EventInterface $PreviousEvent = NULL;
+    protected ?EventInterface $PreviousEvent = null;
 
     protected array $callbacks = [];
 
-    protected /* mixed */ $event_return = NULL;
+    protected /* mixed */ $event_return = null;
 
-    public function __construct(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed*/ $return_value = NULL, Event $PreviousEvent = NULL)
+    public function __construct(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed*/ $return_value = null, Event $PreviousEvent = null)
     {
         $this->Subject = $Subject;
         $this->event_name = $event_name;
-        if (count($arguments) && $return_value !== NULL) {
+        if (count($arguments) && $return_value !== null) {
             throw new InvalidArgumentException(sprintf(t::_('An event can have $arguments or $return_value argument but not both.')));
         }
         $this->arguments = $arguments;
@@ -67,25 +68,24 @@ class Event implements ConfigInterface, EventInterface
         }
 
         $this->event_return = $this->execute_callbacks($this->callbacks);
-
     }
 
-    public function get_previous_event() : ?EventInterface
+    public function get_previous_event(): ?EventInterface
     {
         return $this->PreviousEvent;
     }
 
-    public function get_subject() : ObjectInternalIdInterface
+    public function get_subject(): ObjectInternalIdInterface
     {
         return $this->Subject;
     }
 
-    public function get_event_name() : string
+    public function get_event_name(): string
     {
         return $this->event_name;
     }
     
-    public function get_arguments() : array
+    public function get_arguments(): array
     {
         return $this->arguments;
     }
@@ -95,12 +95,12 @@ class Event implements ConfigInterface, EventInterface
         return $this->return_value;
     }
 
-    public function with_arguments(array $arguments) : self
+    public function with_arguments(array $arguments): self
     {
-        return new self($this->get_subject(), $this->get_event_name(), $arguments, NULL, $this);
+        return new self($this->get_subject(), $this->get_event_name(), $arguments, null, $this);
     }
 
-    public function with_return_value( /* mixed */ $return_value) : self
+    public function with_return_value(/* mixed */ $return_value): self
     {
         return new self($this->get_subject(), $this->get_event_name(), [], $return_value, $this);
     }
@@ -117,32 +117,32 @@ class Event implements ConfigInterface, EventInterface
 
     public function __destruct()
     {
-        $this->Subject = NULL;
+        $this->Subject = null;
     }
 
-    public function is_before_event() : bool
+    public function is_before_event(): bool
     {
-        $ret = FALSE;
+        $ret = false;
         if (count($this->arguments)) {
-            $ret = TRUE;
-        } elseif (strpos( $this->event_name, '_before_') === 0) {
-            $ret = TRUE;
+            $ret = true;
+        } elseif (strpos($this->event_name, '_before_') === 0) {
+            $ret = true;
         }
         return $ret;
     }
 
-    public function is_after_event() : bool
+    public function is_after_event(): bool
     {
-        $ret = FALSE;
-        if ($this->return_value !== NULL) {
-            $ret = TRUE;
-        } elseif (strpos( $this->event_name, '_after_') === 0) {
-            $ret = TRUE;
+        $ret = false;
+        if ($this->return_value !== null) {
+            $ret = true;
+        } elseif (strpos($this->event_name, '_after_') === 0) {
+            $ret = true;
         }
         return $ret;
     }
 
-    private function get_callbacks() : array
+    private function get_callbacks(): array
     {
         return $this->callbacks;
     }
@@ -159,7 +159,7 @@ class Event implements ConfigInterface, EventInterface
     private function execute_callbacks(array $callbacks) /* mixed */
     {
 
-        $ret = NULL;
+        $ret = null;
         //set default value (in case there are no more callbacks)
         if ($this->is_before_event()) {
             $ret = $this->arguments;
@@ -174,10 +174,10 @@ class Event implements ConfigInterface, EventInterface
             if ($this->is_before_event() && $ret) {
                 $ret = $this->with_arguments($ret)->get_event_return();
                 if (!is_array($ret) && !is_null($ret)) {
-                    throw new InvalidReturnValueException(sprintf(t::_('A _before_ACTION event must return an array with arguments or NULL. The returned type is %s.'), gettype($ret) ));
+                    throw new InvalidReturnValueException(sprintf(t::_('A _before_ACTION event must return an array with arguments or NULL. The returned type is %s.'), gettype($ret)));
                 }
                 if (is_array($ret) && count($ret) !== count($this->arguments)) {
-                    throw new InvalidReturnValueException(sprintf(t::_('A _before_ACTION event must return the same number of arguments as the provided ones. The event returned %s arguments while the expected number is %s.'), count($ret), count($this->arguments) ));
+                    throw new InvalidReturnValueException(sprintf(t::_('A _before_ACTION event must return the same number of arguments as the provided ones. The event returned %s arguments while the expected number is %s.'), count($ret), count($this->arguments)));
                 }
                 break;//break this loop - a new loop will be started by the new event
             } elseif ($this->is_after_event()) {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers;
@@ -31,25 +32,25 @@ class WorkerStart extends HandlerBase
      * Will be NULL if $enable_debug_ports = FALSE
      * @var
      */
-    private ?Debugger $SwooleDebugger = NULL;
+    private ?Debugger $SwooleDebugger = null;
 
-    private bool $enable_debug_ports = FALSE;
+    private bool $enable_debug_ports = false;
 
     private int $base_debug_port = Debugger::DEFAULT_BASE_DEBUG_PORT;
 
-    public function __construct(\Guzaba2\Http\Server $HttpServer, bool $enable_debug_ports = FALSE, int $base_debug_port = Debugger::DEFAULT_BASE_DEBUG_PORT)
+    public function __construct(\Guzaba2\Http\Server $HttpServer, bool $enable_debug_ports = false, int $base_debug_port = Debugger::DEFAULT_BASE_DEBUG_PORT)
     {
         parent::__construct($HttpServer);
         $this->enable_debug_ports = $enable_debug_ports;
         $this->base_debug_port = $base_debug_port;
     }
 
-    public function debug_ports_enabled() : bool
+    public function debug_ports_enabled(): bool
     {
         return $this->enable_debug_ports;
     }
 
-    public function get_base_debug_port() : int
+    public function get_base_debug_port(): int
     {
         return $this->base_debug_port;
     }
@@ -61,7 +62,7 @@ class WorkerStart extends HandlerBase
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \Exception
      */
-    public function handle(\Swoole\Http\Server $Server, int $worker_id) : void
+    public function handle(\Swoole\Http\Server $Server, int $worker_id): void
     {
         //$this->HttpServer->set_worker_start_time(microtime(true));
         $debug_port = $this->base_debug_port + $worker_id;
@@ -84,7 +85,7 @@ class WorkerStart extends HandlerBase
         //if (Debugger::is_enabled()) {
         if ($this->enable_debug_ports) {
             //pass all paths there classes implementing CommandInterface exist
-            $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic( Debugger::get_debug_command_classes() );
+            $DebuggerBackend = new \Guzaba2\Swoole\Debug\Backends\Basic(Debugger::get_debug_command_classes());
             $Debugger = new \Azonmedia\Debug\Debugger($DebuggerBackend);
 
             $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $Debugger, $this->base_debug_port);
@@ -104,13 +105,13 @@ class WorkerStart extends HandlerBase
      * @param int $worker_id
      * @throws \Exception
      */
-    private static function register_log_handler(int $worker_id) : void
+    private static function register_log_handler(int $worker_id): void
     {
         $Logger = Kernel::get_logger();
         $MainLogFileHandler = Kernel::get_main_log_file_handler();
-        if ($MainLogFileHandler !== NULL) {
+        if ($MainLogFileHandler !== null) {
             $log_level = $Logger::getLevelName($MainLogFileHandler->getLevel());
-            $worker_log_file = dirname($MainLogFileHandler->getUrl()).'/worker_'.$worker_id.'.txt';
+            $worker_log_file = dirname($MainLogFileHandler->getUrl()) . '/worker_' . $worker_id . '.txt';
             $Formatter = $MainLogFileHandler->getFormatter();
             $StdoutHandler = new StreamHandler($worker_log_file, $log_level);
             $StdoutHandler->setFormatter($Formatter);
@@ -118,7 +119,7 @@ class WorkerStart extends HandlerBase
         }
     }
 
-    public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void
+    public function __invoke(\Swoole\Http\Server $Server, int $worker_id): void
     {
         $this->handle($Server, $worker_id);
     }

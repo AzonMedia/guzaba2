@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers\Http;
@@ -60,7 +61,7 @@ class Request extends HandlerBase
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = NULL, ?ResponseInterface $ServerErrorResponse = NULL)
+    public function __construct(Server $HttpServer, iterable $middlewares, ?Response $DefaultResponse = null, ?ResponseInterface $ServerErrorResponse = null)
     {
         parent::__construct($HttpServer);
 
@@ -95,11 +96,11 @@ class Request extends HandlerBase
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse) : void
+    public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse): void
     {
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
 
-        $start_time = microtime(TRUE);
+        $start_time = microtime(true);
 
         new Event($this, '_before_handle');
         $request_raw_content_length = 0;
@@ -119,7 +120,7 @@ class Request extends HandlerBase
                 $DefaultResponse->getBody()->rewind();
                 $structure = ['message' => $DefaultResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
-                $StreamBody = new Stream(NULL, $json_string);
+                $StreamBody = new Stream(null, $json_string);
                 $DefaultResponse = $DefaultResponse->
                     withBody($StreamBody)->
                     withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
@@ -156,8 +157,7 @@ class Request extends HandlerBase
             //Kernel::printk($message);
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
         } catch (Throwable $Exception) {
-
-            Kernel::exception_handler($Exception, NULL);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
+            Kernel::exception_handler($Exception, null);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
 
             //$DefaultResponseBody = new Stream();
             //$DefaultResponseBody->write('Internal server/application error occurred.');
@@ -167,7 +167,7 @@ class Request extends HandlerBase
                 $PsrResponse->getBody()->rewind();
                 $structure = ['message' => $PsrResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
-                $StreamBody = new Stream(NULL, $json_string);
+                $StreamBody = new Stream(null, $json_string);
                 $PsrResponse = $PsrResponse->
                     withBody($StreamBody)->
                     withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
@@ -183,9 +183,8 @@ class Request extends HandlerBase
             //Kernel::printk($message);
             unset($Exception);//destroy it now  instead of waiting unti lthe end of the scope
         } finally {
-
             //\Guzaba2\Coroutine\Coroutine::end();//no need
-            $end_time = microtime(TRUE);
+            $end_time = microtime(true);
             //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;
             //Kernel::printk($message);
             //when using log() the worker # is always printed
@@ -193,15 +192,14 @@ class Request extends HandlerBase
 
             $time_str = '';
             if (Application::is_development()) {
-
                 $served_in_time = $end_time - $start_time;
 
                 if ($served_in_time > 1) {
-                    $time_str = round($served_in_time, Kernel::MICROTIME_ROUNDING).' SECONDS';
+                    $time_str = round($served_in_time, Kernel::MICROTIME_ROUNDING) . ' SECONDS';
                 } elseif ($served_in_time > 0.001) {
-                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000).' MILLISECONDS';
+                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000) . ' MILLISECONDS';
                 } else {
-                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000).' MICROSECONDS';
+                    $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000) . ' MICROSECONDS';
                 }
 
                 if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
@@ -218,7 +216,7 @@ class Request extends HandlerBase
             }
 
             $message = '';
-            if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK ) {
+            if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK) {
                 //on failure print additional information if found
                 if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
                     $PsrResponse->getBody()->rewind();
@@ -227,7 +225,7 @@ class Request extends HandlerBase
                     $message = json_decode($contents)->message ?? '';
                 }
                 if ($message) {
-                    $message = ' ('.$message.')';
+                    $message = ' (' . $message . ')';
                 }
             }
             $request_str = '';
@@ -242,22 +240,18 @@ class Request extends HandlerBase
                     }
                 }
                 if ($request_str) {
-                    $request_str = ' request: '.$request_str;
+                    $request_str = ' request: ' . $request_str;
                 }
             }
 
             new Event($this, '_after_handle');//lets have it before the very last message about the request.
 
-            $log_message = __CLASS__.': '.$PsrRequest->getMethod().':'.$PsrRequest->getUri()->getPath().' request of '.$request_raw_content_length.' bytes served in '.$time_str.' with response: code: '.$PsrResponse->getStatusCode().''.$message.' content length: '.$PsrResponse->getBody()->getSize().$request_str.PHP_EOL;
+            $log_message = __CLASS__ . ': ' . $PsrRequest->getMethod() . ':' . $PsrRequest->getUri()->getPath() . ' request of ' . $request_raw_content_length . ' bytes served in ' . $time_str . ' with response: code: ' . $PsrResponse->getStatusCode() . '' . $message . ' content length: ' . $PsrResponse->getBody()->getSize() . $request_str . PHP_EOL;
             Kernel::log($log_message, LogLevel::INFO);
-
-
         }
-
-
     }
 
-    public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response) : void
+    public function __invoke(\Swoole\Http\Request $Request, \Swoole\Http\Response $Response): void
     {
         $this->handle($Request, $Response);
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store\Interfaces;
@@ -22,15 +23,15 @@ interface StoreInterface
         'key_reference'         => 'string',
     ];
 
-    public function get_fallback_store() : ?StoreInterface ;
+    public function get_fallback_store(): ?StoreInterface;
 
-    public function get_storage_columns_data(string $class) : array ;
+    public function get_storage_columns_data(string $class): array;
 
-    public function get_unified_columns_data(string $class) : array ;
+    public function get_unified_columns_data(string $class): array;
 
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array ;
+    public function update_record(ActiveRecordInterface $ActiveRecord): array;
 
-    public function &get_data_pointer(string $class, array $index) : array ;
+    public function &get_data_pointer(string $class, array $index): array;
 
     /**
      * Gets a new pointer for an object that is being updated.
@@ -39,7 +40,7 @@ interface StoreInterface
      * @param array $primary_index
      * @return array
      */
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array ;
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array;
 
     /**
      * Check whethere is already an existing pointer for an object being updated.
@@ -48,33 +49,33 @@ interface StoreInterface
      * @param array $primary_index
      * @return bool
      */
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool ;
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool;
 
     /**
      * To be called when an ActiveRecord is destroyed.
      * @param ActiveRecordInterface $ActiveRecord
      * @return void
      */
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void ;
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void;
 
     /**
      * Returns storage data used for debug purpose in a free format structure.
      * @return array
      */
-    public function debug_get_data() : array ;
+    public function debug_get_data(): array;
 
     /**
      * Removes an active record data from the Store
      * @param ActiveRecordInterface $ActiveRecord
      */
-    public function remove_record(ActiveRecordInterface $ActiveRecord): void ;
+    public function remove_record(ActiveRecordInterface $ActiveRecord): void;
 
     /**
      * Returns the meta data for the given UUID
      * @param string $uuid
      * @return array
      */
-    public function get_meta_by_uuid(string $uuid): array ;
+    public function get_meta_by_uuid(string $uuid): array;
 
     /**
      * Returns the meta data by given class & object id
@@ -82,5 +83,5 @@ interface StoreInterface
      * @param int $object_id
      * @return array
      */
-    public function get_meta_by_id(string $class_name, int $object_id): array ;
+    public function get_meta_by_id(string $class_name, int $object_id): array;
 }

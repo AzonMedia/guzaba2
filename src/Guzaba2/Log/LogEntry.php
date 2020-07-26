@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Log;
@@ -37,8 +38,8 @@ class LogEntry extends ActiveRecord
 {
     protected const CONFIG_DEFAULTS = [
         'main_table'                => 'logs',
-        'no_permissions'            => TRUE,
-        'no_meta'                   => TRUE,
+        'no_permissions'            => true,
+        'no_meta'                   => true,
         'services'                  => [
             'MysqlOrmStore',
             'CurrentUser',
@@ -63,7 +64,7 @@ class LogEntry extends ActiveRecord
     public static function create(ActiveRecordInterface $ActiveRecord, string $log_action, string $log_content): self
     {
         if ($ActiveRecord->is_new()) {
-            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to add log entries for %1$s classes that are not saved. If you need to add a log entry for the %2$s class please use %3$s().'), ActiveRecordInterface::class, get_class($ActiveRecord), __CLASS__.'::create_for_class' ));
+            throw new InvalidArgumentException(sprintf(t::_('It is not allowed to add log entries for %1$s classes that are not saved. If you need to add a log entry for the %2$s class please use %3$s().'), ActiveRecordInterface::class, get_class($ActiveRecord), __CLASS__ . '::create_for_class'));
         }
         /** @var StructuredStoreInterface $StructuredOrmStore */
         $StructuredOrmStore = self::get_service('MysqlOrmStore');
@@ -99,7 +100,7 @@ class LogEntry extends ActiveRecord
         /** @var StructuredStoreInterface $StructuredOrmStore */
         $StructuredOrmStore = self::get_service('MysqlOrmStore');
         $log_class_id = $StructuredOrmStore->get_class_id($class);
-        return self::execute_create($log_class_id, NULL, $log_action, $log_content);
+        return self::execute_create($log_class_id, null, $log_action, $log_content);
     }
 
     /**
@@ -132,7 +133,7 @@ class LogEntry extends ActiveRecord
         $LogEntry->log_object_id = $log_object_id;
         $LogEntry->log_action = $log_action;
         $LogEntry->log_content = $log_content;
-        $LogEntry->log_create_microtime = microtime(TRUE) * 1_000_000;
+        $LogEntry->log_create_microtime = microtime(true) * 1_000_000;
         $LogEntry->role_id = $CurrentUser->get()->get_role()->get_id();
         $LogEntry->write();
         return $LogEntry;

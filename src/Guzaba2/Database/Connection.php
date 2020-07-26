@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database;
@@ -24,7 +25,7 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     protected const CONFIG_RUNTIME = [];
 
     protected array $options;
-    protected ?string $connection_id = NULL;
+    protected ?string $connection_id = null;
 
 //    protected $is_created_from_factory_flag = FALSE;
 
@@ -33,7 +34,7 @@ abstract class Connection extends GenericResource implements ConnectionInterface
      * @param callable|null $after_connect_callback Callback to be executed when connection is established (but before the connection ID is obtained)
      * @throws RunTimeException
      */
-    public function __construct(?callable $after_connect_callback = NULL)
+    public function __construct(?callable $after_connect_callback = null)
     {
         $ConnectionFactory = static::get_service('ConnectionFactory');
         parent::__construct($ConnectionFactory);
@@ -47,26 +48,25 @@ abstract class Connection extends GenericResource implements ConnectionInterface
      * The string representation of the object is the resource ID @see self::get_resource_id()
      * @return string
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         return $this->get_resource_id();
     }
 
-    abstract protected function get_connection_id_from_db() : string ;
+    abstract protected function get_connection_id_from_db(): string;
 
     /**
      * To be invoked when the connection is returned to the pool or closed.
      */
-    public function reset_connection() : void
+    public function reset_connection(): void
     {
-
     }
 
     /**
      * Returns the connection ID.
      * @return string|null
      */
-    public function get_connection_id() : ?string
+    public function get_connection_id(): ?string
     {
         return $this->connection_id;
     }
@@ -76,16 +76,16 @@ abstract class Connection extends GenericResource implements ConnectionInterface
      * Currently this is class name + connection ID
      * @return string
      */
-    public function get_resource_id() : string
+    public function get_resource_id(): string
     {
-        return get_class($this).':'.$this->get_connection_id();
+        return get_class($this) . ':' . $this->get_connection_id();
     }
 
     /**
      * Returns the connection options
      * @return array
      */
-    public function get_options() : array
+    public function get_options(): array
     {
         return $this->options;
     }
@@ -94,7 +94,7 @@ abstract class Connection extends GenericResource implements ConnectionInterface
      * Returns table prefix.
      * @return string
      */
-    public static function get_tprefix() : string
+    public static function get_tprefix(): string
     {
         return static::CONFIG_RUNTIME['tprefix'] ?? '';
     }
@@ -105,11 +105,11 @@ abstract class Connection extends GenericResource implements ConnectionInterface
      * @throws InvalidArgumentException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
-    public static function validate_options(array $options) : void
+    public static function validate_options(array $options): void
     {
-        foreach ($options as $key=>$value) {
-            if (!in_array($key, static::get_supported_options() )) {
-                throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, get_called_class(), implode(', ', static::get_supported_options() ) ));
+        foreach ($options as $key => $value) {
+            if (!in_array($key, static::get_supported_options())) {
+                throw new InvalidArgumentException(sprintf(t::_('An invalid connection option %s is provided to %s. The valid options are %s.'), $key, get_called_class(), implode(', ', static::get_supported_options())));
             }
         }
     }
@@ -121,5 +121,4 @@ abstract class Connection extends GenericResource implements ConnectionInterface
     {
         return static::SUPPORTED_OPTIONS;
     }
-
 }

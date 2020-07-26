@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
@@ -30,7 +31,6 @@ class CurrentUser extends Base
     //It may be reworked to accept $index and $class arguments and to create the instance only if needed
     //if only the $index is needed by the application then there is no need to create instance.
     public function __construct(UserInterface $User)
-    //public function __construct( /* mixed */ $user_id, string $user_class)
     {
         $this->User = $User;
         $this->default_user_uuid = $User->get_uuid();
@@ -44,7 +44,7 @@ class CurrentUser extends Base
      * This UUID is set in the constructor of CurrentUser
      * @return string
      */
-    public function get_default_user_uuid() : string
+    public function get_default_user_uuid(): string
     {
         return $this->default_user_uuid;
     }
@@ -79,13 +79,13 @@ class CurrentUser extends Base
 //    }
 
 
-    public function get() : UserInterface
+    public function get(): UserInterface
     {
 //        $this->initialize_user();
         return $this->User;
     }
 
-    public function set(UserInterface $User) : void
+    public function set(UserInterface $User): void
     {
 //        if (!is_a($User, $this->user_class, TRUE)) {
 //            //throw new InvalidArgumentException();
@@ -104,7 +104,6 @@ class CurrentUser extends Base
 
     public function restore()
     {
-
     }
 
 //    public function __get(string $property) /* mixed */

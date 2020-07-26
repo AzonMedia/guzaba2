@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
@@ -25,12 +26,12 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      */
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
     {
-        return TRUE;
+        return true;
     }
 
     public function role_can_on_class(Role $Role, string $action, string $class): bool
     {
-        $ret = TRUE;
+        $ret = true;
     }
 
     /**
@@ -41,12 +42,12 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
     {
-        return TRUE;
+        return true;
     }
 
     public function current_role_can_on_class(string $action, string $class): bool
     {
-        return TRUE;
+        return true;
     }
 
     /**

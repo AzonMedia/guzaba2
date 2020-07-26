@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole;
 
 class Table implements \Iterator, \ArrayAccess, \Countable

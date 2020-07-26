@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
@@ -18,7 +19,6 @@ use Guzaba2\Translator\Translator as t;
 
 class AclAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
-
     use AuthorizationProviderTrait;
 
     protected const CONFIG_DEFAULTS = [
@@ -30,55 +30,55 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 
     protected const CONFIG_RUNTIME = [];
 
-    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : PermissionInterface
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): PermissionInterface
     {
         return Permission::create($Role, $action, $ActiveRecord);
     }
 
-    public function grant_class_permission(Role $Role, string $action, string $class_name) : PermissionInterface
+    public function grant_class_permission(Role $Role, string $action, string $class_name): PermissionInterface
     {
         return Permission::create_class_permission($Role, $action, $class_name);
     }
 
-    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): void
     {
-        (new Permission( [ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] ) )->delete();
+        (new Permission([ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]) )->delete();
     }
 
-    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void
+    public function revoke_class_permission(Role $Role, string $action, string $class_name): void
     {
-        (new Permission( [ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => $class_name, 'object_id' => NULL ] ) )->delete();
+        (new Permission([ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => $class_name, 'object_id' => null ]) )->delete();
     }
 
-    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord): void
     {
         //this will trigger object instantiations
-        $permissions = Permission::get_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id() ] );
+        $permissions = Permission::get_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]);
         foreach ($permissions as $Permission) {
             $Permission->delete();
         }
     }
 
-    public function delete_class_permissions(string $class_name) : void
+    public function delete_class_permissions(string $class_name): void
     {
-        $class_permissions = Permission::get_by( [ 'class_name' => $class_name, 'object_id'=> NULL ] );
+        $class_permissions = Permission::get_by([ 'class_name' => $class_name, 'object_id' => null ]);
         foreach ($class_permissions as $Permission) {
             $Permission->delete();
         }
     }
 
 
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable
     {
-        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ] );
+        return Permission::get_data_by(['class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]);
     }
 
-    public function get_permissions_by_class(string $class_name) : iterable
+    public function get_permissions_by_class(string $class_name): iterable
     {
         if (!class_exists($class_name)) {
             throw new InvalidArgumentException(sprintf(t::_('')));
         }
-        return Permission::get_data_by( ['class_name' => get_class($ActiveRecord), 'object_id' => NULL ] );
+        return Permission::get_data_by(['class_name' => get_class($ActiveRecord), 'object_id' => null ]);
     }
 
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
@@ -93,9 +93,9 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         return $this->role_can_on_class($Role, $action, $class);
     }
 
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
     {
-        $ret = FALSE;
+        $ret = false;
 
         $roles_ids = $Role->get_all_inherited_roles_ids();
 
@@ -106,21 +106,21 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         if ($ActiveRecord instanceof ControllerInterface) {
             //usually we need the class permissions for the controllers (to execute a controller
             //only if there are no permissions found retrive the object permissions
-            $class_permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
+            $class_permissions = Permission::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
             $ret = self::check_permissions($roles_ids, $class_permissions);
             if (!$ret) {
                 //check the object permission
-                $permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
+                $permissions = Permission::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
                 $ret = self::check_permissions($roles_ids, $permissions);
             }
         } else {
             //on the rest of the objects usually we are looking for object permissions, not class permissions
             //class permission will be needed only when CREATE is needed or there is a privilege
-            $permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
+            $permissions = Permission::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
             $ret = self::check_permissions($roles_ids, $permissions);
             if (!$ret) {
                 //check the class permission
-                $class_permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
+                $class_permissions = Permission::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
                 $ret = self::check_permissions($roles_ids, $class_permissions);
             }
         }
@@ -139,24 +139,24 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
      * @param string $class
      * @return bool
      */
-    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    public function role_can_on_class(Role $Role, string $action, string $class): bool
     {
-        $ret = FALSE;
+        $ret = false;
 
         $roles_ids = $Role->get_all_inherited_roles_ids();
-        $class_permissions = Permission::get_data_by( [ 'class_name' => $class, 'object_id'=> NULL, 'action_name' => $action] );
+        $class_permissions = Permission::get_data_by([ 'class_name' => $class, 'object_id' => null, 'action_name' => $action]);
         $ret = self::check_permissions($roles_ids, $class_permissions);
 
         return $ret;
     }
 
-    private static function check_permissions(array $roles_ids, array $permissions) : bool
+    private static function check_permissions(array $roles_ids, array $permissions): bool
     {
-        $ret = FALSE;
+        $ret = false;
         foreach ($permissions as $permission_data) {
             foreach ($roles_ids as $role_id) {
                 if ($role_id === $permission_data['role_id']) {
-                    $ret = TRUE;
+                    $ret = true;
                     break 2;
                 }
             }
@@ -168,7 +168,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
      * Returns the classes used by this implementation
      * @return array
      */
-    public static function get_used_active_record_classes() : array
+    public static function get_used_active_record_classes(): array
     {
         return [Permission::class, Role::class, RolesHierarchy::class];
     }
@@ -185,8 +185,8 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
     {
 
-        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
-            throw new InvalidArgumentException(sprintf(t::_('The provided class must be of class %s. A %s is provided instead.'), ActiveRecordInterface::class, $class ));
+        if (!is_a($class, ActiveRecordInterface::class, true)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class must be of class %s. A %s is provided instead.'), ActiveRecordInterface::class, $class));
         }
 
 
@@ -194,11 +194,11 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         $MysqlOrmStore = self::get_service('MysqlOrmStore');
         $connection_class = $MysqlOrmStore->get_connection_class();
         $table_prefix = $connection_class::get_tprefix();
-        $acl_table = $table_prefix.Permission::get_main_table();
+        $acl_table = $table_prefix . Permission::get_main_table();
         $acl_permission_class_id = $MysqlOrmStore->get_class_id($class);
         $primary_index_columns = $class::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
-            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index. Compound primary index is not supported with ACL permissions. Please use a single column integer index (preferrably autoincrement one).'), $class ));
+            throw new RunTimeException(sprintf(t::_('The class %s has a compound primary index. Compound primary index is not supported with ACL permissions. Please use a single column integer index (preferrably autoincrement one).'), $class));
         }
         $main_table_column = $primary_index_columns[0];
         //the JOIN is INNER as the permissions must be enforced. Rows not matching a permission record must not be returned.

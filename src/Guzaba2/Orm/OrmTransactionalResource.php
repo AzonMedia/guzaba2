@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm;
-
 
 use Guzaba2\Transaction\CompositeTransactionResource;
 use Guzaba2\Transaction\ScopeReference;
@@ -16,7 +16,7 @@ class OrmTransactionalResource extends CompositeTransactionResource
 
         if ($ScopeReference) {
             //$ScopeReference->set_release_reason($ScopeReference::RELEASE_REASON_OVERWRITING);
-            $ScopeReference = NULL;//trigger rollback (and actually destroy the transaction object - the object may or may not get destroyed - it may live if part of another transaction)
+            $ScopeReference = null;//trigger rollback (and actually destroy the transaction object - the object may or may not get destroyed - it may live if part of another transaction)
         }
 
         $Transaction = new \Guzaba2\Orm\Transaction($options);

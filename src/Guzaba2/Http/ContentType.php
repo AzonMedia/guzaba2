@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
@@ -59,13 +59,13 @@ abstract class ContentType
      * @return string|null
      * @see self::TYPES_MAP) or null if no match is found
      */
-    public static function get_content_type(string $header_content) : ?string
+    public static function get_content_type(string $header_content): ?string
     {
-        $ret = NULL;
+        $ret = null;
         foreach (ContentType::TYPES_MAP as $content_constant => $content_data) {
             $mime_types = (array) $content_data['mime'];
             foreach ($mime_types as $mime_type) {
-                if (stripos($header_content, $mime_type) !== FALSE) {
+                if (stripos($header_content, $mime_type) !== false) {
                     $ret = $content_constant;
                     break;
                 }
@@ -78,12 +78,12 @@ abstract class ContentType
      * @param string $content_type
      * @return bool
      */
-    public static function is_valid_content_type(string $content_type) : bool
+    public static function is_valid_content_type(string $content_type): bool
     {
-        $ret = FALSE;
-        foreach (self::TYPES_MAP as $type_const=>$type_data) {
+        $ret = false;
+        foreach (self::TYPES_MAP as $type_const => $type_data) {
             if (strtolower($content_type) === strtolower($type_const)) {
-                $ret = TRUE;
+                $ret = true;
                 break;
             }
         }

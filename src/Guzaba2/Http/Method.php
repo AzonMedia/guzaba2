@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -63,8 +64,8 @@ abstract class Method
     public static function get_method(string $method): int
     {
         $method = strtoupper($method);
-        $int = array_search($method, self::METHODS_MAP, TRUE);
-        if ($int === FALSE) {
+        $int = array_search($method, self::METHODS_MAP, true);
+        if ($int === false) {
             throw new InvalidArgumentException(sprintf(t::_('An invalid method %1$s is provided.'), $method));
         }
         return $int;
@@ -78,7 +79,7 @@ abstract class Method
     public static function is_valid_method(string $method): bool
     {
         $method = strtoupper($method);
-        $key = array_search($method, self::METHODS_MAP, TRUE);
-        return $key === FALSE ? FALSE : TRUE;
+        $key = array_search($method, self::METHODS_MAP, true);
+        return $key === false ? false : true;
     }
 }

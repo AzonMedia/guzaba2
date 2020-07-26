@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -19,19 +20,19 @@ class RequestHandler extends Base implements RequestHandlerInterface
 {
     protected $Response;
 
-    public function __construct(?ResponseInterface $ResponsePrototype = NULL)
+    public function __construct(?ResponseInterface $ResponsePrototype = null)
     {
         parent::__construct();
         $this->Response = $ResponsePrototype;
     }
 
-    public function handle(ServerRequestInterface $Request) : ResponseInterface
+    public function handle(ServerRequestInterface $Request): ResponseInterface
     {
         return $this->Response;
     }
 
 
-    public function __invoke(ServerRequestInterface $Request) : ResponseInterface
+    public function __invoke(ServerRequestInterface $Request): ResponseInterface
     {
         return $this->handle($Request);
     }

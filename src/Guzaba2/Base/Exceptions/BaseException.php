@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -51,6 +52,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     use SupportsObjectInternalId;
     //use StaticStore;
     use ContextAware;
+
     //use ExceptionPropertyModification;
 
     //public const ERROR_REFERENCE_DEFAULT_URL = 'http://error-reference.guzaba.org/error/';
@@ -59,7 +61,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     /**
      * @var \Throwable
      */
-    private static ?\Exception $CurrentException = NULL;
+    private static ?\Exception $CurrentException = null;
 
 //    public const STATIC_STORE = [
 //        'CurrentException'  => NULL,
@@ -72,7 +74,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
     //private static $is_in_clone_flag = FALSE;
 
-    private bool $is_cloned_flag = FALSE;
+    private bool $is_cloned_flag = false;
 
     // properties that contain additional debug info follow
     /**
@@ -124,15 +126,15 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
     protected $load_average = [];
 
-    protected $is_framework_exception_flag = FALSE;
+    protected $is_framework_exception_flag = false;
 
-    protected $is_rethrown_flag = FALSE;
+    protected $is_rethrown_flag = false;
 
-    protected $context_changed_flag = FALSE;
+    protected $context_changed_flag = false;
 
     protected $created_in_coroutine_id = 0;
 
-    protected ?string $uuid = NULL;
+    protected ?string $uuid = null;
 
     /**
      * The constructor calls first the constructor of tha parent class and then its own code.
@@ -145,7 +147,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function __construct(string $message = '', int $code = 0, \Throwable $previous = NULL, ?string $uuid = NULL)
+    public function __construct(string $message = '', int $code = 0, \Throwable $previous = null, ?string $uuid = null)
     {
 
         parent::__construct($message, $code, $previous, $uuid);
@@ -182,9 +184,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                     $Context->{self::class} = new \stdClass();
                 }
                 $Context->{self::class}->CurrentException = $this->cloneException();
-
             }
-
         } else {
             self::$CurrentException = $this->cloneException();
         }
@@ -248,8 +248,8 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
             $wid = -1;
         }
         $cid = \Swoole\Coroutine::getCid();
-        $pre = 'W'.$wid.'C'.$cid.': ';// W0C-1 - how is that possible? be inside the worker but not in coroutine?
-        $message = $pre.$message;
+        $pre = 'W' . $wid . 'C' . $cid . ': ';// W0C-1 - how is that possible? be inside the worker but not in coroutine?
+        $message = $pre . $message;
         return $message;
     }
 
@@ -257,9 +257,9 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @overrides
      * @return string|null
      */
-    public function getErrorComponentClass() : ?string
+    public function getErrorComponentClass(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         $Packages = new Packages(Packages::get_application_composer_file_path());
         foreach ($this->getTrace() as $frame) {
             if (!empty($frame['class'])) {
@@ -271,22 +271,21 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                     $Package = $Packages->get_package_by_class($frame['class']);
                     if ($Package) {
                         $package_ns = Packages::get_package_namespace($Package);
-                        $component_class = $package_ns.'Component';
+                        $component_class = $package_ns . 'Component';
                         if (class_exists($component_class)) {
                             $ret = $component_class;
                             break;
                         }
                     }
                 }
-
             }
         }
         return $ret;
     }
 
-    public function _before_change_context() : void
+    public function _before_change_context(): void
     {
-        $this->context_changed_flag = TRUE;
+        $this->context_changed_flag = true;
         // self::unset_all_static();
     }
 
@@ -322,31 +321,30 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
                         if (!isset($Context->{self::class})) {
                             $Context->{self::class} = new \stdClass();
                         }
-                        $Context->{self::class}->CurrentException = NULL;
+                        $Context->{self::class}->CurrentException = null;
                     } catch (ContextDestroyedException $Exception) {
                         //ignore
                     }
                 }
-
             } else {
-                self::$CurrentException = NULL;
+                self::$CurrentException = null;
             }
         }
     }
 
-    public function rethrow() : void
+    public function rethrow(): void
     {
-        $this->is_rethrown_flag = TRUE;
+        $this->is_rethrown_flag = true;
         //self::set_static('CurrentException', NULL);
         if (Coroutine::inCoroutine()) {
             $Context = Coroutine::getContext();
-            $Context->CurrentException = NULL;
+            $Context->CurrentException = null;
         } else {
-            self::$CurrentException = NULL;
+            self::$CurrentException = null;
         }
     }
 
-    public function is_rethrown() : bool
+    public function is_rethrown(): bool
     {
         return $this->is_rethrown_flag;
     }
@@ -361,12 +359,12 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @return \Throwable
      * @throws \ReflectionException
      */
-    private function cloneException() : \Throwable
+    private function cloneException(): \Throwable
     {
         return self::cloneExceptionStatic($this);
     }
 
-    private static function cloneExceptionStatic(\Throwable $Exception) : \Throwable
+    private static function cloneExceptionStatic(\Throwable $Exception): \Throwable
     {
         $class = get_class($Exception);
 
@@ -377,38 +375,38 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
             if ($RProperty->isStatic()) {
                 continue;
             }
-            $RProperty->setAccessible(TRUE);
+            $RProperty->setAccessible(true);
             $NewException->setProperty($RProperty->name, $RProperty->getValue($Exception));
         }
 
-        $NewException->is_cloned_flag = TRUE;
+        $NewException->is_cloned_flag = true;
         unset($RClass);
         unset($rproperties);
 
         return $NewException;
     }
 
-    public function is_cloned() : bool
+    public function is_cloned(): bool
     {
         return $this->is_cloned_flag;
     }
 
-    public function getTimeCreated() : int
+    public function getTimeCreated(): int
     {
         return $this->microtime_created / 1_000_000;
     }
 
-    public function getMicrotimeCreated() : int
+    public function getMicrotimeCreated(): int
     {
         return $this->microtime_created;
     }
 
-    public function getSessioNSubjectId() : int
+    public function getSessioNSubjectId(): int
     {
         return $this->session_subject_id;
     }
 
-    public function getExecutionId() : int
+    public function getExecutionId(): int
     {
         return $this->execution_id;
     }
@@ -418,7 +416,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         return $this->executionContext;
     }
 
-    public function getExecutionDetails() : array
+    public function getExecutionDetails(): array
     {
         return $this->execution_details;
     }
@@ -429,32 +427,32 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
     {
     }
 
-    public function get_memory_usage() : int
+    public function get_memory_usage(): int
     {
         return $this->memory_usage;
     }
 
-    public function get_real_memory_usage() : int
+    public function get_real_memory_usage(): int
     {
         return $this->real_memory_usage;
     }
 
-    public function get_peak_memory_usage() : int
+    public function get_peak_memory_usage(): int
     {
         return $this->peak_memory_usage;
     }
 
-    public function get_real_peak_memory_usage() : int
+    public function get_real_peak_memory_usage(): int
     {
         return $this->real_peak_memory_usage;
     }
 
-    public function get_system_load_average() : array
+    public function get_system_load_average(): array
     {
         return $this->load_average;
     }
 
-    public function is_framework_exception() : bool
+    public function is_framework_exception(): bool
     {
         return $this->is_framework_exception_flag;
     }
@@ -465,7 +463,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      */
     public function appendMessage($message)
     {
-        $this->message .= ' '.$message;
+        $this->message .= ' ' . $message;
     }
 
     /**
@@ -477,7 +475,7 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException @see Guzaba2\Transactions\MemoryTransaction::get_interrupting_exception()
      * @throws \ReflectionException
      */
-    public static function getCurrentException() : ?\Throwable
+    public static function getCurrentException(): ?\Throwable
     {
         //return self::$CurrentException;
         //return self::get_static('CurrentException');
@@ -492,10 +490,8 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         if ($Exception) {
             $NewException = self::cloneExceptionStatic($Exception);
         } else {
-            $NewException = NULL;
+            $NewException = null;
         }
         return $NewException;
     }
-
-
 }

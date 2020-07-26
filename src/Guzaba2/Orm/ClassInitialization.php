@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Orm;
-
 
 use Guzaba2\Base\Base;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
@@ -27,7 +26,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         'register_active_record_temporal_hooks',
     ];
 
-    public static function run_all_initializations() : array
+    public static function run_all_initializations(): array
     {
         $ns_prefixes = array_keys(Kernel::get_registered_autoloader_paths());
         foreach (self::INITIALIZATION_METHODS as $method_name) {
@@ -36,7 +35,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         return self::INITIALIZATION_METHODS;
     }
 
-    public static function initialize_structure(array $ns_prefixes) : void
+    public static function initialize_structure(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -44,7 +43,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         }
     }
 
-    public static function initialize_hooks(array $ns_prefixes) : void
+    public static function initialize_hooks(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -52,7 +51,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         }
     }
 
-    public static function initialize_memory(array $ns_prefixes) : void
+    public static function initialize_memory(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
         foreach ($active_record_classes as $active_record_class) {
@@ -62,7 +61,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         }
     }
 
-    public static function register_active_record_temporal_hooks(array $ns_prefixes) : void
+    public static function register_active_record_temporal_hooks(array $ns_prefixes): void
     {
         $active_record_history_classes = ActiveRecord::get_active_record_temporal_classes($ns_prefixes);
         $Events = self::get_service('Events');

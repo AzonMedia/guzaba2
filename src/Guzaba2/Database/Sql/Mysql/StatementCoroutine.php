@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
@@ -42,11 +42,10 @@ class StatementCoroutine extends Statement implements StatementInterface
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function execute(array $parameters = [], bool $disable_sql_cache = FALSE) : self
+    public function execute(array $parameters = [], bool $disable_sql_cache = false): self
     {
 
         if ($parameters && $this->params) {
-            //throw new ParameterException('*', sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__), $query, $parameters );
             throw new InvalidArgumentException(sprintf(t::_('It is not allowed to set parameters as properties and provide parameters as an argument to %s.'), __METHOD__));
         }
         if ($parameters) {
@@ -60,7 +59,7 @@ class StatementCoroutine extends Statement implements StatementInterface
         $sql = $this->get_query();
 
         $statement_group_str = $this->get_statement_group_as_string();
-        if ($statement_group_str === NULL) {
+        if ($statement_group_str === null) {
             throw new RunTimeException(sprintf(t::_('The statement for query %s can not be determined of which type is (DQL, DML etc...).'), $sql));
         }
 
@@ -70,9 +69,9 @@ class StatementCoroutine extends Statement implements StatementInterface
              */
             $QueryCache = self::get_service('QueryCache');
             if ($this->is_dql_statement()) {
-                $exec_start_time = microtime(TRUE);
+                $exec_start_time = microtime(true);
                 $cached_query_data = $QueryCache->get_cached_data($sql, $this->params);
-                $exec_end_time = microtime(TRUE);
+                $exec_end_time = microtime(true);
                 if ($cached_query_data) {
                     $this->cached_query_data = $cached_query_data;
                     $this->is_executed_flag = true;
@@ -84,7 +83,6 @@ class StatementCoroutine extends Statement implements StatementInterface
                     //not found in the cache => proceed
                 }
             } elseif ($this->is_dml_statement()) {
-
                 //self::$query_cache->update_tables_modification_microtime($sql);
                 //this is to be updated after the query is actually executed
                 //as the query may be slow and this will mean the update time will be wrong
@@ -98,7 +96,8 @@ class StatementCoroutine extends Statement implements StatementInterface
 
 
 //                if (framework\transactions\classes\transactionManager::getCurrentTransaction(framework\database\classes\transaction2::class) && self::INVALIDATE_SELECT_CACHE_ON_COMMIT) {
-//                    //do not invalidate it - the current transaction will see live data as we are in transaction (see config) and the rest of the threads can still use the cache as the current transaction is not commited
+//                    //do not invalidate it - the current transaction will see live data as we are in transaction (see config)
+//                    //and the rest of the threads can still use the cache as the current transaction is not commited
 //                    //no point to invalidate the cache if the transaction is not going to be committed
 //                } else {
 //                    self::$query_cache->update_tables_modification_microtime($sql, self::UPDATE_QUERY_CACHE_LOCK_TIMEOUT);
@@ -111,19 +110,19 @@ class StatementCoroutine extends Statement implements StatementInterface
 
         $position_parameters = $this->convert_to_position_parameters($this->params);
 
-        $exec_start_time = microtime(TRUE);
+        $exec_start_time = microtime(true);
         $ret = $this->NativeStatement->execute($position_parameters);
-        $exec_end_time = microtime(TRUE);
+        $exec_end_time = microtime(true);
         $Apm = self::get_service('Apm');
-        $Apm->increment_value('cnt_'.strtolower($statement_group_str).'_statements', 1);
-        $Apm->increment_value('time_'.strtolower($statement_group_str).'_statements', $exec_end_time - $exec_start_time);
+        $Apm->increment_value('cnt_' . strtolower($statement_group_str) . '_statements', 1);
+        $Apm->increment_value('time_' . strtolower($statement_group_str) . '_statements', $exec_end_time - $exec_start_time);
 
 //        if ($current_transaction || $current_db_transaction) {
 //            $this->disable_sql_cache = TRUE;
 //        }
 
 
-        if ( self::uses_service('QueryCache') && !$this->is_sql_cache_disabled() ) {
+        if (self::uses_service('QueryCache') && !$this->is_sql_cache_disabled()) {
             $QueryCache = self::get_service('QueryCache');
             if ($this->is_dml_statement()) {
 //                $current_transaction = framework\transactions\classes\transactionManager::getCurrentTransaction(framework\database\classes\transaction2::class);
@@ -179,7 +178,7 @@ class StatementCoroutine extends Statement implements StatementInterface
 //        }
 
 
-        if ($ret === FALSE) {
+        if ($ret === false) {
             $this->handle_error();//will throw exception
         }
 //        elseif (is_array($ret)) { //Swoole\Coroutine\Mysql\Statement::execute() returns the data when fetch_mode = FALSE
@@ -188,17 +187,17 @@ class StatementCoroutine extends Statement implements StatementInterface
         if (!$this->Connection->get_fetch_mode()) { //IF fetch_mode === FALSE
             $this->rows = $ret;
         }
-        $this->is_executed_flag = TRUE;
+        $this->is_executed_flag = true;
 
         return $this;
     }
 
-    public function fetch_all() : array
+    public function fetch_all(): array
     {
         return $this->fetchAll();
     }
 
-    public function fetchAll(?bool &$from_cache = FALSE) : array
+    public function fetchAll(?bool &$from_cache = false): array
     {
 //        $ret = $this->NativeStatement->fetchAll();
 //        if ($ret===FALSE) {
@@ -210,20 +209,20 @@ class StatementCoroutine extends Statement implements StatementInterface
 
         if ($this->cached_query_data) {
             $ret = $this->cached_query_data['data'];
-            $from_cache = TRUE;
+            $from_cache = true;
         } else {
             if ($this->Connection->get_fetch_mode()) { //in fetch_mode = TRUE the data needs to be manually fetched
                 $Apm = self::get_service('Apm');
-                $exec_start_time = microtime(TRUE);
+                $exec_start_time = microtime(true);
                 $ret = $this->NativeStatement->fetchAll();
-                $exec_end_time = microtime(TRUE);
+                $exec_end_time = microtime(true);
                 $Apm->increment_value('time_fetching_data', $exec_end_time - $exec_start_time);
             } else { //default is fetch_mode = FALSE
                 $ret = $this->rows;
             }
 
-            if ($ret === NULL) {
-                throw new QueryException($this, 0, 0, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error ), $this->get_query(), $this->get_params() );
+            if ($ret === null) {
+                throw new QueryException($this, 0, 0, sprintf(t::_('Error executing query %s: [%s] %s.'), $this->get_query(), $this->NativeStatement->errno, $this->NativeStatement->error), $this->get_query(), $this->get_params());
             }
             if (self::uses_service('QueryCache') && !$this->is_sql_cache_disabled()) {
                 /**
@@ -269,5 +268,4 @@ class StatementCoroutine extends Statement implements StatementInterface
 
         return $ret;
     }
-
 }

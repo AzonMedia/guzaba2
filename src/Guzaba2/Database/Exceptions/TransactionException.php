@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 /*
  * Guzaba Framework 2
  * http://framework2.guzaba.org

@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Event;
-
 
 use Azonmedia\Utilities\GeneralUtil;
 use Guzaba2\Base\Base;
@@ -33,5 +32,4 @@ class Callbacks extends Base
         $this->object_callbacks = $object_callbacks;
         $this->class_callbacks = $class_callbacks;
     }
-
 }

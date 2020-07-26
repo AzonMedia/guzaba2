@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers;
@@ -41,7 +42,7 @@ class WorkerConnect extends HandlerBase
         }
     }
 
-    public function __invoke(\Swoole\Http\Server $Server, int $worker_id) : void
+    public function __invoke(\Swoole\Http\Server $Server, int $worker_id): void
     {
         $this->handle($Server, $worker_id);
     }

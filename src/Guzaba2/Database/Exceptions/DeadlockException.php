@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Exceptions;
@@ -18,7 +19,7 @@ class DeadlockException extends DatabaseTransientException
      * @param string $debugdata
      * @param null $previous_exception
      */
-    public function __construct(?PdoStatement$pdoStatement, $sqlstate, $errorcode, $errormsg, $query, $params, $debugdata='', $previous_exception=null)
+    public function __construct(?PdoStatement $pdoStatement, $sqlstate, $errorcode, $errormsg, $query, $params, $debugdata = '', $previous_exception = null)
     {
         parent::__construct($pdoStatement, $sqlstate, $errorcode, $errormsg, $query, $params, $debugdata, $previous_exception);
         //if a deadlock exception occurs we need to disable the exception throwing in pdoDriver::rollback() if the savepoint doesnt exist

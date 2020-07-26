@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store;
-
 
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Orm\ActiveRecord;
@@ -66,15 +66,15 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
     }
 
 
-    public function attach_object(ActiveRecordInterface $ActiveRecord) : void
+    public function attach_object(ActiveRecordInterface $ActiveRecord): void
     {
-        if (in_array($this->get_status(), [self::STATUS['STARTED'], self::STATUS['SAVED'] ] )) {
+        if (in_array($this->get_status(), [self::STATUS['STARTED'], self::STATUS['SAVED'] ])) {
             $this->objects[] = $ActiveRecord;
             $this->objects_data['TRANSACTION_BEGIN'][$ActiveRecord->get_object_internal_id()] = $ActiveRecord->get_record_data();
         } else {
             //when the current transaction is committed or rolled back it is removed from the TransactionManager
             //when it is in status Created it is not yet added to the TransactionManager
-            throw new LogicException(sprintf(t::_('There seems to be a current transaction set while there should not be as its status is %1$s.'), $this->get_status() ));
+            throw new LogicException(sprintf(t::_('There seems to be a current transaction set while there should not be as its status is %1$s.'), $this->get_status()));
         }
     }
 
@@ -83,7 +83,7 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
      * This can be used to obtain all objects that have been modified in this transaction (as an object is attached only when it is modified).
      * @return ActiveRecordInterface[]
      */
-    public function get_attached_objects() : array
+    public function get_attached_objects(): array
     {
         return $this->objects;
     }
@@ -131,7 +131,6 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
             } else {
                 //this is an object from another scope
             }
-
         }
     }
 
@@ -144,7 +143,7 @@ class MemoryTransaction extends Transaction implements StoreTransactionInterface
      * Clears all objects data
      * To be called on commit() or rollback()
      */
-    private function data_cleanup() : void
+    private function data_cleanup(): void
     {
         $this->objects_data = [];
     }

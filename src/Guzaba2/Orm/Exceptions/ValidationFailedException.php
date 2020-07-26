@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Exceptions;
@@ -29,29 +30,28 @@ class ValidationFailedException extends BaseException implements ValidationFaile
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function __construct( /* mixed */ $target, string $field_name, string $message, int $code = 0, ?\Throwable $PreviousException = NULL)
+    public function __construct(/* mixed */ $target, string $field_name, string $message, int $code = 0, ?\Throwable $PreviousException = null)
     {
-        if ( !( $target instanceof ActiveRecordInterface) && !is_string($target) && !is_null($target)) {
+        if (!( $target instanceof ActiveRecordInterface) && !is_string($target) && !is_null($target)) {
             throw new InvalidArgumentException(sprintf(t::_('An unsupported type $target is provided to %s. ActiveRecordInterface instance, valid class name or NULL are the supported types.'), __METHOD__));
         }
         if (is_string($target) && !class_exists($target)) {
             throw new InvalidArgumentException(sprintf(t::_('An invalid class name %s provided as $target to %s.'), $target, __METHOD__));
         }
-        if ($target !== NULL && !strlen($field_name)) {
+        if ($target !== null && !strlen($field_name)) {
             throw new InvalidArgumentException(sprintf(t::_('It is required to provide $field_name to %s when $target is not NULL.'), __METHOD__));
         }
         $this->target = $target;
         $this->field_name = $field_name;
         parent::__construct($message, $code, $PreviousException);
-
     }
 
     /**
      * @return string|null
      */
-    public function getClass() : ?string
+    public function getClass(): ?string
     {
-        $ret = NULL;
+        $ret = null;
         if ($this->target instanceof ActiveRecordInterface) {
             $ret = get_class($this->target);
         } elseif (is_string($this->target)) {
@@ -65,7 +65,7 @@ class ValidationFailedException extends BaseException implements ValidationFaile
         return $this->target;
     }
 
-    public function getFieldName() : string
+    public function getFieldName(): string
     {
         return $this->field_name;
     }

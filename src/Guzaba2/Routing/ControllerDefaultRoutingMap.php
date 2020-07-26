@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Routing;
@@ -44,7 +45,7 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
     public function __construct(array $ns_prefixes)
     {
         if (!$ns_prefixes) {
-            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__ ));
+            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__));
         }
 
         $this->ns_prefixes = $ns_prefixes;
@@ -61,9 +62,8 @@ class ControllerDefaultRoutingMap extends RoutingMapArray
         parent::__construct($routing_map);
     }
 
-    public function get_processed_controllers() : array
+    public function get_processed_controllers(): array
     {
         return $this->processed_controllers;
     }
-
 }

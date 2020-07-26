@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Swoole\Curl;
 
 class Handler
@@ -58,12 +60,12 @@ class Handler
         3 => 'No URL set!',
     ];
 
-    public function __construct($url = NULL)
+    public function __construct($url = null)
     {
         $new_url = $url;
     }
 
-    private function create(string $url) : void
+    private function create(string $url): void
     {
     }
 
@@ -71,23 +73,23 @@ class Handler
     {
     }
 
-    public function close() : void
+    public function close(): void
     {
     }
 
-    private function setError($code, $msg = '') : void
+    private function setError($code, $msg = ''): void
     {
     }
 
-    private function getUrl() : string
+    private function getUrl(): string
     {
     }
 
-    public function setOption(int $opt, $value) : bool
+    public function setOption(int $opt, $value): bool
     {
     }
 
-    public function reset() : void
+    public function reset(): void
     {
     }
 
@@ -95,11 +97,11 @@ class Handler
     {
     }
 
-    private function unparseUrl(array $parsedUrl) : string
+    private function unparseUrl(array $parsedUrl): string
     {
     }
 
-    private function getRedirectUrl(string $location) : array
+    private function getRedirectUrl(string $location): array
     {
     }
 }

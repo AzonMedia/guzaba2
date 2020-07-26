@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
@@ -16,13 +17,13 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
  */
 trait ActiveRecordTemporal
 {
-    public static function after_write_handler(Event $Event) : void
+    public static function after_write_handler(Event $Event): void
     {
         /**
          * @var ActiveRecordInterface
          */
         $ActiveRecord = $Event->get_subject();
-        $event_microtime = (int) (microtime(TRUE) * 1_000_000);
+        $event_microtime = (int) (microtime(true) * 1_000_000);
         if ($ActiveRecord->is_new()) {
             //create a new record
         } else {
@@ -34,17 +35,17 @@ trait ActiveRecordTemporal
         self::create_new_temporal_record($ActiveRecord, $event_microtime);
     }
 
-    public static function after_delete_handler(Event $Event) : void
+    public static function after_delete_handler(Event $Event): void
     {
         /**
          * @var ActiveRecordInterface
          */
         $ActiveRecord = $Event->get_subject();
-        $event_microtime = (int) (microtime(TRUE) * 1_000_000);
+        $event_microtime = (int) (microtime(true) * 1_000_000);
         self::update_last_temporal_record($ActiveRecord, $event_microtime);
     }
 
-    private static function update_last_temporal_record(ActiveRecordInterface $ActiveRecord, int $event_microtime) : void
+    private static function update_last_temporal_record(ActiveRecordInterface $ActiveRecord, int $event_microtime): void
     {
         if ($ActiveRecord instanceof ActiveRecordTemporalInterface) {
             return;
@@ -57,7 +58,7 @@ trait ActiveRecordTemporal
         $Temporal->write();
     }
 
-    private static function create_new_temporal_record(ActiveRecordInterface $ActiveRecord, int $event_microtime) : void
+    private static function create_new_temporal_record(ActiveRecordInterface $ActiveRecord, int $event_microtime): void
     {
         if ($ActiveRecord instanceof ActiveRecordTemporalInterface) {
             return;

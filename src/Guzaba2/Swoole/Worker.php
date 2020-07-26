@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
@@ -36,7 +37,7 @@ class Worker extends Base implements WorkerInterface
         $this->worker_pid = $worker_pid;
         $this->is_task_worker_flag = $is_task_worker;
         $this->debug_port = $debug_port;
-        $this->start_microtime = microtime(TRUE);
+        $this->start_microtime = microtime(true);
     }
 
     public function get_worker_id(): int

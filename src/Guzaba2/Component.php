@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2;
@@ -6,6 +7,11 @@ namespace Guzaba2;
 use Azonmedia\Components\BaseComponent;
 use Azonmedia\Components\Interfaces\ComponentInterface;
 
+/**
+ * Class Component
+ *
+ * @package Guzaba2
+ */
 class Component extends BaseComponent
 {
 

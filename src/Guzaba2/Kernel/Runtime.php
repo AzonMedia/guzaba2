@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Kernel;
@@ -20,14 +21,14 @@ abstract class Runtime
     {
         $limit = ini_get('memory_limit');
         $multiply = 1;
-        if (stripos($limit,'K') !== FALSE) {
+        if (stripos($limit, 'K') !== false) {
             $multiply = 1024;
-        } elseif (stripos($limit, 'M') !== FALSE) {
+        } elseif (stripos($limit, 'M') !== false) {
             $multiply = 1024 * 1024;
-        } elseif (stripos($limit, 'G') !== FALSE) {
+        } elseif (stripos($limit, 'G') !== false) {
             $multiply = 1024 * 1024 * 1024;
         }
-        $limit = (int) str_ireplace(['K', 'M', 'G'],'', $limit);
+        $limit = (int) str_ireplace(['K', 'M', 'G'], '', $limit);
         return $limit * $multiply;
     }
 
@@ -50,9 +51,9 @@ abstract class Runtime
     {
         if ($bytes > self::get_memory_limit()) {
             self::set_memory_limit($bytes);
-            return TRUE;
+            return true;
         }
-        return FALSE;
+        return false;
     }
 
     /**
@@ -65,9 +66,9 @@ abstract class Runtime
     {
         if ($bytes < self::get_memory_limit()) {
             self::set_memory_limit($bytes);
-            return TRUE;
+            return true;
         }
-        return FALSE;
+        return false;
     }
 
     /**
@@ -77,7 +78,4 @@ abstract class Runtime
     {
         return gc_collect_cycles();
     }
-
-
-
 }

@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Guzaba2\Orm\Store;
 
 use Guzaba2\Base\Exceptions\NotImplementedException;
@@ -28,7 +30,7 @@ class MultiStore extends Store
         $this->add_store_backend($StoreBackend);
     }
 
-    public function add_store(\StoreBackendInterface $Store) : void
+    public function add_store(\StoreBackendInterface $Store): void
     {
         $this->stores[] = $StoreBackend;
     }
@@ -37,17 +39,17 @@ class MultiStore extends Store
      * Returns the first StoreBackend.
      * @return StoreInterface|null
      */
-    public function get_fallback_store() : ?StoreInterface
+    public function get_fallback_store(): ?StoreInterface
     {
         return $this->stores[0];
     }
 
-    public function get_storage_columns_data(string $class) : array
+    public function get_storage_columns_data(string $class): array
     {
         return $this->get_fallback_store()->get_storage_columns_data($class);
     }
 
-    public function get_unified_columns_data(string $class) : array
+    public function get_unified_columns_data(string $class): array
     {
         return $this->get_fallback_store()->get_unified_columns_data($class);
     }
@@ -58,7 +60,7 @@ class MultiStore extends Store
      * @param ActiveRecordInterface $ActiveRecord
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
         $callables = [];
         foreach ($this->stores as $Store) {
@@ -71,7 +73,7 @@ class MultiStore extends Store
         return $co_ret[0];
     }
 
-    public function &get_data_pointer(string $class, array $index) : array
+    public function &get_data_pointer(string $class, array $index): array
     {
         return $this->get_fallback_store()->get_data_pointer($class, $primary_index);
     }
@@ -83,7 +85,7 @@ class MultiStore extends Store
      * @param array $primary_index
      * @return array
      */
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         return $this->get_fallback_store()->get_data_pointer_for_new_version($class, $primary_index);
     }
@@ -95,7 +97,7 @@ class MultiStore extends Store
      * @param array $primary_index
      * @return bool
      */
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
         return $this->get_fallback_store()->there_is_pointer_for_new_version($class, $primary_index);
     }
@@ -105,7 +107,7 @@ class MultiStore extends Store
      * @param ActiveRecordInterface $ActiveRecord
      * @return void
      */
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
         $this->get_fallback_store()->free_pointer();
     }
@@ -114,7 +116,7 @@ class MultiStore extends Store
      * Returns storage data used for debug purpose in a free format structure.
      * @return array
      */
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         $this->get_fallback_store()->debug_get_data();
     }
@@ -129,12 +131,12 @@ class MultiStore extends Store
     }
 
 
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
         return $this->get_fallback_store()->get_meta_by_uuid($uuid);
     }
 
-    public function get_meta_by_id(string $class_name, int $object_id) : array
+    public function get_meta_by_id(string $class_name, int $object_id): array
     {
         return $this->get_fallback_store()->get_meta_by_id($class_name, $object_id);
     }

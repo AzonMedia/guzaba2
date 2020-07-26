@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store\Nosql;
@@ -45,7 +46,7 @@ class Redis extends Database
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    protected function get_connection() : ConnectionInterface
+    protected function get_connection(): ConnectionInterface
     {
         if (Coroutine::inCoroutine()) {
             $connection_class = $this->connection_class;
@@ -63,7 +64,7 @@ class Redis extends Database
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
 
         /** @var ActiveRecord $ActiveRecord */
@@ -84,7 +85,7 @@ class Redis extends Database
 
 
 
-        $Function = function() use ($ActiveRecord, $record_data, $uuid): array {
+        $Function = function () use ($ActiveRecord, $record_data, $uuid): array {
             /** @var ConnectionCoroutine $Connection */
             $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
@@ -122,7 +123,7 @@ class Redis extends Database
                 if (isset($all_data)) { //it is coming from a fallback
                     $meta_data = $all_data['meta'];
                 } else {
-                    $object_create_microtime = (int) microtime(TRUE) * 1000000;
+                    $object_create_microtime = (int) microtime(true) * 1000000;
                     $meta_data = [
                         'meta_class_name'                => get_class($ActiveRecord),
                         'meta_object_create_microtime'   => $object_create_microtime,
@@ -136,12 +137,11 @@ class Redis extends Database
 //                }
                 }
 
-                foreach ($meta_data as $meta_key=>$meta_value) {
+                foreach ($meta_data as $meta_key => $meta_value) {
                     $Connection->hSet($metakey, $meta_key, $meta_value);
                 }
-
             }
-            $meta_data['meta_object_last_update_microtime'] = $meta_data['meta_object_last_update_microtime'] ?? (int) microtime(TRUE) * 1000000;
+            $meta_data['meta_object_last_update_microtime'] = $meta_data['meta_object_last_update_microtime'] ?? (int) microtime(true) * 1000000;
             $Connection->hSet($metakey, 'meta_object_last_update_microtime', $meta_data['meta_object_last_update_microtime']);
             if ($Connection->getExpiryTime()) {
                 $Connection->expire($metakey, $Connection->getExpiryTime());
@@ -166,7 +166,6 @@ class Redis extends Database
             $ret = $Function();
         }
         return $ret;
-
     }
 
     /**
@@ -179,8 +178,7 @@ class Redis extends Database
     {
         $this->FallbackStore->remove_record($ActiveRecord);
 
-        $Function = function() use ($ActiveRecord) : void
-        {
+        $Function = function () use ($ActiveRecord): void {
             $uuid = $ActiveRecord->get_uuid();
             $id = $ActiveRecord->get_id();
             $class_id = $this->create_class_id(get_class($ActiveRecord), [$id]);
@@ -215,10 +213,10 @@ class Redis extends Database
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $index) : array
+    public function &get_data_pointer(string $class, array $index): array
     {
 
-        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class, ActiveRecordInterface::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
         }
 
@@ -260,10 +258,10 @@ class Redis extends Database
         return $ret;
     }
     
-    public function get_meta(string $class, /*scalar */ $object_id) : array
+    public function get_meta(string $class, /*scalar */ $object_id): array
     {
 
-        if (!is_a($class, ActiveRecordInterface::class, TRUE)) {
+        if (!is_a($class, ActiveRecordInterface::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class %s is not a %s.'), $class, ActiveRecordInterface::class));
         }
 
@@ -287,26 +285,26 @@ class Redis extends Database
         return $result;
     }
 
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         return $this->get_data_pointer($class, $primary_index);
     }
 
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
-        return FALSE;
+        return false;
     }
 
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
     }
 
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         return [];
     }
 
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
         $metakey = $uuid . ':meta';
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
@@ -380,7 +378,7 @@ class Redis extends Database
         return $uuid;
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): iterable
     {
         $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
         return $ret;

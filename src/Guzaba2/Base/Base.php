@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -25,7 +26,6 @@ use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
 use Guzaba2\Base\Interfaces\UsesServicesInterface;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Translator\Translator as t;
-
 //use Guzaba2\Base\Traits\SupportsConfig;
 //use Guzaba2\Base\Traits\SupportsObjectInternalId;
 //use Guzaba2\Base\Traits\UsesServices;
@@ -46,7 +46,6 @@ abstract class Base implements BaseInterface
 //    use UsesServices;
 //    //use StaticStore;//this becomes too expensive to use
 //    use ContextAware;
-
     use BaseTrait;
 
 
@@ -58,7 +57,7 @@ abstract class Base implements BaseInterface
 
     protected const CONFIG_RUNTIME = [];
 
-    private bool $is_destroyed_flag = FALSE;
+    private bool $is_destroyed_flag = false;
 
     /**
      * Base constructor.
@@ -73,13 +72,12 @@ abstract class Base implements BaseInterface
     public function __destruct()
     {
         if (!$this->is_destroyed_flag) { //ensure the _before_destruct is called only once (as the __destruct() may be called manually and then by the actual destruction)
-
             if (method_exists($this, '_before_destruct')) {
                 call_user_func_array([$this, '_before_destruct'], []);
             }
             //the _before_destruct event will not be created here (as this would fire it for all objects) but if a class needs to have it then it should implement the _before_destruct() method and fire the event there
         }
-        $this->is_destroyed_flag = TRUE;
+        $this->is_destroyed_flag = true;
     }
 
     /**
@@ -95,6 +93,6 @@ abstract class Base implements BaseInterface
         $class = get_class($this);
         //if running on PHP 7.4.0 RC4 or lower see bug:
         // https://bugs.php.net/bug.php?id=78226
-        throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time.'), get_class($this), __CLASS__), 0, NULL, 'f8d21186-d6cd-4bb7-ad56-10bb3e1a3381' );
+        throw new RunTimeException(sprintf(t::_('The instance is of class %s which inherits %s which is a strict class. It is not allowed to set new object properties at run time.'), get_class($this), __CLASS__), 0, null, 'f8d21186-d6cd-4bb7-ad56-10bb3e1a3381');
     }
 }

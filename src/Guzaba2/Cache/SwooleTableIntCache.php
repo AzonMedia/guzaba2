@@ -1,9 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
-
 namespace Guzaba2\Cache;
-
 
 use Guzaba2\Base\Base;
 use Guzaba2\Kernel\Kernel;
@@ -31,7 +30,7 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
 
     protected const CHECK_SWOOLE_TABLE_CACHE_MILLISECONDS = 10000;
 
-    protected ?int $cleanup_timer_id = NULL;
+    protected ?int $cleanup_timer_id = null;
 
     public function __construct()
     {
@@ -55,9 +54,9 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
      * @param string $key
      * @param int $data
      */
-    public function set(string $prefix, string $key, int $data) : void
+    public function set(string $prefix, string $key, int $data): void
     {
-        $key = $prefix.'.'.$key;
+        $key = $prefix . '.' . $key;
         $data = ['int_val' => $data];
         $this->SwooleTable->set($key, $data);
     }
@@ -68,9 +67,9 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
      * @param string $key
      * @throws RunTimeException
      */
-    public function delete(string $prefix, string $key ) : void
+    public function delete(string $prefix, string $key): void
     {
-        $key = $prefix.'.'.$key;
+        $key = $prefix . '.' . $key;
         $this->SwooleTable->del($key);
     }
 
@@ -80,28 +79,28 @@ class SwooleTableIntCache extends Base implements IntCacheInterface, ProcessCach
      * @param string $key
      * @return int|null
      */
-    public function get(string $prefix, string $key) : ?int
+    public function get(string $prefix, string $key): ?int
     {
-        $key = $prefix.'.'.$key;
+        $key = $prefix . '.' . $key;
         $ret = $this->SwooleTable->get($key, 'int_val');
         if (!$ret) {
-            $ret = NULL;
+            $ret = null;
         }
         return $ret;
     }
 
-    public function exists(string $prefix, string $key) : bool
+    public function exists(string $prefix, string $key): bool
     {
-        $key = $prefix.'.'.$key;
+        $key = $prefix . '.' . $key;
         return $this->SwooleTable->exist($key);
     }
 
     /**
      *
      */
-    public function start_cleanup_timer() : void
+    public function start_cleanup_timer(): void
     {
-        if (NULL === $this->cleanup_timer_id || (!\Swoole\Timer::exists($this->cleanup_timer_id))) {
+        if (null === $this->cleanup_timer_id || (!\Swoole\Timer::exists($this->cleanup_timer_id))) {
             $CleanupFunction = function () {
                 $count = $this->SwooleTable->count();
                 $cleanedup = 0;

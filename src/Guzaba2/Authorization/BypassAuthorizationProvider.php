@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
@@ -18,14 +18,14 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 class BypassAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
 
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
     {
-        return TRUE;
+        return true;
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class) : bool
+    public function role_can_on_class(Role $Role, string $action, string $class): bool
     {
-        return TRUE;
+        return true;
     }
 
     /**
@@ -34,14 +34,14 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord) : bool
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
     {
-        return TRUE;
+        return true;
     }
 
-    public function current_role_can_on_class(string $action, string $class) : bool
+    public function current_role_can_on_class(string $action, string $class): bool
     {
-        return TRUE;
+        return true;
     }
 
     /**
@@ -51,57 +51,57 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord) : void
+    public function check_permission(string $action, ActiveRecordInterface $ActiveRecord): void
     {
         return;
     }
 
-    public function check_class_permission(string $action, string $class) : void
+    public function check_class_permission(string $action, string $class): void
     {
         return;
     }
 
-    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : ?PermissionInterface
+    public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): ?PermissionInterface
     {
-        return NULL;
+        return null;
     }
 
-    public function grant_class_permission(Role $Role, string $action, string $class_name) : ?PermissionInterface
+    public function grant_class_permission(Role $Role, string $action, string $class_name): ?PermissionInterface
     {
-        return NULL;
+        return null;
     }
 
-    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord) : void
-    {
-        return;
-    }
-
-    public function revoke_class_permission(Role $Role, string $action, string $class_name) : void
+    public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): void
     {
         return;
     }
 
-    public function delete_permissions(ActiveRecordInterface $ActiveRecord) : void
+    public function revoke_class_permission(Role $Role, string $action, string $class_name): void
     {
         return;
     }
 
-    public function delete_class_permissions(string $class_name) : void
+    public function delete_permissions(ActiveRecordInterface $ActiveRecord): void
     {
         return;
     }
 
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord) : iterable
+    public function delete_class_permissions(string $class_name): void
+    {
+        return;
+    }
+
+    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable
     {
         return [];
     }
 
-    public function get_permissions_by_class(string $class_name) : iterable
+    public function get_permissions_by_class(string $class_name): iterable
     {
         return [];
     }
 
-    public static function get_used_active_record_classes() : array
+    public static function get_used_active_record_classes(): array
     {
         return [];
     }

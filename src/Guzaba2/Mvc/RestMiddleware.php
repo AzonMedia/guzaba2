@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
@@ -52,7 +52,7 @@ class RestMiddleware extends Base implements MiddlewareInterface
      * @param RequestHandlerInterface $Handler
      * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
+    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
         $method_const = $Request->getMethodConstant();
         if (!in_array($method_const, self::SUPPORTED_HTTP_METHODS)) {

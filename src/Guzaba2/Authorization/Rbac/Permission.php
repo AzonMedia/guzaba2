@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Rbac;
@@ -20,7 +21,7 @@ class Permission extends ActiveRecord
 
     protected const CONFIG_RUNTIME = [];
 
-    public static function create(string $permission_name) : ActiveRecord
+    public static function create(string $permission_name): ActiveRecord
     {
         $Permission = new self();
         $Permission->permission_name = $permission_name;
@@ -28,14 +29,14 @@ class Permission extends ActiveRecord
         return $Permission;
     }
 
-    protected function _before_save() : void
+    protected function _before_save(): void
     {
         //check for duplicate
         if (!$this->permission_name) {
             //throw validation
         }
         try {
-            $Permission = new self( ['permission_name' => $this->permission_name]);
+            $Permission = new self(['permission_name' => $this->permission_name]);
             //throw validaton
         } catch (RecordNotFoundException $Exception) {
             //there is no duplicate

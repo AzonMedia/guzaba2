@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Nosql\Redis;
@@ -86,8 +87,8 @@ abstract class StatementTypes extends Base
     ];
 
     public const OPERATION_TYPES = [
-        TRUE => 'write',
-        FALSE => 'read',
+        true => 'write',
+        false => 'read',
     ];
 
     /**
@@ -106,7 +107,6 @@ abstract class StatementTypes extends Base
      */
     public static function get_statement_type(string $method_name): string
     {
-        return self::OPERATION_TYPES[isset(self::WRITE_COMMANDS[$method_name])];        
+        return self::OPERATION_TYPES[isset(self::WRITE_COMMANDS[$method_name])];
     }
-
 }

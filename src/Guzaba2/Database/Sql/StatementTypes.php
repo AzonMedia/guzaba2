@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql;
@@ -212,7 +213,7 @@ abstract class StatementTypes extends Base
      */
     public static function get_statement_type(string $sql): ?int
     {
-        $ret = NULL;//unknown
+        $ret = null;//unknown
         $sql = trim($sql);
 
         //if the first line begins with a comment - remove it (remove all lines starting with -- )
@@ -232,7 +233,9 @@ abstract class StatementTypes extends Base
             }
         }
         if (!$ret) {
-            throw new SQLParsingException(sprintf(t::_('Unable to determine the SQL query type for query "%s". Please update the parser statementTypes::getStatementType() to recognize this query type or change the query so that is is recognizable.'), $sql));
+            $message = t::_('Unable to determine the SQL query type for query "%s".
+Please update the parser StatementTypes::getStatementType() to recognize this query type or change the query so that is is recognizable.');
+            throw new SQLParsingException(sprintf($message, $sql));
         }
         return $ret;
     }
@@ -250,9 +253,9 @@ abstract class StatementTypes extends Base
      */
     public static function get_statement_group(string $sql): ?int
     {
-        $ret = NULL;
+        $ret = null;
         $this_statement_type = self::get_statement_type($sql);
-        if ($this_statement_type !== NULL) {
+        if ($this_statement_type !== null) {
             foreach (self::STATEMENT_TYPE_GROUP_MAP as $statement_type => $statement_group) {
                 if ($this_statement_type === $statement_type) {
                     $ret = $statement_group;

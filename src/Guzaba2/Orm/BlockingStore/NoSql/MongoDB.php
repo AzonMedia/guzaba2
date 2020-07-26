@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Orm\BlockingStore\NoSql;
@@ -13,10 +14,11 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 use Ramsey\Uuid\Uuid;
 use Guzaba2\Kernel\Kernel;
-use \MongoDB\BSON\Regex;
+use MongoDB\BSON\Regex;
 
 class MongoDB extends Database
-{    
+{
+
     protected const CONFIG_DEFAULTS = [
         'meta_table'    => 'object_meta'
     ];
@@ -35,13 +37,13 @@ class MongoDB extends Database
         $this->connection_class = $connection_class;
     }
 
-    public static function get_meta_table() : string
+    public static function get_meta_table(): string
     {
         return self::CONFIG_RUNTIME['meta_table'];
     }
 
 
-    public function get_meta(string $class_name, /* int | string */ $object_id) : array
+    public function get_meta(string $class_name, /* int | string */ $object_id): array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
@@ -69,7 +71,7 @@ class MongoDB extends Database
         return $result[0];
     }
 
-    public function get_meta_by_uuid(string $uuid) : array
+    public function get_meta_by_uuid(string $uuid): array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
 
@@ -90,12 +92,12 @@ class MongoDB extends Database
         return $result[0];
     }
 
-    public function get_meta_by_id(string $class_name, int $object_id) : array
+    public function get_meta_by_id(string $class_name, int $object_id): array
     {
         throw new NotImplementedException();
     }
 
-    protected function update_meta(ActiveRecordInterface $ActiveRecord) : array
+    protected function update_meta(ActiveRecordInterface $ActiveRecord): array
     {
         // it can happen to call update_ownership on a record that is new but this can happen if there is save() recursion
         if ($ActiveRecord->is_new() /* &&  !$object->is_in_method_twice('save') */) {
@@ -117,11 +119,11 @@ class MongoDB extends Database
         }
 
         $data = [
-            'object_last_update_microtime'  => (int) microtime(TRUE) * 1000000
+            'object_last_update_microtime'  => (int) microtime(true) * 1000000
         ];
 
         $Connection->update($filter, $Connection::get_tprefix() . self::get_meta_table(), $data);
-        return $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id() );
+        return $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id());
     }
 
     /**
@@ -133,12 +135,12 @@ class MongoDB extends Database
      * @return string UUID
      * @throws \Exception
      */
-    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = NULL) : array
+    protected function create_meta(ActiveRecordInterface $ActiveRecord, string $uuid = null): array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
 
-        $object_create_microtime = (int) microtime(TRUE) * 1000000;
+        $object_create_microtime = (int) microtime(true) * 1000000;
 
         $data = [
             'meta_object_uuid'                          => $uuid,
@@ -154,7 +156,7 @@ class MongoDB extends Database
         }
 
         $Connection->insert(
-            $meta_table, 
+            $meta_table,
             $data
         );
 
@@ -168,12 +170,12 @@ class MongoDB extends Database
      * @return void
      * @throws \Exception
      */
-    protected function create_meta_from_array(array $meta_data) : void
+    protected function create_meta_from_array(array $meta_data): void
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_meta_table();
 
-        $object_create_microtime = (int) microtime(TRUE) * 1000000;
+        $object_create_microtime = (int) microtime(true) * 1000000;
 
         $data = [
             'meta_object_uuid'                          => $meta_data['meta_object_uuid'],
@@ -197,7 +199,7 @@ class MongoDB extends Database
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function update_record(ActiveRecordInterface $ActiveRecord) : array
+    public function update_record(ActiveRecordInterface $ActiveRecord): array
     {
         /** @var ActiveRecord $ActiveRecord */
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -245,7 +247,7 @@ class MongoDB extends Database
         }
 
         // insert or update record
-        $Connection->update($filter, $Connection::get_tprefix().$ActiveRecord::get_main_table(), $record_data_to_save, TRUE);
+        $Connection->update($filter, $Connection::get_tprefix() . $ActiveRecord::get_main_table(), $record_data_to_save, true);
 
         //return $uuid;
         return ['data' => $record_data, 'meta' => $meta_data ];
@@ -257,7 +259,7 @@ class MongoDB extends Database
      * @throws RunTimeException
      * @throws \Exception
      */
-    public function create_record(array $data) : array
+    public function create_record(array $data): array
     {
         $Connection = static::get_service('ConnectionFactory')->get_connection($this->connection_class, $CR);
         $meta_table = $Connection::get_tprefix() . self::get_main_table();
@@ -277,12 +279,12 @@ class MongoDB extends Database
      * @return array
      * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $index) : array
+    public function &get_data_pointer(string $class, array $index): array
     {
         $ret = [];
         //lookup in DB
 
-        $data = $this->get_data_by($class, $index); 
+        $data = $this->get_data_by($class, $index);
 
         if (count($data)) {
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -312,7 +314,7 @@ class MongoDB extends Database
         return $ret;
     }
     
-    public function &get_data_pointer_for_new_version(string $class, array $primary_index) : array
+    public function &get_data_pointer_for_new_version(string $class, array $primary_index): array
     {
         $data = $this->get_data_pointer($class, $primary_index);
         // TODO fill modified
@@ -320,18 +322,18 @@ class MongoDB extends Database
         return $data;
     }
 
-    public function there_is_pointer_for_new_version(string $class, array $primary_index) : bool
+    public function there_is_pointer_for_new_version(string $class, array $primary_index): bool
     {
         //this store doesnt use pointers
-        return FALSE;
+        return false;
     }
 
-    public function free_pointer(ActiveRecordInterface $ActiveRecord) : void
+    public function free_pointer(ActiveRecordInterface $ActiveRecord): void
     {
         //does nothing
     }
 
-    public function debug_get_data() : array
+    public function debug_get_data(): array
     {
         return [];
     }
@@ -350,7 +352,7 @@ class MongoDB extends Database
         $Connection->delete(['meta_object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL) : iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): iterable
     {
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
@@ -373,16 +375,16 @@ class MongoDB extends Database
             $options['limit'] = $limit;
         }
 
-        if ($sort_by != NULL) {
+        if ($sort_by != null) {
             $options['sort'] = [
                 $sort_by => $sort_desc ? -1 : 1
             ];
         }
 
         $search = [
-            "projection" => NULL
+            "projection" => null
         ];
-        foreach ($index as $field_name=>$field_value) {
+        foreach ($index as $field_name => $field_value) {
             if ($use_like) {
                 $search[$field_name] = new Regex($field_value);
             } else {
@@ -397,6 +399,5 @@ class MongoDB extends Database
         }
 
         return $data;
-    } 
-
+    }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
@@ -7,7 +8,6 @@ use Guzaba2\Base\Base;
 use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\StatusCode;
-
 use JBZoo\Utils\Str;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -54,13 +54,13 @@ class ApplicationMiddleware extends Base implements MiddlewareInterface
      * @return ResponseInterface
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      */
-    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler) : ResponseInterface
+    public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
-        $request_ok = TRUE;
+        $request_ok = true;
         $path = $Request->getUri()->getPath();
         foreach (self::FILE_EXTENSIONS_TO_FILTER as $ext) {
-            if (Str::isEnd($path, '.'.$ext)) {
-                $request_ok = FALSE;
+            if (Str::isEnd($path, '.' . $ext)) {
+                $request_ok = false;
             }
         }
 

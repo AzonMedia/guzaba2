@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Di;
@@ -40,5 +41,4 @@ class Container extends \Azonmedia\Di\CoroutineContainer implements ConfigInterf
 //        //return self::CONFIG_RUNTIME['dependencies']['DefaultCurrentUser']['args']['index'] ?? 0;
 //        return self::CONFIG_RUNTIME['dependencies']['DefaultCurrentUser']['args']['index'] ?? ActiveRecordInterface::INDEX_NEW;
 //    }
-
 }

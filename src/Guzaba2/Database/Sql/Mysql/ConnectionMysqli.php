@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
@@ -37,7 +38,7 @@ abstract class ConnectionMysqli extends Connection
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    public function __construct(array $options, ?callable $after_connect_callback = NULL)
+    public function __construct(array $options, ?callable $after_connect_callback = null)
     {
         $this->connect($options);
         parent::__construct($after_connect_callback);
@@ -49,7 +50,7 @@ abstract class ConnectionMysqli extends Connection
      * @throws QueryException
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      */
-    public function prepare(string $query) : StatementInterface
+    public function prepare(string $query): StatementInterface
     {
         $Statement = $this->prepare_statement($query, StatementMysqli::class, $this);
         return $Statement;
@@ -62,7 +63,7 @@ abstract class ConnectionMysqli extends Connection
      * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
      * @throws \ReflectionException
      */
-    private function connect(array $options) : void
+    private function connect(array $options): void
     {
         static::validate_options($options);
 

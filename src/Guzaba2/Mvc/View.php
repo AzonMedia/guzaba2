@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
 
+declare(strict_types=1);
 
 namespace Guzaba2\Mvc;
 
@@ -21,12 +21,12 @@ class View extends Base
         $this->Response = $Response;
     }
 
-    public function get_response() : ResponseInterface
+    public function get_response(): ResponseInterface
     {
         return $this->Response;
     }
 
-    public function get_structure() : array
+    public function get_structure(): array
     {
         return $this->get_response()->getBody()->getStructure();
     }

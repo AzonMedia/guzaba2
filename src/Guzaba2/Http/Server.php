@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Guzaba2\Http;
@@ -11,8 +12,7 @@ use Guzaba2\Http\Interfaces\ServerInterface;
  * A generic HTTP Server implementation
  * @package Guzaba2\Http
  */
-abstract class Server extends Base
-implements ServerInterface
+abstract class Server extends Base implements ServerInterface
 {
     protected string $host = '';
 
