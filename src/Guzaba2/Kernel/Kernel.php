@@ -21,6 +21,7 @@ namespace Guzaba2\Kernel;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
+use Azonmedia\Utilities\GeneralUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
 use Composer\Util\Platform;
@@ -468,7 +469,7 @@ BANNER;
     public static function get_php_sapi_name(): string
     {
 
-        if (self::get_http_server()) {
+        if (self::get_http_server() instanceof \Guzaba2\Swoole\Server) {
             return 'swoole';
         }
         //TODO - add additional checks to detect cgi - sometimes it may return cli instead of cgi-fcgi
@@ -662,7 +663,7 @@ BANNER;
         } else {
             //when NULL is provided just print the message but do not exit
             //this is to be used in Server context - no point to kill the worker along with the rest of the coroutines
-            if (self::get_http_server()) {
+            if (self::get_http_server() instanceof \Guzaba2\Swoole\Server) {
                 //TODO - check is the server actually started or just defined
                 //if it is started do not exit
             } else {
@@ -1315,14 +1316,30 @@ BANNER;
                 if ($class_path && is_readable($class_path)) {
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
-                    if (strpos($class_name, 'Swoole\\ReplacementClasses') === FALSE) { //do not check these classes
+                    if (strpos($class_name, 'Swoole\\ReplacementClasses') !== FALSE) { //do not check these classes
+                        //it is good to set the correct class name as this is stored in loaded classes
+                        $class_name = substr($class_name, strrpos($class_name, '\\') + 1);
+                        $class_name = str_replace('_', '\\', $class_name);
+                    } else {
                         if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
-                            $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations and is there a parent class that does not exist/can not be loaded.', $class_path, $class_name);
-                            if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class, FALSE)) {
-                                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+
+                            if (!GeneralUtil::check_syntax($class_path, $syntax_error)) {
+                                $message = $syntax_error;
+                                if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class)) {
+                                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                                } else {
+                                    throw new \Exception($message);
+                                }
                             } else {
-                                throw new \Exception($message);
+                                $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations and is there a parent class that does not exist/can not be loaded.', $class_path, $class_name);
+                                if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class)) {
+                                    throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                                } else {
+                                    throw new \Exception($message);
+                                }
                             }
+
+
 
                         }
                     }
@@ -1400,11 +1417,8 @@ BANNER;
      */
     protected static function initialize_class(string $class_name): void
     {
-        if (strpos($class_name, 'Swoole\\ReplacementClasses') !== FALSE) { //do not initialize
-            return;
-        }
-        $RClass = new ReflectionClass($class_name);
 
+        $RClass = new ReflectionClass($class_name);
 
         if ($RClass->hasOwnMethod('_initialize_class')) {
             call_user_func([$class_name, '_initialize_class']);

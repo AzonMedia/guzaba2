@@ -483,7 +483,20 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                 $request_type = $this->getContentType();
                 switch ($request_type) {
                     case ContentType::TYPE_HTML:
-                        throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
+                        //throw new NotImplementedException(sprintf('Parsing a HTML request body is not implemented.'));
+                        $content_types = $this->getHeader('Content-Type') ?? [];
+                        foreach ($content_types as $content_type) {
+                            $parsed_content_type = current(explode(';', $content_type));
+                        }
+                        if ($this->getMethod() === 'POST' && in_array($parsed_content_type, ['application/x-www-form-urlencoded', 'multipart/form-data'] )) {
+                            //$this->parsedBody = $this->getBody()->getContents();
+                            if ($parsed_content_type === 'application/x-www-form-urlencoded') {
+                                parse_str($this->getBody()->getContents(), $result);
+                                $this->parsedBody = $result;
+                            } else {
+                                throw new NotImplementedException(sprintf('Parsing a multipart/form-data request is not implemented.'));
+                            }
+                        }
                         break;
                     case ContentType::TYPE_JSON:
                         $this->parsedBody = json_decode($body_contents, true);
@@ -513,7 +526,7 @@ class Request extends Message implements ServerRequestInterface, \ArrayAccess, \
                         throw new NotImplementedException(sprintf('Parsing an unknown request body is not implemented.'));
                 }
             } else {
-                $this->parsedBody = [];
+                $this->parsedBody = null;
             }
         }
         return $this->parsedBody ?? null;

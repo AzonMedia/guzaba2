@@ -30,7 +30,7 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
     /**
      * @var \Guzaba2\Http\Server
      */
-    protected Server $HttpServer;
+    //protected Server $HttpServer;
 
     /**
      * @var RouterInterface
@@ -42,11 +42,12 @@ class RoutingMiddleware extends Base implements MiddlewareInterface
      * @param Server $HttpServer
      * @param RouterInterface $Router
      */
-    public function __construct(Server $HttpServer, RouterInterface $Router)
+    //public function __construct(Server $HttpServer, RouterInterface $Router)
+    public function __construct(RouterInterface $Router)
     {
         parent::__construct();
 
-        $this->HttpServer = $HttpServer;
+        //$this->HttpServer = $HttpServer;
 
         $this->Router = $Router;
     }

@@ -219,7 +219,7 @@ class Server extends \Guzaba2\Http\Server
 
         $this->SwooleHttpServer->set($options);
 
-        Kernel::set_http_server($this);
+
     }
 
     /**
@@ -317,16 +317,6 @@ class Server extends \Guzaba2\Http\Server
         if (!empty($options['daemonize']) && !file_exists($options['log_file']) && !is_writable(dirname($options['log_file']))) {
             throw new RunTimeException(sprintf(t::_('The specified log_file path %s does not exists but can not be created because the directory %s is not writeable. Please check the filesystem permissions. File directory must be writable by the user executing the server.'), $options['log_file'], dirname($options['log_file'])));
         }
-    }
-
-    public function get_host(): string
-    {
-        return $this->host;
-    }
-
-    public function get_port(): int
-    {
-        return $this->port;
     }
 
     public function start(): void
