@@ -12,7 +12,7 @@ use Guzaba2\Translator\Translator as t;
 /**
  * Class MemoryCache
  * @package Guzaba2\Cache
- * This caches stores data in memory
+ * This caches stores data in PHP memory as a PHP array (meaning no serialization takes place).
  * Useful for caching data within a worker.
  * Please note that in preemptive mode it is not safe to use this cache without locking!
  */

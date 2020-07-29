@@ -170,8 +170,9 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
 
         //if (Coroutine::inCoroutine()) {
-        if (\Swoole\Coroutine::getCid() > 0) {
-            $this->created_in_coroutine_id = \Swoole\Coroutine::getCid();
+        $cid = Kernel::get_cid();
+        if ($cid > 0) {
+            $this->created_in_coroutine_id = $cid;
             //it is too late here to get the trace where was this coroutine created/started
             //this is done at the time the coroutine is started - the backtrace is saved in the Context
             //$this->setTrace(Coroutine::getFullBacktrace());
@@ -247,7 +248,8 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         } else {
             $wid = -1;
         }
-        $cid = \Swoole\Coroutine::getCid();
+
+        $cid = Kernel::get_cid();
         $pre = 'W' . $wid . 'C' . $cid . ': ';// W0C-1 - how is that possible? be inside the worker but not in coroutine?
         $message = $pre . $message;
         return $message;
@@ -310,7 +312,8 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         //self::$CurrentException = NULL;//we need to reset the current exception when this one is being handled (and also destroyed)
         if (!$this->context_changed_flag) {
             //self::set_static('CurrentException', NULL);
-            if (Coroutine::inCoroutine()) {
+            //if (Coroutine::inCoroutine()) {
+            if (Kernel::get_cid() > 0) {
                 if ($this instanceof ContextDestroyedException) {
                     //no context so nothing to reset
                 } else {

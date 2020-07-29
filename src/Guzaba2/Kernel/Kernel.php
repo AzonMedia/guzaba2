@@ -234,6 +234,25 @@ BANNER;
 
     ];
 
+    //
+    /**
+     * @see https://www.php.net/manual/en/function.php-sapi-name.php
+     * Although not exhaustive, the possible return values include aolserver, apache, apache2filter, apache2handler, caudium, cgi (until PHP 5.3), cgi-fcgi, cli, cli-server, continuity, embed, fpm-fcgi, isapi, litespeed, milter, nsapi, phpdbg, phttpd, pi3web, roxen, thttpd, tux, and webjames.
+     *
+     * Guzaba2 supports only cli, apache2handler, cgi-fcgi and a custom one - swoole
+     * swoole will be returned if there is a \Swoole\Server started - until then it returns cli
+     * @see self::get_php_sapi_name()
+     * cgi-fcgi needs special detection as sometimes php_sapi_name() may return cli
+     * The SAPI constants only list the supported APIs by Guzaba
+     * There is a check in @see self::initialize() for the SAPI.
+     */
+    public const SAPI = [
+        'APACHE'        => 'apache2handler',//mod_apache
+        'CLI'           => 'cli',
+        'CGI'           => 'cgi-fcgi',
+        'SWOOLE'        => 'swoole',
+    ];
+
     private function __construct()
     {
     }
@@ -253,6 +272,12 @@ BANNER;
      */
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger, array $options = []): void
     {
+
+        //first and foremost check is the current SAPI supported
+        $sapi = self::get_php_sapi_name();
+        if (!in_array($sapi, self::SAPI)) {
+            throw new \Exception(sprintf('Guzaba2 does not support the %s SAPI.', $sapi));
+        }
 
         if (self::$init_microtime === null) {
             self::$init_microtime = microtime(true);
@@ -433,6 +458,21 @@ BANNER;
             $worker_id = self::$HttpServer->get_worker_id();
         }
         return $worker_id;
+    }
+
+    /**
+     * Corresponds to \php_sapi_name() but with some additional checks and also one additional type - "swoole".
+     * "swoole" is returned if there is \Swoole\Server started.
+     * @return string The name of the SAPI as per php_sapi_name()
+     */
+    public static function get_php_sapi_name(): string
+    {
+
+        if (self::get_http_server()) {
+            return 'swoole';
+        }
+        //TODO - add additional checks to detect cgi - sometimes it may return cli instead of cgi-fcgi
+        return php_sapi_name();
     }
 
     /**
@@ -650,6 +690,7 @@ BANNER;
         //throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
         //self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
         //must throw the exception instead of passing it directly to the exception handler as in Server mode the exception handler does not interrupt the execution
+
         throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
 
@@ -739,7 +780,11 @@ BANNER;
         } else {
             $messages_buffer_arr[] = $message;
         }
-        print $message;
+
+        if (self::get_php_sapi_name() === self::SAPI['SWOOLE']) {
+            print $message;
+        }
+
     }
 
     /**
@@ -775,7 +820,7 @@ BANNER;
      */
     public static function file_put_contents(string $file, string $contents, int $flags = 0): int
     {
-        if (\Swoole\Coroutine::getCid() > 0) {
+        if (self::get_cid() > 0) {
             $ret = \Swoole\Coroutine\System::writeFile($file, $contents, $flags);
         } else {
             $ret = file_put_contents($file, $contents, $flags);
@@ -789,7 +834,7 @@ BANNER;
      */
     public static function file_get_contents(string $file): string
     {
-        if (\Swoole\Coroutine::getCid() > 0) {
+        if (self::get_cid() > 0) {
             $ret = \Swoole\Coroutine\System::readFile($file);
         } else {
             $ret = file_get_contents($file);
@@ -1164,9 +1209,8 @@ BANNER;
     public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
     {
         $Logger = self::get_logger();
-        if (\Swoole\Coroutine::getCid() > 0) {
-            //$message = 'Coroutine #'.\Swoole\Coroutine::getCid().': '.$message;
-            $message = sprintf(t::_('Coroutine #%s: %s'), \Swoole\Coroutine::getCid(), $message);
+        if (self::get_cid() > 0) {
+            $message = sprintf(t::_('Coroutine #%s: %s'), self::get_cid(), $message);
         }
         if (self::get_http_server()) {
             //$message = 'Worker #'.self::get_worker_id().': '.$message;
@@ -1177,7 +1221,19 @@ BANNER;
         return true;
     }
 
-
+    /**
+     * Returns the current coroutine if it is in swoole contex and there is a coroutine.
+     * Otherwise returns -1.
+     * @return int
+     */
+    public static function get_cid(): int
+    {
+        $cid = -1;
+        if (extension_loaded('swoole')) {
+            $cid = \Swoole\Coroutine::getCid();//this may also return -1
+        }
+        return $cid;
+    }
 
     /////////////////////////
     /// PROTECTED METHODS ///
@@ -1194,7 +1250,14 @@ BANNER;
 
         Kernel::printk(sprintf(t::_('Initialization at: %s %s %s'), self::$init_microtime, date('Y-m-d H:i:s'), date_default_timezone_get()) . PHP_EOL);
 
-        Kernel::printk(sprintf(t::_('Versions: PHP %s, Swoole %s, Guzaba %s') . PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        if (extension_loaded('swoole')) {
+            Kernel::printk(sprintf(t::_('Versions: PHP %s, Swoole %s, Guzaba %s') . PHP_EOL, PHP_VERSION, SWOOLE_VERSION, Kernel::FRAMEWORK_VERSION));
+        } elseif (self::get_php_sapi_name() === self::SAPI['APACHE']) {
+            Kernel::printk(sprintf(t::_('Versions: PHP %s, Apache %s, Guzaba %s') . PHP_EOL, PHP_VERSION, apache_get_version(), Kernel::FRAMEWORK_VERSION));
+        } else {
+            Kernel::printk(sprintf(t::_('Versions: PHP %s, Guzaba %s') . PHP_EOL, PHP_VERSION, Kernel::FRAMEWORK_VERSION));
+        }
+
         Kernel::printk(SysUtil::get_basic_sysinfo() . PHP_EOL);
 
         self::printk(PHP_EOL);
@@ -1230,11 +1293,13 @@ BANNER;
      */
     protected static function autoloader(string $class_name): bool
     {
+
         $ret = false;
 
         foreach (self::$autoloader_lookup_paths as $namespace_base => $lookup_path) {
             //needed because swoole is not available on windows and CI may run on windows.
-            if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
+            //if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' && strpos($class_name, 'ReplacementClasses')) {
+            if (extension_loaded('swoole') && strpos($class_name, 'Swoole\\ReplacementClasses') !== FALSE) {
                 continue;
             }
 
@@ -1251,8 +1316,13 @@ BANNER;
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
                     if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
-                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations.', $class_path, $class_name);
-                        throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations and is there a parent class that does not exist/can not be loaded.', $class_path, $class_name);
+                        if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class, FALSE)) {
+                            throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                        } else {
+                            throw new \Exception($message);
+                        }
+
                     }
                     self::initialize_class($class_name);
                     self::$loaded_classes[$class_path] = $class_name;
@@ -1299,7 +1369,7 @@ BANNER;
         $ret = null;
 
         try {
-            if (\Swoole\Coroutine::getCid() > 0) {
+            if (self::get_cid() > 0) {
                 $class_source = \Swoole\Coroutine::readFile($class_path);
             } else {
                 $class_source = file_get_contents($class_path);

@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Guzaba2\Base\Traits;
 
+use Guzaba2\Kernel\Kernel;
+
 trait ContextAware
 {
     protected $created_in_coroutine_id = 0;
 
     protected function set_created_coroutine_id(): void
     {
-        $cid = \Swoole\Coroutine::getCid();
+        //$cid = \Swoole\Coroutine::getCid();
+        $cid = Kernel::get_cid();
         if ($cid > 0) {
             $this->created_in_coroutine_id = $cid;
         }

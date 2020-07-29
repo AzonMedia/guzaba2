@@ -212,7 +212,7 @@ class SourceStream
         }
 
         //$class_source = file_get_contents($path);
-        if (\Swoole\Coroutine::getCid() > 0) {
+        if (Kernel::get_cid() > 0) {
             $class_source = \Swoole\Coroutine::readFile($path);
         } else {
             $class_source = file_get_contents($path);
