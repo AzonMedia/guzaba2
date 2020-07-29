@@ -1315,14 +1315,16 @@ BANNER;
                 if ($class_path && is_readable($class_path)) {
                     self::require_class($class_path, $class_name);
                     //the file may exist but it may not contain the needed file
-                    if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
-                        $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations and is there a parent class that does not exist/can not be loaded.', $class_path, $class_name);
-                        if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class, FALSE)) {
-                            throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
-                        } else {
-                            throw new \Exception($message);
-                        }
+                    if (strpos($class_name, 'Swoole\\ReplacementClasses') === FALSE) { //do not check these classes
+                        if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
+                            $message = sprintf('The file %s is readable but does not contain the class/interface/trait %s. Please check the class and namespace declarations and is there a parent class that does not exist/can not be loaded.', $class_path, $class_name);
+                            if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class, FALSE)) {
+                                throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
+                            } else {
+                                throw new \Exception($message);
+                            }
 
+                        }
                     }
                     self::initialize_class($class_name);
                     self::$loaded_classes[$class_path] = $class_name;
@@ -1398,6 +1400,9 @@ BANNER;
      */
     protected static function initialize_class(string $class_name): void
     {
+        if (strpos($class_name, 'Swoole\\ReplacementClasses') !== FALSE) { //do not initialize
+            return;
+        }
         $RClass = new ReflectionClass($class_name);
 
 
