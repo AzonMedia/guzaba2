@@ -2,7 +2,7 @@
 
 ## Overview
 
-Why yet another PHP framework? Guzaba2 (and Guzaba1) were created because there was no other framework providing:
+Why yet another PHP framework? Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/root/guzaba-framework-v0.7), [docs](http://gitlab.guzaba.org/root/guzaba-framework/-/wikis/home)) were created because there was no other framework providing:
 - nested transactions - supports partial transaction rollback and the transaction can continue and commit
 - automatic transaction rollback on abandoning the scope be it becase of an exception or a return ([SBRM](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization))
 - callbacks on various transaction events - you can add conditional block if the current (be it the master or nested) transaction commits or rollbacks
@@ -42,7 +42,8 @@ And some specifics:
 
 And what does not support (and probably never will):
 - the ORM does not aim to replace SQL thus there is no support for creating SQL queries with a replacement language or creating queries all with PHP objects/methods.
-The reasoning is that type of projects (large, complex depending on DB specifics) can not avoid the manual writing and optimization of (very) large queries and DB migration from one vendor to another is not considered 9as the software depends on the specifics of the DB).
+The reasoning is that type of projects (large, complex depending on DB specifics) can not avoid the manual writing and optimization of (very) large queries 
+and DB migration from one vendor to another is not considered (as the software depends on the specifics of the DB).
 - there is no automatic schema generation based on PHP classes/structures. The reverse logic is in place - the framework configures the objects based on the DB schema.
 
 The overall reasoning is that the framework is not to blurr or hide the backend storage details but instead to make it easier to work with it and to reduce the human errors related to its use.
