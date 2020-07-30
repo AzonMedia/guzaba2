@@ -10,14 +10,14 @@ use Guzaba2\Application\Application;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
-use Guzaba2\Http\Body\Stream;
-use Guzaba2\Http\Body\Structured;
-use Guzaba2\Http\ContentType;
-use Guzaba2\Http\Method;
+use Azonmedia\Http\Body\Stream;
+use Azonmedia\Http\Body\Structured;
+use Azonmedia\Http\ContentType;
+use Azonmedia\Http\Method;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\RequestHandler;
 use Guzaba2\Http\Response;
-use Guzaba2\Http\StatusCode;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Server;
 use Guzaba2\Swoole\SwooleToGuzaba;
@@ -116,7 +116,8 @@ class Request extends HandlerBase
 
             //TODO - this may be reworked to reroute to a new route (provided in the constructor) instead of providing the actual response in the constructor
             $DefaultResponse = $this->DefaultResponse;
-            if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+            //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+            if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
                 $DefaultResponse->getBody()->rewind();
                 $structure = ['message' => $DefaultResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
@@ -163,7 +164,8 @@ class Request extends HandlerBase
             //$DefaultResponseBody->write('Internal server/application error occurred.');
             //$PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
             $PsrResponse = $this->ServerErrorResponse;
-            if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+            //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+            if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
                 $PsrResponse->getBody()->rewind();
                 $structure = ['message' => $PsrResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
@@ -202,7 +204,8 @@ class Request extends HandlerBase
                     $time_str = (round($served_in_time, Kernel::MICROTIME_ROUNDING) * 1_000_000) . ' MICROSECONDS';
                 }
 
-                if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
+                //if ($PsrRequest->getMethodConstant() === Method::HTTP_GET && $served_in_time > 0.005) {
+                if (Method::get_method_constant($PsrRequest) === Method::HTTP_GET && $served_in_time > 0.005) {
                     $slow_message = __CLASS__ . ': ' . 'Slow response of ' . $time_str . ' to ' . $PsrRequest->getMethod() . ' request detected (more than 5 milliseconds). Dumping APM data:' . PHP_EOL;
                 } elseif ($served_in_time > 0.050) {
                     $slow_message = __CLASS__ . ': ' . 'Slow response of ' . $time_str . ' to ' . $PsrRequest->getMethod() . ' request detected (more than 50 milliseconds). Dumping APM data:' . PHP_EOL;
@@ -218,7 +221,8 @@ class Request extends HandlerBase
             $message = '';
             if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK) {
                 //on failure print additional information if found
-                if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
+                //if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
+                if (ContentType::get_content_type_from_request($PsrResponse) === ContentType::TYPE_JSON) {
                     $PsrResponse->getBody()->rewind();
                     $contents = $PsrResponse->getBody()->getContents();
                     $PsrResponse->getBody()->rewind();
@@ -232,7 +236,8 @@ class Request extends HandlerBase
             if (Application::is_development()) {
                 if ($PsrResponse->getStatusCode() === StatusCode::HTTP_BAD_REQUEST) {
                     //on bad requests dump the request
-                    if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+                    //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
+                    if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
                         $PsrRequest->getBody()->rewind();
                         $contents = $PsrRequest->getBody()->getContents();
                         $PsrRequest->getBody()->rewind();

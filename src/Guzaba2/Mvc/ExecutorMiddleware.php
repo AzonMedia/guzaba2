@@ -14,14 +14,14 @@ use Guzaba2\Base\Exceptions\ClassValidationException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Guzaba2\Http\Body\Str;
-use Guzaba2\Http\Body\Stream;
-use Guzaba2\Http\Method;
+use Azonmedia\Http\Body\Str;
+use Azonmedia\Http\Body\Stream;
+use Azonmedia\Http\Method;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\Server;
-use Guzaba2\Http\Body\Structured;
-use Guzaba2\Http\ContentType;
-use Guzaba2\Http\StatusCode;
+use Azonmedia\Http\Body\Structured;
+use Azonmedia\Http\ContentType;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Kernel\Runtime;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
@@ -162,7 +162,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
 
-        $requested_content_type = $Request->getContentType();
+        //$requested_content_type = $Request->getContentType();
+        $requested_content_type = ContentType::get_content_type_from_request($Request);
 
 //        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
 //            $requested_content_type = $this->override_html_content_type;
@@ -180,7 +181,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $body_params = $Request->getParsedBody();
 
                 if ($body_params) {
-                    if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
+                    //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
+                    //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
+                    if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
                         if ($repeating_arguments = array_intersect(array_keys($controller_arguments), array_keys($body_params))) {
                             //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
                             $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true));
@@ -200,7 +203,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
                 }
                 if ($uploaded_files = $Request->getUploadedFiles()) {
-                    if (in_array($Request->getMethodConstant(), [Method::HTTP_POST])) {
+                    //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST])) {
+                    //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST])) {
+                    if (Method::get_method_constant($Request) & Method::HTTP_POST) {
                         if ($uploaded_files) {
                             if ($repeating_arguments = array_intersect($controller_arguments, array_keys($uploaded_files))) {
                                 $message = sprintf(t::_('The following arguments are present in both the Uploaded Files and the request BODY or PATH: %s.'), print_r(array_values($repeating_arguments), true));
@@ -435,7 +440,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     protected function per_controller_php_view_handler(RequestInterface $Request, ResponseInterface $Response): ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
-        $content_type = $Request->getContentType();
+        //$content_type = $Request->getContentType();
+        $content_type = ContentType::get_content_type_from_request($Request);
         //html null and the rest...
         //if the callable is a class and this class is a controller then we can do a lookup for a corresponding view
         //the first element may be a class or an instance so is_a() should be used
@@ -505,7 +511,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     protected function per_action_php_view_handler(RequestInterface $Request, ResponseInterface $Response): ResponseInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
-        $content_type = $Request->getContentType();
+        //$content_type = $Request->getContentType();
+        $content_type = ContentType::get_content_type_from_request($Request);
         if (is_array($controller_callable) && isset($controller_callable[0]) && is_a($controller_callable[0], Controller::class, true)) {
             // Resolving the view script file path
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);

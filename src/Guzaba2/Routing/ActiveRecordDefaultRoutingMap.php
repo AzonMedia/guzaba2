@@ -8,7 +8,7 @@ use Azonmedia\Routing\RoutingMapArray;
 use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Guzaba2\Http\Method;
+use Azonmedia\Http\Method;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;

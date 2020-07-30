@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Guzaba2\Mvc;
 
 use Azonmedia\Routing\Interfaces\RouterInterface;
+use Azonmedia\Http\Body\Stream;
+use Azonmedia\Http\Method;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Base\Base;
-use Guzaba2\Http\Body\Stream;
-use Guzaba2\Http\Method;
 use Guzaba2\Http\Server;
-use Guzaba2\Http\StatusCode;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

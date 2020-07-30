@@ -6,16 +6,16 @@ namespace Guzaba2\Httpd\Handlers;
 
 
 use Azonmedia\Exceptions\InvalidArgumentException;
+use Azonmedia\Http\Body\Stream;
+use Azonmedia\Http\ContentType;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Guzaba2\Http\Body\Stream;
-use Guzaba2\Http\ContentType;
 use Guzaba2\Http\Interfaces\ServerInterface;
 use Guzaba2\Http\QueueRequestHandler;
 use Guzaba2\Http\RequestHandler;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\Server;
-use Guzaba2\Http\StatusCode;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -118,16 +118,22 @@ class Request extends Base
             $QueueRequestHandler->add_middleware($Middleware);
         }
         $PsrResponse = $QueueRequestHandler->handle($PsrRequest);
-        $this->print_output($PsrResponse);
+        $this->emit($PsrResponse);
 
     }
 
+    /**
+     * Invokes self::handle()
+     */
     public function __invoke(): void
     {
         $this->handle();
     }
 
-    protected function print_output(ResponseInterface $Response): void
+    /**
+     * @param ResponseInterface $Response
+     */
+    protected function emit(ResponseInterface $Response): void
     {
         $ResponseEmitter = new ResponseEmitter();
         $ResponseEmitter->emit($Response);

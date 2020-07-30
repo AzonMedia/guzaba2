@@ -44,6 +44,7 @@
         "azonmedia/apm": "dev-master",
         "azonmedia/watchdog": "dev-master",
         "azonmedia/exceptions": "dev-master",
+        "azonmedia/http": "dev-master",
 
         "jbzoo/utils": "^2.3",
         "ramsey/uuid": "^3.8",

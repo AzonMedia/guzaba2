@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Routing;
 
-use Guzaba2\Http\Method;
+use Azonmedia\Http\Method;
 
 /**
  * Class RoutingMapArray

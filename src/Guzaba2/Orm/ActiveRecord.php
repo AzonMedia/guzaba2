@@ -9,6 +9,8 @@ use Azonmedia\Lock\Interfaces\LockManagerInterface;
 use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
+use Azonmedia\Http\Body\Structured;
+use Azonmedia\Http\Method;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -16,8 +18,6 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Traits\StaticStore;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
-use Guzaba2\Http\Body\Structured;
-use Guzaba2\Http\Method;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Log\LogEntry;
@@ -258,7 +258,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
-            if ($Request && $Request->getMethodConstant() === Method::HTTP_GET) {
+            //if ($Request && $Request->getMethodConstant() === Method::HTTP_GET) {
+            if ($Request && Method::get_method_constant($Request) === Method::HTTP_GET) {
                 $this->read_only_flag = true;
             }
         }

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\Traits;
 
+use Azonmedia\Http\Method;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Coroutine\Coroutine;
-use Guzaba2\Http\Method;
 use Guzaba2\Orm\Store\Interfaces\StoreTransactionInterface;
 use Guzaba2\Orm\Store\Memory;
 use Guzaba2\Orm\Store\MemoryTransaction;

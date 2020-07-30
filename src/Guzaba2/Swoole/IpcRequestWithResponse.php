@@ -2,7 +2,7 @@
 
 namespace Guzaba2\Swoole;
 
-use Guzaba2\Http\Method;
+use Azonmedia\Http\Method;
 use Guzaba2\Swoole\Interfaces\IcpRequestWithResponseInterface;
 use Guzaba2\Swoole\Interfaces\IpcResponseInterface;
 

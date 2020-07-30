@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace Guzaba2\Orm;
 
 use Azonmedia\Utilities\GeneralUtil;
+use Azonmedia\Http\Body\Structured;
+use Azonmedia\Http\Method;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Guzaba2\Http\Body\Structured;
 use Guzaba2\Http\Response;
-use Guzaba2\Http\StatusCode;
 use Guzaba2\Mvc\ActiveRecordController;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
-use Guzaba2\Http\Method;
-use http\Exception\InvalidArgumentException;
-use Psr\Http\Message\ResponseInterface;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class ActiveRecordDefaultController
@@ -82,7 +82,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
                 return $Response;
             }
 
-            if (in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
+            //if (in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
+            if (in_array(Method::get_method_constant($this->get_request()), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
                 //$this->ActiveRecord = new $route_meta_data['orm_class']();
                 $this->ActiveRecord = new $crud_class_name();
             } else {
