@@ -62,9 +62,37 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
 
     abstract public function fetch_all(): array;
 
-    abstract public function fetchRow(string $column_name = '') /* mixed */;
+    public function fetch_row(string $column_name = '') /* mixed */
+    {
+        return $this->fetchRow($column_name);
+    }
 
-    abstract public function fetch_row(string $column_name = '') /* mixed */;
+    public function fetchRow(string $column_name = '') /* mixed */
+    {
+        //the data is already fetched on execute()
+        //$data = $this->NativeStatement->fetchAll();
+        $data = $this->fetchAll();
+        if (count($data)) {
+            $row = $data[0];
+            if ($column_name) {
+                if (array_key_exists($column_name, $row)) {
+                    $ret = $row[$column_name];
+                } else {
+                    throw new ResultException(sprintf(t::_('The column named "%s" does not exist in the fetched data.'), $column_name));
+                }
+            } else {
+                $ret = $row;
+            }
+        } else {
+            if ($column_name) {
+                $ret = null;
+            } else {
+                $ret = [];
+            }
+        }
+
+        return $ret;
+    }
 
     public function get_connection(): Connection
     {

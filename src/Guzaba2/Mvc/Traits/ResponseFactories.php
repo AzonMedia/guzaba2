@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Guzaba2\Mvc\Traits;
 
-use Guzaba2\Http\Body\Str;
-use Guzaba2\Http\Body\Stream;
-use Guzaba2\Http\Body\Structured;
+use Azonmedia\Http\Body\Str;
+use Azonmedia\Http\Body\Stream;
+use Azonmedia\Http\Body\Structured;
 use Guzaba2\Http\Response;
-use Guzaba2\Http\StatusCode;
+use Azonmedia\Http\StatusCode;
 use Guzaba2\Mvc\Exceptions\InterruptControllerException;
 use Guzaba2\Translator\Translator as t;
 use Psr\Http\Message\ResponseInterface;

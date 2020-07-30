@@ -76,16 +76,6 @@ class StatementMysqli extends Statement implements StatementInterface
         return $data;
     }
 
-    public function fetch_row(string $column_name = '')
-    {
-        return $this->fetchRow($column_name);
-    }
-
-    public function fetchRow(string $column_name = '') /*mixed*/
-    {
-        //todo
-    }
-
     /**
      * @param array $position_parameters
      * @return array

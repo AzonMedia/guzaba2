@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole;
 
+use Azonmedia\Http\StatusCode;
+use Azonmedia\Http\Body\Stream;
 use Guzaba2\Base\Base;
-use Guzaba2\Http\Body\Stream;
 use Guzaba2\Http\Response;
-use Guzaba2\Http\StatusCode;
 use JBZoo\Utils\Str;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
