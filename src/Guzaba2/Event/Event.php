@@ -13,6 +13,7 @@ use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Interfaces\EventInterface;
+use Guzaba2\Translator\Translator as t;
 
 /**
  * Class Event
@@ -49,13 +50,28 @@ class Event implements ConfigInterface, EventInterface
 
     protected /* mixed */ $event_return = null;
 
+    /**
+     * Event constructor.
+     * @param ObjectInternalIdInterface $Subject
+     * @param string $event_name
+     * @param array $arguments Optionally arguments can be provided. These can be the arguments that were provided to the method or custom set of arguments.
+     * @param null $return_value
+     * @param Event|null $PreviousEvent
+     * @throws InvalidArgumentException
+     * @throws InvalidReturnValueException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public function __construct(ObjectInternalIdInterface $Subject, string $event_name, array $arguments = [], /* mixed*/ $return_value = null, Event $PreviousEvent = null)
     {
         $this->Subject = $Subject;
         $this->event_name = $event_name;
-        if (count($arguments) && $return_value !== null) {
-            throw new InvalidArgumentException(sprintf(t::_('An event can have $arguments or $return_value argument but not both.')));
-        }
+        //it makes sense to allow for both as even in the _after_ event the arguments may be needed
+//        if (count($arguments) && $return_value !== null) {
+//            throw new InvalidArgumentException(sprintf(t::_('An event can have $arguments or $return_value argument but not both.')));
+//        }
         $this->arguments = $arguments;
         $this->return_value = $return_value;
         $this->PreviousEvent = $PreviousEvent;

@@ -17,6 +17,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Azonmedia\Http\Body\Str;
 use Azonmedia\Http\Body\Stream;
 use Azonmedia\Http\Method;
+use Guzaba2\Event\Event;
 use Guzaba2\Http\Response;
 use Guzaba2\Http\Server;
 use Azonmedia\Http\Body\Structured;
@@ -279,11 +280,20 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     public function execute_controller_method(ActiveRecordController $Controller, string $method, array $controller_arguments): ?ResponseInterface
     {
 
+        new Event($this, '_before_execute_controller_method', func_get_args());
+
         $Response = null;
 
         try {
             //checks is there a class permission to execute the given action
-            $Controller::check_class_permission($method);
+            new Event($this, '_before_execute_controller_method_check_permissions', func_get_args());
+            try {
+                $Controller::check_class_permission($method);
+            } finally {
+                new Event($this, '_after_execute_controller_method_check_permissions', func_get_args());
+            }
+
+
 
             $ordered_arguments = [];
 
@@ -332,22 +342,22 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
             if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
-                Kernel::exception_handler($Exception);
+                Kernel::exception_handler($Exception, LogLevel::DEBUG);//this is not a
             }
         } catch (PermissionDeniedException $Exception) {
             $Response = Controller::get_structured_forbidden_response([ 'message' => $Exception->getMessage() ]); //dont use getPrettyMessage for generic and expected exceptions as this one
             if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
-                Kernel::exception_handler($Exception);
+                Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response([ 'message' => $Exception->getMessage() ]);
             if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
-                Kernel::exception_handler($Exception);
+                Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (InvalidArgumentException | ValidationFailedExceptionInterface $Exception) {
             $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getMessage() ]);
             if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
-                Kernel::exception_handler($Exception);
+                Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (BaseException $Exception) {
             $Response = Controller::get_structured_servererror_response([ 'message' => $Exception->getPrettyMessage() ]); //use getPrettymessage for unexpected exceptions like this one
@@ -361,6 +371,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 //                Kernel::exception_handler($Exception);
 //            }
         }
+
+        new Event($this, '_after_execute_controller_method', func_get_args(), $Response);
+
         return $Response;
     }
 

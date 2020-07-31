@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Swoole\Handlers\Http;
 
+use Azonmedia\Apm\Profiler;
 use Azonmedia\Exceptions\InvalidArgumentException;
 use Azonmedia\PsrToSwoole\PsrToSwoole;
 use Guzaba2\Application\Application;
@@ -158,7 +159,7 @@ class Request extends HandlerBase
             //Kernel::printk($message);
             //print 'Last coroutine id '.Coroutine::$last_coroutine_id.PHP_EOL;
         } catch (Throwable $Exception) {
-            Kernel::exception_handler($Exception, null);//sending NULL as exit code means DO NOT EXIT (no point to kill the whole worker - let only this request fail)
+            Kernel::exception_handler($Exception);//this just prints the exception, to terminate the execution (kill the worker) send third argument with exit_code
 
             //$DefaultResponseBody = new Stream();
             //$DefaultResponseBody->write('Internal server/application error occurred.');
@@ -191,6 +192,7 @@ class Request extends HandlerBase
             //Kernel::printk($message);
             //when using log() the worker # is always printed
 
+            new Event($this, '_after_handle');//lets have it before the very last message about the request.
 
             $time_str = '';
             if (Application::is_development()) {
@@ -213,7 +215,9 @@ class Request extends HandlerBase
                     //excellent performance !!!
                 }
                 if (!empty($slow_message)) {
-                    $slow_message .= (string)self::get_service('Apm');
+                    /** @var Profiler $Apm */
+                    $Apm = self::get_service('Apm');
+                    $slow_message .= (string) $Apm;
                     Kernel::log($slow_message, LogLevel::DEBUG);
                 }
             }
@@ -249,7 +253,7 @@ class Request extends HandlerBase
                 }
             }
 
-            new Event($this, '_after_handle');//lets have it before the very last message about the request.
+
 
             $log_message = __CLASS__ . ': ' . $PsrRequest->getMethod() . ':' . $PsrRequest->getUri()->getPath() . ' request of ' . $request_raw_content_length . ' bytes served in ' . $time_str . ' with response: code: ' . $PsrResponse->getStatusCode() . '' . $message . ' content length: ' . $PsrResponse->getBody()->getSize() . $request_str . PHP_EOL;
             Kernel::log($log_message, LogLevel::INFO);

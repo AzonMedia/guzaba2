@@ -233,6 +233,7 @@ BANNER;
         'cnt_master_transctions'                => 0,//this is also the number of commits
         'cnt_nested_transactions'               => 0,
 
+        //'request_handling_time'                 => 0,
     ];
 
     //
@@ -634,7 +635,7 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function exception_handler(\Throwable $Exception, ?int $exit_code = null): void
+    public static function exception_handler(\Throwable $Exception, string $log_level = LogLevel::EMERGENCY, ?int $exit_code = null): void
     {
         //if we reaching this this request/coroutine cant proceed and all own locks should be released
         //then disable the locking for this coroutine
@@ -656,7 +657,7 @@ BANNER;
 
         $output = (string) $Exception;
 
-        self::log($output, LogLevel::EMERGENCY);
+        self::log($output, $log_level);
 
         if ($exit_code !== null) {
             die($exit_code);
@@ -667,6 +668,7 @@ BANNER;
                 //TODO - check is the server actually started or just defined
                 //if it is started do not exit
             } else {
+                //outside swoole context - exit
                 die((string) $Exception);
             }
         }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Guzaba2\Http;
 
+use Azonmedia\Apm\Profiler;
 use Guzaba2\Base\Base;
+use Guzaba2\Event\Event;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -17,6 +19,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class QueueRequestHandler extends Base implements RequestHandlerInterface
 {
+
     protected RequestHandlerInterface $DefaultRequestHandler;
 
     protected array $middleware_arr = [];
@@ -50,7 +53,9 @@ class QueueRequestHandler extends Base implements RequestHandlerInterface
         }
 
         $Middleware = array_shift($this->middleware_arr);
+        new Event($this, '_before_middleware_process', [$Middleware] );
         $Response = $Middleware->process($Request, $this);
+        new Event($this, '_after_middleware_process', [$Middleware] );
         return $Response;
     }
 }
