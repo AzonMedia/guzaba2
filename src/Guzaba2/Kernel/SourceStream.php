@@ -6,6 +6,7 @@ namespace Guzaba2\Kernel;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\DebugUtil;
+use Azonmedia\Utilities\Source;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -204,7 +205,7 @@ class SourceStream
         }
 
 
-        if (Kernel::check_syntax($path, $error)) {
+        if (Source::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
             //throw new AutoloadException($error_str);
             //looks much better if it just stops

@@ -341,22 +341,22 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
 //            self::get_service('Events')::create_event($Controller, '_after_'.$method);//these can replace the response too (to append it)
         } catch (InterruptControllerException $Exception) {
             $Response = $Exception->getResponse();
-            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
                 Kernel::exception_handler($Exception, LogLevel::DEBUG);//this is not a
             }
         } catch (PermissionDeniedException $Exception) {
             $Response = Controller::get_structured_forbidden_response([ 'message' => $Exception->getMessage() ]); //dont use getPrettyMessage for generic and expected exceptions as this one
-            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
                 Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (RecordNotFoundException $Exception) {
             $Response = Controller::get_structured_notfound_response([ 'message' => $Exception->getMessage() ]);
-            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
                 Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (InvalidArgumentException | ValidationFailedExceptionInterface $Exception) {
             $Response = Controller::get_structured_badrequest_response(['message' => $Exception->getMessage() ]);
-            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT']) {
+            if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
                 Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (BaseException $Exception) {

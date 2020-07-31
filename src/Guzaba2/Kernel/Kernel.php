@@ -22,6 +22,7 @@ use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
+use Azonmedia\Utilities\Source;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
 use Composer\Util\Platform;
@@ -575,7 +576,7 @@ BANNER;
                 $url = $Handler->getUrl();
 
                 if ($url && $url[0] === '/') { //skip php://output
-                    $ret = $Logger::getLevelName($Handler->getLevel());
+                    $ret = strtolower($Logger::getLevelName($Handler->getLevel()));//the values of the constants in LogLevel are lowercase
                     break;
                 }
             }
@@ -888,23 +889,23 @@ BANNER;
         return array_key_exists($namespace_base, self::$autoloader_lookup_paths);
     }
 
-    /**
-     * @param string $path
-     * @param string|null $error
-     * @return bool
-     */
-    public static function check_syntax(string $path, ?string &$error = null): bool
-    {
-        exec("php -l {$path} 2>&1", $output, $return);
-        $error = $output[0];
-        return $return ? true : false;
-//        $ret = FALSE;
-//        $output = \shell_exec("php -l {$path} 2>&1");
-//        if (strpos($output, 'No syntax errors detected') === FALSE) {
-//            $ret = TRUE;
-//        }
-//        return $ret;
-    }
+//    /**
+//     * @param string $path
+//     * @param string|null $error
+//     * @return bool
+//     */
+//    public static function check_syntax(string $path, ?string &$error = null): bool
+//    {
+//        exec("php -l {$path} 2>&1", $output, $return);
+//        $error = $output[0];
+//        return $return ? true : false;
+////        $ret = FALSE;
+////        $output = \shell_exec("php -l {$path} 2>&1");
+////        if (strpos($output, 'No syntax errors detected') === FALSE) {
+////            $ret = TRUE;
+////        }
+////        return $ret;
+//    }
 
     public static function get_runtime_configuration(string $class_name): array
     {
@@ -1326,7 +1327,7 @@ BANNER;
                     } else {
                         if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
 
-                            if (!GeneralUtil::check_syntax($class_path, $syntax_error)) {
+                            if (!Source::check_syntax($class_path, $syntax_error)) {
                                 $message = $syntax_error;
                                 if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class)) {
                                     throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);
