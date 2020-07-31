@@ -106,7 +106,7 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
         return [];
     }
 
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table', $action = 'read'): string
     {
         return '';
     }

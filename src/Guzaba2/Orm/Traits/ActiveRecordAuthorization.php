@@ -150,6 +150,19 @@ trait ActiveRecordAuthorization
     }
 
     /**
+     * Checks does the class has the provided $action.
+     * Not every method is an action - @see self::get_class_actions()
+     * @param string $action
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public static function class_has_action(string $action): bool
+    {
+        $class_actions = static::get_class_actions();
+        return in_array($action, $class_actions);
+    }
+
+    /**
      * Returns a list of the actions that the given class supports.
      * These are the standard actions (@see self::get_standard_actions())
      * and also any public method that has an attribute @check_permission, @check_permissions, @is_action (@see self::is_method_action())
@@ -171,7 +184,20 @@ trait ActiveRecordAuthorization
     }
 
     /**
-     * Returns a list of the actions that the given object supports.
+     * Checks does an object of this class has the provided $action.
+     * Not every method is an action - @see self::get_object_actions()
+     * @param string $action
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public static function object_has_action(string $action): bool
+    {
+        $class_actions = static::get_object_actions();
+        return in_array($action, $class_actions);
+    }
+
+    /**
+     * Returns a list of the actions that an object of this class supports.
      * These are the standard actions (@see self::get_standard_actions())
      * and also any public non-static method that has an attribute @check_permission, @check_permissions, @is_action (@see self::is_method_action())
      * @return array

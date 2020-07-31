@@ -1404,9 +1404,13 @@ FROM
     {$from_str}
 WHERE
     {$w_str}
+GROUP BY
+    main_table.{$main_index[0]}
     {$sort_str}
     {$l_str}
 ";
+
+        print $q_data;
 
         $q_count = "
 SELECT
@@ -1415,6 +1419,8 @@ FROM
     {$from_str}
 WHERE
     {$w_str}
+GROUP BY
+    main_table.{$main_index[0]}
 ";
 
 

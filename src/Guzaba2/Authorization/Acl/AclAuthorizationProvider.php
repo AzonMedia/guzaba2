@@ -182,11 +182,20 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
      * @throws \Guzaba2\Base\Exceptions\RunTimeException
      * @throws \ReflectionException
      */
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string
     {
 
         if (!is_a($class, ActiveRecordInterface::class, true)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided class must be of class %s. A %s is provided instead.'), ActiveRecordInterface::class, $class));
+        }
+        if (!$main_table) {
+            throw new InvalidArgumentException(sprintf(t::_('No main_table is provided.')));
+        }
+        if (!$action) {
+            throw new InvalidArgumentException(sprintf(t::_('No action is provided.')));
+        }
+        if (!$class::class_has_action($action)) {
+            throw new InvalidArgumentException(sprintf(t::_('The class %s does not have an action %s.'), $class, $action));
         }
 
 
@@ -205,9 +214,10 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         //the query does not use binding as this would meanthe bind array to be passed by reference as well
         //there is no need either to use binding as the value is generated internally by the framework and not an exernally provided one
         //if binding is to be used it will be best to have a method that accepts the whole assembed query so far, along with the bound parameters and the method to amend both the query and tha array
+        //action is validated against the supported class actions
         $q = "
 INNER JOIN
-    `$acl_table` AS acl_table ON acl_table.class_id = {$acl_permission_class_id} AND acl_table.object_id = main_table.{$main_table_column}
+    `$acl_table` AS acl_table ON acl_table.class_id = {$acl_permission_class_id} AND acl_table.object_id = main_table.{$main_table_column} AND acl_table.action_name = '{$action}' 
         ";
         return $q;
     }

@@ -62,7 +62,7 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
         return;
     }
 
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string
     {
         return '';
     }

@@ -205,7 +205,7 @@ class SourceStream
         }
 
 
-        if (Source::check_syntax($path, $error)) {
+        if (!Source::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
             //throw new AutoloadException($error_str);
             //looks much better if it just stops
