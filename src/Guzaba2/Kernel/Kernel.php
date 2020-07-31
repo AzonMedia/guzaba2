@@ -782,7 +782,8 @@ BANNER;
             $messages_buffer_arr[] = $message;
         }
 
-        if (self::get_php_sapi_name() === self::SAPI['SWOOLE']) {
+        //if (self::get_php_sapi_name() === self::SAPI['SWOOLE']) {
+        if (in_array(self::get_php_sapi_name(), [self::SAPI['SWOOLE'], self::SAPI['CLI']])) {
             print $message;
         }
 
