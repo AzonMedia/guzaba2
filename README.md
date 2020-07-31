@@ -11,7 +11,7 @@ Why yet another PHP framework? Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/r
 - ActiveRecord objects transaction - the objects will have their properties updated automatically if the transaction is rolled back (and you can still save them if needed!)
 - the transaction and transaction manager can be used to implement custom transactions (like filesystem transactions)
 
-And Guzaba2 adds support for: 
+Guzaba2 adds support for: 
 - Swoole based
 - database connection pool
 - automatic deallocation of obtained resources/connections (SBRM)
@@ -21,7 +21,7 @@ And Guzaba2 adds support for:
 - parallel async queries & operations (thanks to swoole coroutines)
 - it can return response in less than 1 msec! ([GuzabaPlatform](https://github.com/AzonMedia/guzaba-platform) with the [request-caching component](https://github.com/AzonMedia/component-request-caching)). This is not a time based/expiration cache but cache based on the actual business logic (update times of various objects/records and what can and cannot be cached)!
 
-And of course the more or less standard things like:
+And some commonly found functionality:
 - PSR-7, PSR-11, PSR-15, PSR-3 (support for PSR-14, PSR-16 and PSR-17 coming)
 - ORM layer with temporal records and logging, multiple backend stores
 - ORM objects propety hooks (setting, getting, validation) and method hooks (before save, after save etc)
@@ -31,7 +31,6 @@ And of course the more or less standard things like:
 - registry
 - dependency injection
 - caching (in memory, redis, memcached)
-- ...(other commonly found functionality)
 
 And some specifics:
 - Guzaba2 currently supports only MySQL and Redis because these are the only database drivers for which Swoole supports coroutines
