@@ -117,7 +117,7 @@ class Request extends HandlerBase
             //TODO - this may be reworked to reroute to a new route (provided in the constructor) instead of providing the actual response in the constructor
             $DefaultResponse = $this->DefaultResponse;
             //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
-            if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
+            if (ContentType::get_content_type_from_message($PsrRequest) === ContentType::TYPE_JSON) {
                 $DefaultResponse->getBody()->rewind();
                 $structure = ['message' => $DefaultResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
@@ -165,7 +165,7 @@ class Request extends HandlerBase
             //$PsrResponse = new \Guzaba2\Http\Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $DefaultResponseBody);
             $PsrResponse = $this->ServerErrorResponse;
             //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
-            if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
+            if (ContentType::get_content_type_from_message($PsrRequest) === ContentType::TYPE_JSON) {
                 $PsrResponse->getBody()->rewind();
                 $structure = ['message' => $PsrResponse->getBody()->getContents()];
                 $json_string = json_encode($structure, JSON_UNESCAPED_SLASHES);
@@ -222,7 +222,7 @@ class Request extends HandlerBase
             if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK) {
                 //on failure print additional information if found
                 //if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
-                if (ContentType::get_content_type_from_request($PsrResponse) === ContentType::TYPE_JSON) {
+                if (ContentType::get_content_type_from_message($PsrResponse) === ContentType::TYPE_JSON) {
                     $PsrResponse->getBody()->rewind();
                     $contents = $PsrResponse->getBody()->getContents();
                     $PsrResponse->getBody()->rewind();
@@ -237,7 +237,7 @@ class Request extends HandlerBase
                 if ($PsrResponse->getStatusCode() === StatusCode::HTTP_BAD_REQUEST) {
                     //on bad requests dump the request
                     //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
-                    if (ContentType::get_content_type_from_request($PsrRequest) === ContentType::TYPE_JSON) {
+                    if (ContentType::get_content_type_from_message($PsrRequest) === ContentType::TYPE_JSON) {
                         $PsrRequest->getBody()->rewind();
                         $contents = $PsrRequest->getBody()->getContents();
                         $PsrRequest->getBody()->rewind();

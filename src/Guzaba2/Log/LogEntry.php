@@ -76,7 +76,7 @@ class LogEntry extends ActiveRecord
      * @param string $class
      * @param string $log_action This would be the method name that was executed on the ORM class (but can be something else)
      * @param string $log_content
-     * @return LogEntry
+     * @return static
      * @throws InvalidArgumentException
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException

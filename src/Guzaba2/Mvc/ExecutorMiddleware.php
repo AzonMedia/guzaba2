@@ -163,7 +163,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
 
         //$requested_content_type = $Request->getContentType();
-        $requested_content_type = ContentType::get_content_type_from_request($Request);
+        $requested_content_type = ContentType::get_content_type_from_message($Request);
 
 //        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
 //            $requested_content_type = $this->override_html_content_type;
@@ -441,7 +441,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         //$content_type = $Request->getContentType();
-        $content_type = ContentType::get_content_type_from_request($Request);
+        $content_type = ContentType::get_content_type_from_message($Request);
         //html null and the rest...
         //if the callable is a class and this class is a controller then we can do a lookup for a corresponding view
         //the first element may be a class or an instance so is_a() should be used
@@ -512,7 +512,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     {
         $controller_callable = $Request->getAttribute('controller_callable');
         //$content_type = $Request->getContentType();
-        $content_type = ContentType::get_content_type_from_request($Request);
+        $content_type = ContentType::get_content_type_from_message($Request);
         if (is_array($controller_callable) && isset($controller_callable[0]) && is_a($controller_callable[0], Controller::class, true)) {
             // Resolving the view script file path
             $controller_class = is_string($controller_callable[0]) ? $controller_callable : get_class($controller_callable[0]);

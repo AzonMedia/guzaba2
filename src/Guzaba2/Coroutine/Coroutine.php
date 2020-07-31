@@ -16,8 +16,6 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Interfaces\ConfigInterface;
 use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Base\Traits\SupportsObjectInternalId;
-//use Guzaba2\Database\Interfaces\ConnectionInterface;
-//use Guzaba2\Kernel\Kernel;
 use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Coroutine\Exceptions\ContextDestroyedException;
 use Guzaba2\Event\Events;
@@ -26,7 +24,6 @@ use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Execution\CoroutineExecution;
 use Psr\Http\Message\RequestInterface;
-use SebastianBergmann\CodeCoverage\Report\PHP;
 
 /**
  * Class Coroutine
