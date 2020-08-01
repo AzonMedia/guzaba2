@@ -24,20 +24,33 @@ interface AuthorizationProviderInterface
      */
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool;
 
+    /**
+     * Returns a boolean can the provided $role perform the $action on the ActiveRecord $class.
+     * @param Role $Role
+     * @param string $action
+     * @param string $class
+     * @return bool
+     */
     public function role_can_on_class(Role $Role, string $action, string $class): bool;
 
     /**
-     * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord.
+     * Returns a boolean can role of the currently logged user perform the $action on the object $ActiveRecord.
      * @param string $action
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
     public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool;
 
+    /**
+     * Returns a boolean can role of the currently logged user perform the $action on the the ActiveRecord $class.
+     * @param string $action
+     * @param string $class
+     * @return bool
+     */
     public function current_role_can_on_class(string $action, string $class): bool;
 
     /**
-     * Checks can the provided $role perform the $action on the object $ActiveRecord and if cant a PermissionDeniedException is thrown.
+     * Checks can the provided $role perform the $action on the object $ActiveRecord and if not a PermissionDeniedException is thrown.
      * @throws PermissionDeniedException
      * @param string $action
      * @param ActiveRecordInterface $ActiveRecord
@@ -45,6 +58,11 @@ interface AuthorizationProviderInterface
      */
     public function check_permission(string $action, ActiveRecordInterface $ActiveRecord): void;
 
+    /**
+     * Checks can the provided $role perform the $action on the object ActiveRecord $class and if not a PermissionDeniedException is thrown.
+     * @param string $action
+     * @param string $class_name
+     */
     public function check_class_permission(string $action, string $class_name): void;
 
     /**
@@ -121,5 +139,5 @@ interface AuthorizationProviderInterface
      * @param string $main_table The main table from the main query to which the join should be applied
      * @return string The join part of the stamement that needs to be included in the query
      */
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table'): string;
+    public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string;
 }

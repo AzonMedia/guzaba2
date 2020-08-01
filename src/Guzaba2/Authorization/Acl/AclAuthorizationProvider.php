@@ -214,7 +214,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         //the query does not use binding as this would meanthe bind array to be passed by reference as well
         //there is no need either to use binding as the value is generated internally by the framework and not an exernally provided one
         //if binding is to be used it will be best to have a method that accepts the whole assembed query so far, along with the bound parameters and the method to amend both the query and tha array
-        //action is validated against the supported class actions
+        //action is validated against the supported class actions - no sql injection is possible
         $q = "
 INNER JOIN
     `$acl_table` AS acl_table ON acl_table.class_id = {$acl_permission_class_id} AND acl_table.object_id = main_table.{$main_table_column} AND acl_table.action_name = '{$action}' 
