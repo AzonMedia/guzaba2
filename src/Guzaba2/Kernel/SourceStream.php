@@ -6,7 +6,7 @@ namespace Guzaba2\Kernel;
 
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\DebugUtil;
-use Azonmedia\Utilities\Source;
+use Azonmedia\Utilities\SourceUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -48,6 +48,15 @@ class SourceStream
 
     private static int $registry_mtime = 0;
 
+    /**
+     * Is the SourceStream initialized
+     * @var bool
+     */
+    protected static bool $is_initialized_flag = false;
+
+    /**
+     * A list of the supported options that can be passed to the initialize() method
+     */
     public const SUPPORTED_CLASS_OPTIONS = [
         'class_cache_enabled'       => 'bool',
         'class_cache_dir'           => 'string',
@@ -61,6 +70,11 @@ class SourceStream
      */
     public static function initialize(array $options): void
     {
+
+        if (self::is_initialized()) {
+            throw new \RuntimeException(sprintf(t::_('The %s is already initialized. Can not call %s() twice.'), __CLASS__, __METHOD__));
+        }
+
         ArrayUtil::validate_array($options, self::SUPPORTED_CLASS_OPTIONS, $errors);
         if ($errors) {
             throw new InvalidArgumentException(sprintf(t::_('Invalid $options provided to %1$s. %2$s'), __METHOD__, implode(' ', $errors)));
@@ -78,6 +92,15 @@ class SourceStream
                 }
             }
         }
+    }
+
+    /**
+     * Isthe SourceStream initialized.
+     * @return bool
+     */
+    public static function is_initialized(): bool
+    {
+        return self::$is_initialized_flag;
     }
 
     public function stream_open($path, $mode, $options, &$opened_path)
@@ -205,7 +228,7 @@ class SourceStream
         }
 
 
-        if (!Source::check_syntax($path, $error)) {
+        if (!SourceUtil::check_syntax($path, $error)) {
             $message = sprintf(t::_('The file %s contains errors. %s'), $path, $error);
             //throw new AutoloadException($error_str);
             //looks much better if it just stops

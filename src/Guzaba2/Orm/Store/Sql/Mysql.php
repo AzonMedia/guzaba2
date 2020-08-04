@@ -1410,7 +1410,6 @@ GROUP BY
     {$l_str}
 ";
 
-        print $q_data;
 
         $q_count = "
 SELECT

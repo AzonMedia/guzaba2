@@ -22,7 +22,7 @@ use Azonmedia\Reflection\ReflectionClass;
 use Azonmedia\Registry\Interfaces\RegistryInterface;
 use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
-use Azonmedia\Utilities\Source;
+use Azonmedia\Utilities\SourceUtil;
 use Azonmedia\Utilities\StackTraceUtil;
 use Azonmedia\Utilities\SysUtil;
 use Composer\Util\Platform;
@@ -272,9 +272,15 @@ BANNER;
     /**
      * @param RegistryInterface $Registry
      * @param LoggerInterface $Logger
+     * @param array $options Additional options to be passed to the Kernel or to the SourceStream class
+     * The options to the SourceStream class must be under $options[SourceStream::class]
      */
     public static function initialize(RegistryInterface $Registry, LoggerInterface $Logger, array $options = []): void
     {
+
+        if (self::is_initialized()) {
+            throw new \RuntimeException(sprintf(t::_('The %s is already initialized. Can not call %s() twice.'), __CLASS__, __METHOD__));
+        }
 
         //first and foremost check is the current SAPI supported
         $sapi = self::get_php_sapi_name();
@@ -1327,7 +1333,7 @@ BANNER;
                     } else {
                         if (!class_exists($class_name) && !interface_exists($class_name) && !trait_exists($class_name)) {
 
-                            if (!Source::check_syntax($class_path, $syntax_error)) {
+                            if (!SourceUtil::check_syntax($class_path, $syntax_error)) {
                                 $message = $syntax_error;
                                 if (class_exists(\Guzaba2\Kernel\Exceptions\AutoloadException::class)) {
                                     throw new \Guzaba2\Kernel\Exceptions\AutoloadException($message);

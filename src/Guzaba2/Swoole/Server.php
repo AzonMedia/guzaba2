@@ -330,11 +330,13 @@ class Server extends \Guzaba2\Http\Server
 
         //currently no validation or handling of static_handler_locations - instead of this the Azonmedia\Urlrewriting can be used
 
+        //trigger the event
+        self::get_service('Events')->create_event($this, '_before_start');
 
+        //and then print the final startup messages
         $this->print_server_start_messages();
 
         //just before the server is started enable the coroutine hooks (not earlier as these will be in place but we will not be in coroutine cotext yet and this will trigger an error - for example when exec() is used)
-        self::get_service('Events')->create_event($this, '_before_start');
         \Swoole\Runtime::enableCoroutine(true);//we will be running everything in coroutine context and makes sense to enable all hooks
 
         $this->start_microtime = microtime(true);
