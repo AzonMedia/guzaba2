@@ -1396,7 +1396,7 @@ INNER JOIN
 //        aliases.object_alias_object_id = meta.meta_object_id
 //        ";
 
-
+//no need of GROUP BY main_table.{$main_index[0]}
         $q_data = "
 SELECT
     {$select_str}
@@ -1404,13 +1404,14 @@ FROM
     {$from_str}
 WHERE
     {$w_str}
-GROUP BY
-    main_table.{$main_index[0]}
+
+    
     {$sort_str}
     {$l_str}
 ";
 
 
+        //no need of GROUP BY main_table.{$main_index[0]}
         $q_count = "
 SELECT
     COUNT(*) as total_found_rows
@@ -1418,8 +1419,8 @@ FROM
     {$from_str}
 WHERE
     {$w_str}
-GROUP BY
-    main_table.{$main_index[0]}
+
+    
 ";
 
 
