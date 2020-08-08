@@ -13,6 +13,8 @@ interface UserInterface
 
     public function get_id()  /* int|string */;
 
+    public function get_role(): Role ;
+
     public function enable(): void;
 
     public function disable(): void;

@@ -999,7 +999,7 @@ ON DUPLICATE KEY UPDATE
      * @throws RecordNotFoundException
      * @throws \ReflectionException
      */
-    public function &get_data_pointer(string $class, array $index): array
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
         if (array_key_exists('<', $index)) {
             if (!$index['<']) {
@@ -1031,7 +1031,7 @@ ON DUPLICATE KEY UPDATE
             unset($index['>']);
         }
         //string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL
-        $data = $this->get_data_by($class, $index, 0, 0, false, $sort_by, $sort_desc);
+        $data = $this->get_data_by($class, $index, 0, 0, false, $sort_by, $sort_desc, $total_rows, $permission_checks_disabled);
 
         if (count($data)) {
             $primary_index = $class::get_index_from_data($data[0]);
@@ -1044,9 +1044,9 @@ ON DUPLICATE KEY UPDATE
             $ret['meta'] = $this->get_meta($class, current($primary_index));
             //$data contains also meta data
             $record_data = [];
-            $sturcutre_data = $this->get_storage_columns_data($class);
+            $sturcture_data = $this->get_storage_columns_data($class);
 
-            $column_names = array_map(fn($column_data) => $column_data['COLUMN_NAME'], $sturcutre_data);
+            $column_names = array_map(fn($column_data) => $column_data['COLUMN_NAME'], $sturcture_data);
 //            $column_names = [];
 //            foreach ($structure_data as $structure_datum) {
 //                $column_names
@@ -1219,7 +1219,7 @@ WHERE
      * @throws BadMethodCallException
      * @throws \ReflectionException
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null, bool $permission_checks_disabled = false): array
     {
 
         //initialization
@@ -1333,10 +1333,12 @@ WHERE
         $full_main_table_name = $Connection::get_tprefix() . $table_name;
         $roles_table = $Connection::get_tprefix() . Role::get_main_table();
         $from_str = "`$full_main_table_name` AS main_table";
-        if ($class::uses_permissions()) {
+        //if ($class::uses_permissions()) {
+        if ($class::uses_permissions() && !$permission_checks_disabled) {
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
             $AuthorizationProvider = self::get_service('AuthorizationProvider');
-            $from_str .= $AuthorizationProvider->get_sql_permission_check($class);
+            //$from_str .= $AuthorizationProvider::get_sql_permission_check($class);
+            $w[] = "main_table.{$main_index[0]} = (".$AuthorizationProvider::get_sql_permission_check($class).")";
         }
 
         $w_str = implode(" AND ", $w);
@@ -1404,12 +1406,14 @@ FROM
     {$from_str}
 WHERE
     {$w_str}
-
     
     {$sort_str}
     {$l_str}
 ";
 
+print $q_data;
+
+print_r($b);
 
         //no need of GROUP BY main_table.{$main_index[0]}
         $q_count = "
@@ -1420,7 +1424,6 @@ FROM
 WHERE
     {$w_str}
 
-    
 ";
 
 

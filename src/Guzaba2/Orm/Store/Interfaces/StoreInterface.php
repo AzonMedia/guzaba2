@@ -31,7 +31,7 @@ interface StoreInterface
 
     public function update_record(ActiveRecordInterface $ActiveRecord): array;
 
-    public function &get_data_pointer(string $class, array $index): array;
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array;
 
     /**
      * Gets a new pointer for an object that is being updated.
@@ -84,4 +84,18 @@ interface StoreInterface
      * @return array
      */
     public function get_meta_by_id(string $class_name, int $object_id): array;
+
+    /**
+     * @param string $class
+     * @param array $index
+     * @param int $offset
+     * @param int $limit
+     * @param bool $use_like
+     * @param string|null $sort_by
+     * @param bool $sort_desc
+     * @param int|null $_total_found_rows
+     * @param bool $permission_checks_disabled
+     * @return iterable
+     */
+    //public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$_total_found_rows = null, bool $permission_checks_disabled = false): iterable ;
 }

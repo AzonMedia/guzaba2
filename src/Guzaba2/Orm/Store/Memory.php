@@ -229,7 +229,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public function &get_data_pointer(string $class, array $index): array
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
 
         if (!$this->caching_enabled()) {
@@ -339,7 +339,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
             $this->misses++;
 
-            $_pointer =& $this->FallbackStore->get_data_pointer($class, $index);
+            $_pointer =& $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
 
 
             $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
@@ -668,7 +668,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * @return iterable
      * @throws RunTimeException
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$_total_found_rows = null): iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$_total_found_rows = null, bool $permission_checks_disabled = false): iterable
     {
 
         $ret = [];
@@ -708,7 +708,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 $Apm->increment_value('memory_store_time', $memory_lookup_time);
             }
         } else {
-            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $_total_found_rows);
+            $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $_total_found_rows, $permission_checks_disabled);
 //            foreach ($ret as $row) {
 //                $primary_index = $class::get_index_from_data($row);
 //                $lookup_index = self::form_lookup_index($primary_index);

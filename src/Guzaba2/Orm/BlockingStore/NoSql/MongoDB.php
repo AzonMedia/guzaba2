@@ -279,12 +279,12 @@ class MongoDB extends Database
      * @return array
      * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $index): array
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
         $ret = [];
         //lookup in DB
 
-        $data = $this->get_data_by($class, $index);
+        $data = $this->get_data_by($class, $index, $offset = 0, $limit = 0, $use_like = false, $sort_by = null, $sort_desc = false, $total_found_rows = null, $permission_checks_disabled = false);
 
         if (count($data)) {
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -352,7 +352,7 @@ class MongoDB extends Database
         $Connection->delete(['meta_object_uuid' => $uuid], $Connection::get_tprefix() . self::get_meta_table());
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null, bool $permission_checks_disabled = false): iterable
     {
         if ($this->FallbackStore instanceof StructuredStoreInterface) {
             $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);

@@ -58,7 +58,7 @@ class BlankStore extends Store implements StoreInterface
      * @return array
      * @throws \Guzaba2\Orm\Exceptions\RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $lookup_index): array
+    public function &get_data_pointer(string $class, array $lookup_index, bool $permission_checks_disabled = false): array
     {
         return $this->get_storage_columns_data($class);
     }

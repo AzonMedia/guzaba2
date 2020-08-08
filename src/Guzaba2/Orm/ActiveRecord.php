@@ -457,12 +457,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //before the pointer is obtained check is the provided index the primary one
         //if it is the primary it is OK to proceed
         //if it is not the record must be first resolved and only then to proceed
+        //The permission checks are disabled here in order to retrieve the object
+        //if there is no permission and the permission checks are enabled a RecordNotFoundException will be thrown
+        //instead of the expected PermissionDeniedException
+        //TODO - add a config option that allows the PermissionDenied to be replaced with RecordNotFound for added security
         $primary_columns = static::get_primary_index_columns();
         if (array_keys($index) === array_keys($primary_columns)) {
             //it is OK to proceed to the pointer lookup
         } else {
             //need to resovle the primary index and only then to proceed
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
             $index = self::get_index_from_data($pointer['data']);
         }
 
@@ -472,7 +477,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data =& $pointer['modified'];
         } else {
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index);
+            //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
+            $pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
             $this->record_data =& $pointer['data'];
             $this->meta_data =& $pointer['meta'];
             $this->record_modified_data = [];
@@ -492,6 +498,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         //check the permissions now, not before the record is found as the provided index may be a an array and then the permissions lookup will fail
+        //though at this stage it may be too late as the permission check in the backend storage will not return results if there are no permissions
+        //TODO - best will be in DEV env to return permission denied error and in production to return RecordNotFound
         $this->check_permission('read');
 
         if (!count($this->meta_data)) {
@@ -841,6 +849,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
     }
 
+    /**
+     * @throws ContextDestroyedException
+     * @throws ReflectionException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     public static function disable_locking(): void
     {
         //cant use a local static var - this is shared between the coroutines

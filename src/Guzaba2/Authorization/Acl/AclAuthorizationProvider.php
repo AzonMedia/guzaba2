@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization\Acl;
 
+use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\RolesHierarchy;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
@@ -215,9 +216,35 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         //there is no need either to use binding as the value is generated internally by the framework and not an exernally provided one
         //if binding is to be used it will be best to have a method that accepts the whole assembed query so far, along with the bound parameters and the method to amend both the query and tha array
         //action is validated against the supported class actions - no sql injection is possible
+        //the same for $role_ids
+        /** @var CurrentUser $CurrentUser */
+        $CurrentUser = self::get_service('CurrentUser');
+        $roles_ids = $CurrentUser->get()->get_role()->get_all_inherited_roles_ids();
+        $roles_ids = implode(',', $roles_ids);
+        //this query returns multiple rows because of the IN query (for exmaple when the user has multiple roles that can read the given record)
+        /*
         $q = "
 INNER JOIN
-    `$acl_table` AS acl_table ON acl_table.class_id = {$acl_permission_class_id} AND acl_table.object_id = main_table.{$main_table_column} AND acl_table.action_name = '{$action}' 
+    `$acl_table` AS acl_table 
+    ON 
+        acl_table.class_id = {$acl_permission_class_id} 
+        AND acl_table.object_id = {$main_table}.{$main_table_column}
+        AND acl_table.action_name = '{$action}'
+        AND acl_table.role_id IN ({$roles_ids})
+        ";
+        */
+        $q = "
+SELECT
+    acl_table.object_id
+FROM
+    `$acl_table` AS acl_table 
+WHERE
+    acl_table.class_id = {$acl_permission_class_id} 
+    AND acl_table.object_id = {$main_table}.{$main_table_column}
+    AND acl_table.action_name = '{$action}'
+    AND acl_table.role_id IN ({$roles_ids})  
+LIMIT
+    1
         ";
         return $q;
     }

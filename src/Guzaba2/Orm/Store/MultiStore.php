@@ -73,9 +73,9 @@ class MultiStore extends Store
         return $co_ret[0];
     }
 
-    public function &get_data_pointer(string $class, array $index): array
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
-        return $this->get_fallback_store()->get_data_pointer($class, $primary_index);
+        return $this->get_fallback_store()->get_data_pointer($class, $primary_index, $permission_checks_disabled);
     }
 
     /**

@@ -213,7 +213,7 @@ class Redis extends Database
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws RecordNotFoundException
      */
-    public function &get_data_pointer(string $class, array $index): array
+    public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
 
         if (!is_a($class, ActiveRecordInterface::class, true)) {
@@ -226,7 +226,7 @@ class Redis extends Database
         $primary_index_columns = $class::get_primary_index_columns();
         $id_column = reset($primary_index_columns);
         if (!isset($index['meta_object_uuid']) && !isset($index[$id_column])) {
-            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
             return $ret;
         }
 
@@ -238,13 +238,13 @@ class Redis extends Database
         }
 
         if (strlen($uuid) && !$Connection->exists($uuid)) {
-            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
             return $ret;
         }
 
         $result = $Connection->hGetAll($uuid);
         if (empty($result)) {
-            $ret = $this->FallbackStore->get_data_pointer($class, $index);
+            $ret = $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
             return $ret;
         } else {
             $result = $class::fix_record_data_types($result);
@@ -378,7 +378,7 @@ class Redis extends Database
         return $uuid;
     }
 
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): iterable
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null, bool $permission_checks_disabled = false): iterable
     {
         $ret = $this->FallbackStore->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
         return $ret;

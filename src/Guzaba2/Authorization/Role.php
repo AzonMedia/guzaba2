@@ -264,6 +264,7 @@ class Role extends ActiveRecord
             }
             self::get_service('ContextCache')->set('all_inherited_roles', (string) $role_id, $ret);
         }
+        $ret = array_unique($ret);
 
         return $ret;
     }
