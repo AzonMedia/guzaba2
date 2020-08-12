@@ -57,7 +57,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
     public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */)
     {
         if (!$ns_prefixes) {
-            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %s().'), __METHOD__));
+            throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %1$s().'), __METHOD__));
         }
         $this->ns_prefixes = $ns_prefixes;
         //$this->route_prefix = $route_prefix;
