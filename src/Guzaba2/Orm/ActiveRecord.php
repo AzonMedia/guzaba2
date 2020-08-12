@@ -1263,10 +1263,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $called_class = get_called_class();
         //if (array_key_exists('route', static::CONFIG_RUNTIME)) {
         if ($called_class::has_runtime_configuration() && array_key_exists('route', static::CONFIG_RUNTIME)) {
-            if (static::CONFIG_RUNTIME['route'][0] !== '/') {
-                throw new RunTimeException(sprintf(t::_('The route "%s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), static::CONFIG_RUNTIME['route'], get_called_class()));
-            }
             $default_route = static::CONFIG_RUNTIME['route'];
+            if ($default_route[0] !== '/') {
+                throw new ConfigurationException(sprintf(t::_('The route "%1$s" for ActiveRecord class %s seems wrong. All routes must begin with "/".'), $default_route, $called_class));
+            }
             $ret = [
                 $default_route                              => [
                     //Method::HTTP_GET_HEAD_OPT                   => [ActiveRecordDefaultController::class, 'options'],

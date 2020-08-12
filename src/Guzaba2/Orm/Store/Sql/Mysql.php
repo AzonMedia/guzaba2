@@ -1411,9 +1411,6 @@ WHERE
     {$l_str}
 ";
 
-print $q_data;
-
-print_r($b);
 
         //no need of GROUP BY main_table.{$main_index[0]}
         $q_count = "

@@ -62,15 +62,20 @@ class ActiveRecordDefaultController extends ActiveRecordController
             t::set_target_language($language, $this->get_request());
         }
 
-        $route_meta_data = $this->get_request()->getAttribute('route_meta_data');
+        $Request = $this->get_request();
+        $route_meta_data = $Request->getAttribute('route_meta_data');
 
         if (!$uuid) {
             if ($crud_class_name) {
                 if (strpos($crud_class_name, '-')) {
                     $crud_class_name = str_replace('-', '\\', $crud_class_name);
                 }
-            } elseif (!empty($route_meta_data['orm_class'])) {
-                $crud_class_name = $route_meta_data['orm_class'];
+            }
+//            elseif (!empty($route_meta_data['orm_class'])) {
+//                $crud_class_name = $route_meta_data['orm_class'];
+//            }
+            elseif (isset($route_meta_data[Method::get_method_constant($Request)])) {
+                $crud_class_name = $route_meta_data[Method::get_method_constant($Request)];
             }
 
             if (!$crud_class_name) {
@@ -84,7 +89,6 @@ class ActiveRecordDefaultController extends ActiveRecordController
 
             //if (in_array($this->get_request()->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
             if (in_array(Method::get_method_constant($this->get_request()), [Method::HTTP_POST, Method::HTTP_GET, Method::HTTP_OPTIONS ], true)) {
-                //$this->ActiveRecord = new $route_meta_data['orm_class']();
                 $this->ActiveRecord = new $crud_class_name();
             } else {
                 //manipulation of an existing record is requested but no UUID is provided
