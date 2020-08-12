@@ -226,6 +226,9 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     }
                 }
 
+                //before any execution takes place the permissions of the action must be checked (the _init action does not have permissions and no routes should be pointed directly to it)
+                $this->check_controller_method_permissions($controller_callable[0], $controller_callable[1]);
+
 
                 //check if controller has init method
                 $init_method_exists = \method_exists($controller_callable[0], '_init');
@@ -268,6 +271,18 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         return $Handler->handle($Request);
     }
 
+    public function check_controller_method_permissions(ActiveRecordController $Controller, string $method): void
+    {
+        //checks is there a class permission to execute the given action
+        new Event($this, '_before_execute_controller_method_check_permissions', func_get_args());
+        try {
+            $Controller::check_class_permission($method);
+        } finally {
+            new Event($this, '_after_execute_controller_method_check_permissions', func_get_args());
+        }
+
+    }
+
     //public function execute_controller_method(ControllerInterface $Controller, string $method, array $controller_arguments) : ?ResponseInterface
 
     /**
@@ -285,14 +300,6 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $Response = null;
 
         try {
-            //checks is there a class permission to execute the given action
-            new Event($this, '_before_execute_controller_method_check_permissions', func_get_args());
-            try {
-                $Controller::check_class_permission($method);
-            } finally {
-                new Event($this, '_after_execute_controller_method_check_permissions', func_get_args());
-            }
-
 
 
             $ordered_arguments = [];
@@ -397,11 +404,12 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
             withBody($StreamBody)->
             withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
             withHeader('Content-Length', (string) strlen($json_string));
+
         return $Response;
     }
 
     /**
-     * Just returns the response as it is.
+     * Just returns the response as it is - for further processing by PHP (this is used in the IPC calls)
      * @param RequestInterface $Request
      * @param ResponseInterface $Response
      * @return ResponseInterface
