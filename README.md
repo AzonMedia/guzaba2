@@ -41,6 +41,7 @@ And some specifics:
 - the back-end store functionality supports replacing the store of the ActiveRecord objects but currently there are SQL specifics that will prevent it to work with NoSQL DBs. This will be corrected in future.
 - currently there is no database migrations support, but will be aded in future
 - everything is an ActiveRecord - the models, the log entries, the controllers, the permissions
+- permissions can be granted on objects (records) and classes (static methods)
 
 And what does not support (and probably never will):
 - the ORM does not aim to replace SQL thus there is no support for creating SQL queries with a replacement language or creating queries all with PHP objects/methods.
