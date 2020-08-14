@@ -91,8 +91,9 @@ class ActiveRecordController extends ActiveRecord implements ControllerInterface
 //        }
 
         if ($Request === null) { //it is accessed as ActiveRecord and then it needs to be instantiated
+            //to be used when the controllers will have records in the DB and will be managed as ActiveRecords
             parent::__construct(['controller_class' => get_class($this)]);
-        } else { //it remains as a new record meaning no "read" permission will be checked
+        } else { //it remains as a new record meaning no "read" permission will be checked - only the permission associated with the requested action (method of the class) will be checked
             parent::__construct(0);
         }
     }

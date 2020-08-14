@@ -6,11 +6,13 @@ namespace Guzaba2\Routing;
 
 use Azonmedia\Routing\RoutingMapArray;
 use Azonmedia\Utilities\ArrayUtil;
+use Azonmedia\Http\Method;
 use Composer\Package\Package;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
-use Azonmedia\Http\Method;
+use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
 use Guzaba2\Kernel\Exceptions\ConfigurationException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Mvc\ActiveRecordController;
@@ -18,14 +20,27 @@ use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
+use Psr\Log\LogLevel;
 
 /**
  * Class ActiveRecordDefaultRoutingMap
  * @package Guzaba2\Routing
  * As the Controllers are also ActiveRecords this handles the controllers too (no need to use the ControllerDefaultRoutingMap)
  */
-class ActiveRecordDefaultRoutingMap extends RoutingMapArray
+class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInterface
 {
+
+    use SupportsConfig;
+
+    protected const CONFIG_DEFAULTS = [
+        //allows a controller route to overwrite a route (part of set of rules) defined by an ActiveRecord
+        'allow_controller_overwriting_activerecord_route'  => true,//if AR and a controller define the same route, the controller takes precedence and no error is thrown
+        //the reasoning is that it may be needed for a controller to overwrite a single route out of the defined routes by a AR
+        //no two activerecords can have the same route (if they have different controllers) and neither can two controllers
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     /**
      * Indexed array of namespace prefixes
      * @var array
@@ -37,8 +52,6 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * @var array
      */
     private array $processed_models = [];
-
-    //private string $route_prefix = '';
 
     /**
      * ActiveRecordDefaultRoutingMap constructor.
@@ -54,7 +67,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
      * @throws \ReflectionException
      * @uses \Guzaba2\Kernel\Kernel::get_loaded_classes()
      */
-    public function __construct(array $ns_prefixes, array $supported_languages = [] /* , string $route_prefix = '' */)
+    public function __construct(array $ns_prefixes, array $supported_languages = [])
     {
         if (!$ns_prefixes) {
             throw new InvalidArgumentException(sprintf(t::_('No $ns_prefixes array provided to %1$s().'), __METHOD__));
@@ -68,7 +81,6 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
 
         foreach ($active_record_classes as $loaded_class) {
             $routing = $loaded_class::get_routes();
-
             if ($routing) {
                 //some validation
                 foreach ($routing as $path => $route) {
@@ -84,19 +96,6 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                     }
                 }
 
-//                //if ($api_route_prefix) {
-//                if (is_a($loaded_class, ControllerInterface::class, TRUE)) {
-//                    //skip
-//                } else {
-//                    $routing = ArrayUtil::prefix_keys($routing, $this->api_route_prefix);
-//                    $routing_map = array_merge($routing_map, $routing);
-//                    $routing_meta_data[current(array_keys($routing))] = ['orm_class' => $loaded_class];
-//                }
-
-
-//                if ($route_prefix) {
-//                    $routing = ArrayUtil::prefix_keys($routing, $this->route_prefix);
-//                }
                 //even if a single language is provided still add additional path as this may be required for other purpose (future proofing)
                 //no - lets not have the language routes if there is only a single language
                 //if ($supported_languages) {
@@ -111,10 +110,11 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                 //instead they need to be merged if different methods are used
                 //if there are the same methods then an error is to be thrown
                 foreach ($routing as $new_route => $new_methods) {
-                    //check for overwriting
-                    foreach($routing_map as $route => $methods) {
-                        if ($new_route === $route) {
-                            foreach ($new_methods as $new_method => $new_controller) {
+
+                    foreach ($new_methods as $new_method => $new_controller) {
+                        foreach($routing_map as $route => $methods) {
+                            //check for overwriting
+                            if ($new_route === $route) {
                                 foreach ($methods as $method => $controller) {
                                     if ($matching_methods = $new_method & $method) {
                                         //there are matching routes & methods
@@ -125,11 +125,57 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                                             continue;
                                         }
 
+                                        $definer_class = $routing_meta_data[$route][$method]['class'];
+
+                                        if (self::CONFIG_RUNTIME['allow_controller_overwriting_activerecord_route']) {
+                                            if (is_a($definer_class, ActiveRecordInterface::class, true) && is_a($loaded_class, ControllerInterface::class, true)) {
+                                                //there is a match but it is allowed a controller to overwrite a route defined in ActiveRecord
+                                                //and the newly found route is coming from a controller
+                                                //so allow to proceed (with a notice) and the route will be overwritten
+                                                $raw_message = <<<'RAW'
+                                                %1$s: Controller %2$s overwrites route %3$s for method %4$s defined by ActiveRecord %5$s.
+                                                (%6$s::CONFIG_DEFAULTS[allow_controller_overwriting_activerecord_route] = true).
+                                                RAW;
+                                                $message = sprintf(
+                                                    t::_($raw_message),
+                                                    __CLASS__,
+                                                    $loaded_class,
+                                                    $route,
+                                                    $method,
+                                                    $definer_class,
+                                                    __CLASS__
+                                                );
+                                                //Kernel::log($message, LogLevel::NOTICE);
+                                                Kernel::printk($message.PHP_EOL);
+                                            }
+                                            if (is_a($definer_class, ControllerInterface::class, true) && is_a($loaded_class, ActiveRecordInterface::class, true)) {
+                                                //there is a match but it is allowed a controller to overwrite a route defined in ActiveRecord
+                                                //this means that overwriting must be avoided and a new route discarded
+                                                //issue a notice and proceed with the next method
+                                                $raw_message = <<<'RAW'
+                                                %1$s: ActiveRecord %2$s route %3$s for method %4$s is discarded as it is already defined by Controller %5$s.
+                                                (%6$s::CONFIG_DEFAULTS[allow_controller_overwriting_activerecord_route] = true).
+                                                RAW;
+                                                $message = sprintf(
+                                                    t::_($raw_message),
+                                                    __CLASS__,
+                                                    $loaded_class,
+                                                    $route,
+                                                    $method,
+                                                    $definer_class,
+                                                    __CLASS__
+                                                );
+                                                //Kernel::log($message, LogLevel::NOTICE);
+                                                Kernel::printk($message.PHP_EOL);
+                                                continue 3;
+                                            }
+                                        }
+
                                         //the controllers are different and appropraite error needs to be thrown
                                         foreach (Method::METHODS_MAP as $method_const => $method_name) {
                                             if ($method_const & $matching_methods) {
                                                 //use the meta data to get wchich class defined that route
-                                                $definer_class = $routing_meta_data[$route][$method];
+                                                RAW;
                                                 $message = sprintf(
                                                     t::_('The class %1$s has a route %2$s containing method %3$s that is already defined in the routing map by class %4$s.'),
                                                     $loaded_class,
@@ -144,49 +190,17 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray
                                     }
                                 }
                             }
+
+
                         }
-                    }
-                    //merge
-                    foreach ($new_methods as $new_method => $new_controller) {
+                        //merge
                         $routing_map[$new_route][$new_method] = $new_controller;
+                        //update the meta
+                        $routing_meta_data[$new_route][$new_method]['class'] = $loaded_class;
                     }
-                }
-
-//                //print_r($routing);
-//                if (is_a($loaded_class, ActiveRecordInterface::class, true)) {
-//                    $route = array_keys($routing)[0];
-//
-//                    $routing_meta_data[$route] = ['orm_class' => $loaded_class];
-//                    if ($route[-1] === '/') {
-//                        //add the same route without trailing /
-//                        $route_wo_trailing_slash = substr($route, 0, strlen($route) - 1);
-//                        $routing_meta_data[ $route_wo_trailing_slash ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
-//                    } else {
-//                        //add the same route with trailing /
-//                        $routing_meta_data[ $route . '/' ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
-//                    }
-//                }
-
-                //update the meta data
-                foreach ($routing as $new_route => $new_methods) {
-                    foreach ($new_methods as $new_method => $new_controller) {
-                        $routing_meta_data[$new_route][$new_method] = $loaded_class;
-                    }
-                }
-
-//                $route = current(array_keys($routing));
-//
-//                $routing_meta_data[$route] = ['orm_class' => $loaded_class];
-//                if ($route[-1] === '/') {
-//                    //add the same route without trailing /
-//                    $route_wo_trailing_slash = substr($route, 0, strlen($route) - 1);
-//                    $routing_meta_data[ $route_wo_trailing_slash ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
-//                } else {
-//                    //add the same route with trailing /
-//                    $routing_meta_data[ $route . '/' ] = ['orm_class' => $loaded_class];//with trailing slash it supported too
-//                }
-            } // end if $routing
-        } // end foreach
+                } // end foreach ($routing as $new_route => $new_methods)
+            } // end if ($routing)
+        } // end foreach ($active_record_classes as $loaded_class)
 
         parent::__construct($routing_map, $routing_meta_data);
     }

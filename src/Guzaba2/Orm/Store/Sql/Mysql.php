@@ -1338,7 +1338,11 @@ WHERE
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
             $AuthorizationProvider = self::get_service('AuthorizationProvider');
             //$from_str .= $AuthorizationProvider::get_sql_permission_check($class);
-            $w[] = "main_table.{$main_index[0]} = (".$AuthorizationProvider::get_sql_permission_check($class).")";
+            $permission_sql = $AuthorizationProvider::get_sql_permission_check($class);
+            if ($permission_sql) { //some providers do not return SQL
+                $w[] = "main_table.{$main_index[0]} = (".$permission_sql.")";
+            }
+
         }
 
         $w_str = implode(" AND ", $w);

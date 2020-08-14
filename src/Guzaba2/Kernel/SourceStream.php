@@ -282,7 +282,8 @@ class SourceStream
         }
         //TODO - improve this - replace with tokenized
         //handle self::class
-        $class_without_config_source = str_replace('self::class', '\'\\' . $class_name . '\'', $class_without_config_source);
+        //$class_without_config_source = str_replace('self::class', '\'\\' . $class_name . '\'', $class_without_config_source);
+        $class_without_config_source = str_replace('self::class', '\'' . $class_name . '\'', $class_without_config_source);
 
         if (strpos($class_without_config_source, '<?php') === 0) {
             $class_without_config_source = substr($class_without_config_source, 5);

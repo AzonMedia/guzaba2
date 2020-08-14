@@ -74,8 +74,8 @@ class ActiveRecordDefaultController extends ActiveRecordController
 //            elseif (!empty($route_meta_data['orm_class'])) {
 //                $crud_class_name = $route_meta_data['orm_class'];
 //            }
-            elseif (isset($route_meta_data[Method::get_method_constant($Request)])) {
-                $crud_class_name = $route_meta_data[Method::get_method_constant($Request)];
+            elseif (isset($route_meta_data['class'])) {
+                $crud_class_name = $route_meta_data['class'];
             }
 
             if (!$crud_class_name) {
