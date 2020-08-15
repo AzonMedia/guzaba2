@@ -111,7 +111,7 @@ abstract class Controller extends Base implements ControllerInterface
      * Returns all Controller classes that are loaded by the Kernel in the provided namespace prefixes.
      * Usually the array from Kernel::get_registered_autoloader_paths() is provided to $ns_prefixes
      * @param array $ns_prefixes
-     * @return array
+     * @return array Associative array file_path => class_name
      * @throws InvalidArgumentException
      */
     public static function get_controller_classes(array $ns_prefixes = []): array
