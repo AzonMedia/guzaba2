@@ -181,7 +181,18 @@ class Permission extends ActiveRecord implements PermissionInterface
                 $class_name::check_class_permission('grant_permission');
             } else {
                 //(new $this->class_name($this->object_id))->check_permission('chmod');
-                (new $this->class_name($this->object_id))->check_permission('grant_permission');
+                //(new $this->class_name($this->object_id))->check_permission('grant_permission');
+                //$Object = new $this->class_name($this->object_id);
+                /** @var ActiveRecordInterface $Object */
+                $Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);
+                if ($Object->was_new()) {
+                    //it is a new object and there are no permissions yet set to check
+                } else {
+                    //recreate the object is if it is created with $permission_checks_disabled then check_permission() method can not be used
+                    $Object = new $this->class_name($this->object_id, $readonly = true);//checks the read permission
+                    $Object->check_permission('grant_permission');
+                }
+
             }
         } catch (RecordNotFoundException $Exception) {
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));
@@ -217,7 +228,9 @@ class Permission extends ActiveRecord implements PermissionInterface
                 $class_name = $this->class_name;
                 $class_name::check_class_permission('revoke_permission');
             } else {
-                (new $this->class_name($this->object_id))->check_permission('revoke_permission');
+                /** @var ActiveRecordInterface $Object */
+                $Object = new $this->class_name($this->object_id);
+                $Object->check_permission('revoke_permission');
             }
         } catch (RecordNotFoundException $Exception) {
             throw new PermissionDeniedException(sprintf(t::_('You are not allowed to change the permissions on %s:%s.'), $this->class_name, $this->object_id));

@@ -58,8 +58,9 @@ trait ActiveRecordStructure
             self::$properties_data[$called_class] = [];
             $RClass = new ReflectionClass($called_class);
             $default_properties = $RClass->getDefaultProperties();
-            foreach ($RClass->getProperties() as $RProperty) {
-                if ($RProperty->isPublic() && !$RProperty->isStatic()) {
+            //foreach ($RClass->getProperties() as $RProperty) {
+            foreach ($RClass->getOwnDynamicProperties(\ReflectionProperty::IS_PUBLIC) as $RProperty) {
+                //if ($RProperty->isPublic() && !$RProperty->isStatic()) {
 //                    if ($RProperty->isInitialized()) {
 //                        $default_value = $default_properties[$RProperty->getName()];
 //                    } else {
@@ -93,8 +94,8 @@ trait ActiveRecordStructure
                         'key_name'      => '',
                         'key_reference' => '',
                     ];
-                }
-            }
+                //}
+            }//end foreach
         }
     }
 

@@ -134,14 +134,14 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 //so allow to proceed (with a notice) and the route will be overwritten
                                                 $raw_message = <<<'RAW'
                                                 %1$s: Controller %2$s overwrites route %3$s for method %4$s defined by ActiveRecord %5$s.
-                                                (%6$s::CONFIG_DEFAULTS[allow_controller_overwriting_activerecord_route] = true).
+                                                (%6$s::CONFIG_DEFAULTS['allow_controller_overwriting_activerecord_route'] = true).
                                                 RAW;
                                                 $message = sprintf(
                                                     t::_($raw_message),
                                                     __CLASS__,
                                                     $loaded_class,
                                                     $route,
-                                                    $method,
+                                                    Method::METHODS_MAP[$method],
                                                     $definer_class,
                                                     __CLASS__
                                                 );
@@ -154,14 +154,14 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 //issue a notice and proceed with the next method
                                                 $raw_message = <<<'RAW'
                                                 %1$s: ActiveRecord %2$s route %3$s for method %4$s is discarded as it is already defined by Controller %5$s.
-                                                (%6$s::CONFIG_DEFAULTS[allow_controller_overwriting_activerecord_route] = true).
+                                                (%6$s::CONFIG_DEFAULTS['allow_controller_overwriting_activerecord_route'] = true).
                                                 RAW;
                                                 $message = sprintf(
                                                     t::_($raw_message),
                                                     __CLASS__,
                                                     $loaded_class,
                                                     $route,
-                                                    $method,
+                                                    Method::METHODS_MAP[$method],
                                                     $definer_class,
                                                     __CLASS__
                                                 );

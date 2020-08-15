@@ -19,7 +19,7 @@ trait ActiveRecordAuthorization
 {
 
     /**
-     * Will throw if the current role is not allowed to perform the provided $action on this object
+     * Throws PermissionDeniedException if the current role is not allowed to perform the provided $action on this object
      * @param string $action
      */
     public function check_permission(string $action): void
@@ -30,6 +30,11 @@ trait ActiveRecordAuthorization
         return;
     }
 
+    /**
+     * Throws PermissionDeniedException if the current role is not allowed to perform the provided $action on this class (LSB).
+     * @param string $action
+     * @throws RunTimeException
+     */
     public static function check_class_permission(string $action): void
     {
         $class = get_called_class();
@@ -40,7 +45,7 @@ trait ActiveRecordAuthorization
     }
 
     /**
-     * The current role if the primary role of the CurrentUser.
+     * Returns true if the current role (the the primary role of the CurrentUser) can perform the $action on this object.
      * @param string $action
      * @return bool
      */
@@ -49,6 +54,12 @@ trait ActiveRecordAuthorization
         return static::uses_service('AuthorizationProvider') && static::uses_permissions() ? static::get_service('AuthorizationProvider')->current_role_can($action, $this) : true;
     }
 
+    /**
+     * Returns true if the current role (the the primary role of the CurrentUser) can perform the $action on this class (LSB).
+     * @param string $action
+     * @return bool
+     * @throws RunTimeException
+     */
     public static function current_role_can_on_class(string $action): bool
     {
         $class = get_called_class();
@@ -175,7 +186,8 @@ trait ActiveRecordAuthorization
         $class = get_called_class();
         $ret = self::get_standard_actions();
         $RClass = new ReflectionClass($class);
-        foreach ($RClass->getMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
+        //foreach ($RClass->getMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
+        foreach ($RClass->getOwnMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
             if (self::is_method_action($RMethod)) { //static methods can have permissions
                 $ret[] = $RMethod->getName();
             }
@@ -208,7 +220,8 @@ trait ActiveRecordAuthorization
         $class = get_called_class();
         $ret = self::get_standard_actions();
         $RClass = new ReflectionClass($class);
-        foreach ($RClass->getMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
+        //foreach ($RClass->getMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
+        foreach ($RClass->getOwnMethods(ReflectionMethod::IS_PUBLIC) as $RMethod) {
             if (self::is_method_action($RMethod) && !$RMethod->isStatic()) { //exclude the static methods
                 $ret[] = $RMethod->getName();
             }

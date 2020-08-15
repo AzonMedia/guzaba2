@@ -478,9 +478,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 $new_arr['refcount'] = 1;
                 $new_arr['modified'] = [];
                 $this->data[$class][$lookup_index]['cid_' . $cid] = $new_arr;
-                defer(function () use ($class, $lookup_index, $cid) {
-                    unset($this->data[$class][$lookup_index]['cid_' . $cid]);
-                });
+                if ($cid > 0) {
+                    defer(function () use ($class, $lookup_index, $cid) {
+                        unset($this->data[$class][$lookup_index]['cid_' . $cid]);
+                    });
+                }
             }
 
             return $this->data[$class][$lookup_index]['cid_' . $cid];

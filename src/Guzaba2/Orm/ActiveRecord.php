@@ -46,6 +46,7 @@ use Guzaba2\Orm\Traits\ActiveRecordOverloading;
 use Guzaba2\Orm\Traits\ActiveRecordStructure;
 use Guzaba2\Orm\Traits\ActiveRecordIterator;
 use Guzaba2\Orm\Traits\ActiveRecordValidation;
+use GuzabaPlatform\Navigation\Models\NavigationLink;
 use ReflectionException;
 
 /**
@@ -173,7 +174,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     private /* scalar */ $requested_index = self::INDEX_NEW;
 
-
+    /**
+     * @var bool
+     */
     private bool $read_only_flag = false;
 
     /**
@@ -258,7 +261,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
-            //if ($Request && $Request->getMethodConstant() === Method::HTTP_GET) {
             if ($Request && Method::get_method_constant($Request) === Method::HTTP_GET) {
                 $this->read_only_flag = true;
             }
@@ -467,20 +469,23 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         } else {
             //need to resovle the primary index and only then to proceed
             //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
-            $index = self::get_index_from_data($pointer['data']);
+            $_pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
+            $index = self::get_index_from_data($_pointer['data']);
         }
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
-            $pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
-            $this->record_modified_data =& $pointer['modified'];
+            $_pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
+            $this->record_data =& $_pointer['data'];
+            $this->meta_data =& $_pointer['meta'];
+            $this->record_modified_data =& $_pointer['modified'];
         } else {
             //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
-            $pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
-            $this->record_data =& $pointer['data'];
-            $this->meta_data =& $pointer['meta'];
+            $_pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
+            $this->record_data =& $_pointer['data'];
+            $this->meta_data =& $_pointer['meta'];
+            if (array_key_exists('was_new_flag', $_pointer)) { //the was_new_flag needs to be preserved across all objects in the stack
+                $this->was_new_flag =& $_pointer['was_new_flag'];
+            }
             $this->record_modified_data = [];
         }
 
@@ -549,7 +554,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
         if ($this->is_new()) {
-            $this->check_permission('create');
+            //$this->check_permission('create');
+            $this->check_class_permission('create');
         } else {
             $this->check_permission('write');
         }
@@ -579,7 +585,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
 //            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
 //            unset($LR);
-            static::get_service('LockManager')->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            /** @var LockManagerInterface $LockManager */
+            $LockManager = static::get_service('LockManager');
+            $LockManager->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
         $Transaction = ActiveRecord::new_transaction($TR);
@@ -601,7 +609,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         //reattach the pointer
-        $pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+        $_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
 
         //not needed
 //        //CLASS_PROPERTIES - the returned data is as it is found in the store
@@ -613,8 +621,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 ////            }
 //        }
 
-        $this->record_data =& $pointer['data'];
-        $this->meta_data =& $pointer['meta'];
+        $this->record_data =& $_pointer['data'];
+        $this->meta_data =& $_pointer['meta'];
+        $_pointer['was_new_flag'] =& $this->was_new_flag;
         //lets clear this after the write() is committed
         //this way it will be available also in _after_write
         //$this->record_modified_data = [];
@@ -661,7 +670,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //if (static::is_locking_enabled()) {
         if (!empty($LR)) {
-            static::get_service('LockManager')->release_lock('', $LR);
+            /** @var LockManagerInterface $LockManager */
+            $LockManager = static::get_service('LockManager');
+            $LockManager->release_lock('', $LR);
         }
 
         //the flag is lowered only after the record is committed
