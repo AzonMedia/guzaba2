@@ -356,6 +356,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
     }
 
+    public function __debugInfo() {
+        return $this->record_data;
+    }
+
     /**
      * Returns an instance filled with the provided data (it should also inject it in the Memory store)
      * @param iterable $data

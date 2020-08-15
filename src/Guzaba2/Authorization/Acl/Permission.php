@@ -229,7 +229,11 @@ class Permission extends ActiveRecord implements PermissionInterface
                 $class_name::check_class_permission('revoke_permission');
             } else {
                 /** @var ActiveRecordInterface $Object */
-                $Object = new $this->class_name($this->object_id);
+                //$Object = new $this->class_name($this->object_id);
+                //create the instance without checking the permissions as when it comes to delete the Permission object already existed
+                //and the read permission of the $Object was tested in the Permission instance creation
+                $Object = new $this->class_name($this->object_id, $read_only = true, $permission_checks_disabled = true);
+                //checking the revoke_permission is not an issue as this is the very last permission to be deleted when the object is being deleted
                 $Object->check_permission('revoke_permission');
             }
         } catch (RecordNotFoundException $Exception) {

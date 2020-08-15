@@ -31,35 +31,98 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 
     protected const CONFIG_RUNTIME = [];
 
+    /**
+     * {@inheritDoc}
+     * @param Role $Role
+     * @param string $action
+     * @param ActiveRecordInterface $ActiveRecord
+     * @return PermissionInterface
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     */
     public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): PermissionInterface
     {
         return Permission::create($Role, $action, $ActiveRecord);
     }
 
+    /**
+     * {@inheritDoc}
+     * @param Role $Role
+     * @param string $action
+     * @param string $class_name
+     * @return PermissionInterface
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     */
     public function grant_class_permission(Role $Role, string $action, string $class_name): PermissionInterface
     {
         return Permission::create_class_permission($Role, $action, $class_name);
     }
 
+    /**
+     * {@inheritDoc}
+     * @param Role $Role
+     * @param string $action
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
+     */
     public function revoke_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): void
     {
         (new Permission([ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]) )->delete();
     }
 
+    /**
+     * {@inheritDoc}
+     * @param Role $Role
+     * @param string $action
+     * @param string $class_name
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\LogicException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \Guzaba2\Kernel\Exceptions\ConfigurationException
+     * @throws \ReflectionException
+     */
     public function revoke_class_permission(Role $Role, string $action, string $class_name): void
     {
         (new Permission([ 'role_id' => $Role->get_id(), 'action_name' => $action, 'class_name' => $class_name, 'object_id' => null ]) )->delete();
     }
 
+    /**
+     * {@inheritDoc}
+     * @param ActiveRecordInterface $ActiveRecord
+     * @throws RunTimeException
+     */
     public function delete_permissions(ActiveRecordInterface $ActiveRecord): void
     {
         //this will trigger object instantiations
+        /** @var  $permissions */
         $permissions = Permission::get_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]);
+
+        //deleting the permissions in random order will not work
+        //instead the revoke_permission one must be the very last
+        usort($permissions, fn(Permission $P1, Permission $P2): int => $P1->action_name === 'revoke_permission' ? 1 : -1 );
+
+        /** @var PermissionInterface $Permission */
         foreach ($permissions as $Permission) {
             $Permission->delete();
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * @param string $class_name
+     * @throws RunTimeException
+     */
     public function delete_class_permissions(string $class_name): void
     {
         $class_permissions = Permission::get_by([ 'class_name' => $class_name, 'object_id' => null ]);
@@ -68,8 +131,13 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         }
     }
 
-
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable
+    /**
+     * {@inheritDoc}
+     * @param ActiveRecordInterface $ActiveRecord
+     * @return iterable
+     * @throws RunTimeException
+     */
+    public function get_permissions(ActiveRecordInterface $ActiveRecord): iterable
     {
         return Permission::get_data_by(['class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id() ]);
     }
@@ -135,6 +203,7 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     }
 
     /**
+     * {@inheritDoc}
      * @param Role $Role
      * @param string $action
      * @param string $class
@@ -151,6 +220,11 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         return $ret;
     }
 
+    /**
+     * @param array $roles_ids
+     * @param array $permissions
+     * @return bool
+     */
     private static function check_permissions(array $roles_ids, array $permissions): bool
     {
         $ret = false;

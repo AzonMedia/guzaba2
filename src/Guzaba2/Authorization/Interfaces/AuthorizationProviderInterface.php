@@ -116,10 +116,10 @@ interface AuthorizationProviderInterface
 
     /**
      * Returns all permissions for the given ActiveRecord object.
-     * @param ActiveRecordInterface|null $ActiveRecord
+     * @param ActiveRecordInterface $ActiveRecord
      * @return iterable
      */
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable;
+    public function get_permissions(ActiveRecordInterface $ActiveRecord): iterable;
 
     /**
      * Returns all permissions for the given ActiveRecord class.

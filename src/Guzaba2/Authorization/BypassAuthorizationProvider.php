@@ -91,7 +91,7 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
         return;
     }
 
-    public function get_permissions(?ActiveRecordInterface $ActiveRecord): iterable
+    public function get_permissions(ActiveRecordInterface $ActiveRecord): iterable
     {
         return [];
     }
