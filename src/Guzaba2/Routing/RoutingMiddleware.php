@@ -8,6 +8,7 @@ use Azonmedia\Routing\Interfaces\RouterInterface;
 use Azonmedia\Routing\Router;
 use Guzaba2\Base\Base;
 use Guzaba2\Http\Server;
+use Guzaba2\Routing\Interfaces\RoutingMiddlewareInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -24,7 +25,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * @package Guzaba2\Mvc
  */
-class RoutingMiddleware extends Base implements MiddlewareInterface
+class RoutingMiddleware extends Base implements MiddlewareInterface, RoutingMiddlewareInterface
 {
 
     /**

@@ -140,4 +140,11 @@ interface AuthorizationProviderInterface
      * @return string The join part of the stamement that needs to be included in the query
      */
     public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string;
+
+    /**
+     * Whether this AuthorizationProvider checks permissions.
+     * Some providers are meant to be used in development and do not check/enforce the permissions.
+     * @return bool
+     */
+    public static function checks_permissions(): bool;
 }

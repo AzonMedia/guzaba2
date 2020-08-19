@@ -36,7 +36,12 @@ interface ActiveRecordInterface extends BaseInterface
     public const AUTHZ_METHOD_PREFIX = 'authz_';
 
     public const INDEX_NEW = 0;
-    
+
+    /**
+     * Returns a two-dimensional array containing all routes to manage an instance from this class.
+     * The routes by default use ActiveRecordDefaultController unless there is a custom controller overriding a route.
+     * @return iterable|null
+     */
     public static function get_routes(): ?iterable;
 
     public static function get_main_table(): string;
@@ -51,7 +56,7 @@ interface ActiveRecordInterface extends BaseInterface
 
     public function get_primary_index(): array;
 
-    //public function read() : void;
+    //public function read() : void; //this is a private implementation
 
     public function write(): ActiveRecordInterface;
 

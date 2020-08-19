@@ -87,10 +87,39 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                     foreach ($route as $method => $controller) {
                         if (is_array($controller)) {
                             if (!class_exists($controller[0])) {
-                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not exist.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0]));
+                                $message = sprintf(
+                                    t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not exist.'),
+                                    $loaded_class,
+                                    Method::METHODS_MAP[$method],
+                                    $path,
+                                    $controller[0]
+                                );
+                                throw new ConfigurationException($message);
                             }
                             if (!method_exists($controller[0], $controller[1])) {
-                                throw new ConfigurationException(sprintf(t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not have a method %5$s.'), $loaded_class, Method::METHODS_MAP[$method], $path, $controller[0], $controller[1]));
+                                $message = sprintf(
+                                    t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the class %4$s does not have a method %5$s.'),
+                                    $loaded_class,
+                                    Method::METHODS_MAP[$method],
+                                    $path,
+                                    $controller[0],
+                                    $controller[1]
+                                );
+                                throw new ConfigurationException($message);
+                            }
+                            if (
+                                $controller[0] !== $loaded_class
+                                && is_a($loaded_class, ControllerInterface::class, true)
+                                && !is_a($loaded_class, ActiveRecordController::class, true) //this one contains a route to another class (ActiveRecordDefaultController) but it is expected
+                            ) {
+                                $message = sprintf(
+                                    t::_('The class %1$s contains an invalid controller for route %2$s:%3$s - the specified controller is another class %4$s. The controllers can define routes only to themselves.'),
+                                    $loaded_class,
+                                    Method::METHODS_MAP[$method],
+                                    $path,
+                                    $controller[0]
+                                );
+                                throw new ConfigurationException($message);
                             }
                         }
                     }
@@ -193,10 +222,14 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
 
 
                         }
-                        //merge
+                        //merge routes
                         $routing_map[$new_route][$new_method] = $new_controller;
                         //update the meta
-                        $routing_meta_data[$new_route][$new_method]['class'] = $loaded_class;
+                        $routing_meta_data[$new_route][$new_method] = [
+                            'class'     => $loaded_class,//the same like $new_controller[0] - there is a check above enforcing this
+                            'action'    => $new_controller[1],
+                        ];
+
                     }
                 } // end foreach ($routing as $new_route => $new_methods)
             } // end if ($routing)

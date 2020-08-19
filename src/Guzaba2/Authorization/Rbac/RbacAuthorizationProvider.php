@@ -100,4 +100,9 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
         //TODO implement
         return '';
     }
+
+    public static function checks_permissions(): bool
+    {
+        return true;
+    }
 }

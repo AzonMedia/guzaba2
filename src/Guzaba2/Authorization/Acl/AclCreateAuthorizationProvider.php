@@ -66,4 +66,14 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
     {
         return '';
     }
+
+    /**
+     * @overrides
+     * {@inheritDoc}
+     * @return bool
+     */
+    public static function checks_permissions(): bool
+    {
+        return false;
+    }
 }

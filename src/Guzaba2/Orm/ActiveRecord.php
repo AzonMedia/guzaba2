@@ -1307,7 +1307,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
         return $ret;
     }
-    
+
     /**
      * Returns the property names of the modified properties
      * @return array Indexed array with property names

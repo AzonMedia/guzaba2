@@ -322,4 +322,13 @@ LIMIT
         ";
         return $q;
     }
+
+    /**
+     * {@inheritDoc}
+     * @return bool
+     */
+    public static function checks_permissions(): bool
+    {
+        return true;
+    }
 }

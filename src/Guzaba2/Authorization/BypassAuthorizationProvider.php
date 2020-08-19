@@ -110,4 +110,9 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
     {
         return '';
     }
+
+    public static function checks_permissions(): bool
+    {
+        return false;
+    }
 }

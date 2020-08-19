@@ -175,7 +175,7 @@ class Middlewares extends Base implements \Iterator, \Countable
         if (!$middleware_class) {
             throw new InvalidArgumentException(sprintf(t::_('No middleware class provided to method %s().'), __METHOD__));
         }
-        if (!class_exists($middleware_class)) {
+        if (!class_exists($middleware_class) && !interface_exists($middleware_class)) {
             throw new InvalidArgumentException(sprintf(t::_('The provided $Middleware argument %s to method %s() does not contain an existing class name.'), $middleware_class, __METHOD__));
         }
         $ret = null;
