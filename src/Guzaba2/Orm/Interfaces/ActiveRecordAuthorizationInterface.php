@@ -49,7 +49,7 @@ interface ActiveRecordAuthorizationInterface
      * @param string $action
      * @return PermissionInterface|null
      */
-    public function grant_class_permission(Role $Role, string $action): ?PermissionInterface;
+    public static function grant_class_permission(Role $Role, string $action): ?PermissionInterface;
 
     /**
      * Revoke permission of $Role to perform $action on this object
@@ -63,5 +63,5 @@ interface ActiveRecordAuthorizationInterface
      * @param Role $Role
      * @param string $action
      */
-    public function revoke_class_permission(Role $Role, string $action): void;
+    public static function revoke_class_permission(Role $Role, string $action): void;
 }
