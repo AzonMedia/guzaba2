@@ -7,6 +7,7 @@ namespace Guzaba2\Mvc;
 use Azonmedia\Reflection\Reflection;
 use Azonmedia\Reflection\ReflectionMethod;
 use Guzaba2\Application\Application;
+use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BaseException;
@@ -55,6 +56,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     protected const CONFIG_DEFAULTS = [
         'services'      => [
             'Events',
+            'CurrentUser',//needed for the error messages
         ],
     ];
 
@@ -227,7 +229,22 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 }
 
                 //before any execution takes place the permissions of the action must be checked (the _init action does not have permissions and no routes should be pointed directly to it)
-                $this->check_controller_method_permissions($controller_callable[0], $controller_callable[1]);
+                try {
+                    $this->check_controller_method_permissions($controller_callable[0], $controller_callable[1]);
+                } catch (PermissionDeniedException $Exception) {
+                    //$Response = Controller::get_structured_forbidden_response([ 'message' => $Exception->getMessage() ]); //dont use getPrettyMessage for generic and expected exceptions as this one
+                    //do not show the class::method corresponding to the route in the response
+                    //this will be visible only in the log
+                    /** @var CurrentUser $CurrentUser */
+                    $CurrentUser = self::get_service('CurrentUser');
+                    $message = sprintf(t::_('User %1$s is not allowed to %2$s %3$s.'), $CurrentUser->get()->user_name, $Request->getMethod(), $Request->getUri()->getPath() );
+                    $Response = Controller::get_structured_forbidden_response( ['message' => $message] );
+                    if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
+                        Kernel::exception_handler($Exception, LogLevel::DEBUG);
+                    }
+                    return $Response;
+                }
+
 
 
                 //check if controller has init method
