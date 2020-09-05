@@ -6,13 +6,14 @@ namespace Guzaba2\Swoole;
 
 //use Guzaba2\Base\Base as Base;
 use Azonmedia\Utilities\SysUtil;
+use Azonmedia\Http\Body\Structured;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Event\Event;
-use Guzaba2\Http\Body\Structured;
+
 use Guzaba2\Http\Interfaces\WorkerInterface;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Swoole\Debug\Debugger;

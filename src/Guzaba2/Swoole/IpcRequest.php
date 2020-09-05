@@ -11,6 +11,12 @@ use Guzaba2\Authorization\User;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
+use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
+use Guzaba2\Base\Interfaces\UsesServicesInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
+use Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Coroutine\Coroutine;
 use Azonmedia\Http\Body\Structured;
 use Azonmedia\Http\Method;
@@ -30,8 +36,12 @@ use Psr\Http\Message\RequestInterface;
  *
  * The IPC communication is using sendMessage() instead of task() as the tasks can be sent only to Task Workers while the communication must be possible between all workers.
  */
-class IpcRequest extends Request implements IpcRequestInterface
+class IpcRequest extends Request implements IpcRequestInterface, ConfigInterface, ObjectInternalIdInterface, UsesServicesInterface
 {
+
+    use SupportsConfig;
+    use SupportsObjectInternalId;
+    use UsesServices;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [

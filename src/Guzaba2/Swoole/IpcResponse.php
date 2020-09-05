@@ -5,13 +5,23 @@ declare(strict_types=1);
 namespace Guzaba2\Swoole;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Interfaces\ConfigInterface;
+use Guzaba2\Base\Interfaces\ObjectInternalIdInterface;
+use Guzaba2\Base\Interfaces\UsesServicesInterface;
+use Guzaba2\Base\Traits\SupportsConfig;
+use Guzaba2\Base\Traits\SupportsObjectInternalId;
+use Guzaba2\Base\Traits\UsesServices;
 use Guzaba2\Http\Response;
 use Guzaba2\Swoole\Interfaces\IpcResponseInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 
-class IpcResponse extends Response implements IpcResponseInterface
+class IpcResponse extends Response implements IpcResponseInterface, ConfigInterface, ObjectInternalIdInterface, UsesServicesInterface
 {
+
+    use SupportsConfig;
+    use SupportsObjectInternalId;
+    use UsesServices;
 
     protected const CONFIG_DEFAULTS = [
         'services'      => [
