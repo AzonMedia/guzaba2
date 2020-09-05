@@ -331,13 +331,21 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     throw new InvalidArgumentException($message, 0, null, 'fa3a19d3-d001-4afe-8077-9245cea4fa05');
                 }
                 //TODO - the code below does not take into account UNION TYPES coming in PHP 8
+//                if ($value === null && $param['nullable']) {
+//                    //leave it
+//                } elseif (Reflection::isValidType($param['type'])) {
+//                    settype($value, $param['type']);
+//                } else {
+//                    $message = sprintf(t::_('The parameter $%s in %s::%s(%s) has no type set.'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList());
+//                    throw new InvalidArgumentException($message, 0, null, 'fa3a19d3-d001-4afe-8077-9245cea4fa05');
+//                }
                 if ($value === null && $param['nullable']) {
                     //leave it
                 } elseif (Reflection::isValidType($param['type'])) {
                     settype($value, $param['type']);
                 } else {
-                    $message = sprintf(t::_('The parameter $%s in %s::%s(%s) has no type set.'), $param['name'], get_class($Controller), $method, (new ReflectionMethod(get_class($Controller), $method))->getParametersList());
-                    throw new InvalidArgumentException($message, 0, null, 'fa3a19d3-d001-4afe-8077-9245cea4fa05');
+                    //no need to cast - it may not be a built in type but FileUploadInterface for example
+                    //there was already a check done in ClassDeclarationValidation for method parameter types.
                 }
                 $ordered_arguments[] = $value;
             }

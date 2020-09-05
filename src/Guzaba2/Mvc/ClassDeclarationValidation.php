@@ -125,9 +125,9 @@ abstract class ClassDeclarationValidation extends Base implements ClassDeclarati
                 }
                 foreach ($RMethod->getParameters() as $RParameter) {
                     if (!($RType = $RParameter->getType())) {
-                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $loaded_class, $RMethod->getName(), $RParameter->getName()));
+                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is lacking type. All arguments to the controller actions must have their types set.'), $loaded_class, $RMethod->getName(), $RParameter->getName()), 0, null, 'fa3a19d3-d001-4afe-8077-9245cea4fa05');
                     } elseif (!in_array($RType->getName(), self::SUPPORTED_ARGUMENT_TYPES)) {
-                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is of unsupported type %s. The supported types are %s.'), $loaded_class, $RMethod->getName(), $RParameter->getName(), $RType->getName(), implode(', ', self::SUPPORTED_ARGUMENT_TYPES)));
+                        throw new ClassValidationException(sprintf(t::_('The controller action %s::%s() has argument %s which is of unsupported type %s. The supported types are %s.'), $loaded_class, $RMethod->getName(), $RParameter->getName(), $RType->getName(), implode(', ', self::SUPPORTED_ARGUMENT_TYPES)), 0, null, 'fa3a19d3-d001-4afe-8077-9245cea4fa05');
                     }
                 }
             }
