@@ -150,6 +150,87 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         }
     }
 
+    protected function create_error_response(string $message, int $status_code): ResponseInterface
+    {
+        $Body = new Structured([ 'message' => $message ]);
+        $type_handler = $this->get_type_handler();
+        if ($type_handler === 'html_handler') {
+            Kernel::log(sprintf(t::_('The requested content type is "html" (html_handler) while the response body is Structured. Switching to json_handler.')), LogLevel::NOTICE);
+            $type_handler = 'json_handler';
+        }
+        $Response = new Response($status_code, [], $Body);
+        $Response = [$this, $type_handler]($Request, $Response);
+        return $Response;
+    }
+
+    protected function get_type_handler(ServerRequestInterface $Request): string
+    {
+        //$requested_content_type = $Request->getContentType();
+        $requested_content_type = ContentType::get_content_type_from_message($Request);
+
+//        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
+//            $requested_content_type = $this->override_html_content_type;
+//        }
+        //$type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+        //if no content type or unknown content type use the default handler
+        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? $this->default_handler;
+
+        return $type_handler;
+    }
+
+    protected function get_controller_arguments(ServerRequestInterface $Request): array
+    {
+        //get any arguments injected by previous middlware like the Routing
+        $controller_arguments = $Request->getAttribute('controller_arguments') ?? [];
+
+        //then get arguments from the query string
+        //print_r($Request->getQueryParams());
+        $query_params = $Request->getQueryParams();
+        if ($query_params) {
+            if ($repeating_arguments = array_intersect(array_keys($controller_arguments), array_keys($query_params))) {
+                $matched_route = $Request->getAttribute('matched_route') ?? 'unknown';
+                $message = sprintf(t::_('The following arguments are present in both the PATH and the QUERY: %1$s. The matched route is %2$s.'), implode(', ', $repeating_arguments), $matched_route );
+                throw new RunTimeException($message);
+            }
+            $controller_arguments += $query_params;
+        }
+
+        $body_params = $Request->getParsedBody();
+
+        if ($body_params) {
+            //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
+            //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
+            if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
+                if ($repeating_arguments = array_intersect(array_keys($controller_arguments), array_keys($body_params))) {
+                    $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), implode(', ', $repeating_arguments) );
+                    throw new RunTimeException($message);
+                }
+                $controller_arguments += $body_params;
+            } else {
+                $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod(), count($body_params));
+                throw new RunTimeException($message);
+            }
+        }
+
+        if ($uploaded_files = $Request->getUploadedFiles()) {
+            //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST])) {
+            //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST])) {
+            if (Method::get_method_constant($Request) & Method::HTTP_POST) {
+                if ($uploaded_files) {
+                    if ($repeating_arguments = array_intersect($controller_arguments, array_keys($uploaded_files))) {
+                        $message = sprintf(t::_('The following arguments are present in both the Uploaded Files and the request BODY or PATH: %s.'), implode(', ', $repeating_arguments) );
+                        throw new RunTimeException($message);
+                    }
+                }
+                $controller_arguments += $uploaded_files;
+            } else {
+                $message = sprintf(t::_('Bad request. Uploading files is supported only for POST method. %s request was received along with %s arguments.'), $Request->getMethod(), count($body_params));
+                throw new RunTimeException($message);
+            }
+        }
+        return $controller_arguments;
+    }
+
     /**
      * Checks the permissions (if applicable) and executes the controller.
      * If there is view it also executes the view.
@@ -165,68 +246,34 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
     public function process(ServerRequestInterface $Request, RequestHandlerInterface $Handler): ResponseInterface
     {
 
-        //$requested_content_type = $Request->getContentType();
-        $requested_content_type = ContentType::get_content_type_from_message($Request);
+//        //$requested_content_type = $Request->getContentType();
+//        $requested_content_type = ContentType::get_content_type_from_message($Request);
+//
+////        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
+////            $requested_content_type = $this->override_html_content_type;
+////        }
+//        //$type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
+//        //if no content type or unknown content type use the default handler
+//        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? $this->default_handler;
 
-//        if ( ($requested_content_type === NULL || $requested_content_type === ContentType::TYPE_HTML) && $this->override_html_content_type) {
-//            $requested_content_type = $this->override_html_content_type;
-//        }
-        //$type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? self::DEFAULT_TYPE_HANDLER;
-        //if no content type or unknown content type use the default handler
-        $type_handler = self::CONTENT_TYPE_HANDLERS[$requested_content_type] ?? $this->default_handler;
-
+        $type_handler = $this->get_type_handler($Request);
         $controller_callable = $Request->getAttribute('controller_callable');
         if ($controller_callable) {
             if (is_array($controller_callable)) {
-                $controller_arguments = $Request->getAttribute('controller_arguments') ?? []; //in case there are arguments injected by previous middlware like the Routing
 
-
-                $body_params = $Request->getParsedBody();
-
-                if ($body_params) {
-                    //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
-                    //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
-                    if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
-                        if ($repeating_arguments = array_intersect(array_keys($controller_arguments), array_keys($body_params))) {
-                            //throw new RunTimeException(sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), array_values($repeating_arguments) ));
-                            $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), print_r(array_values($repeating_arguments), true));
-                            $Body = new Structured([ 'message' => $message ]);
-                            $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
-                            $Response = [$this, $type_handler]($Request, $Response);
-                            return $Response;
-                        }
-
-                        $controller_arguments += $body_params;
-                    } else {
-                        $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod(), count($body_params));
-                        $Body = new Structured([ 'message' => $message ]);
-                        $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
-                        $Response = [$this, $type_handler]($Request, $Response);
-                        return $Response;
+                try {
+                    $controller_arguments = $this->get_controller_arguments($Request);
+                } catch (RunTimeException $Exception) {
+                    $message = $Exception->getMessage();
+                    $Response = Controller::get_structured_badrequest_response( ['message' => $message] );
+                    if ($type_handler === self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_HTML]) {
+                        Kernel::log(sprintf(t::_('The requested content type is "html" (html_handler) while the response body is Structured. Switching to json_handler.')), LogLevel::NOTICE);
+                        $type_handler = self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_JSON];//'json_handler';
                     }
+                    $Response = [$this, $type_handler]($Request, $Response);
+                    return $Response;
                 }
-                if ($uploaded_files = $Request->getUploadedFiles()) {
-                    //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST])) {
-                    //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST])) {
-                    if (Method::get_method_constant($Request) & Method::HTTP_POST) {
-                        if ($uploaded_files) {
-                            if ($repeating_arguments = array_intersect($controller_arguments, array_keys($uploaded_files))) {
-                                $message = sprintf(t::_('The following arguments are present in both the Uploaded Files and the request BODY or PATH: %s.'), print_r(array_values($repeating_arguments), true));
-                                $Body = new Structured(['message' => $message]);
-                                $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
-                                $Response = [$this, $type_handler]($Request, $Response);
-                                return $Response;
-                            }
-                        }
-                        $controller_arguments += $uploaded_files;
-                    } else {
-                        $message = sprintf(t::_('Bad request. Uploading files is supported only for POST method. %s request was received along with %s arguments.'), $Request->getMethod(), count($body_params));
-                        $Body = new Structured([ 'message' => $message ]);
-                        $Response = new Response(StatusCode::HTTP_BAD_REQUEST, [], $Body);
-                        $Response = [$this, $type_handler]($Request, $Response);
-                        return $Response;
-                    }
-                }
+
 
                 //before any execution takes place the permissions of the action must be checked (the _init action does not have permissions and no routes should be pointed directly to it)
                 try {
@@ -242,6 +289,11 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     if (Application::get_deployment() === Application::DEPLOYMENT['DEVELOPMENT'] && Kernel::get_log_level() === LogLevel::DEBUG) {
                         Kernel::exception_handler($Exception, LogLevel::DEBUG);
                     }
+                    if ($type_handler === self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_HTML]) {
+                        Kernel::log(sprintf(t::_('The requested content type is "html" (html_handler) while the response body is Structured. Switching to json_handler.')), LogLevel::NOTICE);
+                        $type_handler = self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_JSON];//'json_handler';
+                    }
+                    $Response = [$this, $type_handler]($Request, $Response);
                     return $Response;
                 }
 
@@ -257,11 +309,13 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 }
 
                 $Body = $Response->getBody();
+
                 if ($Body instanceof Structured) {
                     //if structured response is returned by the controller and the handler is html_handler, set this to json_handler
-                    if ($type_handler === 'html_handler') {
+                    //if ($type_handler === 'html_handler') {
+                    if ($type_handler === self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_HTML]) {
                         Kernel::log(sprintf(t::_('The requested content type is "html" (html_handler) while the response body is Structured. Switching to json_handler.')), LogLevel::NOTICE);
-                        $type_handler = 'json_handler';
+                        $type_handler = self::CONTENT_TYPE_HANDLERS[ContentType::TYPE_JSON];//'json_handler';
                     }
                     $Response = [$this, $type_handler]($Request, $Response);
                 } else {
