@@ -394,7 +394,7 @@ ORDER BY
         $ret = $s->execute()->fetchAll();
 
         if (!$ret) {
-            throw new RunTimeException(sprintf(t::_('The table %s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_tprefix() . $table_name));
+            throw new RunTimeException(sprintf(t::_('The table %1$s.%2$s does not exist. Please check the class main_table and the connection tprefix (table prefix).'), $Connection::get_database(), $Connection::get_tprefix() . $table_name));
         }
 
         $q = "
