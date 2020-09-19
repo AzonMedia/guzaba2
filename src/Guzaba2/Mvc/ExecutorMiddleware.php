@@ -200,14 +200,18 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         if ($body_params) {
             //if (in_array($Request->getMethodConstant(), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
             //if (in_array(Method::get_method_constant($Request), [Method::HTTP_POST, Method::HTTP_PUT, Method::HTTP_PATCH])) {
-            if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
+            //if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
+            //$methods_with_body_params = Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH;
+            //if (Method::get_method_constant($Request) & (Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH)) {
+            $methods_with_body_params = Method::HTTP_POST | Method::HTTP_PUT | Method::HTTP_PATCH | Method::HTTP_DELETE;//allow DELETE too - may be removed later
+            if (Method::get_method_constant($Request) & $methods_with_body_params) {
                 if ($repeating_arguments = array_intersect(array_keys($controller_arguments), array_keys($body_params))) {
                     $message = sprintf(t::_('The following arguments are present in both the PATH and the request BODY: %s.'), implode(', ', $repeating_arguments) );
                     throw new RunTimeException($message);
                 }
                 $controller_arguments += $body_params;
             } else {
-                $message = sprintf(t::_('Bad request. Request body is supported only for POST, PUT, PATCH methods. %s request was received along with %s arguments.'), $Request->getMethod(), count($body_params));
+                $message = sprintf(t::_('Bad request. Request body is supported only for %1$s methods. %2$s request was received along with %3$s arguments.'), implode(', ', $methods_with_body_params), $Request->getMethod(), count($body_params));
                 throw new RunTimeException($message);
             }
         }
