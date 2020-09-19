@@ -7,6 +7,7 @@ namespace Guzaba2\Orm\Traits;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Orm\Exceptions\MultipleValidationFailedException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
+use Guzaba2\Translator\Translator as t;
 use ReflectionException;
 
 trait ActiveRecordValidation
@@ -50,21 +51,26 @@ trait ActiveRecordValidation
     {
         $properties = static::get_property_names();
         $validation_exceptions = [];
-        foreach ($properties as $property) {
-            //basic validation
-            $validation_rules = self::get_validation_rules();
-            foreach ($validation_rules as $property_name => $validation_rule) {
-                if (!empty($validation_rule['required']) && !$this->{$property_name}) {
-                    $validation_exceptions[] = new ValidationFailedException($this, $property_name, sprintf(t::_('The property %s on instance of class % must have value.'), $property_name, get_class($this)));
-                }
-                if (!empty($validation_rule['min_length']) && strlen($this->{$property_name}) < $validation_rule['min_length']) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
-                    $validation_exceptions[] = new ValidationFailedException($this, $property_name, sprintf(t::_('The property %s on instance of class %s must be at least %s characters.'), $property_name, get_class($this), $validation_rule['min_length']));
-                }
-                if (!empty($validation_rule['max_length']) && strlen($this->{$property_name}) > $validation_rule['max_length']) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
-                    $validation_exceptions[] = new ValidationFailedException($this, $property_name, sprintf(t::_('The property %s on instance of class %s must be at maximum %s characters.'), $property_name, get_class($this), $validation_rule['max_length']));
-                }
+
+        //basic validation
+        $validation_rules = self::get_validation_rules();
+        foreach ($validation_rules as $property_name => $validation_rule) {
+            if (!empty($validation_rule['required']) && !$this->{$property_name}) {
+                $message = sprintf(t::_('The property %1$s on instance of class %2$s must have value.'), $property_name, get_class($this));
+                $validation_exceptions[] = new ValidationFailedException($this, $property_name, $message);
             }
-            //method validation
+            if (!empty($validation_rule['min_length']) && strlen($this->{$property_name}) < $validation_rule['min_length']) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
+                $message = sprintf(t::_('The property %1$s on instance of class %2$s must be at least %3$s characters.'), $property_name, get_class($this), $validation_rule['min_length']);
+                $validation_exceptions[] = new ValidationFailedException($this, $property_name, $message);
+            }
+            if (!empty($validation_rule['max_length']) && strlen($this->{$property_name}) > $validation_rule['max_length']) { // TODO - use a wrapper and mb_string or use overloading of strign functions in php.ini
+                $message = sprintf(t::_('The property %1$s on instance of class %2$s must be at maximum %3$s characters.'), $property_name, get_class($this), $validation_rule['max_length']);
+                $validation_exceptions[] = new ValidationFailedException($this, $property_name, $message);
+            }
+        }
+
+        //method validation
+        foreach ($properties as $property) {
             $method_name = '_validate_' . $property;
             $static_method_name = '_validate_static_' . $property;
             if (method_exists($this, $method_name)) {

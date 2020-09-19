@@ -165,7 +165,8 @@ VALUES
         ];
         $Connection->prepare($q)->execute($b);
 
-        Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->getHex()));
+        //Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->getHex()));
+        Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->toString()));
     }
 
     /**
