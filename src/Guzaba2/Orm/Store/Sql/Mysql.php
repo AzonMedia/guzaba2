@@ -1368,8 +1368,8 @@ WHERE
             , meta.meta_object_last_update_transaction_id
             ";
             $select_str .= "
-            , create_role.role_name AS create_role_name
-            , last_update_role.role_name AS last_update_role_name
+            , create_role.role_name AS meta_create_role_name
+            , last_update_role.role_name AS meta_last_update_role_name
             ";
 
             $from_str .= " 
