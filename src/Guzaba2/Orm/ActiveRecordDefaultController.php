@@ -428,6 +428,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
             $ret['id'] = $ActiveRecord->get_id();
             $ret['uuid'] = $ActiveRecord->get_uuid();
         }
+        $ret = array_merge($ret, $ActiveRecord->as_array());
         return $ret;
     }
 

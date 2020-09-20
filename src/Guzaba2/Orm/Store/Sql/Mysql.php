@@ -948,17 +948,11 @@ ON DUPLICATE KEY UPDATE
 {$update_str}
                 ";
 
-                try {
-                    $Statement = $Connection->prepare($q);
+                $Statement = $Connection->prepare($q);
 
-                    $ret = $Statement->execute($data_arr);
+                $ret = $Statement->execute($data_arr);
 
-                    //print 'BB'.$Connection->get_affected_rows().'BB';
-                } catch (DuplicateKeyException $exception) {
-                    throw new DuplicateKeyException($exception->getMessage(), 0, $exception);
-                } catch (ForeignKeyConstraintException $exception) {
-                    throw new ForeignKeyConstraintException($exception->getMessage(), 0, $exception);
-                }
+
             }
         }
 
