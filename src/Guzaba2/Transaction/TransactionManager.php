@@ -6,7 +6,10 @@ namespace Guzaba2\Transaction;
 
 use Azonmedia\Patterns\CallbackContainer;
 use Guzaba2\Base\Base;
+use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Transaction\Interfaces\TransactionInterface;
+use Guzaba2\Transaction\Interfaces\TransactionManagerInterface;
 
 /**
  * Class TransactionManager
@@ -14,33 +17,41 @@ use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
  * If multiple/parallel transactions of the same type are needed then a coroutine is to be used.
  * The TransactionManager is a coroutine dependency.
  */
-class TransactionManager extends Base
+class TransactionManager extends Base implements TransactionManagerInterface
 {
 
+    /**
+     * @var TransactionInterface[]
+     */
     private array $current_transactions = [];
 
-    public function set_current_transaction(?Transaction $Transaction, string $transaction_type = ''): void
+    public function set_current_transaction(?TransactionInterface $Transaction, string $transaction_type = ''): void
     {
 
         if ($Transaction && $transaction_type) {
-            //throw new
+            throw new InvalidArgumentException(sprintf(t::_('Both Transaction and transaction_type are provided.')));
         }
         if (!$Transaction && !$transaction_type) {
-            //throw
+            throw new InvalidArgumentException(sprintf(t::_('Neither Transaction nor transaction_type is provided.')));
         }
-
         if ($Transaction) {
-            //$transaction_type = $MemoryTransaction->get_type();
             $transaction_type = $Transaction->get_resource()->get_resource_id();
         }
         $this->current_transactions[$transaction_type] = $Transaction;
     }
 
-    public function get_current_transaction(string $transaction_type): ?Transaction
+    /**
+     * @param string $transaction_type
+     * @return TransactionInterface|null
+     */
+    public function get_current_transaction(string $transaction_type): ?TransactionInterface
     {
         return $this->current_transactions[$transaction_type] ?? null;
     }
 
+    /**
+     * @return TransactionInterface[]
+     */
     public function get_all_current_transactions(): array
     {
         return $this->current_transactions;

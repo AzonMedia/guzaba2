@@ -15,6 +15,7 @@ use Guzaba2\Event\Event;
 use Guzaba2\Event\Events;
 use Guzaba2\Resources\Interfaces\ResourceInterface;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Transaction\Interfaces\TransactionInterface;
 use Guzaba2\Translator\Translator as t;
 use ReflectionException;
 use Throwable;
@@ -33,7 +34,7 @@ use Throwable;
  * When the next nested transaction is started it reuses the last savepoint (the previous nested transaction is always in status SAVED or ROLLEDBACK)
  * Because of this the $savepoint parameter on the savepoint manipulation methods has a default value ("SAVEPOINT")
  */
-abstract class Transaction extends Base /* implements ResourceInterface */
+abstract class Transaction extends Base implements TransactionInterface /* implements ResourceInterface */
 {
 
     protected const CONFIG_DEFAULTS = [
@@ -45,51 +46,14 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
     protected const CONFIG_RUNTIME = [];
 
-    public const STATUS = [
-        'CREATED'       => 'CREATED',
-        'STARTED'       => 'STARTED',
-        'SAVED'         => 'SAVED',
-        'ROLLEDBACK'    => 'ROLLEDBACK',
-        'COMMITTED'     => 'COMMITTED',
-    ];
-
-    /**
-     * A transaction in the following statuses can not be changed.
-     */
-    public const END_STATUSES = [
-        self::STATUS['COMMITTED'],
-        self::STATUS['ROLLEDBACK'],
-    ];
-
-    public const ROLLBACK_REASON = [
-        'EXCEPTION'     => 'EXCEPTION',//the transaction was rolled back because an exception was thrown and the scope reference was destroyed
-        'PARENT'        => 'PARENT',//the parent transaction was rolled back while the child one was saved
-        'IMPLICIT'      => 'IMPLICIT',//the scope was left (return statement) but there is no exception, or the scope reference was overwritten (in a loop)
-        'EXPLICIT'      => 'EXPLICIT',//the transaction was rolled back with a rollback() call
-    ];
-
-    /**
-     * A list of events that can be fired by this class
-     */
-    public const EVENT = [
-        '_before_begin'             => '_before_begin',
-        '_after_begin'              => '_after_begin',
-        '_before_create_savepoint'  => '_before_create_savepoint',//nested transactions use this instead of begin
-        '_after_create_savepoint'   => '_after_create_savepoint',
-        '_before_save'              => '_before_save',//nested transactions use this instead of commit
-        '_after_save'               => '_after_save',
-        '_before_commit'            => '_before_commit',
-        '_after_commit'             => '_after_commit',
-        '_before_rollback'          => '_before_rollback',
-        '_after_rollback'           => '_after_rollback',
-        '_before_destruct'          => '_before_destruct',
-    ];
-
     /**
      * @var string|null
      */
     private ?string $rollback_reason = null;//NULL means not rolled back or reason unknown
 
+    /**
+     * @var null
+     */
     private ?\Exception $InterruptingException = null;
 
     /**
@@ -99,13 +63,13 @@ abstract class Transaction extends Base /* implements ResourceInterface */
     private bool $rollback_initiator_flag = false;
 
     /***
-     * @var Transaction|null
+     * @var TransactionInterface|null
      */
-    private ?Transaction $ParentTransaction = null;
+    private ?self $ParentTransaction = null;
 
     /**
      * Child transactions
-     * @var Transaction[]
+     * @var TransactionInterface[]
      */
     private array $children = [];
 
@@ -198,7 +162,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         return $this->ParentTransaction ? true : false ;
     }
 
-    public function get_parent(): ?Transaction
+    public function get_parent(): ?self
     {
         return $this->ParentTransaction;
     }
@@ -208,7 +172,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
         return !$this->has_parent();
     }
 
-    public function get_master(): Transaction
+    public function get_master(): self
     {
         $Transaction = $this;
         while ($Transaction->has_parent()) {
@@ -517,8 +481,7 @@ abstract class Transaction extends Base /* implements ResourceInterface */
 
         parent::__destruct();
     }
-
-    abstract public function get_resource(): TransactionalResourceInterface;
+    
 
     abstract protected function execute_begin(): void;
 
