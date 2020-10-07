@@ -38,6 +38,7 @@ use Guzaba2\Orm\Traits\ActiveRecordAuthorization;
 use Guzaba2\Orm\Traits\ActiveRecordLog;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
+use Guzaba2\Transaction\Interfaces\TransactionInterface;
 use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 use Guzaba2\Translator\Translator as t;
@@ -1501,7 +1502,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param array $options
      * @return Transaction
      */
-    public static function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
+    public static function new_transaction(?ScopeReference &$ScopeReference, array $options = []): TransactionInterface
     {
 //
 //        if ($ScopeReference) {
@@ -1518,4 +1519,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //the only method that is needed is get_resource_id() and this is Coroutine dependent not instance dependent
         return (new OrmTransactionalResource())->new_transaction($ScopeReference, $options);
     }
+
+//    /**
+//     * Used to obtain the current transaction within the ActiveRecord context.
+//     * For example in the hooks like _before_write() or _after_delete().
+//     * NO - the whole concept of obtaining the current transaction is flawed.
+//     * This will allow to attach callbacks to a transaction that was started somewhere else.
+//     * Instead a nested transaction is to be started
+//     * @return TransactionInterface
+//     */
+//    public static function get_current_transaction(): TransactionInterface
+//    {
+//        $TransactionManager = self::get_service('TransactionManager');
+//    }
 }

@@ -244,11 +244,11 @@ abstract class Transaction extends Base implements TransactionInterface /* imple
     protected function set_current_transaction(?Transaction $Transaction): void
     {
         /** @var TransactionManager $TXM */
-        $TXM = self::get_service('TransactionManager');
+        $TransactionManager = self::get_service('TransactionManager');
         if ($Transaction) {
-            $TXM->set_current_transaction($Transaction);
+            $TransactionManager->set_current_transaction($Transaction);
         } else {
-            $TXM->set_current_transaction(null, $this->get_resource()->get_resource_id());
+            $TransactionManager->set_current_transaction(null, $this->get_resource()->get_resource_id());
         }
     }
 
