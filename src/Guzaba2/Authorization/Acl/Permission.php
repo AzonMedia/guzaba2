@@ -214,8 +214,8 @@ class Permission extends ActiveRecord implements PermissionInterface
                 'action_name'   => $this->action_name,
             ]);
             $message = sprintf(t::_('There is already an ACL permission records for the same role %1$s, class %2$s, object_id %3$s and action %4$s.'),
-                (new Role($this->role_id))->role_name,
-                self::get_class_name($this->class_id),
+                (new Role($this->role_id))->role_name.' ('.$this->role_id.')',
+                self::get_class_name($this->class_id).' ('.$this->class_id.')',
                 $this->object_id,
                 $this->action_name
             );

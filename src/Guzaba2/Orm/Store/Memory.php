@@ -11,6 +11,7 @@ use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Kernel\Runtime;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -38,12 +39,14 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 //        'cleanup_percentage_records'    => 20, //the percentage of records to be removed
 //        'cleanup_expiration_time'       => 300, // 5 minutes in seconds
 
-        'max_rows'                      => 100000,
-        'cleanup_at_percentage_usage'   => 95,//when the cleanup should be triggered
-        'cleanup_percentage_records'    => 20,//the percentage of records to be removed
-        'cleanup_expiration_time'       => 300,// 5 minutes in seconds
+        'max_rows'                              => 100000,
+        'cleanup_at_percentage_usage'           => 95,//when the cleanup should be triggered
+        'cleanup_percentage_records'            => 20,//the percentage of records to be removed
+        'cleanup_expiration_time'               => 300,// 5 minutes in seconds
 
-        'services'      => [
+        'cleanup_at_percentage_memory_limit'    => 75,//reaching this usage from the memory limit will trigger cleanup
+
+        'services'                              => [
             'OrmMetaStore',
             'Apm',
             'Events',
@@ -810,7 +813,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         $this->clear_cache();
         $this->reset_stats();
 
-        $this->start_cleanup_timer();
+        //$this->start_cleanup_timer();
     }
 
     /**
@@ -818,6 +821,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      */
     public function start_cleanup_timer(): void
     {
+
 
         if (null === $this->cleanup_timer_id || (!\Swoole\Timer::exists($this->cleanup_timer_id))) {
 //            $CleanupFunction = function () {
@@ -854,22 +858,44 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //$this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $CleanupFunction);
 
             $Function = function (): void {
-                if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
-                    $this->clear_cache(self::CONFIG_RUNTIME['cleanup_at_percentage_usage']);
+                $percentage_reached = $this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0;
+                if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || $percentage_reached >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage']) {
+                    $message_log = sprintf(
+                        t::_('%1$s: Triggering cache cleanup because the number of rows reached %1$s which is %2$s%% out of the maximum allowed %3$s records. The cleanup is set to be triggered at reaching %4$s%%.'),
+                        $this->total_count,
+                        $percentage_reached,
+                        self::CONFIG_RUNTIME['max_rows'],
+                        self::CONFIG_RUNTIME['cleanup_at_percentage_usage']
+                    );
+                    Kernel::log($message_log, LogLevel::INFO);
+                    $this->clear_cache();
+                }
+
+                //also trigger cache cleanup if the memory limit is nearing the limit
+                $memory_percentage_reached =  Runtime::memory_get_usage() / Runtime::get_memory_limit() * 100;
+                if ($memory_percentage_reached >= self::CONFIG_RUNTIME['cleanup_at_percentage_memory_limit']) {
+                    $message_log = sprintf(
+                        t::_('%1$s: Triggering cache cleanup because the real memory usage reached %1$sMB which is %2$s%% out of the memory limit of %3$sMB. The cleanup is set to be triggered at reaching %4$s%%.'),
+                        round(Runtime::memory_get_usage() / (1024 * 1024), 2),
+                        $memory_percentage_reached,
+                        Runtime::get_memory_limit() / (1024 * 1024),
+                        self::CONFIG_RUNTIME['cleanup_at_percentage_memory_limit']
+                    );
+                    Kernel::log($message_log, LogLevel::INFO);
+                    $this->clear_cache();
                 }
             };
-
             $this->cleanup_timer_id = \Swoole\Timer::tick(self::CHECK_MEMORY_STORE_MILLISECONDS, $Function);
         }
     }
 
-    public function clear_cache(int $percentage = 100): int
+    public function clear_cache(int $percentage = self::CONFIG_RUNTIME['cleanup_percentage_records']): int
     {
         //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
         //if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
             // cleanup
-            $total_count = $this->total_count;
-            $cleanedup = 0;
+        $total_count = $this->total_count;
+        $cleanedup = 0;
 
         foreach ($this->data as $class => $class_data) {
             foreach ($class_data as $object => $object_data) {
@@ -882,7 +908,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                         $this->total_count--;
                         $cleanedup++;
                         $cleanup_percentage = $cleanedup / $total_count * 100.0;
-                        if ($cleanup_percentage >= self::CONFIG_RUNTIME['cleanup_percentage_records']) {
+                        if ($cleanup_percentage >= $percentage) {
                             //$message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
                             //Kernel::log($message_log, LogLevel::INFO);
                             //return $cleanedup;
@@ -893,7 +919,14 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             }
         }
         //}
-        $message_log = sprintf(t::_('%1$s: Memory store cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d'), __CLASS__, $total_count, $cleanedup, $total_count - $cleanedup);
+        $message_log = sprintf(
+            t::_('%1$s: Memory store cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d. Cleanup run with target cleanup percentage set to %5$s%%.'),
+            __CLASS__,
+            $total_count,
+            $cleanedup,
+            $total_count - $cleanedup,
+            $percentage
+        );
         Kernel::log($message_log, LogLevel::INFO);
         return $cleanedup;
     }

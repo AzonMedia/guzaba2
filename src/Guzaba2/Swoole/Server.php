@@ -338,7 +338,8 @@ class Server extends \Guzaba2\Http\Server
         $this->print_server_start_messages();
 
         //just before the server is started enable the coroutine hooks (not earlier as these will be in place but we will not be in coroutine cotext yet and this will trigger an error - for example when exec() is used)
-        \Swoole\Runtime::enableCoroutine(true);//we will be running everything in coroutine context and makes sense to enable all hooks
+        //since swoole 4.5.4 SWOOLE_HOOK_ALL inludes SWOOLE_HOOK_CURL, but lets provide both just in case
+        \Swoole\Runtime::enableCoroutine(true, SWOOLE_HOOK_ALL | SWOOLE_HOOK_CURL);//we will be running everything in coroutine context and makes sense to enable all hooks
 
         $this->start_microtime = microtime(true);
         $this->SwooleHttpServer->start();

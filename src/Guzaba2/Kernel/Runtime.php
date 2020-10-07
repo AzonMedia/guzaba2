@@ -72,6 +72,27 @@ abstract class Runtime
     }
 
     /**
+     * Returns the memory usage in bytes.
+     * If $real_usage is provided will return the allocated memory (which is more than the used) in bytes.
+     * @param bool $real_usage
+     * @return int
+     */
+    public static function memory_get_usage(bool $real_usage = false): int
+    {
+        return memory_get_usage($real_usage);
+    }
+
+    /**
+     * Alias of self::memory_get_usage()
+     * @param bool $real_usage
+     * @return int
+     */
+    public static function get_memory_usage(bool $real_usage = false): int
+    {
+        return self::memory_get_usage($real_usage);
+    }
+
+    /**
      * @return int
      */
     public static function gc_collect_cycles(): int

@@ -81,7 +81,13 @@ class WorkerStart extends HandlerBase
 
         //\Swoole\Timer::tick($this->HttpServer->get_ipc_responses_cleanup_time() * 1000, [$this->HttpServer, 'ipc_responses_cleanup']);
 
+        Kernel::$Watchdog->checkin($Server, $worker_id);
+        Kernel::$Watchdog->check($worker_id);
 
+        self::get_service('Events')->create_event($this, '_after_start');
+
+        //this will stop the execution
+        //there should be nothing after that
         //if (Debugger::is_enabled()) {
         if ($this->enable_debug_ports) {
             //pass all paths there classes implementing CommandInterface exist
@@ -91,11 +97,10 @@ class WorkerStart extends HandlerBase
             $this->SwooleDebugger = new \Guzaba2\Swoole\Debug\Debugger($this->HttpServer, $Debugger, $this->base_debug_port);
             //after the server is started print here will not print anything - it seems the output is redirected
         }
-        
-        Kernel::$Watchdog->checkin($Server, $worker_id);
-        Kernel::$Watchdog->check($worker_id);
 
-        self::get_service('Events')->create_event($this, '_after_start');
+
+        
+
     }
 
     /**
