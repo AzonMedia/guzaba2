@@ -207,7 +207,7 @@ class User extends ActiveRecord implements UserInterface
             try {
                 $Role = new Role($this->role_id);
                 if (!$Role->role_is_user) {
-                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role $1s set for user %2$s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name));
+                    return new ValidationFailedException($this, 'role_id', sprintf(t::_('The role %1$s set for user %2$s is not a user role (role_us_user must be set to true).'), $Role->role_name, $this->user_name));
                 }
                 return null;
             } catch (RecordNotFoundException $Exception) {
