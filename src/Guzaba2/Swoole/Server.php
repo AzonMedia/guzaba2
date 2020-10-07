@@ -16,6 +16,7 @@ use Guzaba2\Event\Event;
 
 use Guzaba2\Http\Interfaces\WorkerInterface;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Kernel\Runtime;
 use Guzaba2\Swoole\Debug\Debugger;
 use Guzaba2\Swoole\Interfaces\IpcRequestInterface;
 use Guzaba2\Swoole\Interfaces\IpcResponseInterface;
@@ -382,7 +383,7 @@ class Server extends \Guzaba2\Http\Server
 
         //$debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
         //Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
-        Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s'), $this->options['worker_num'], $this->options['task_worker_num']) . PHP_EOL);
+        Kernel::printk(sprintf(t::_('Workers: %1$s, Task Workers: %2$s, Worker Memory Limit: %3$sMB'), $this->options['worker_num'], $this->options['task_worker_num'], Runtime::get_memory_limit() / (1024 * 1024) ) . PHP_EOL);
         $WorkerStartHandler = $this->get_handler('WorkerStart');
         if ($WorkerStartHandler->debug_ports_enabled()) {
             $base_port = $WorkerStartHandler->get_base_debug_port();

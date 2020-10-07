@@ -42,7 +42,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         'max_rows'                              => 100000,
         'cleanup_at_percentage_usage'           => 95,//when the cleanup should be triggered
         'cleanup_percentage_records'            => 20,//the percentage of records to be removed
-        'cleanup_expiration_time'               => 300,// 5 minutes in seconds
+        'cleanup_expiration_time'               => 3,// 5 minutes in seconds
 
         'cleanup_at_percentage_memory_limit'    => 75,//reaching this usage from the memory limit will trigger cleanup
 
@@ -863,7 +863,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                     $message_log = sprintf(
                         t::_('%1$s: Triggering cache cleanup because the number of rows reached %1$s which is %2$s%% out of the maximum allowed %3$s records. The cleanup is set to be triggered at reaching %4$s%%.'),
                         $this->total_count,
-                        $percentage_reached,
+                        round($percentage_reached, 2),
                         self::CONFIG_RUNTIME['max_rows'],
                         self::CONFIG_RUNTIME['cleanup_at_percentage_usage']
                     );
@@ -875,9 +875,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 $memory_percentage_reached =  Runtime::memory_get_usage() / Runtime::get_memory_limit() * 100;
                 if ($memory_percentage_reached >= self::CONFIG_RUNTIME['cleanup_at_percentage_memory_limit']) {
                     $message_log = sprintf(
-                        t::_('%1$s: Triggering cache cleanup because the real memory usage reached %1$sMB which is %2$s%% out of the memory limit of %3$sMB. The cleanup is set to be triggered at reaching %4$s%%.'),
+                        t::_('%1$s: Triggering cache cleanup because the memory usage reached %1$sMB which is %2$s%% out of the memory limit of %3$sMB. The cleanup is set to be triggered at reaching %4$s%%.'),
                         round(Runtime::memory_get_usage() / (1024 * 1024), 2),
-                        $memory_percentage_reached,
+                        round($memory_percentage_reached, 2),
                         Runtime::get_memory_limit() / (1024 * 1024),
                         self::CONFIG_RUNTIME['cleanup_at_percentage_memory_limit']
                     );
@@ -897,37 +897,61 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         $total_count = $this->total_count;
         $cleanedup = 0;
 
-        foreach ($this->data as $class => $class_data) {
-            foreach ($class_data as $object => $object_data) {
-                foreach ($object_data as $last_update_time => $data) {
-                    $time = (double) microtime(true);
-                    if ($data['refcount'] == 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
-                        // !!!!!!!FIXME!!!!!
-                        unset($this->data[$class][$object]);
+        $start_memory_usage = Runtime::memory_get_usage() / (1024 * 1024);
+        $message_log = sprintf(t::_('Memory usage before cleanup: %1$sMB'), round($start_memory_usage, 2) );
+        Kernel::log($message_log, LogLevel::INFO);
 
-                        $this->total_count--;
-                        $cleanedup++;
-                        $cleanup_percentage = $cleanedup / $total_count * 100.0;
-                        if ($cleanup_percentage >= $percentage) {
-                            //$message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
-                            //Kernel::log($message_log, LogLevel::INFO);
-                            //return $cleanedup;
-                            break 3;
+        if ($total_count) {
+
+            foreach ($this->data as $class => $class_data) {
+                foreach ($class_data as $object => $object_data) {
+                    foreach ($object_data as $last_update_time => $data) {
+                        $time = (double)microtime(true);
+                        if ($data['refcount'] === 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
+                        //if ($data['refcount'] === 0) {
+                            // !!!!!!!FIXME!!!!! - ok?
+                            unset($this->data[$class][$object][$last_update_time]);
+
+                            $this->total_count--;
+                            $cleanedup++;
+                            $cleanup_percentage = $cleanedup / $total_count * 100.0;
+                            if ($cleanup_percentage >= $percentage) {
+                                //$message_log = sprintf(t::_('Memory cleanup: %d records found, %d records cleaned up. Records left count: %d'), $total_count, $cleanedup, $total_count - $cleanedup);
+                                //Kernel::log($message_log, LogLevel::INFO);
+                                //return $cleanedup;
+                                break 3;
+                            }
                         }
                     }
                 }
             }
+
+            $message_log = sprintf(
+                t::_('%1$s: Memory store cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d. Cleanup run with target cleanup percentage set to %5$s%%.'),
+                __CLASS__,
+                $total_count,
+                $cleanedup,
+                $total_count - $cleanedup,
+                $percentage
+            );
+            Kernel::log($message_log, LogLevel::INFO);
+
+        } else {
+            //there are no records in the cache and the used memory is still too high
+            //this means there is memory leak
+            //and it is best to restart the worker
+            //TODO
         }
-        //}
-        $message_log = sprintf(
-            t::_('%1$s: Memory store cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d. Cleanup run with target cleanup percentage set to %5$s%%.'),
-            __CLASS__,
-            $total_count,
-            $cleanedup,
-            $total_count - $cleanedup,
-            $percentage
-        );
+
+        //it is very important to also trigger the GC so that the object that have cyclic references but are no longer used to be cleared.
+        $collected_cycles = Runtime::gc_collect_cycles();
+        $message_log = sprintf(t::_('Forced GC cycles collection - %1$s cycles collected.'), $collected_cycles);
         Kernel::log($message_log, LogLevel::INFO);
+
+        $end_memory_usage = Runtime::memory_get_usage() / (1024 * 1024);
+        $message_log = sprintf(t::_('Memory usage after cleanup: %1$sMB. Freed memory: %2$sMB.'), round($end_memory_usage, 2), round($start_memory_usage - $end_memory_usage, 2) );
+        Kernel::log($message_log, LogLevel::INFO);
+
         return $cleanedup;
     }
 
