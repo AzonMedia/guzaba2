@@ -468,6 +468,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //if there is no permission and the permission checks are enabled a RecordNotFoundException will be thrown
         //instead of the expected PermissionDeniedException
         //TODO - add a config option that allows the PermissionDenied to be replaced with RecordNotFound for added security
+        $properties = self::get_property_names();
+        foreach (array_keys($index) as $index_property) {
+            if ($index_property === 'meta_object_uuid') {
+                continue;
+            }
+            if (!in_array($index_property, $properties)) {
+                throw new InvalidArgumentException(sprintf(t::_('An invalid property named %1$s was provided to the constructor of %2$s.'), $index_property, get_class($this) ));
+            }
+        }
         $primary_columns = static::get_primary_index_columns();
         if (array_keys($index) === array_keys($primary_columns)) {
             //it is OK to proceed to the pointer lookup

@@ -209,12 +209,17 @@ class Permission extends ActiveRecord implements PermissionInterface
         try {
             $Permission = new self([
                 'role_id'       => $this->role_id,
-                'class_name'    => $this->class_name,
+                'class_id'    => $this->class_id,
                 'object_id'     => $this->object_id,
                 'action_name'   => $this->action_name,
             ]);
-
-            throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', sprintf(t::_('There is already an ACL permission records for the same role, class, object_id and action.')));
+            $message = sprintf(t::_('There is already an ACL permission records for the same role %1$s, class %2$s, object_id %3$s and action %4$s.'),
+                (new Role($this->role_id))->role_name,
+                self::get_class_name($this->class_id),
+                $this->object_id,
+                $this->action_name
+            );
+            throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', $message);
         } catch (RecordNotFoundException $Exception) {
             //no duplicates
         }
