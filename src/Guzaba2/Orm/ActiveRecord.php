@@ -378,7 +378,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //        if (!$this->is_new() && count($this->record_data)) { //count($this->record_data) means is not deleted
 //            $this->Store->free_pointer($this);
 //        }
+
         if (!$this->is_new()) {
+
             //even if it is deleted still try to free the pointer
             $this->Store->free_pointer($this);
         }
@@ -485,6 +487,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
             $_pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
             $index = self::get_index_from_data($_pointer['data']);
+            //the whole purpose of this was to obtain the correct primary index
+            unset($_pointer);
+            $free_data_pointer_obtained_during_index_lookup = true;
         }
 
         if ($this->Store->there_is_pointer_for_new_version(get_class($this), $index)) {
@@ -501,6 +506,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                 $this->was_new_flag =& $_pointer['was_new_flag'];
             }
             $this->record_modified_data = [];
+        }
+
+        if (!empty($free_data_pointer_obtained_during_index_lookup)) {
+            $this->Store->free_pointer($this);//if not freed it will result in refcount = 1, instead of 1 for the objects obtained not with their primary index
         }
 
         //CLASS_PROPERTIES

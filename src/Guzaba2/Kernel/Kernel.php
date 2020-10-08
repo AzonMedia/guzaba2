@@ -336,6 +336,8 @@ BANNER;
             throw new \Exception(t::_('Kernel is not initialized. Please execute Kernel::initialize() first.'));
         }
 
+        Runtime::set_memory_limit(19 * 1024 * 1024);
+
         self::printk(t::_('Kernel::run() invoked') . PHP_EOL);
         self::printk(PHP_EOL);
 

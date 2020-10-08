@@ -36,6 +36,8 @@ class Server extends \Guzaba2\Http\Server
         'ipc_responses_cleanup_time'        => 10,// in seconds - older responses than this will be removed, also used for the tick for the cleanup
         'ipc_responses_default_timeout'     => 5,//the default time to await for response
 
+        'free_memory_percentage_warning'    => 50,//if the free memory is less than the specified percentage at launch a warning will be shown
+
         'services'      => [
             'Events',
         ]
@@ -383,7 +385,31 @@ class Server extends \Guzaba2\Http\Server
 
         //$debugger_ports = Debugger::is_enabled() ? Debugger::get_base_port().' - '.(Debugger::get_base_port() + $this->options['worker_num']) : t::_('Debugger Disabled');
         //Kernel::printk(sprintf(t::_('Workers: %s, Task Workers: %s, Workers Debug Ports: %s'), $this->options['worker_num'], $this->options['task_worker_num'], $debugger_ports ).PHP_EOL );
-        Kernel::printk(sprintf(t::_('Workers: %1$s, Task Workers: %2$s, Worker Memory Limit: %3$sMB'), $this->options['worker_num'], $this->options['task_worker_num'], Runtime::get_memory_limit() / (1024 * 1024) ) . PHP_EOL);
+        $memory_limit = Runtime::get_memory_limit();
+        $memory_usage = Runtime::memory_get_usage();
+        $message = sprintf(
+            t::_('Workers: %1$s, Task Workers: %2$s, Worker Memory Limit: %3$sMB, Current Memory Usage: %4$sMB'),
+            $this->options['worker_num'],
+            $this->options['task_worker_num'],
+            $memory_limit / (1024 * 1024),
+            round($memory_usage / (1024 * 1024), 2),
+        );
+        Kernel::printk($message . PHP_EOL);
+
+        $used_memory_percentage = $memory_usage / $memory_limit * 100;
+
+        if ($used_memory_percentage > self::CONFIG_RUNTIME['free_memory_percentage_warning']) {
+            $recommended_minimum_memory_limit = ceil($memory_usage / (1024 * 1024) * 2);
+            $message = sprintf(
+                t::_('WARNING: The current free memory is %1$s%% which is too low (less that %2$s%%). Please consider increasing the memory limit to at least %3$sMB.'),
+                round(100 - $used_memory_percentage, 2),
+                self::CONFIG_RUNTIME['free_memory_percentage_warning'],
+                $recommended_minimum_memory_limit
+            );
+            Kernel::printk($message . PHP_EOL);
+        }
+
+
         $WorkerStartHandler = $this->get_handler('WorkerStart');
         if ($WorkerStartHandler->debug_ports_enabled()) {
             $base_port = $WorkerStartHandler->get_base_debug_port();

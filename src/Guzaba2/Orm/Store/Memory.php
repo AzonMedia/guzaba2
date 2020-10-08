@@ -69,22 +69,26 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      */
     protected MetaStoreInterface $MetaStore;
 
-    //protected $data = [];
-    //instead of storing the data
+
+    /**
+    \Azonmedia\Glog\LogEntries\Models\LogEntry::class   => [
+    1   => [
+    'unique_version_here'   => [
+    'is_new_flag'           => FALSE,
+    'was_new_flag'          => FALSE,
+    'data'                  => [
+    'log_entry_time'        => 1112233,
+    'log_entry_data'        => 'some data here',
+    ],
+    ]
+    ],
+    ],
+     * Multidimensional array
+     * @var array
+     */
     protected array $data = [
         /*
-        \Azonmedia\Glog\LogEntries\Models\LogEntry::class   => [
-            1   => [
-                'unique_version_here'   => [
-                    'is_new_flag'           => FALSE,
-                    'was_new_flag'          => FALSE,
-                    'data'                  => [
-                        'log_entry_time'        => 1112233,
-                        'log_entry_data'        => 'some data here',
-                    ],
-                ]
-            ],
-        ],
+
         */
     ];
 
@@ -98,6 +102,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     protected int $hits = 0;
     protected int $misses = 0;
 
+    /**
+     * Twodimensional array like
+     * $uuid_data[$uuid] = ['meta_object_id' => 'X', 'meta_class_name' => 'Y'];
+     * @var array
+     */
     protected array $uuid_data = [];
 
     /**
@@ -247,10 +256,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
                     //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
                     if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted'])) {
-                        if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-                            $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-                        }
-                        $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+//                        if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+//                            $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+//                        }
+//                        $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                        $this->increment_refcount($class, $lookup_index, $last_update_time);
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         $this->hits++;
@@ -277,10 +287,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                         //if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time])) {
                         if ($last_update_time && isset($this->data[$class][$lookup_index][$last_update_time]) && empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted'])) {
-                            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-                                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-                            }
-                            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+//                            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+//                                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+//                            }
+//                            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                            $this->increment_refcount($class, $lookup_index, $last_update_time);
                             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
                             $this->hits++;
 
@@ -311,10 +322,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                             $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
 
                             if ($last_update_time && $last_update_time === $update_time) {
-                                if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-                                    $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-                                }
-                                $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+//                                if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+//                                    $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+//                                }
+//                                $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                                $this->increment_refcount($class, (string) $lookup_index, $last_update_time);
                                 $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
                                 $this->hits++;
 
@@ -369,10 +381,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
             $this->update_meta_data($class, $primary_index, $_pointer['meta']);
 
-            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-            }
-            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+//            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+//                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+//            }
+//            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+            $this->increment_refcount($class, $lookup_index, $last_update_time);
             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
 
             //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
@@ -461,9 +474,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 foreach ($this->data[$class][$lookup_index][$last_update_time] as $key => $value) {
                     $new_arr[$key] = $value;
                 }
-                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
-                    $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
-                }
+//                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
+//                    $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+//                }
+                $this->decrement_refcount($class, $lookup_index, $last_update_time);
                 if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
                     //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
                     //the old version may actually remain the current one if the object gets modified but not saved
@@ -528,9 +542,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             return;
         }
 
-        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
-            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
-        }
+//        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
+//            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
+//        }
+        $this->decrement_refcount($class, $lookup_index, $last_update_time);
 
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
             //if this is the latest version leave it in memory for the purpose of caching
@@ -554,6 +569,34 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             } else {
                 //leave the record in ormstore for the purpose of caching
             }
+        }
+    }
+
+    /**
+     * @param string $class
+     * @param string $lookup_index
+     * @param float $time
+     */
+    protected function increment_refcount(string $class, string $lookup_index, float $time): void
+    {
+        //print '+++ '.$class.' '.$lookup_index.' '.$time.PHP_EOL;
+        if (!isset($this->data[$class][$lookup_index][$time]['refcount'])) {
+            $this->data[$class][$lookup_index][$time]['refcount'] = 0;
+        }
+        $this->data[$class][$lookup_index][$time]['refcount']++;
+
+    }
+
+    /**
+     * @param string $class
+     * @param string $lookup_index
+     * @param float $time
+     */
+    protected function decrement_refcount(string $class, string $lookup_index, float $time): void
+    {
+        //print '--- '.$class.' '.$lookup_index.' '.$time.PHP_EOL;
+        if (isset($this->data[$class][$lookup_index][$time]['refcount']) && $this->data[$class][$lookup_index][$time]['refcount'] > 0) {
+            $this->data[$class][$lookup_index][$time]['refcount']--;
         }
     }
 
@@ -583,6 +626,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         }
     }
 
+    /**
+     * @param string $class_name
+     * @param int $object_id
+     * @return array
+     */
     public function get_meta_by_id(string $class_name, int $object_id): array
     {
         if (!$this->caching_enabled()) {
@@ -891,24 +939,40 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
     public function clear_cache(int $percentage = self::CONFIG_RUNTIME['cleanup_percentage_records']): int
     {
-        //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
-        //if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
-            // cleanup
-        $total_count = $this->total_count;
-        $cleanedup = 0;
 
         $start_memory_usage = Runtime::memory_get_usage() / (1024 * 1024);
         $message_log = sprintf(t::_('Memory usage before cleanup: %1$sMB'), round($start_memory_usage, 2) );
         Kernel::log($message_log, LogLevel::INFO);
 
-        if ($total_count) {
+        $cleanedup_data_records = $this->clear_data_cache($percentage);
+        $cleanedup_uuid_records = $this->clear_uuid_cache($percentage);
 
+        //it is very important to also trigger the GC so that the object that have cyclic references but are no longer used to be cleared.
+        $collected_cycles = Runtime::gc_collect_cycles();
+        $message_log = sprintf(t::_('Forced GC cycles collection - %1$s cycles collected.'), $collected_cycles);
+        Kernel::log($message_log, LogLevel::INFO);
+
+        $end_memory_usage = Runtime::memory_get_usage() / (1024 * 1024);
+        $message_log = sprintf(t::_('Memory usage after cleanup: %1$sMB. Freed memory: %2$sMB.'), round($end_memory_usage, 2), round($start_memory_usage - $end_memory_usage, 2) );
+        Kernel::log($message_log, LogLevel::INFO);
+
+        return $cleanedup_data_records;
+    }
+
+    protected function clear_data_cache(int $percentage = self::CONFIG_RUNTIME['cleanup_percentage_records']): int
+    {
+        //Kernel::log('memory cleanup is running...' . PHP_EOL, LogLevel::INFO);
+        //if ($this->total_count > self::CONFIG_RUNTIME['max_rows'] || ($this->total_count / self::CONFIG_RUNTIME['max_rows'] * 100.0 >= self::CONFIG_RUNTIME['cleanup_at_percentage_usage'])) {
+        // cleanup
+        $total_count = $this->total_count;
+        $cleanedup = 0;
+        if ($total_count) {
             foreach ($this->data as $class => $class_data) {
                 foreach ($class_data as $object => $object_data) {
                     foreach ($object_data as $last_update_time => $data) {
                         $time = (double)microtime(true);
                         if ($data['refcount'] === 0 && ($time - $data['last_access_time'] > self::CONFIG_RUNTIME['cleanup_expiration_time'])) {
-                        //if ($data['refcount'] === 0) {
+                            //if ($data['refcount'] === 0) {
                             // !!!!!!!FIXME!!!!! - ok?
                             unset($this->data[$class][$object][$last_update_time]);
 
@@ -937,20 +1001,53 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             Kernel::log($message_log, LogLevel::INFO);
 
         } else {
+
             //there are no records in the cache and the used memory is still too high
             //this means there is memory leak
             //and it is best to restart the worker
             //TODO
+            $message_log = sprintf(
+                t::_('%1$s: No records were removed because there are 0 cached records. This could be a sign of memory leak!'),
+                __CLASS__,
+                );
+            Kernel::log($message_log, LogLevel::CRITICAL);
         }
+        return $cleanedup;
+    }
 
-        //it is very important to also trigger the GC so that the object that have cyclic references but are no longer used to be cleared.
-        $collected_cycles = Runtime::gc_collect_cycles();
-        $message_log = sprintf(t::_('Forced GC cycles collection - %1$s cycles collected.'), $collected_cycles);
-        Kernel::log($message_log, LogLevel::INFO);
+    protected function clear_uuid_cache(int $percentage = self::CONFIG_RUNTIME['cleanup_percentage_records']): int
+    {
+        $total_count = count($this->uuid_data);
+        $cleanedup = 0;
+        //starts deleting from the oldest added...
+        if ($total_count) {
+            foreach ($this->uuid_data as $uuid => $uuid_datum) {
+                unset($this->uuid_data[$uuid]);
+                $cleanedup++;
+                $cleanup_percentage = $cleanedup / $total_count * 100.0;
+                if ($cleanup_percentage >= $percentage) {
+                    break 1;
+                }
+            }
 
-        $end_memory_usage = Runtime::memory_get_usage() / (1024 * 1024);
-        $message_log = sprintf(t::_('Memory usage after cleanup: %1$sMB. Freed memory: %2$sMB.'), round($end_memory_usage, 2), round($start_memory_usage - $end_memory_usage, 2) );
-        Kernel::log($message_log, LogLevel::INFO);
+            $message_log = sprintf(
+                t::_('%1$s: Memory store UUID cache cleanup: %2$d records found, %3$d records cleaned up. Records left count: %4$d. Cleanup run with target cleanup percentage set to %5$s%%.'),
+                __CLASS__,
+                $total_count,
+                $cleanedup,
+                $total_count - $cleanedup,
+                $percentage
+            );
+            Kernel::log($message_log, LogLevel::INFO);
+
+        } else {
+            //nothing cached and still running out of memory - this would mean a memory leak...
+            $message_log = sprintf(
+                t::_('%1$s: No UUID cache records were removed because there are 0 cached records. This could be a sign of memory leak!'),
+                __CLASS__,
+                );
+            Kernel::log($message_log, LogLevel::CRITICAL);
+        }
 
         return $cleanedup;
     }
