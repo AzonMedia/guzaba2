@@ -1410,7 +1410,6 @@ WHERE
     {$l_str}
 ";
 
-
         //no need of GROUP BY main_table.{$main_index[0]}
         $q_count = "
 SELECT

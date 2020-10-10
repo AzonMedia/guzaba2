@@ -7,6 +7,7 @@ namespace Guzaba2\Orm\Traits;
 use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
+use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Translator\Translator as t;
 
 trait ActiveRecordStructure
@@ -59,7 +60,8 @@ trait ActiveRecordStructure
             $RClass = new ReflectionClass($called_class);
             $default_properties = $RClass->getDefaultProperties();
             //foreach ($RClass->getProperties() as $RProperty) {
-            foreach ($RClass->getOwnDynamicProperties(\ReflectionProperty::IS_PUBLIC) as $RProperty) {
+            //foreach ($RClass->getOwnDynamicProperties(\ReflectionProperty::IS_PUBLIC) as $RProperty) {
+            foreach ($RClass->getDynamicPropertiesUpToParentClass(\ReflectionProperty::IS_PUBLIC, ActiveRecord::class) as $RProperty) {
                 //if ($RProperty->isPublic() && !$RProperty->isStatic()) {
 //                    if ($RProperty->isInitialized()) {
 //                        $default_value = $default_properties[$RProperty->getName()];

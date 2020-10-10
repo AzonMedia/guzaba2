@@ -1354,6 +1354,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     public function is_property_modified(string $property): bool
     {
+
         if (!array_key_exists($property, $this->record_data)) {
             throw new RunTimeException(sprintf(t::_('Trying to check a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
