@@ -336,8 +336,6 @@ BANNER;
             throw new \Exception(t::_('Kernel is not initialized. Please execute Kernel::initialize() first.'));
         }
 
-        Runtime::set_memory_limit(19 * 1024 * 1024);
-
         self::printk(t::_('Kernel::run() invoked') . PHP_EOL);
         self::printk(PHP_EOL);
 
@@ -752,12 +750,16 @@ BANNER;
      * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
      * @throws \ReflectionException
      */
-    public static function printk(string $message): void
+    public static function printk(string $message, string $level = LogLevel::INFO): void
     {
         //TODO - would be nice if this can also print to any connected debugger session...
         //better - instead there can be Console sessions attached for these messages (which is different from debug session)
         if (self::$init_microtime === null) {
             self::$init_microtime = microtime(true);
+        }
+
+        if ($level !== LogLevel::INFO) {
+            $message = '['.strtoupper($level).'] '.$message;
         }
 
         if (trim($message)) {

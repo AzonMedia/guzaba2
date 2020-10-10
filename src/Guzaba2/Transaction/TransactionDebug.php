@@ -25,8 +25,8 @@ class TransactionDebug extends Base implements ClassInitializationInterface
         'services'      => [
             'Events',
         ],
-        'enable_debug'      => true,
-        'group_messages'    => true,
+        'enable_debug'      => false,
+        'group_messages'    => false,
     ];
 
     protected const CONFIG_RUNTIME = [];

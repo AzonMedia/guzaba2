@@ -12,6 +12,7 @@ use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Base\Exceptions\NotImplementedException;
 use Guzaba2\Kernel\Exceptions\AutoloadException;
+use Guzaba2\Kernel\Exceptions\PhpErrorException;
 use Guzaba2\Translator\Translator as t;
 
 /**
@@ -294,7 +295,14 @@ class SourceStream
         try {
             eval($class_without_config_source);
         } catch (\Throwable $Exception) {
-            Kernel::exception_handler($Exception);
+            $message = sprintf(
+                'A PHP error occurred while loading file %1$s (class %2$s): %3$s.',
+                $path,
+                $class_name,
+                $Exception->getMessage()
+            );
+            $PhpErrorException = new PhpErrorException($message, 0, $Exception);
+            Kernel::exception_handler($PhpErrorException);
         }
 
 

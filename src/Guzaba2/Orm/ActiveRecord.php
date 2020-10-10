@@ -426,6 +426,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return get_called_class() . self::CONFIG_RUNTIME['temporal_class_suffix'];
     }
 
+    /**
+     * Returns all the object data (class onw properties + database columns (overloaded properties)) and the object meta data combined in a one dimensional associative array.
+     * Please note that class properties may be arrays, thus making the resulting array multidimensional!
+     * @return array
+     */
     public function as_array(): array
     {
         //return ['data' => $this->get_property_data(), 'meta' => $this->get_meta_data()];
@@ -563,6 +568,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
+     * @param bool $force_write Will do a write even if there are no modifications to the object
      * @return ActiveRecordInterface
      * @throws Exceptions\MultipleValidationFailedException
      * @throws InvalidArgumentException
@@ -571,7 +577,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
      */
-    public function write(): ActiveRecordInterface
+    public function write(bool $force_write = false): ActiveRecordInterface
     {
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
@@ -596,7 +602,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //            }
 //        }
 
-        if (!count($this->get_modified_properties_names()) && !$this->is_new()) {
+        if (!count($this->get_modified_properties_names()) && !$this->is_new() && !$force_write) {
             return $this;
         }
 
@@ -1124,6 +1130,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
+     * Returns the database columns (overloaded model properties)
      * @return array
      */
     public static function get_columns_data(): array
@@ -1132,11 +1139,19 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return self::$columns_data[$called_class];
     }
 
+    /**
+     * Retruns the combined class properties and database columns (overloaded model properties)
+     * @return array
+     */
     public static function get_properties_data(): array
     {
         return self::get_columns_data() + self::get_class_properties_data();
     }
 
+    /**
+     * Returns the class own properties.
+     * @return array
+     */
     public static function get_class_properties_data(): array
     {
         $called_class = get_called_class();

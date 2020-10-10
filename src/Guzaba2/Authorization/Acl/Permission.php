@@ -209,15 +209,17 @@ class Permission extends ActiveRecord implements PermissionInterface
         try {
             $Permission = new self([
                 'role_id'       => $this->role_id,
-                'class_id'    => $this->class_id,
+                'class_id'      => $this->class_id,
                 'object_id'     => $this->object_id,
                 'action_name'   => $this->action_name,
             ]);
-            $message = sprintf(t::_('There is already an ACL permission records for the same role %1$s, class %2$s, object_id %3$s and action %4$s.'),
+            $message = sprintf(t::_('There is already an ACL permission records for the same role %1$s, class %2$s, object_id %3$s and action %4$s. The permission record found has ID %5$s and UUID %6$s.'),
                 (new Role($this->role_id))->role_name.' ('.$this->role_id.')',
                 self::get_class_name($this->class_id).' ('.$this->class_id.')',
                 $this->object_id,
-                $this->action_name
+                $this->action_name,
+                $Permission->get_id(),
+                $Permission->get_uuid()
             );
             throw new ValidationFailedException($this, 'role_id,class_name,object_id,action_name', $message);
         } catch (RecordNotFoundException $Exception) {
@@ -260,7 +262,8 @@ class Permission extends ActiveRecord implements PermissionInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();
-        $Permission->class_name = get_class($ActiveRecord);
+        //$Permission->class_name = get_class($ActiveRecord);
+        $Permission->class_id = self::get_class_id(get_class($ActiveRecord));
         $Permission->object_id = $ActiveRecord->get_id();
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;
@@ -285,7 +288,8 @@ class Permission extends ActiveRecord implements PermissionInterface
     {
         $Permission = new self();
         $Permission->role_id = $Role->get_id();
-        $Permission->class_name = $class_name;
+        //$Permission->class_name = $class_name;
+        $Permission->class_id = self::get_class_id($class_name);
         $Permission->object_id = null;
         $Permission->action_name = $action;
         $Permission->permission_description = $permission_description;

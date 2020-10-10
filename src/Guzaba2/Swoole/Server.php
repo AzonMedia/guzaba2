@@ -401,12 +401,13 @@ class Server extends \Guzaba2\Http\Server
         if ($used_memory_percentage > self::CONFIG_RUNTIME['free_memory_percentage_warning']) {
             $recommended_minimum_memory_limit = ceil($memory_usage / (1024 * 1024) * 2);
             $message = sprintf(
-                t::_('WARNING: The current free memory is %1$s%% which is too low (less that %2$s%%). Please consider increasing the memory limit to at least %3$sMB.'),
+                t::_('The current free memory is %1$s%% which is too low (less that %2$s%%). Please consider increasing the memory limit to at least %3$sMB.'),
                 round(100 - $used_memory_percentage, 2),
                 self::CONFIG_RUNTIME['free_memory_percentage_warning'],
                 $recommended_minimum_memory_limit
             );
-            Kernel::printk($message . PHP_EOL);
+            Kernel::printk($message, LogLevel::WARNING);
+            Kernel::printk(PHP_EOL);
         }
 
 
