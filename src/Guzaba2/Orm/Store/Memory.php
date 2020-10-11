@@ -478,9 +478,22 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //$this->get_data_pointer($class, $primary_index);
             $lookup_index = self::form_lookup_index($primary_index);
             $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
-            if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
-                throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, true)));
+
+            if (isset($this->data[$class][$lookup_index][$last_update_time])) {
+                $current_record_data = $this->data[$class][$lookup_index][$last_update_time];
+
+            } else {
+                //it is now possible this not to be set as the cache update is no longer done in get_data_pointer() if there is current transaction ongoing
+                //throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, true)));
+                $current_record_data = $this->get_data_pointer($class, $primary_index);
+                if (isset($this->data[$class][$lookup_index][$last_update_time])) {
+                    $this->decrement_refcount($class, $lookup_index, $last_update_time);
+                }
             }
+
+
+            //print_r($current_record_data);
+
             //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
             //return $this->data[$class][$lookup_index][0];
             //the above is wrong - if multiple coroutines at the same time create a new version of the same object they will be pointing to the same revision - 0
@@ -497,27 +510,29 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 //$this->data[$class][$lookup_index]['cid_'.$rcid]['modified'] = [];
                 //instead a new array is to be formed from the existing one by assigning the keys one by one
                 $new_arr = [];
-                foreach ($this->data[$class][$lookup_index][$last_update_time] as $key => $value) {
+                //foreach ($this->data[$class][$lookup_index][$last_update_time] as $key => $value) {
+                foreach ($current_record_data as $key=>$value) {
                     $new_arr[$key] = $value;
                 }
 //                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
 //                    $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
 //                }
-                $this->decrement_refcount($class, $lookup_index, $last_update_time);
-                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
-                    //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
-                    //the old version may actually remain the current one if the object gets modified but not saved
-                    $latest_update_time = 0;
-                    foreach ($this->data[$class][$lookup_index] as $existing_last_update_time => $data) {
-                        $latest_update_time = max($existing_last_update_time, $latest_update_time);
-                    }
-                    if ($latest_update_time > $last_update_time) {
-                        //then there is a more recent record and this one can be deleted (as it is refcount 0)
-                        unset($this->data[$class][$lookup_index][$last_update_time]);
-                    } else {
-                        //leave the record in ormstore for the purpose of caching
-                    }
-                }
+                //why is this here???
+                //$this->decrement_refcount($class, $lookup_index, $last_update_time);
+//                if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
+//                    //unset($this->data[$class][$lookup_index][$last_update_time]);//always remove the old version if the refcount is 0
+//                    //the old version may actually remain the current one if the object gets modified but not saved
+//                    $latest_update_time = 0;
+//                    foreach ($this->data[$class][$lookup_index] as $existing_last_update_time => $data) {
+//                        $latest_update_time = max($existing_last_update_time, $latest_update_time);
+//                    }
+//                    if ($latest_update_time > $last_update_time) {
+//                        //then there is a more recent record and this one can be deleted (as it is refcount 0)
+//                        unset($this->data[$class][$lookup_index][$last_update_time]);
+//                    } else {
+//                        //leave the record in ormstore for the purpose of caching
+//                    }
+//                }
                 $new_arr['refcount'] = 1;
                 $new_arr['modified'] = [];
                 $this->data[$class][$lookup_index]['cid_' . $cid] = $new_arr;
@@ -573,6 +588,57 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 //        }
         $this->decrement_refcount($class, $lookup_index, $last_update_time);
 
+//        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
+//            //if this is the latest version leave it in memory for the purpose of caching
+//            $latest_update_time = 0;
+//            foreach ($this->data[$class][$lookup_index] as $existing_last_update_time => $data) {
+//                $latest_update_time = max($existing_last_update_time, $latest_update_time);
+//            }
+//            if ($latest_update_time > $last_update_time) {
+//                //then there is a more recent record and this one can be deleted (as it is refcount 0)
+//                $this->data[$class][$lookup_index][$last_update_time] = [];
+//                unset($this->data[$class][$lookup_index][$last_update_time]);
+//                if (!count($this->data[$class][$lookup_index])) { //impossible but just in case
+//                    unset($this->data[$class][$lookup_index]);
+//                }
+//            } elseif (!empty($this->data[$class][$lookup_index][$last_update_time]['is_deleted'])) {
+//                $this->data[$class][$lookup_index][$last_update_time] = [];
+//                unset($this->data[$class][$lookup_index][$last_update_time]);
+//                if (!count($this->data[$class][$lookup_index])) {
+//                    unset($this->data[$class][$lookup_index]);
+//                }
+//            } else {
+//                //leave the record in ormstore for the purpose of caching
+//            }
+//        }
+    }
+
+    /**
+     * @param string $class
+     * @param string $lookup_index
+     * @param float $time
+     */
+    protected function increment_refcount(string $class, string $lookup_index, float $time): void
+    {
+        if (!isset($this->data[$class][$lookup_index][$time]['refcount'])) {
+            $this->data[$class][$lookup_index][$time]['refcount'] = 0;
+        }
+        $this->data[$class][$lookup_index][$time]['refcount']++;
+
+    }
+
+    /**
+     * @param string $class
+     * @param string $lookup_index
+     * @param float $time
+     */
+    protected function decrement_refcount(string $class, string $lookup_index, float $time): void
+    {
+        if (isset($this->data[$class][$lookup_index][$time]['refcount']) && $this->data[$class][$lookup_index][$time]['refcount'] > 0) {
+            $this->data[$class][$lookup_index][$time]['refcount']--;
+        }
+
+        $last_update_time = $time;
         if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
             //if this is the latest version leave it in memory for the purpose of caching
             $latest_update_time = 0;
@@ -595,34 +661,6 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             } else {
                 //leave the record in ormstore for the purpose of caching
             }
-        }
-    }
-
-    /**
-     * @param string $class
-     * @param string $lookup_index
-     * @param float $time
-     */
-    protected function increment_refcount(string $class, string $lookup_index, float $time): void
-    {
-        //print '+++ '.$class.' '.$lookup_index.' '.$time.PHP_EOL;
-        if (!isset($this->data[$class][$lookup_index][$time]['refcount'])) {
-            $this->data[$class][$lookup_index][$time]['refcount'] = 0;
-        }
-        $this->data[$class][$lookup_index][$time]['refcount']++;
-
-    }
-
-    /**
-     * @param string $class
-     * @param string $lookup_index
-     * @param float $time
-     */
-    protected function decrement_refcount(string $class, string $lookup_index, float $time): void
-    {
-        //print '--- '.$class.' '.$lookup_index.' '.$time.PHP_EOL;
-        if (isset($this->data[$class][$lookup_index][$time]['refcount']) && $this->data[$class][$lookup_index][$time]['refcount'] > 0) {
-            $this->data[$class][$lookup_index][$time]['refcount']--;
         }
     }
 
@@ -1141,13 +1179,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
     {
         /** @var TransactionManagerInterface $TransactionManager */
         $TransactionManager = self::get_service('TransactionManager');
-        //we need to create one transaction in order to obtain the transactional resource
-        //the transaction will not be started and will not have a scope reference (so it will not be rolled back either)
-        $Transaction = new \Guzaba2\Orm\Store\MemoryTransaction($this);
-        $transaction_resource_id = $Transaction->get_resource()->get_resource_id();
-
-        $CurrentTransaction = $TransactionManager->get_current_transaction($transaction_resource_id);
-
+        $CurrentTransaction = $TransactionManager->get_current_transaction($this->get_resource_id());
         return $CurrentTransaction;
     }
 

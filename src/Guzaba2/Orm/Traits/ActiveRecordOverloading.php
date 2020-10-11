@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Traits;
 
 use Azonmedia\Http\Method;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Coroutine\Coroutine;
@@ -140,7 +141,9 @@ trait ActiveRecordOverloading
             }
         }
 
-
+        if (!array_key_exists($property, $this->record_data)) {
+            throw new LogicException(sprintf(t::_('After obtaining a pointer for new version (Store::get_data_pointer_for_new_version()) the record_data does not have a key %1$s. This is probably a class property and a store in the store chain does not append the class properties with their default values to the returned data array.'), $property));
+        }
         $old_value = $this->record_data[$property];
 
         if (!$this->property_hooks_are_disabled() && method_exists($this, '_before_set_' . $property)) {

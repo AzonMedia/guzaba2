@@ -1051,6 +1051,15 @@ ON DUPLICATE KEY UPDATE
                     $record_data[$column_name] = $column_datum;
                 }
             }
+
+            //append the own class properties
+            $class_properties_data = $class::get_class_properties_data();
+            foreach ($class_properties_data as $class_properties_datum) {
+                if (!array_key_exists($class_properties_datum['name'], $record_data)) {
+                    $record_data[$class_properties_datum['name']] = $class_properties_datum['default_value'];
+                }
+            }
+
             //$ret['data'] = $data[0];
             $ret['data'] = $record_data;
             $this->hits++;
@@ -1058,6 +1067,8 @@ ON DUPLICATE KEY UPDATE
             $this->misses--;
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }
+
+
 
         return $ret;
     }

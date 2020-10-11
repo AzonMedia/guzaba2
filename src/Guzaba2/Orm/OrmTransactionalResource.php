@@ -32,12 +32,8 @@ class OrmTransactionalResource extends CompositeTransactionResource
     {
         /** @var TransactionManagerInterface $TransactionManager */
         $TransactionManager = self::get_service('TransactionManager');
-        //we need to create one transaction in order to obtain the transactional resource
-        //the transaction will not be started and will not have a scope reference (so it will not be rolled back either)
-        $Transaction = new \Guzaba2\Orm\Transaction();
-        $transaction_resource_id = $Transaction->get_resource()->get_resource_id();
 
-        $CurrentTransaction = $TransactionManager->get_current_transaction($transaction_resource_id);
+        $CurrentTransaction = $TransactionManager->get_current_transaction($this->get_resource_id());
 
         return $CurrentTransaction;
     }

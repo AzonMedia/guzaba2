@@ -22,7 +22,14 @@ abstract class TransactionalConnection extends Connection implements Transaction
 
     protected const CONFIG_RUNTIME = [];
 
-
+    /**
+     * @param ScopeReference|null $ScopeReference
+     * @param array $options
+     * @return Transaction
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     * @throws \ReflectionException
+     */
     public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction
     {
 
@@ -38,16 +45,16 @@ abstract class TransactionalConnection extends Connection implements Transaction
         return $Transaction;
     }
 
+    /**
+     * @return TransactionInterface|null
+     * @throws \Guzaba2\Base\Exceptions\RunTimeException
+     */
     public function get_current_transaction(): ?TransactionInterface
     {
         /** @var TransactionManagerInterface $TransactionManager */
         $TransactionManager = self::get_service('TransactionManager');
-        //we need to create one transaction in order to obtain the transactional resource
-        //the transaction will not be started and will not have a scope reference (so it will not be rolled back either)
-        $Transaction = new \Guzaba2\Database\Transaction();
-        $transaction_resource_id = $Transaction->get_resource()->get_resource_id();
 
-        $CurrentTransaction = $TransactionManager->get_current_transaction($transaction_resource_id);
+        $CurrentTransaction = $TransactionManager->get_current_transaction($this->get_resource_id());
 
         return $CurrentTransaction;
     }
