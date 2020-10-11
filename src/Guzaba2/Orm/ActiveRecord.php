@@ -39,6 +39,7 @@ use Guzaba2\Orm\Traits\ActiveRecordLog;
 use Guzaba2\Orm\Traits\ActiveRecordTemporal;
 use Guzaba2\Orm\Traits\ActiveRecordHooks;
 use Guzaba2\Transaction\Interfaces\TransactionInterface;
+use Guzaba2\Transaction\Interfaces\TransactionManagerInterface;
 use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 use Guzaba2\Translator\Translator as t;
@@ -1554,16 +1555,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         return (new OrmTransactionalResource())->new_transaction($ScopeReference, $options);
     }
 
-//    /**
-//     * Used to obtain the current transaction within the ActiveRecord context.
-//     * For example in the hooks like _before_write() or _after_delete().
-//     * NO - the whole concept of obtaining the current transaction is flawed.
-//     * This will allow to attach callbacks to a transaction that was started somewhere else.
-//     * Instead a nested transaction is to be started
-//     * @return TransactionInterface
-//     */
-//    public static function get_current_transaction(): TransactionInterface
-//    {
-//        $TransactionManager = self::get_service('TransactionManager');
-//    }
+    /**
+     * Used to obtain the current transaction within the ActiveRecord context.
+     * For example in the hooks like _before_write() or _after_delete().
+     * NO - the whole concept of obtaining the current transaction is flawed.
+     * This will allow to attach callbacks to a transaction that was started somewhere else.
+     * Instead a nested transaction is to be started
+     * CHANGED - the method will be provided as it is really needed by Memory store - it should not write to the store if there is a transaction
+     * @return TransactionInterface
+     */
+    public static function get_current_transaction(): ?TransactionInterface
+    {
+        return (new OrmTransactionalResource())->get_current_transaction();
+    }
 }

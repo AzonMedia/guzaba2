@@ -17,6 +17,8 @@ use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Swoole\Handlers\WorkerStart;
 use Guzaba2\Transaction\Interfaces\TransactionalResourceInterface;
+use Guzaba2\Transaction\Interfaces\TransactionInterface;
+use Guzaba2\Transaction\Interfaces\TransactionManagerInterface;
 use Guzaba2\Transaction\ScopeReference;
 use Guzaba2\Transaction\Transaction;
 use Guzaba2\Translator\Translator as t;
@@ -50,6 +52,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             'OrmMetaStore',
             'Apm',
             'Events',
+            'TransactionManager'
         ]
     ];
 
@@ -218,11 +221,26 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             // TODO - update the data in the memory store here too
             //$last_update_time = $pointer['meta']['meta_object_last_update_microtime'];
             //$this->data[$class][$lookup_index][$last_update_time] =& $pointer;
-            if ($ActiveRecord::uses_meta()) {
-                $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
-                $this->data[$class][$lookup_index][$last_update_time] = $all_data;
-            } else {
-                //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+
+//IT IS WRONG to insert the data in the memory table BEFORE the transaction is committed
+//either leave the data out of the memory store or add it only afther the current memory transaction (ORM transaction) is committed
+//since the API does not allow (on purpose) obtaining the current active transaction it is not possible to add a callback
+//thus the data is left out of the memory store
+//            if ($ActiveRecord::uses_meta()) {
+//                $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
+//                $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+//            } else {
+//                //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+//            }
+//there is added get_current_transaction()
+            if (!$this->get_current_transaction()) {
+                //if there is no transaction only then can write to the cache
+                if ($ActiveRecord::uses_meta()) {
+                    $last_update_time = $all_data['meta']['meta_object_last_update_microtime'];
+                    $this->data[$class][$lookup_index][$last_update_time] = $all_data;
+                } else {
+                    //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
+                }
             }
 
             return $all_data;
@@ -310,7 +328,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                 foreach ($this->data[$class] as $lookup_index => $records) {
                     foreach ($records as $update_time => $record) {
-                        if (array_intersect($index, $record['data']) === $index) {
+                        //certain $record['data'] may have keys that are arrays (from the own properties of the models, the overloaded properties are not expected to be arrays)
+                        //if (array_intersect($index, $record['data']) === $index) {
+                        if (array_intersect(array_keys($index), array_keys($record['data'])) === array_keys($index) ) {
                             // $index is a subset of $record['data']
                             //if found check is it current in MetaStore
                             $primary_index = $class::get_index_from_data($record['data']);
@@ -356,45 +376,51 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
             $_pointer =& $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
 
+            if (!$this->get_current_transaction()) {
+                //if there is no current transaction then the cache can be updated
 
-            $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
-            $lookup_index = self::form_lookup_index($primary_index);
-            if (!$primary_index) {
-                throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, true)));
-            }
+                $primary_index = $class::get_index_from_data($_pointer['data']);//the primary index has to be available here
+                $lookup_index = self::form_lookup_index($primary_index);
+                if (!$primary_index) {
+                    throw new RunTimeException(sprintf(t::_('The primary index is not contained in the returned data by the previous Store for an object of class %s and requested index %s.'), $class, print_r($index, true)));
+                }
 
-            if (!$class::uses_meta()) { //do not store the objects of classes that do not use meta
+                if (!$class::uses_meta()) { //do not store the objects of classes that do not use meta
+                    return $_pointer;
+                }
+                if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
+                    throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, true)));
+                }
+
+                $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
+                $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
+                $this->total_count++;
+
+                $uuid = $_pointer['meta']['meta_object_uuid'];
+                $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
+
+                //there can be other versions for the same class & lookup_index
+                //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
+                $this->update_meta_data($class, $primary_index, $_pointer['meta']);
+
+    //            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
+    //                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
+    //            }
+    //            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
+                $this->increment_refcount($class, $lookup_index, $last_update_time);
+                $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
+
+                //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
+                foreach ($this->data[$class][$lookup_index] as $previous_update_time => $data) {
+                    if ($data['refcount'] === 0) {
+                        unset($this->data[$class][$lookup_index][$previous_update_time]);
+                    }
+                }
+                return $this->data[$class][$lookup_index][$last_update_time];
+            } else {
                 return $_pointer;
             }
-            if (!isset($_pointer['meta']['meta_object_last_update_microtime'])) {
-                throw new RunTimeException(sprintf(t::_('There is no meta data for object of class %s with id %s. This is due to corrupted data. Please correct the record.'), $class, print_r($lookup_index, true)));
-            }
 
-            $last_update_time = $_pointer['meta']['meta_object_last_update_microtime'];
-            $this->data[$class][$lookup_index][$last_update_time] =& $_pointer;
-            $this->total_count++;
-
-            $uuid = $_pointer['meta']['meta_object_uuid'];
-            $this->uuid_data[$uuid] = ['meta_class_name' => $class, 'primary_index' => $primary_index, 'meta_object_id' => $lookup_index];
-
-            //there can be other versions for the same class & lookup_index
-            //update the meta in the MetaStore as this record was not found in Memory which means there may be no meta either (but there could be if another worker already loaded it)
-            $this->update_meta_data($class, $primary_index, $_pointer['meta']);
-
-//            if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
-//                $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
-//            }
-//            $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-            $this->increment_refcount($class, $lookup_index, $last_update_time);
-            $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
-
-            //check if there are older versions of this record - if their refcount is 0 then these are to be deleted
-            foreach ($this->data[$class][$lookup_index] as $previous_update_time => $data) {
-                if ($data['refcount'] === 0) {
-                    unset($this->data[$class][$lookup_index][$previous_update_time]);
-                }
-            }
-            return $this->data[$class][$lookup_index][$last_update_time];
         }
     }
 
@@ -1103,6 +1129,26 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         $ScopeReference = new ScopeReference($Transaction);
 
         return $Transaction;
+    }
+
+    /**
+     * @return TransactionInterface|null
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \ReflectionException
+     */
+    public function get_current_transaction(): ?TransactionInterface
+    {
+        /** @var TransactionManagerInterface $TransactionManager */
+        $TransactionManager = self::get_service('TransactionManager');
+        //we need to create one transaction in order to obtain the transactional resource
+        //the transaction will not be started and will not have a scope reference (so it will not be rolled back either)
+        $Transaction = new \Guzaba2\Orm\Store\MemoryTransaction($this);
+        $transaction_resource_id = $Transaction->get_resource()->get_resource_id();
+
+        $CurrentTransaction = $TransactionManager->get_current_transaction($transaction_resource_id);
+
+        return $CurrentTransaction;
     }
 
     /**

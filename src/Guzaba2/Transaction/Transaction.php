@@ -98,18 +98,7 @@ abstract class Transaction extends Base implements TransactionInterface /* imple
 
         $this->options = $options;
 
-        $this->ParentTransaction = self::get_service('TransactionManager')->get_current_transaction($this->get_resource()->get_resource_id());
-        if ($this->ParentTransaction) {
-            //validate that the previous nested transaction (sibling to this one) has ended with either SAVED or ROLLEDBACK (it should not be in any other status)
-            $sibling_transactions = $this->ParentTransaction->get_children();
-            if ($sibling_transactions) { //if there were previous nested transactions - check the status of the last one
-                $LastSiblingTransaction = $sibling_transactions[ count($sibling_transactions) - 1];
-                if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], true)) {
-                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1$s is in status %2$s. Before the next nested transaction can be started the previous nested one must be in status %3$s or %4$s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']));
-                }
-            }
-            $this->ParentTransaction->add_child($this);
-        }
+        //the parent transaction related code is moved to begin()
     }
 
     /**
@@ -224,6 +213,22 @@ abstract class Transaction extends Base implements TransactionInterface /* imple
 
     public function begin(): void
     {
+
+        // {{{ moved from __construct()
+        $this->ParentTransaction = self::get_service('TransactionManager')->get_current_transaction($this->get_resource()->get_resource_id());
+        if ($this->ParentTransaction) {
+            //validate that the previous nested transaction (sibling to this one) has ended with either SAVED or ROLLEDBACK (it should not be in any other status)
+            $sibling_transactions = $this->ParentTransaction->get_children();
+            if ($sibling_transactions) { //if there were previous nested transactions - check the status of the last one
+                $LastSiblingTransaction = $sibling_transactions[ count($sibling_transactions) - 1];
+                if (!in_array($LastSiblingTransaction->get_status(), [self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']], true)) {
+                    throw new RunTimeException(sprintf(t::_('The previous nested transaction (sibling of this) of class %1$s is in status %2$s. Before the next nested transaction can be started the previous nested one must be in status %3$s or %4$s.'), get_class($this), $LastSiblingTransaction->get_status(), self::STATUS['SAVED'], self::STATUS['ROLLEDBACK']));
+                }
+            }
+            $this->ParentTransaction->add_child($this);
+        }
+        // }}} moved from __construct()
+
 
         $this->set_status(self::STATUS['STARTED']);
 

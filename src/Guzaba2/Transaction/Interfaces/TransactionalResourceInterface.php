@@ -27,4 +27,6 @@ interface TransactionalResourceInterface extends ResourceInterface
     public function release_savepoint(string $savepoint_name): void;
 
     public function new_transaction(?ScopeReference &$ScopeReference, array $options = []): Transaction;
+
+    public function get_current_transaction();
 }
