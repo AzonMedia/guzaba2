@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Orm;
 
 use Guzaba2\Base\Base;
+use Guzaba2\Event\Interfaces\EventsInterface;
 use Guzaba2\Kernel\Interfaces\ClassInitializationInterface;
 use Guzaba2\Kernel\Kernel;
 
@@ -64,6 +65,7 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
     public static function register_active_record_temporal_hooks(array $ns_prefixes): void
     {
         $active_record_history_classes = ActiveRecord::get_active_record_temporal_classes($ns_prefixes);
+        /** @var EventsInterface $Events */
         $Events = self::get_service('Events');
         foreach ($active_record_history_classes as $active_record_history_class) {
             //get the parent class and add the hook on the parent class
