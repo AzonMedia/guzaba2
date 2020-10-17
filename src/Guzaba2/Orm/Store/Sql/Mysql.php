@@ -952,7 +952,6 @@ ON DUPLICATE KEY UPDATE
 
                 $ret = $Statement->execute($data_arr);
 
-
             }
         }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm\Store;
 
+use Azonmedia\Utilities\ArrayUtil;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -47,6 +48,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         'cleanup_expiration_time'               => 3,// 5 minutes in seconds
 
         'cleanup_at_percentage_memory_limit'    => 75,//reaching this usage from the memory limit will trigger cleanup
+        'match_by_complex_index_under_number_of_elements' => 100,
 
         'services'                              => [
             'OrmMetaStore',
@@ -285,11 +287,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
-                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by primary key.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                         return $_pointer;
                     }
                 }
-                // TODO UUID
             } elseif ($uuid = $class::get_uuid_from_data($index)) {
                 if (isset($this->uuid_data[$uuid])) {
                     $lookup_index = $this->uuid_data[$uuid]['meta_object_id'];
@@ -316,7 +317,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
                             $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by UUID.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
                             return $_pointer;
                         }
                     }
@@ -326,39 +327,62 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                 //$time_start_lookup = (double) microtime(TRUE);
 
-                foreach ($this->data[$class] as $lookup_index => $records) {
-                    foreach ($records as $update_time => $record) {
-                        //certain $record['data'] may have keys that are arrays (from the own properties of the models, the overloaded properties are not expected to be arrays)
-                        //if (array_intersect($index, $record['data']) === $index) {
-                        if (array_intersect(array_keys($index), array_keys($record['data'])) === array_keys($index) ) {
-                            // $index is a subset of $record['data']
-                            //if found check is it current in MetaStore
-                            $primary_index = $class::get_index_from_data($record['data']);
-                            //there has to be a valid primary index now...
-                            if (!$primary_index) {
-                                throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, true)));
+                //do not loop through all if there are too many records
+                if (count($this->data[$class]) <= self::CONFIG_DEFAULTS['match_by_complex_index_under_number_of_elements']) {
+                    foreach ($this->data[$class] as $lookup_index => $records) {
+                        foreach ($records as $update_time => $record) {
+                            //certain $record['data'] may have keys that are arrays (from the own properties of the models, the overloaded properties are not expected to be arrays)
+                            //the option is to unset the keys that are arrays and leave only the scalars... but this may become an expensive operation...
+                            //check for array values in both
+                            $perform_lookup = true;
+
+                            foreach ($record['data'] as $data_value) {
+                                if (is_array($data_value)) {
+                                    $perform_lookup = false;
+                                }
                             }
+                            if ($perform_lookup) {
+                                foreach ($index as $index_value) {
+                                    if (is_array($index_value)) {
+                                        //this is not supported
+                                        $perform_lookup = false;
+                                    }
+                                }
+                            }
+                            if ($perform_lookup) {
+                                if (array_intersect_assoc($index, $record['data']) === $index) {
+                                    // $index is a subset of $record['data']
+                                    //if found check is it current in MetaStore
+                                    $primary_index = $class::get_index_from_data($record['data']);
+                                    //there has to be a valid primary index now...
+                                    if (!$primary_index) {
+                                        throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, true)));
+                                    }
 
-                            $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+                                    $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
 
-                            if ($last_update_time && $last_update_time === $update_time) {
+                                    if ($last_update_time && $last_update_time === $update_time) {
 //                                if (!isset($this->data[$class][$lookup_index][$last_update_time]['refcount'])) {
 //                                    $this->data[$class][$lookup_index][$last_update_time]['refcount'] = 0;
 //                                }
 //                                $this->data[$class][$lookup_index][$last_update_time]['refcount']++;
-                                $this->increment_refcount($class, (string) $lookup_index, $last_update_time);
-                                $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
-                                $this->hits++;
+                                        $this->increment_refcount($class, (string)$lookup_index, $last_update_time);
+                                        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double)microtime(true);
+                                        $this->hits++;
 
-                                $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
-                                $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
+                                        $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double)microtime(true);
+                                        $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                                Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
-                                return $_pointer;
-                            }
+                                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by complex key lookup.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                                        return $_pointer;
+                                    }
+                                }
+                            }// end if $perform_lookup
                         }
                     }
-                }
+                }// end if count($this->data[$class] <=...
+
+
 
 //            $time_end_lookup = (double) microtime(TRUE);
 //            $memory_lookup_time = $time_end_lookup - $time_start_lookup;
@@ -490,9 +514,6 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                     $this->decrement_refcount($class, $lookup_index, $last_update_time);
                 }
             }
-
-
-            //print_r($current_record_data);
 
             //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
             //return $this->data[$class][$lookup_index][0];
@@ -749,10 +770,13 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
             //throw new RunTimeException($message);
             //}
-            foreach ($this->data[$class][$index] as $update_microtime => & $object_data) {
-                $object_data['is_deleted'] = true;
-                //$object_data['meta']['meta_is_deleted'] = TRUE;
+            if (isset($this->data[$class][$index]) && is_array($this->data[$class][$index])) {
+                foreach ($this->data[$class][$index] as $update_microtime => & $_object_data) {
+                    $_object_data['is_deleted'] = true;
+                    //$object_data['meta']['meta_is_deleted'] = TRUE;
+                }
             }
+
 
             //the below should also be correct (see explanation above)
             //$last_version_microtime = array_key_first($this->data[$class][$index]);

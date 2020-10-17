@@ -489,7 +489,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         if (array_keys($index) === array_keys($primary_columns)) {
             //it is OK to proceed to the pointer lookup
         } else {
-            //need to resovle the primary index and only then to proceed
+
+            //need to resolve the primary index and only then to proceed
             //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
             $_pointer =& $this->Store->get_data_pointer(get_class($this), $index, $permission_checks_disabled = true);//disable permission checks - just retrieve the record and make a permission check after that
             $index = self::get_index_from_data($_pointer['data']);

@@ -80,6 +80,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
         $active_record_classes = ActiveRecord::get_active_record_classes($this->ns_prefixes);
 
         foreach ($active_record_classes as $loaded_class) {
+
             $routing = $loaded_class::get_routes();
             if ($routing) {
                 //some validation
