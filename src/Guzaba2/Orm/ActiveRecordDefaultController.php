@@ -237,8 +237,11 @@ class ActiveRecordDefaultController extends ActiveRecordController
      */
     public function crud_action_update(string $uuid): ResponseInterface
     {
+
         $body_arguments = $this->get_request()->getParsedBody();
         $body_arguments = $this->ActiveRecord::fix_data_arr_empty_values_type($body_arguments);
+
+
         //$columns_data = $this->ActiveRecord::get_columns_data();
         $columns_data = $this->ActiveRecord::get_properties_data();
         foreach ($body_arguments as $property_name => $property_value) {
@@ -256,6 +259,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
 //            }
             $this->ActiveRecord->{$property_name} = $property_value;
         }
+
 
         $this->ActiveRecord->write();
         $id = $this->ActiveRecord->get_id();

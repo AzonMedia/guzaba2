@@ -211,8 +211,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //cleanup
             //unset($this->data[$class][$lookup_index][0]);
             //$cid = self::get_root_coroutine_id();
-            $cid = \Swoole\Coroutine::getCid();
-            unset($this->data[$class][$lookup_index]['cid_' . $cid]);
+            //do not clean this up - yet - it is used until the transaction is committed (and there is a cleanup procedure at the coroutine end - in defer)
+            //$cid = \Swoole\Coroutine::getCid();
+            //unset($this->data[$class][$lookup_index]['cid_' . $cid]);
 
             //return $new_meta['object_uuid'];
 
@@ -235,6 +236,24 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 //                //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
 //            }
 //there is added get_current_transaction()
+            //instead update the pointer for the new version
+            //if ($ActiveRecord::uses_meta()) {
+                //$_pointer =& $this->get_data_pointer_for_new_version(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+                //print '====================================';
+                //print_r($_pointer);
+                //$_pointer = $all_data;//this will overwrite...
+            //unset($this->data[$class][$lookup_index]['cid_' . $cid]);
+            //}
+
+
+            $_pointer =& $this->get_data_pointer_for_new_version(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+            foreach ($all_data as $key=>$value) {
+                $_pointer['data'][$key] = $value;
+            }
+            foreach ($all_data['meta'] as $key=>$value) {
+                $_pointer['meta'][$key] = $value;
+            }
+
             if (!$this->get_current_transaction()) {
                 //if there is no transaction only then can write to the cache
                 if ($ActiveRecord::uses_meta()) {
@@ -263,6 +282,10 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      */
     public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
+
+        if (!is_a($class, ActiveRecordInterface::class, true)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class %1$s is not a %2$s.'), $class, ActiveRecordInterface::class));
+        }
 
         if (!$this->caching_enabled()) {
             return $this->FallbackStore->get_data_pointer($class, $index);
@@ -577,6 +600,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //$rcid = self::get_root_coroutine_id();
             $cid = \Swoole\Coroutine::getCid();
             $lookup_index = self::form_lookup_index($primary_index);
+
             return isset($this->data[$class][$lookup_index]['cid_' . $cid]);
         }
     }
@@ -723,6 +747,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         } else {
             if (isset($this->data[$class_name][$object_id])) {
                 $timestamp = array_key_last($this->data[$class_name][$object_id]);
+                if (!$timestamp) {
+                    throw new LogicException(sprintf(t::_('No timestamp was found for object of class %1$s with index %2$s.'), $class_name, $object_id));
+                }
                 $ret = $this->data[$class_name][$object_id][$timestamp]['meta'];
             } else {
                 $ret = $this->FallbackStore->get_meta_by_id($class_name, $object_id);

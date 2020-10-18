@@ -503,6 +503,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $_pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $index);
             $this->record_data =& $_pointer['data'];
             $this->meta_data =& $_pointer['meta'];
+            if (!array_key_exists('modified', $_pointer)) {
+                throw new LogicException(sprintf(t::_('The pointer for the new version for an instance of class %1$s with primary index %2$s does not have key "modified".'), get_class($this), implode(':', $index) ));
+            }
             $this->record_modified_data =& $_pointer['modified'];
         } else {
             //$pointer =& $this->Store->get_data_pointer(get_class($this), $index, $this->are_permission_checks_disabled());
@@ -640,7 +643,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
         //reattach the pointer
-        $_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+        //$_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+        //if get_data_pointer() is used this will return wrong data as the data is not yet stored in the main storage of Memory
+        //until the transaction is committed
+        //so until committed use get_data_pointer_for_new_version
+        $_pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index());
 
         //not needed
 //        //CLASS_PROPERTIES - the returned data is as it is found in the store
@@ -917,8 +924,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function is_locking_enabled(): bool
     {
-        //debug_print_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
-        //return self::get_static('locking_enabled_flag');
 
         $called_class = get_called_class();
         if (!empty(self::CONFIG_RUNTIME['orm_locking_disabled'])) { //the ORM locking is disabled for this specific class
