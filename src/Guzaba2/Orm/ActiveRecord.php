@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Orm;
 
+use Azonmedia\Apm\Interfaces\ProfilerInterface;
 use Azonmedia\Lock\Interfaces\LockInterface;
 use Azonmedia\Lock\Interfaces\LockManagerInterface;
 use Azonmedia\Reflection\ReflectionClass;
@@ -80,6 +81,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             'AuthorizationProvider',
             'CurrentUser',
             'TransactionManager',
+            'Apm',
         ],
         //only for non-sql stores
         'structure' => [
@@ -99,6 +101,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         'throw_exception_on_property_cast'      => false,
         'add_validation_error_on_property_cast' => false,
 
+        'profile_classes'       => [
+            //\GuzabaPlatform\Settings\Models\Setting::class,
+            //\Guzaba2\Authorization\Acl\Permission::class,
+        ],
 
     ];
 
@@ -572,6 +578,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->modified_data_tracking_disabled_flag = false;
     }
 
+    private function profile(string $checkpoint_name, float $time): void
+    {
+        if (in_array(get_class($this), self::CONFIG_RUNTIME['profile_classes'])) {
+            $message = sprintf(
+                t::_('%1$s: Write profiling for %2$s %3$s, checkoint %4$s: %5$s.'),
+                __CLASS__,
+                get_class($this),
+                implode(':', $this->get_primary_index()),
+                $checkpoint_name,
+                $time
+            );
+            Kernel::log($message);
+        }
+    }
+
     /**
      * @param bool $force_write Will do a write even if there are no modifications to the object
      * @return ActiveRecordInterface
@@ -585,6 +606,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public function write(bool $force_write = false): ActiveRecordInterface
     {
 
+        $start_time = microtime(true);
+
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
         //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
         if ($this->is_new()) {
@@ -594,6 +617,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->check_permission('write');
         }
 
+        $this->profile('CHECK 1', microtime(true) - $start_time);
 
         if ($this->is_read_only()) {
             throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id()));
@@ -611,6 +635,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             return $this;
         }
 
+        $this->profile('CHECK 2', microtime(true) - $start_time);
+
         //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
         //instead the lock level should be updated (lock reacquired)
         if ($this->is_new() && static::is_locking_enabled()) {
@@ -624,6 +650,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $LockManager->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
         }
 
+
+        $this->profile('CHECK 3', microtime(true) - $start_time);
+
         $Transaction = ActiveRecord::new_transaction($TR);
         $Transaction->begin();
 
@@ -632,15 +661,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_before_write'], $args);//must return void
         }
 
+        $this->profile('CHECK 4', microtime(true) - $start_time);
+
         //new Event($this, '_before_write');
         self::get_service('Events')::create_event($this, '_before_write');
 
 
+        $this->profile('CHECK 5', microtime(true) - $start_time);
+
         $this->validate();
+
+        $this->profile('CHECK 6', microtime(true) - $start_time);
 
         static::get_service('OrmStore')->update_record($this);
 
-
+        $this->profile('CHECK 7', microtime(true) - $start_time);
 
         //reattach the pointer
         //$_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
@@ -674,13 +709,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $this->was_new_flag = true;
         }
 
-        if (! ($this instanceof LogEntry)) {
+        $this->profile('CHECK 8', microtime(true) - $start_time);
+
+        //if (! ($this instanceof LogEntry)) {
+        if (self::uses_log()) {
             if ($this->was_new()) {
                 $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
             } else {
                 $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names())));
             }
         }
+
+        $this->profile('CHECK 9', microtime(true) - $start_time);
 
         if ($this->was_new() && self::uses_permissions()) {
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
@@ -695,6 +735,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
         }
 
+        $this->profile('CHECK 10', microtime(true) - $start_time);
+
 
         //new Event($this, '_after_write');
         self::get_service('Events')::create_event($this, '_after_write');
@@ -704,7 +746,11 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_write'], $args);//must return void
         }
 
+        $this->profile('CHECK 11', microtime(true) - $start_time);
+
         $Transaction->commit();
+
+        $this->profile('CHECK 12', microtime(true) - $start_time);
 
         //if (static::is_locking_enabled()) {
         if (!empty($LR)) {
@@ -717,6 +763,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->was_new_flag = false;
         //the modified data will be cleared only after the transaction is over
         $this->record_modified_data = [];
+
+        $end_time = microtime(true);
+
+        $this->profile('CHECK 13', microtime(true) - $start_time);
+
+        /** @var ProfilerInterface $Apm */
+        $Apm = self::get_service('Apm');
+        $object_key = str_replace('\\','_',get_class($this)).'_'.implode('_', $this->get_primary_index()).'_write_time';
+        $Apm->add_key($object_key);
+        $Apm->increment_value($object_key, $end_time - $start_time);
 
         return $this;
     }
@@ -952,7 +1008,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     /**
      * Returns the primary index (a scalar) of the record.
-     * If the record has multiple columms please use @return mixed
+     * If the record has multiple columms please use get_primary_index (returns an array)
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
@@ -1294,9 +1350,22 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->record_data = array_replace($this->record_data, $record_data);
     }
 
+    /**
+     * Whether this class creates meta data entries.
+     * @return bool
+     */
     public static function uses_meta(): bool
     {
         return empty(static::CONFIG_RUNTIME['no_meta']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true);
+    }
+
+    /**
+     * Whether this class creates log entries.
+     * @return bool
+     */
+    public static function uses_log(): bool
+    {
+        return empty(static::CONFIG_RUNTIME['no_log']) && !is_a(get_called_class(), LogEntry::class, true);
     }
 
     public function get_meta_data(): array

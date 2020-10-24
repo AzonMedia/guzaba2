@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Database\ConnectionProviders;
 
+use Azonmedia\Apm\Interfaces\ProfilerInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -259,6 +260,7 @@ class Pool extends Provider
 
             //if (self::has_service('Apm') && abs($time_waiting_for_connection) > $eps )  {
             if (self::has_service('Apm') && abs($time_waiting_for_connection) > Kernel::MICROTIME_EPS) {
+                /** @var ProfilerInterface $Apm */
                 $Apm = self::get_service('Apm');
                 $Apm->increment_value('time_waiting_for_connection', $time_waiting_for_connection);
             }

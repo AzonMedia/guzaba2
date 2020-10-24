@@ -697,14 +697,20 @@ WHERE
      */
     protected function create_meta(ActiveRecordInterface $ActiveRecord): string
     {
+
+        //$start_time = microtime(true);
+
         $Connection = $this->get_connection($CR);
         $meta_table = self::get_meta_table();
 
         $object_create_microtime = microtime(true) * 1_000_000;
 
+        //print 'Check 1: '.(microtime(true) - $start_time).PHP_EOL;
+
         $uuid = Uuid::uuid4();
         $uuid_binary = $uuid->getBytes();
 
+        //print 'Check 2: '.(microtime(true) - $start_time).PHP_EOL;
 
 //        $q = "
 //INSERT
@@ -724,11 +730,22 @@ WHERE
 //            //'object_uuid'                   => $uuid,
 //        ];
 
+
+
         /** @var CurrentUser $CurrentUser */
         $CurrentUser = self::get_service('CurrentUser');
+
+        //print 'Check 3: '.(microtime(true) - $start_time).PHP_EOL;
+
         /** @var UserInterface $User */
         $User = $CurrentUser->get();
+
+        //print 'Check 4: '.(microtime(true) - $start_time).PHP_EOL;
+
         $role_id = $User->get_role()->get_id();
+
+        //print 'Check 5: '.(microtime(true) - $start_time).PHP_EOL;
+
         $q = "
 INSERT
 INTO
@@ -749,8 +766,16 @@ VALUES
             //'object_uuid'                   => $uuid,
         ];
 
+        //print 'Check 6: '.(microtime(true) - $start_time).PHP_EOL;
+
         $Statement = $Connection->prepare($q);
+
+        //print 'Check 7: '.(microtime(true) - $start_time).PHP_EOL;
+
         $Statement->execute($params);
+
+        //print 'Check 8: '.(microtime(true) - $start_time).PHP_EOL;
+
 
         return (string) $uuid;
     }
@@ -780,15 +805,24 @@ VALUES
         // funny thing here - if there is another save() in the _after_save and this occurs on a new object it will try to create the record twice and trhow duplicateKeyException
         // the issue here is that the is_new_flag is set to FALSE only after _after_save() and this is the expected behaviour
         // so we must check are we in save() method and we must do this check BEFORE we have pushed to the calls_stack because otherwise we will always be in save()
+
+        //$start_time = microtime(true);
+
         $columns_data = $ActiveRecord::get_columns_data();
         $record_data = $ActiveRecord->get_record_data();
         $main_index = $ActiveRecord->get_primary_index_columns();
         $index = $ActiveRecord->get_id();
+
+        //print 'Check 1: '.(microtime(true) - $start_time).PHP_EOL;
+
         if ($ActiveRecord->is_new()) {
+
             $record_data_to_save = [];
             foreach ($columns_data as $field_data) {
                 $record_data_to_save[$field_data['name']] = $record_data[$field_data['name']];
             }
+
+            //print 'Check 2: '.(microtime(true) - $start_time).PHP_EOL;
 
 
             //TO DO - find more intelligent solution
@@ -804,6 +838,7 @@ VALUES
                 $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
                 $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
             } else {
+
                 $field_names_arr = $ActiveRecord::get_column_names();//this includes the full index
 
                 //implementation detail of Mysql store
@@ -827,6 +862,9 @@ VALUES
 
                 $data_arr = $record_data_to_save;
             }
+
+            //print 'Check 3: '.(microtime(true) - $start_time).PHP_EOL;
+
 //            } else {
 //                // the first column of the main index is set (as well probably the ither is there are more) and then it doesnt matter is it autoincrement or not
 //                $field_names_arr = array_unique(array_merge($ActiveRecord::get_property_names(), $main_index));
@@ -838,7 +876,11 @@ VALUES
 //            }
             $Connection = $this->get_connection($CR);
 
+            //print 'Check 4: '.(microtime(true) - $start_time).PHP_EOL;
+
             $data_arr = $ActiveRecord::fix_data_arr_empty_values_type($data_arr, $Connection::get_tprefix() . $ActiveRecord::get_main_table());
+
+            //print 'Check 5: '.(microtime(true) - $start_time).PHP_EOL;
 
 
             $q = "
@@ -852,16 +894,16 @@ VALUES
 (
     {$placeholder_str}
 )
-                ";
+            ";
 
-//            try {
-                $Statement = $Connection->prepare($q);
-                $Statement->execute($data_arr);
-//            } catch (\Guzaba2\Database\Exceptions\DuplicateKeyException $Exception) {
-//                throw new \Guzaba2\Database\Exceptions\DuplicateKeyException(NULL, $Exception->getMessage(), 0, $Exception);
-//            } catch (\Guzaba2\Database\Exceptions\ForeignKeyConstraintException $Exception) {
-//                throw new \Guzaba2\Database\Exceptions\ForeignKeyConstraintException(NULL, $Exception->getMessage(), 0, $Exception);
-//            }
+            $Statement = $Connection->prepare($q);
+
+            //print 'Check 6: '.(microtime(true) - $start_time).PHP_EOL;
+
+            $Statement->execute($data_arr);
+
+            //print 'Check 7: '.(microtime(true) - $start_time).PHP_EOL;
+
 
             //if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->index[$main_index[0]]) {
             if ($ActiveRecord::uses_autoincrement() && !$ActiveRecord->get_id()) {
@@ -877,6 +919,10 @@ VALUES
                 $main_index = $ActiveRecord::get_primary_index_columns();
                 $record_data[$main_index[0]] = $last_insert_id;
             }
+
+            //print 'Check 8: '.(microtime(true) - $start_time).PHP_EOL;
+
+
         } else {
             $record_data_to_save = [];
             $field_names = $modified_field_names = $ActiveRecord::get_column_names();
@@ -951,10 +997,10 @@ ON DUPLICATE KEY UPDATE
                 $Statement = $Connection->prepare($q);
 
                 $ret = $Statement->execute($data_arr);
-
             }
         }
 
+        //print 'Check 9: '.(microtime(true) - $start_time).PHP_EOL;
 
         if ($ActiveRecord->is_new()) {
             if ($ActiveRecord::uses_meta()) {
@@ -967,6 +1013,9 @@ ON DUPLICATE KEY UPDATE
                 //$uuid = $ActiveRecord->get_uuid();
             }
         }
+
+        //print 'Check 10: '.(microtime(true) - $start_time).PHP_EOL;
+
         //$ret = array_merge($record_data, $this->get_meta());
 
 
@@ -978,6 +1027,9 @@ ON DUPLICATE KEY UPDATE
         //this flag will be updated in activerecord::save()
         //return $uuid;
         $ret = ['data' => $record_data, 'meta' => $ActiveRecord::uses_meta() ? $this->get_meta(get_class($ActiveRecord), $ActiveRecord->get_id()) : [] ];
+
+        //print 'Check 11: '.(microtime(true) - $start_time).PHP_EOL;
+
 
         return $ret;
     }

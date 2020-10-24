@@ -12,6 +12,7 @@ use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Exceptions\ValidationFailedException;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
+use Guzaba2\Orm\Interfaces\NonHookableInterface;
 use Guzaba2\Orm\Store\Sql\Mysql;
 use Guzaba2\Orm\Store\Store;
 use Guzaba2\Translator\Translator as t;
@@ -34,7 +35,8 @@ use Guzaba2\Translator\Translator as t;
  * Because when publically exposed the Permission object must be able to accept class_name (instead of class_id), object_uuid (instead of object_id) and role_uuid (for role_id)
  * these are also defined as class properties.
  */
-class Permission extends ActiveRecord implements PermissionInterface
+//if made final there is an error that is abstract... which is not... CHECK!
+class Permission extends ActiveRecord implements PermissionInterface, NonHookableInterface
 {
 
     protected const CONFIG_DEFAULTS = [
@@ -43,6 +45,7 @@ class Permission extends ActiveRecord implements PermissionInterface
         //instead the individual routes for the objects are to be used
         //'load_in_memory'        => TRUE,//testing
         'no_permissions'    => true,//the permissions records themselves cant use permissions
+        //'no_log'            => true,
         'services'          => [
 
         ],

@@ -701,6 +701,8 @@ BANNER;
         //self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
         //must throw the exception instead of passing it directly to the exception handler as in Server mode the exception handler does not interrupt the execution
 
+        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
         throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
 

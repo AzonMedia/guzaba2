@@ -161,7 +161,7 @@ class QueryCache extends Base
 
         if ($cache_enabled && $query_data) {
             $ret = $query_data;
-            Kernel::log(sprintf(t::_('%1$s: The result of query "%2$s" was found in cache.'), __CLASS__, substr($sql, 0, 200) . '...'), LogLevel::DEBUG);
+            //Kernel::log(sprintf(t::_('%1$s: The result of query "%2$s" was found in cache.'), __CLASS__, substr($sql, 0, 200) . '...'), LogLevel::DEBUG);//this is becoming too much
         }
 
         return $ret;

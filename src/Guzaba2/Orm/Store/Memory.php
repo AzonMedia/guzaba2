@@ -14,6 +14,7 @@ use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Kernel\Runtime;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Interfaces\NonHookableInterface;
 use Guzaba2\Orm\Store\Interfaces\StoreInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Swoole\Handlers\WorkerStart;
@@ -190,6 +191,9 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         if (!$this->caching_enabled()) {
             return $this->FallbackStore->update_record($ActiveRecord);
         } else {
+
+            $start_time = microtime(true);
+
             //$class = get_class($ActiveRecord);
             //$lookup_index = $ActiveRecord->get_lookup_index();
             //$this->data[$class][$lookup_index] = $this->process_instance();
@@ -198,15 +202,21 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 $all_data = $this->FallbackStore->update_record($ActiveRecord);
             }
 
+            //print get_class($ActiveRecord).' check  1: '.(microtime(true) - $start_time).PHP_EOL;
+
             //the meta data needs to be updated
 
             $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
             $class = get_class($ActiveRecord);
 
-            $new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_id());
+            //$new_meta = $this->FallbackStore->get_meta($class, $ActiveRecord->get_id());
+            $new_meta = $all_data['meta'];
+
+            //print get_class($ActiveRecord).' check  2: '.(microtime(true) - $start_time).PHP_EOL;
 
             $this->update_meta_data($class, $ActiveRecord->get_primary_index(), $new_meta);
 
+            //print get_class($ActiveRecord).' check  3: '.(microtime(true) - $start_time).PHP_EOL;
 
             //cleanup
             //unset($this->data[$class][$lookup_index][0]);
@@ -245,14 +255,22 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //unset($this->data[$class][$lookup_index]['cid_' . $cid]);
             //}
 
+            //the below is slow
+            //and can be disabled for the permissions
+            //there is no chance there to be a nested permission object (these shouldnt be extended or hooked into)
+            //nested object means the same object to be instantiated in its _after_save hook for example (there the changes done to the object in memory (but notcommited yet) should be visible
+            //possibly make the Permission class final...
+            if ( ! ($ActiveRecord instanceof NonHookableInterface)) {
+                $_pointer =& $this->get_data_pointer_for_new_version(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
+                foreach ($all_data as $key=>$value) {
+                    $_pointer['data'][$key] = $value;
+                }
+                foreach ($all_data['meta'] as $key=>$value) {
+                    $_pointer['meta'][$key] = $value;
+                }
+            }
 
-            $_pointer =& $this->get_data_pointer_for_new_version(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
-            foreach ($all_data as $key=>$value) {
-                $_pointer['data'][$key] = $value;
-            }
-            foreach ($all_data['meta'] as $key=>$value) {
-                $_pointer['meta'][$key] = $value;
-            }
+            //print get_class($ActiveRecord).' check  4: '.(microtime(true) - $start_time).PHP_EOL;
 
             if (!$this->get_current_transaction()) {
                 //if there is no transaction only then can write to the cache
@@ -263,6 +281,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                     //$this->data[$class][$lookup_index][0] = $all_data;//disable caching the history records
                 }
             }
+
+            //print get_class($ActiveRecord).' check  5: '.(microtime(true) - $start_time).PHP_EOL;
 
             return $all_data;
         }
@@ -310,7 +330,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 
                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
-                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by primary key.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by primary key.'), __CLASS__, $class, implode(':', $primary_index)), LogLevel::DEBUG);
                         return $_pointer;
                     }
                 }
@@ -340,7 +360,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                             $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double) microtime(true);
                             $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by UUID.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by UUID.'), __CLASS__, $class, implode(':', $primary_index)), LogLevel::DEBUG);
                             return $_pointer;
                         }
                     }
@@ -379,7 +399,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                                     $primary_index = $class::get_index_from_data($record['data']);
                                     //there has to be a valid primary index now...
                                     if (!$primary_index) {
-                                        throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, print_r($index, true)));
+                                        throw new LogicException(sprintf(t::_('No primary index could be obtained from the data for object of class %s and search index %s.'), $class, implode(':', $index) ) );
                                     }
 
                                     $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
@@ -396,7 +416,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                                         $this->data[$class][$lookup_index][$last_update_time]['last_access_time'] = (double)microtime(true);
                                         $_pointer =& $this->data[$class][$lookup_index][$last_update_time];
 
-                                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by complex key lookup.'), __CLASS__, $class, current($primary_index)), LogLevel::DEBUG);
+                                        Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was found in Memory Store by complex key lookup.'), __CLASS__, $class, implode(':', $primary_index)), LogLevel::DEBUG);
                                         return $_pointer;
                                     }
                                 }
@@ -418,6 +438,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 //no primary index provided and no local data for this class
                 //proceed to the fallback store
             }
+
+            Kernel::log(sprintf(t::_('%1$s: Object of class %2$s with index %3$s was NOT found in Memory Store.'), __CLASS__, $class, implode(':', $index) ), LogLevel::DEBUG);
 
             $this->misses++;
 
@@ -521,10 +543,15 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         if (!$this->caching_enabled()) {
             return $this->get_data_pointer($class, $primary_index);
         } else {
+
+            $start_time = microtime(true);
+
             // called in so the MetaStore contains the correct data
             //$this->get_data_pointer($class, $primary_index);
             $lookup_index = self::form_lookup_index($primary_index);
             $last_update_time = $this->MetaStore->get_last_update_time($class, $primary_index);
+
+            //print $class.' check 1: '.(microtime(true) - $start_time).PHP_EOL;
 
             if (isset($this->data[$class][$lookup_index][$last_update_time])) {
                 $current_record_data = $this->data[$class][$lookup_index][$last_update_time];
@@ -533,10 +560,15 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                 //it is now possible this not to be set as the cache update is no longer done in get_data_pointer() if there is current transaction ongoing
                 //throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, true)));
                 $current_record_data = $this->get_data_pointer($class, $primary_index);
+
+                //print $class.' check 2: '.(microtime(true) - $start_time).PHP_EOL;
+
                 if (isset($this->data[$class][$lookup_index][$last_update_time])) {
                     $this->decrement_refcount($class, $lookup_index, $last_update_time);
                 }
             }
+
+            //print $class.' check 3: '.(microtime(true) - $start_time).PHP_EOL;
 
             //$this->data[$class][$lookup_index][0] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
             //return $this->data[$class][$lookup_index][0];
@@ -547,8 +579,13 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             $cid = \Swoole\Coroutine::getCid();
             //better use the root coroutine as it may happen an object to be passed between coroutines
 
+            //print $class.' check 4: '.(microtime(true) - $start_time).PHP_EOL;
+
             //this also allows to use defer() for cleanup
             if (!$this->there_is_pointer_for_new_version($class, $primary_index)) {
+
+                //print $class.' check 5: '.(microtime(true) - $start_time).PHP_EOL;
+
                 //!!! copying arrays actually copies the pointers
                 //$this->data[$class][$lookup_index]['cid_'.$rcid] = $this->data[$class][$lookup_index][$last_update_time];//should exist and should NOT be passed by reference - the whol point is to break the reference
                 //$this->data[$class][$lookup_index]['cid_'.$rcid]['modified'] = [];
@@ -585,6 +622,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
                         unset($this->data[$class][$lookup_index]['cid_' . $cid]);
                     });
                 }
+
+                //print $class.' check 6: '.(microtime(true) - $start_time).PHP_EOL;
             }
 
             return $this->data[$class][$lookup_index]['cid_' . $cid];

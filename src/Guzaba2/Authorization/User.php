@@ -104,6 +104,8 @@ class User extends ActiveRecord implements UserInterface
 
     protected const CONFIG_RUNTIME = [];
 
+    protected Role $Role;
+
 
     /**
      * Returns the primary role of the user
@@ -118,7 +120,13 @@ class User extends ActiveRecord implements UserInterface
      */
     public function get_role(): Role
     {
-        return new Role((int) $this->role_id);
+        //return new Role((int) $this->role_id);
+        //the below is faster (as it happens get_role() to get tens or even hundreds of times) but creates an additional reference
+        //as long as this reference is not cyclic it should be fine for the GC
+        if (!isset($this->Role)) {
+            $this->Role = new Role((int) $this->role_id, true);//must be a read only as otherwise there will be a lock and an error thrown when the role object is destroyed.. the coroutine context is no longer available.
+        }
+        return $this->Role;
     }
 
 //    /**
