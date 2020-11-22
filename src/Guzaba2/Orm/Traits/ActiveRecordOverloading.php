@@ -58,7 +58,7 @@ trait ActiveRecordOverloading
         }
 
         if (array_key_exists($property, $this->record_data)) {
-            $ret = $this->record_data[$property];
+            $ret =& $this->record_data[$property];//must have the & here and return by ref to avoid the indirect modification of overloaded property error
         } else {
             throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }

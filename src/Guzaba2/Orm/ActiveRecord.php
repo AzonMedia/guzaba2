@@ -568,7 +568,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_after_read');
         self::get_service('Events')::create_event($this, '_after_read');
 
-
         //_after_load() event
         if (method_exists($this, '_after_read') && !$this->are_method_hooks_disabled()) {
             $args = func_get_args();
@@ -1513,10 +1512,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @return iterable  list of ActiveRecord objects
      * @throws RunTimeException
      */
-    public static function get_by(array $index = []): iterable
+    //public static function get_by(array $index = []): iterable
+    public static function get_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
     {
         $class_name = static::class;
-        $data = static::get_data_by($index);
+        $data = static::get_data_by($index,  $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
+
 
         //$primary_index = static::get_primary_index_columns()[0];
         $primary_index_columns = static::get_primary_index_columns();
@@ -1526,7 +1527,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $object_index = ArrayUtil::extract_keys($record, $primary_index_columns);
             $ret[] = new $class_name($object_index);
         }
-
         return $ret;
     }
 
