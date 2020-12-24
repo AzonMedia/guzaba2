@@ -6,6 +6,7 @@ namespace Guzaba2\Authorization\Traits;
 
 use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
+use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Authorization\User;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -15,6 +16,16 @@ use Guzaba2\Translator\Translator as t;
 
 trait AuthorizationProviderTrait
 {
+
+    /**
+     * Returns the name of the class that this class uses for the implementation of PermissionInterface
+     * @return string
+     */
+    public static function get_permission_class(): string
+    {
+        return static::CONFIG_RUNTIME['class_dependencies'][PermissionInterface::class];
+    }
+
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord
      * @param string $action

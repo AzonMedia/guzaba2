@@ -113,4 +113,9 @@ class NullStore extends Store implements StoreInterface
     {
         throw new RunTimeException(sprintf(t::_('ORM Store %s does not support deleting records.'), __CLASS__));
     }
+
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$_total_found_rows = null, bool $permission_checks_disabled = false): iterable
+    {
+        return [];
+    }
 }

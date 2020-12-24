@@ -256,6 +256,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     //public function __construct(/* mixed*/ $index = self::INDEX_NEW, ?StoreInterface $Store = NULL)
     public function __construct(/* mixed*/ $index = self::INDEX_NEW, bool $read_only = false, bool $permission_checks_disabled = false, ?StoreInterface $Store = null)
+    //public function __construct(int|string|array $index = self::INDEX_NEW, bool $read_only = false, bool $permission_checks_disabled = false, ?StoreInterface $Store = null)
     {
         parent::__construct();
 
@@ -375,7 +376,26 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function get_from_record(iterable $data): ActiveRecordInterface
     {
-        //TODO implement
+        $class = get_called_class();
+        $Object = new $class(0);
+        $class_properties = $class::get_class_property_names();
+        foreach ($class::get_property_names() as $property) {
+            if (!array_key_exists($property, $data)) {
+                if (!in_array($property, $class_properties)) {
+                    throw new RunTimeException(sprintf(t::_('The property %1$s needed by class %2$s does not exist in the provided data.'), $property, $class));
+                } else {
+                    //it will be set in _after_read()
+                    continue;
+                }
+            }
+            $Object->{$property} = $data[$property];
+        }
+        $Object->is_new_flag = false;
+        if (method_exists($Object, '_after_read')) {
+            $Object->_after_read();
+        }
+
+        return $Object;
     }
 
     protected function _before_destruct()
@@ -1524,8 +1544,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         $ret = array();
         foreach ($data as $record) {
-            $object_index = ArrayUtil::extract_keys($record, $primary_index_columns);
-            $ret[] = new $class_name($object_index);
+            //$object_index = ArrayUtil::extract_keys($record, $primary_index_columns);
+            //$ret[] = new $class_name($object_index);
+            $ret[] = static::get_from_record($record);//this does not trigger reads in the DB, just loads the object
         }
         return $ret;
     }

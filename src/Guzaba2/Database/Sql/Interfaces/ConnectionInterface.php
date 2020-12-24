@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Interfaces;
 
+use Guzaba2\Database\Interfaces\StatementInterface;
+
 interface ConnectionInterface
 {
 
@@ -31,4 +33,6 @@ interface ConnectionInterface
      * @return string
      */
     public static function array_placeholder(array $array, string $placeholder_name): string;
+
+    public function prepare(string $query): StatementInterface ;
 }

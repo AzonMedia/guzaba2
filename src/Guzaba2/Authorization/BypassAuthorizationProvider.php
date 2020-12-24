@@ -18,6 +18,24 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 class BypassAuthorizationProvider extends Base implements AuthorizationProviderInterface
 {
 
+
+    protected const CONFIG_DEFAULTS = [
+        'class_dependencies'        => [
+            PermissionInterface::class      => BypassPermission::class,
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
+    /**
+     * Returns the name of the class that this class uses for the implementation of PermissionInterface
+     * @return string
+     */
+    public static function get_permission_class(): string
+    {
+        return static::CONFIG_RUNTIME['class_dependencies'][PermissionInterface::class];
+    }
+
     public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
     {
         return true;

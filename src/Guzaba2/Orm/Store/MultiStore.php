@@ -140,4 +140,9 @@ class MultiStore extends Store
     {
         return $this->get_fallback_store()->get_meta_by_id($class_name, $object_id);
     }
+
+    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$_total_found_rows = null, bool $permission_checks_disabled = false): iterable
+    {
+        return $this->get_fallback_store()->get_data_by($class, $index, $offset, $limit, $use_like, $sort_by, $sort_desc, $_total_found_rows, $permission_checks_disabled);
+    }
 }

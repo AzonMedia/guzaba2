@@ -658,19 +658,21 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         $class = get_class($ActiveRecord);
 
         $lookup_index = self::form_lookup_index($ActiveRecord->get_primary_index());
-        $last_update_time = $ActiveRecord->get_meta_data()['meta_object_last_update_microtime'];
-
-        if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
-            //throw new LogicException(sprintf(t::_('For instance %s:%s there is no last_update_time %s found in the Memory->data array.'), $class, $lookup_index, $last_update_time ));
-            //the record may have been deleted
-            //nothing to do...
-            return;
-        }
+        //$last_update_time = $ActiveRecord->get_meta_data()['meta_object_last_update_microtime'];
+        $object_meta = $ActiveRecord->get_meta_data();
+        if (array_key_exists('meta_object_last_update_microtime', $object_meta)) {
+            $last_update_time = $object_meta['meta_object_last_update_microtime'];
+            if (!isset($this->data[$class][$lookup_index][$last_update_time])) {
+                //throw new LogicException(sprintf(t::_('For instance %s:%s there is no last_update_time %s found in the Memory->data array.'), $class, $lookup_index, $last_update_time ));
+                //the record may have been deleted
+                //nothing to do...
+                return;
+            }
 
 //        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] > 0) {
 //            $this->data[$class][$lookup_index][$last_update_time]['refcount']--;
 //        }
-        $this->decrement_refcount($class, $lookup_index, $last_update_time);
+            $this->decrement_refcount($class, $lookup_index, $last_update_time);
 
 //        if ($this->data[$class][$lookup_index][$last_update_time]['refcount'] === 0) {
 //            //if this is the latest version leave it in memory for the purpose of caching
@@ -695,6 +697,11 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
 //                //leave the record in ormstore for the purpose of caching
 //            }
 //        }
+        } else {
+            //the objectm may have been creted with ActiveRecord::get_from_record()
+        }
+
+
     }
 
     /**

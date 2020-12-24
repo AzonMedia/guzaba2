@@ -15,6 +15,13 @@ use Guzaba2\Authorization\Role;
  */
 interface AuthorizationProviderInterface
 {
+
+    /**
+     * Returns the name of the class that this class uses for the implementation of PermissionInterface
+     * @return string
+     */
+    public static function get_permission_class(): string;
+
     /**
      * Returns a boolean can the provided $role perform the $action on the object $ActiveRecord.
      * @param Role $Role

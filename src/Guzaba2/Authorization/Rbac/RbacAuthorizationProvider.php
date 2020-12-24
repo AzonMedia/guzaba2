@@ -15,6 +15,14 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
 {
     use AuthorizationProviderTrait;
 
+    protected const CONFIG_DEFAULTS = [
+        'class_dependencies'        => [
+            PermissionInterface::class      => \Guzaba2\Authorization\Rbac\Permission::class,
+        ],
+    ];
+
+    protected const CONFIG_RUNTIME = [];
+
     public function grant_permission(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): ?PermissionInterface
     {
         //TODO implement

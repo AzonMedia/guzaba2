@@ -943,6 +943,7 @@ BANNER;
 
                 $runtime_config = $default_config;
 
+
                 //get the configuration from the parent class
                 $RParentClass = $RClass->getParentClass();
                 $parent_config = [];
@@ -999,8 +1000,6 @@ BANNER;
                         };
                     }
                 }
-
-
 
                 self::$Registry->add_to_runtime_config_file($real_class_name, "\nFINAL CONFIG_RUNTIME for {$real_class_name}:\n" . print_r($runtime_config, true));
                 // the word FINAL is required here as it announces for final write in the file, when "return" is added
