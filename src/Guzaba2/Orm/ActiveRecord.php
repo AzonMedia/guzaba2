@@ -390,8 +390,20 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             }
             $Object->{$property} = $data[$property];
         }
+        foreach ($class::get_meta_property_names() as $property) {
+            //TODO - fix this exception for mysql
+            if ($property === 'meta_object_uuid_binary') {
+                continue;
+            }
+            if (!array_key_exists($property, $data)) {
+                throw new RunTimeException(sprintf(t::_('The meta property %1$s needed by class %2$s does not exist in the provided data.'), $property, $class));
+            }
+            //can not use the overloading as the meta is read only
+            $Object->meta_data[$property] = $data[$property];
+        }
         $Object->is_new_flag = false;
         if (method_exists($Object, '_after_read')) {
+            //this will set the values of the class property names
             $Object->_after_read();
         }
 

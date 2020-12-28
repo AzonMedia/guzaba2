@@ -8,6 +8,7 @@ use Azonmedia\Reflection\ReflectionClass;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Kernel\Kernel;
 use Guzaba2\Orm\ActiveRecord;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Translator\Translator as t;
 
 trait ActiveRecordStructure
@@ -171,8 +172,17 @@ trait ActiveRecordStructure
     }
 
     /**
+     * Returns an indexed array with the names of the meta properties.
+     * @return string[]
+     */
+    public static function get_meta_property_names(): array
+    {
+        return ActiveRecordInterface::META_TABLE_COLUMNS;
+    }
+
+    /**
      * Returns an indexed array containing the names of all properties and columns.
-     * @return array
+     * @return string[]
      */
     public static function get_property_names(): array
     {
@@ -180,19 +190,27 @@ trait ActiveRecordStructure
         return array_column(static::get_properties_data(), 'name');
     }
 
+    /**
+     * Returns the names of the columns in the database
+     * @return string[]
+     */
     public static function get_column_names(): array
     {
         return array_column(static::get_columns_data(), 'name');
     }
 
     /**
-     * @return array
+     * Returns the names of the class properties
+     * @return string[]
      */
     public static function get_class_property_names(): array
     {
         return array_column(static::get_class_properties_data(), 'name');
     }
 
+    /**
+     * @return array
+     */
     public static function get_property_names_with_types(): array
     {
         $ret = [];

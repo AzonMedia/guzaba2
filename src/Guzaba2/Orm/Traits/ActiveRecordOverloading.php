@@ -59,6 +59,8 @@ trait ActiveRecordOverloading
 
         if (array_key_exists($property, $this->record_data)) {
             $ret =& $this->record_data[$property];//must have the & here and return by ref to avoid the indirect modification of overloaded property error
+        } elseif (array_key_exists($property, $this->meta_data)) {
+            $ret = $this->meta_data[$property];//do not put reference here since these are not supposed to be arrays
         } else {
             throw new RunTimeException(sprintf(t::_('Trying to get a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
@@ -93,8 +95,12 @@ trait ActiveRecordOverloading
             //throw new RunTimeException(sprintf(t::_('Trying to modify a read-only instance of class %s with id %s.'), get_class($this), $this->get_id() ), 0, NULL, 'aa5319b8-5664-4fd9-8580-79a4996fba8a' );
         }
 
+        if (array_key_exists($property, $this->meta_data)) {
+            throw new RunTimeException(sprintf(t::_('Trying to set a meta property "%1$s" on instance of "%2$s (ActiveRecord class). The meta properties are read only.'), $property, get_class($this) ));
+        }
+
         if (!array_key_exists($property, $this->record_data)) {
-            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+            throw new RunTimeException(sprintf(t::_('Trying to set a non existing property "%s" on instance of "%s" (ActiveRecord class).'), $property, get_class($this) ));
         }
 
 //read_only is set in constructor() if method is GET

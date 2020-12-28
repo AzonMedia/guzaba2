@@ -2,7 +2,13 @@
 
 ## Overview
 
-Why yet another PHP framework? Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/root/guzaba-framework-v0.7), [docs](http://gitlab.guzaba.org/root/guzaba-framework/-/wikis/home)) were created because there was no other framework providing:
+Guzaba2 is a research framework. It explores the use nested transactions and automatic (partial) rollback, different design patterns and implementations.
+It is not intended to be used in production (and may never be), it is not yet documented.
+The testbed for Guzaba2 is [Guzaba Platform](https://github.com/AzonMedia/guzaba-platform).
+The framework has certain traits (very) similar with other frameworks (it borrows code from [Slim](https://www.slimframework.com/)) and it is very different in other spects.
+If you would like to discuss certain feature or design decition in the framework please open a [Discussion](https://github.com/AzonMedia/guzaba2/discussions).
+
+Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/root/guzaba-framework-v0.7), [docs](http://gitlab.guzaba.org/root/guzaba-framework/-/wikis/home)) were created because there was no other framework providing:
 - nested transactions - supports partial transaction rollback and the transaction can continue and commit
 - automatic transaction rollback on abandoning the scope be it becase of an exception or a return ([SBRM](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization))
 - callbacks on various transaction events - you can add conditional block if the current (be it the master or nested) transaction commits or rollbacks
@@ -11,8 +17,8 @@ Why yet another PHP framework? Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/r
 - ActiveRecord objects transaction - the objects will have their properties updated automatically if the transaction is rolled back (and you can still save them if needed!)
 - the transaction and transaction manager can be used to implement custom transactions (like filesystem transactions)
 
-Guzaba2 adds support for: 
-- Swoole based
+Guzaba2 improves on and adds support for: 
+- [Swoole](http://swoole.com/) based
 - database connections pool
 - automatic deallocation of obtained resources/connections (SBRM)
 - shared memory for the ORM objects - the ActiveRecord objects are just pointers to shared array with data between all coroutines
@@ -24,8 +30,8 @@ Guzaba2 adds support for:
 
 And some commonly found functionality:
 - PSR-7, PSR-11, PSR-15, PSR-3 (support for PSR-14, PSR-16 and PSR-17 coming)
-- ORM layer with temporal records and logging, multiple backend stores
-- ORM objects propety hooks (setting, getting, validation) and method hooks (before save, after save etc)
+- ActiveRecord with temporal records and logging, multiple backend stores
+- ActiveRecord propety hooks (setting, getting, validation) and method hooks (before save, after save etc)
 - ACL permissions
 - events
 - routing
@@ -34,7 +40,7 @@ And some commonly found functionality:
 - caching (in memory, redis, memcached)
 
 And some specifics:
-- uses typed properties (requires PHP 7.4)
+- uses typed properties (PHP 7.4), union types, named parameters, attributes ([PHP 8.0](https://www.php.net/releases/8.0/en.php))
 - Guzaba2 currently supports only MySQL and Redis because these are the only database drivers for which Swoole supports coroutines
 - PostgreSQL support will be added as Swoole has a separate (less supported) driver for it
 - The MySQL store for ActiveRecord objects internally works with IDs for better performance while for API access it supports UUIDs
@@ -42,6 +48,9 @@ And some specifics:
 - currently there is no database migrations support, but will be aded in future
 - everything is an ActiveRecord - the models, the log entries, the controllers, the permissions
 - permissions can be granted on objects (records) and classes (static methods)
+- tries to avoid factories when possible
+- use of magic methods and references
+- uses static code for configuration. Classes with injected configuration constant are geenrated at startup.
 
 And what does not support (and probably never will):
 - the ORM does not aim to replace SQL thus there is no support for creating SQL queries with a replacement language or creating queries all with PHP objects/methods.
@@ -53,7 +62,7 @@ The overall reasoning is that the framework is not to blurr or hide the backend 
 Guzaba2 is adding to this excellent speed and very high concurrency support by being based on Swoole and by making good use of its persistent memory model and coroutines.
 
 ## Requirements
-- PHP 7.4+
+- PHP 8.0+
 - Swoole 4.5+
 - MySQL 8.0+
 
