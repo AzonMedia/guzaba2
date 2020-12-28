@@ -60,6 +60,14 @@ trait UsesServices
         return $ret;
     }
 
+    /**
+     * @param string $service_name
+     * @return object
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public static function get_service(string $service_name): object
     {
         $called_class = get_called_class();
@@ -71,6 +79,15 @@ trait UsesServices
         return $ret;
     }
 
+    /**
+     * @param string $event_name
+     * @param callable $callback
+     * @return bool
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     public function add_callback(string $event_name, callable $callback): bool
     {
         /** @var Events $Events */

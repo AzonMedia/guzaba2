@@ -25,7 +25,8 @@ interface ActiveRecordInterface extends BaseInterface, ActiveRecordAliasInterfac
     public const META_TABLE_COLUMNS = [
         'meta_object_uuid_binary',//TODO - mysql specific - remove
         'meta_object_uuid',
-        'meta_class_name',
+        //'meta_class_name',
+        'meta_class_id',
         'meta_object_id',
         'meta_object_create_microtime',
         'meta_object_last_update_microtime',
