@@ -388,7 +388,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     continue;
                 }
             }
-            $Object->{$property} = $data[$property];
+            //$Object->{$property} = $data[$property];//use this as it invokes the property hooks
+            //or call __set() directly for better speed
+            $Object->__set($property, $data[$property]);
+            //$Object->record_data[$property] = $data[$property];
         }
         foreach ($class::get_meta_property_names() as $property) {
             //TODO - fix this exception for mysql

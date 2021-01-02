@@ -23,7 +23,7 @@ use Guzaba2\Translator\Translator as t;
  * @property scalar permission_id
  * @property scalar role_id
  * @property string class_id
- * @property scalar object_id
+ * @property int object_id
  * @property string action_name
  * @property string permission_description
  *
@@ -73,6 +73,7 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
 
     protected function _after_read(): void
     {
+
         //as modifying a permission record is not allowed (@see _before_write()) it is safe here not to check were these class properties modified
         //it is pointless to have these modified if cant be saved...
         $this->class_name = self::get_class_name($this->class_id);
@@ -85,23 +86,27 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
         $this->role_uuid = (new Role($this->role_id))->get_uuid();
     }
 
-    protected function _before_set_class_id(?int $class_id): ?int
+    protected function _after_set_class_id(?int $class_id): void
     {
         if ($class_id) {
-            $this->class_name = self::get_class_name($class_id);
+            $class_name = self::get_class_name($class_id);
+            if ($class_name !== $this->class_name) {
+                $this->class_name = $class_name;
+            }
         }
-        return $class_id;
     }
 
-    protected function _before_set_class_name(?string $class_name): ?string
+    protected function _after_set_class_name(?string $class_name): void
     {
         if ($class_name) {
-            $this->class_id = self::get_class_id($class_name);
+            $class_id = self::get_class_id($class_name);
+            if ($class_id !== $this->class_id) {
+                $this->class_id = $class_id;
+            }
         }
-        return $class_name;
     }
 
-    protected function _before_set_object_id(?int $object_id): ?int
+    protected function _after_set_object_id(?int $object_id): void
     {
         if ($object_id) {
             /** @var Store $OrmStore */
@@ -111,36 +116,46 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
                 $class_name = self::get_class_name($this->class_id);
             }
             if ($class_name) {
-                $this->object_uuid = $OrmStore->get_meta_by_id($this->class_name, $object_id)['meta_object_uuid'];
+                $object_uuid = $OrmStore->get_meta_by_id($this->class_name, $object_id)['meta_object_uuid'];
+                if ($object_uuid !== $this->object_uuid) {
+                    $this->object_uuid = $object_uuid;
+                }
             }
         }
-        return $object_id;
     }
 
-    protected function _before_set_object_uuid(?string $object_uuid): ?string
+    protected function _after_set_object_uuid(?string $object_uuid): void
     {
         if ($object_uuid) {
+
             /** @var Store $OrmStore */
             $OrmStore = self::get_service('OrmStore');
-            $this->object_id = $OrmStore->get_meta_by_uuid($object_uuid)['meta_object_id'];
+            $object_id = (int) $OrmStore->get_meta_by_uuid($object_uuid)['meta_object_id'];
+            if ($object_id !== $this->object_id) { //if there is no check then a recursion can occur (between _after_set_object_id and _after_set_object_uuid)
+                $this->object_id = $object_id;
+            }
+
         }
-        return $object_uuid;
     }
 
-    protected function _before_set_role_id(?int $role_id): ?int
+    protected function _after_set_role_id(?int $role_id): void
     {
         if ($role_id) {
-            $this->role_uuid = (new Role($role_id))->get_uuid();
+            $role_uuid = (new Role($role_id))->get_uuid();
+            if ($role_uuid !== $this->role_uuid) {
+                $this->role_uuid = $role_uuid;
+            }
         }
-        return $role_id;
     }
 
-    protected function _before_set_role_uuid(?string $role_uuid): ?string
+    protected function _after_set_role_uuid(?string $role_uuid): void
     {
         if ($role_uuid) {
-            $this->role_id = (new Role($role_uuid))->get_id();
+            $role_id = (new Role($role_uuid))->get_id();
+            if ($role_id !== $this->role_id) {
+                $this->role_id = $role_id;
+            }
         }
-        return $role_uuid;
     }
 
     protected function _before_write(): void

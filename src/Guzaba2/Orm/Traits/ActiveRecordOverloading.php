@@ -40,7 +40,6 @@ trait ActiveRecordOverloading
      */
     public function &__get(string $property) /* mixed */
     {
-
     //why the below code is here... not needed
 //        if (self::uses_meta() && !$this->is_modified() && !$this->is_new()) {
 //            //if this is the first modification (and is not a new object - the new objects are not hooked)
@@ -58,6 +57,7 @@ trait ActiveRecordOverloading
         }
 
         if (array_key_exists($property, $this->record_data)) {
+
             $ret =& $this->record_data[$property];//must have the & here and return by ref to avoid the indirect modification of overloaded property error
         } elseif (array_key_exists($property, $this->meta_data)) {
             $ret = $this->meta_data[$property];//do not put reference here since these are not supposed to be arrays
