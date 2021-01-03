@@ -158,7 +158,10 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                         $definer_class = $routing_meta_data[$route][$method]['class'];
 
                                         if (self::CONFIG_RUNTIME['allow_controller_overwriting_activerecord_route']) {
-                                            if (is_a($definer_class, ActiveRecordInterface::class, true) && is_a($loaded_class, ControllerInterface::class, true)) {
+                                            if (
+                                                is_a($definer_class, ActiveRecordInterface::class, true)
+                                                && is_a($loaded_class, ControllerInterface::class, true)
+                                            ) {
                                                 //there is a match but it is allowed a controller to overwrite a route defined in ActiveRecord
                                                 //and the newly found route is coming from a controller
                                                 //so allow to proceed (with a notice) and the route will be overwritten
@@ -177,8 +180,12 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 );
                                                 //Kernel::log($message, LogLevel::NOTICE);
                                                 Kernel::printk($message.PHP_EOL);
+                                                continue 3;
                                             }
-                                            if (is_a($definer_class, ControllerInterface::class, true) && is_a($loaded_class, ActiveRecordInterface::class, true)) {
+                                            if (
+                                                is_a($definer_class, ControllerInterface::class, true)
+                                                && is_a($loaded_class, ActiveRecordInterface::class, true)
+                                            ) {
                                                 //there is a match but it is allowed a controller to overwrite a route defined in ActiveRecord
                                                 //this means that overwriting must be avoided and a new route discarded
                                                 //issue a notice and proceed with the next method
@@ -200,12 +207,10 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 continue 3;
                                             }
                                         }
-
                                         //the controllers are different and appropraite error needs to be thrown
                                         foreach (Method::METHODS_MAP as $method_const => $method_name) {
                                             if ($method_const & $matching_methods) {
                                                 //use the meta data to get wchich class defined that route
-                                                RAW;
                                                 $message = sprintf(
                                                     t::_('The class %1$s has a route %2$s containing method %3$s that is already defined in the routing map by class %4$s.'),
                                                     $loaded_class,
@@ -220,8 +225,6 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                     }
                                 }
                             }
-
-
                         }
                         //merge routes
                         $routing_map[$new_route][$new_method] = $new_controller;
