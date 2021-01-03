@@ -142,6 +142,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                 foreach ($routing as $new_route => $new_methods) {
 
                     foreach ($new_methods as $new_method => $new_controller) {
+                        $do_not_verwrite_meta_data = false;
                         foreach($routing_map as $route => $methods) {
                             //check for overwriting
                             if ($new_route === $route) {
@@ -180,7 +181,11 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 );
                                                 //Kernel::log($message, LogLevel::NOTICE);
                                                 Kernel::printk($message.PHP_EOL);
-                                                continue 3;
+                                                //do not overwrtie the meta data when a controller overrides a route defined by a model
+                                                //this is needed so that the association between the new route and the model is maintained
+                                                //meta is used by the models , not by the controllers
+                                                $do_not_verwrite_meta_data = true;
+                                                continue 2;//this jumps to the place where the routes are merged
                                             }
                                             if (
                                                 is_a($definer_class, ControllerInterface::class, true)
@@ -204,7 +209,7 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                                                 );
                                                 //Kernel::log($message, LogLevel::NOTICE);
                                                 Kernel::printk($message.PHP_EOL);
-                                                continue 3;
+                                                continue 3;//this jumps to the next method (form the new ones)
                                             }
                                         }
                                         //the controllers are different and appropraite error needs to be thrown
@@ -229,10 +234,12 @@ class ActiveRecordDefaultRoutingMap extends RoutingMapArray implements ConfigInt
                         //merge routes
                         $routing_map[$new_route][$new_method] = $new_controller;
                         //update the meta
-                        $routing_meta_data[$new_route][$new_method] = [
-                            'class'     => $loaded_class,//the same like $new_controller[0] - there is a check above enforcing this
-                            'action'    => $new_controller[1],
-                        ];
+                        if (!$do_not_verwrite_meta_data) {
+                            $routing_meta_data[$new_route][$new_method] = [
+                                'class' => $loaded_class,//the same like $new_controller[0] - there is a check above enforcing this
+                                'action' => $new_controller[1],
+                            ];
+                        }
 
                     }
                 } // end foreach ($routing as $new_route => $new_methods)
