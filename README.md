@@ -53,10 +53,11 @@ And some specifics:
 - uses static code for configuration. Classes with injected configuration constant are geenrated at startup.
 
 And what does not support (and probably never will):
-- the ORM does not aim to replace SQL thus there is no support for creating SQL queries with a replacement language or creating queries all with PHP objects/methods.
-The reasoning is that type of projects (large, complex depending on DB specifics) can not avoid the manual writing and optimization of (very) large queries 
-and DB migration from one vendor to another is not considered (as the software depends on the specifics of the DB).
-- there is no automatic schema generation based on PHP classes/structures. The reverse logic is in place - the framework configures the objects based on the DB schema.
+- the framework does not aim to replace SQL thus there is no support for creating SQL queries with a replacement language or creating queries with a query builder.
+It supports ActiveRecord but not a complete ORM implementation like Doctrine.
+The reasoning is that type of projects (large, complex depending on DB specifics) can not avoid the manual writing and optimization of (very) large queries and the SQL language is good at what it does.
+DB migration from one vendor to another is not supported (since the software depends on the specifics of the DB).
+- there is no automatic schema generation based on PHP classes/structures. The reverse logic is in place - the framework configures/generates the classes based on the DB schema.
 
 The overall reasoning is that the framework is not to blurr or hide the backend storage details but instead to make it easier to work with it and to reduce the human errors related to its use.
 Guzaba2 is adding to this excellent speed and very high concurrency support by being based on Swoole and by making good use of its persistent memory model and coroutines.
