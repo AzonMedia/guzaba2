@@ -8,7 +8,7 @@ The testbed for Guzaba2 is [Guzaba Platform](https://github.com/AzonMedia/guzaba
 The framework has certain traits (very) similar with other frameworks (it borrows code from [Slim](https://www.slimframework.com/)) and it is very different in other spects.
 If you would like to discuss certain feature or design decition in the framework please open a [Discussion](https://github.com/AzonMedia/guzaba2/discussions).
 
-Guzaba2 (and [Guzaba1](http://gitlab.guzaba.org/root/guzaba-framework-v0.7), [docs](http://gitlab.guzaba.org/root/guzaba-framework/-/wikis/home)) were created because there was no other framework providing:
+Guzaba2 (and Guzaba1) were created because there was no other framework providing:
 - nested transactions - supports partial transaction rollback and the transaction can continue and commit
 - automatic transaction rollback on abandoning the scope be it becase of an exception or a return ([SBRM](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization))
 - callbacks on various transaction events - you can add conditional block if the current (be it the master or nested) transaction commits or rollbacks
