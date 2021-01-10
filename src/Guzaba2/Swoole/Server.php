@@ -160,7 +160,7 @@ class Server extends \Guzaba2\Http\Server
      */
     private array $ipc_responses = [];
 
-    private ?float $start_microtime = null;
+
 
     /**
      * @var float[]
@@ -224,33 +224,6 @@ class Server extends \Guzaba2\Http\Server
         $this->SwooleHttpServer->set($options);
 
 
-    }
-
-    /**
-     * To be invoked by WorkerStart
-     * @param Worker $Worker
-     */
-    public function set_worker(Worker $Worker): void
-    {
-        $this->Worker = $Worker;
-    }
-
-    /**
-     * @param int $worker_id
-     * @return Worker
-     * @throws InvalidArgumentException
-     * @throws RunTimeException
-     * @throws \Azonmedia\Exceptions\InvalidArgumentException
-     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
-     * @throws \ReflectionException
-     * @throws LogicException
-     */
-    public function get_worker(): WorkerInterface
-    {
-        if ($this->get_start_microtime() === null) {
-            throw new RunTimeException(sprintf(t::_('The server is not yet started. There are no workers.')));
-        }
-        return $this->Worker;
     }
 
 
@@ -347,14 +320,6 @@ class Server extends \Guzaba2\Http\Server
         $this->start_microtime = microtime(true);
         $this->SwooleHttpServer->start();
         //self::get_service('Events')->create_event($this, '_after_start');//no code is being executed after the server is started... the next code that is being executed is in the worker start or Start handler
-    }
-
-    /**
-     * @return float|null
-     */
-    public function get_start_microtime(): ?float
-    {
-        return $this->start_microtime;
     }
 
     public function set_worker_start_time(int $worker_id, float $time): void
@@ -461,6 +426,34 @@ class Server extends \Guzaba2\Http\Server
     public function __call(string $method, array $args) /* mixed */
     {
         return call_user_func_array([$this->SwooleHttpServer, $method], $args);
+    }
+
+
+    /**
+     * To be invoked by WorkerStart
+     * @param Worker $Worker
+     */
+    public function set_worker(Worker $Worker): void
+    {
+        $this->Worker = $Worker;
+    }
+
+    /**
+     * @param int $worker_id
+     * @return Worker
+     * @throws InvalidArgumentException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     * @throws LogicException
+     */
+    public function get_worker(): WorkerInterface
+    {
+        if ($this->get_start_microtime() === null) {
+            throw new RunTimeException(sprintf(t::_('The server is not yet started. There are no workers.')));
+        }
+        return $this->Worker;
     }
 
     public function get_worker_id(): int

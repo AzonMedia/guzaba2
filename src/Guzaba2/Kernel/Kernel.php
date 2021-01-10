@@ -701,7 +701,7 @@ BANNER;
         //self::exception_handler(new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext));
         //must throw the exception instead of passing it directly to the exception handler as in Server mode the exception handler does not interrupt the execution
 
-        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
         throw new \Guzaba2\Kernel\Exceptions\ErrorException($errno, $errstr, $errfile, $errline, $errcontext);
     }
@@ -1228,7 +1228,7 @@ BANNER;
         if (self::get_cid() > 0) {
             $message = sprintf(t::_('Coroutine #%s: %s'), self::get_cid(), $message);
         }
-        if (self::get_http_server()) {
+        if (self::get_http_server() && self::get_http_server()->get_start_microtime()) {
             //$message = 'Worker #'.self::get_worker_id().': '.$message;
             $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message);
         }

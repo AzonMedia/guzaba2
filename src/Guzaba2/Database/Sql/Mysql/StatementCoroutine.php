@@ -15,8 +15,10 @@ use Guzaba2\Database\Exceptions\ResultException;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Database\Sql\QueryCache;
 use Guzaba2\Database\Sql\StatementTypes;
+use Guzaba2\Kernel\Kernel;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Psr\Log\LogLevel;
 
 class StatementCoroutine extends Statement implements StatementInterface
 {
@@ -116,6 +118,16 @@ class StatementCoroutine extends Statement implements StatementInterface
         $Apm = self::get_service('Apm');
         $Apm->increment_value('cnt_' . strtolower($statement_group_str) . '_statements', 1);
         $Apm->increment_value('time_' . strtolower($statement_group_str) . '_statements', $exec_end_time - $exec_start_time);
+        if ($exec_end_time - $exec_start_time > self::CONFIG_RUNTIME['slow_query_log_msec'] / 1000 ) {
+            $message = sprintf(
+                t::_('The query took %1$s seconds to execute. The log threshold is %2$s. Query: %3$s . Params %4$s .'),
+                $exec_end_time - $exec_start_time,
+                self::CONFIG_RUNTIME['slow_query_log_msec'] / 1000,
+                $sql,
+                print_r($this->get_params(), true)
+            );
+            Kernel::log($message, LogLevel::WARNING);
+        }
 
 //        if ($current_transaction || $current_db_transaction) {
 //            $this->disable_sql_cache = TRUE;

@@ -57,8 +57,9 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
 
     //public const ERROR_REFERENCE_DEFAULT_URL = 'http://error-reference.guzaba.org/error/';
 
-    //TODO - rework this to be coroutine aware - there can be multiple interrupting exceptions in the various routines
+
     /**
+     * Contains the interrupting exception only in non-coroutine mode
      * @var \Throwable
      */
     private static ?\Exception $CurrentException = null;

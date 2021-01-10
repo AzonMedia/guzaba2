@@ -57,6 +57,14 @@ use ReflectionException;
  * @package Guzaba2\Orm
  * @method Store OrmStore()
  * @method LockManagerInterface LockManager()
+ *
+ * @property string meta_object_uuid
+ * @property int    meta_class_id
+ * @property int    meta_object_id
+ * @property int    meta_object_create_microtime
+ * @property int    meta_object_last_update_microtime
+ * @property int    meta_object_create_role_id
+ * @property int    meta_object_last_update_role_id
  */
 class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializable, \Iterator
     //, \ArrayAccess, \Countable

@@ -23,6 +23,8 @@ abstract class Server extends Base implements ServerInterface
 
     protected array $options = [];
 
+    protected ?float $start_microtime = null;
+
     public function __construct(string $host, int $port, array $options = [])
     {
         parent::__construct();
@@ -59,5 +61,14 @@ abstract class Server extends Base implements ServerInterface
     public function get_options(): array
     {
         return $this->options;
+    }
+
+
+    /**
+     * @return float|null
+     */
+    public function get_start_microtime(): ?float
+    {
+        return $this->start_microtime;
     }
 }

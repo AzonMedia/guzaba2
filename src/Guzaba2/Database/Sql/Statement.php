@@ -8,6 +8,10 @@ use Guzaba2\Base\Base;
 use Guzaba2\Database\Interfaces\StatementInterface;
 use Guzaba2\Database\Sql\StatementTypes;
 
+/**
+ * Class Statement
+ * @package Guzaba2\Database\Sql
+ */
 abstract class Statement extends Base implements StatementInterface
 {
 
@@ -16,6 +20,7 @@ abstract class Statement extends Base implements StatementInterface
         //lock the table cache for the specified amount of time on DML queries
         //when the DML query is over the time will be updated again
         'update_query_cache_lock_timeout'       => 120,//in seconds
+        'slow_query_log_msec'                   => 20,//msec, log queries that execute in under X msec
 
         'services'      => [
             'QueryCache',//if set means enable caching
