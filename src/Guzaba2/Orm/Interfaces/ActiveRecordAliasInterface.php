@@ -12,6 +12,15 @@ use Guzaba2\Orm\ObjectAlias;
  */
 interface ActiveRecordAliasInterface
 {
+
+    /**
+     * Returns the primary alias or the id/uuid of the object.
+     * @return string
+     */
+    public function get_slug(): string ;
+
+    public static function convert_to_slug(string $name): string ;
+
     public function add_alias(string $alias): ObjectAlias;
 
     public function delete_alias(string $alias): void;

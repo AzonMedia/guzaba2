@@ -12,6 +12,26 @@ trait ActiveRecordAlias
 {
 
     /**
+     * Returns the primary alias or the id/uuid of the object.
+     * @return string
+     */
+    public function get_slug(): string
+    {
+        return $this->get_alias() ?? $this->get_uuid();
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    public static function convert_to_slug(string $name): string
+    {
+        $slug = str_replace([' ', '/', '\\', '[', ']', '(', ')', '.', ',', '<', '>'],'-', $name);
+        $slug = strtolower($slug);
+        return $slug;
+    }
+
+    /**
      * Adds an alias to the object
      * @param string $alias
      * @return ObjectAlias

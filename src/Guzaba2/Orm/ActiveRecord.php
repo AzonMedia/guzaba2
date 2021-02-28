@@ -389,6 +389,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $class_properties = $class::get_class_property_names();
         foreach ($class::get_property_names() as $property) {
             if (!array_key_exists($property, $data)) {
+
                 if (!in_array($property, $class_properties)) {
                     throw new RunTimeException(sprintf(t::_('The property %1$s needed by class %2$s does not exist in the provided data.'), $property, $class));
                 } else {
@@ -396,11 +397,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     continue;
                 }
             }
+
             //$Object->{$property} = $data[$property];//use this as it invokes the property hooks
             //or call __set() directly for better speed
             $Object->__set($property, $data[$property]);
             //$Object->record_data[$property] = $data[$property];
         }
+
         foreach ($class::get_meta_property_names() as $property) {
             //TODO - fix this exception for mysql
             if ($property === 'meta_object_uuid_binary') {
