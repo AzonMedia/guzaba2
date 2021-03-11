@@ -27,6 +27,7 @@ trait ActiveRecordAlias
     public static function convert_to_slug(string $name): string
     {
         $slug = str_replace([' ', '/', '\\', '[', ']', '(', ')', '.', ',', '<', '>'],'-', $name);
+        $slug = str_replace('%','pct', $slug);
         $slug = strtolower($slug);
         return $slug;
     }
