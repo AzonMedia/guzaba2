@@ -1521,6 +1521,18 @@ WHERE
             }
         }
 
+
+        foreach ($record_data as $init_key=>$init_value) {
+            $type = gettype($init_value);
+            foreach ($data as &$_row) {
+                foreach ($_row as $key=>$value) {
+                    if ($key === $init_key) {
+                        settype($_row[$key], $type);
+                    }
+                }
+            }
+        }
+
         return $data;
     }
 
