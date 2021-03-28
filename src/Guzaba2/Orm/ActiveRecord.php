@@ -382,7 +382,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param iterable $data
      * @return ActiveRecordInterface
      */
-    public static function get_from_record(iterable $data): ActiveRecordInterface
+    public static function get_from_record(iterable $data, bool $execute_after_read = true): ActiveRecordInterface
     {
         $class = get_called_class();
         $Object = new $class(0);
@@ -416,7 +416,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $Object->meta_data[$property] = $data[$property];
         }
         $Object->is_new_flag = false;
-        if (method_exists($Object, '_after_read')) {
+        if (method_exists($Object, '_after_read') && $execute_after_read) {
             //this will set the values of the class property names
             $Object->_after_read();
         }

@@ -22,6 +22,7 @@ abstract class Connection extends TransactionalConnection
         'password'  => '',
         'database'  => '',
         'socket'    => '',
+        'group_concat_max_len'  => 16384,
     ];
 
     protected const CONFIG_RUNTIME = [];

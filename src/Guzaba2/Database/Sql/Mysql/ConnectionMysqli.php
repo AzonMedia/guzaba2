@@ -90,5 +90,7 @@ abstract class ConnectionMysqli extends Connection
         if (!$ret) {
             throw new ConnectionException(sprintf(t::_('Connection of class %s to %s:%s could not be established due to error: [%s] %s .'), get_class($this), self::CONFIG_RUNTIME['host'], self::CONFIG_RUNTIME['port'], $this->NativeConnection->connect_errno, $this->NativeConnection->connect_error));
         }
+        $group_concat_max_len = static::CONFIG_RUNTIME['group_concat_max_len'];
+        $this->NativeConnection->query("SET @@group_concat_max_len = {$group_concat_max_len};");
     }
 }
