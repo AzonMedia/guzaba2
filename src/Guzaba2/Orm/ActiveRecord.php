@@ -533,6 +533,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             if ($index_property === 'meta_object_uuid') {
                 continue;
             }
+            if ($index_property === '<' || $index_property === '>') {
+                continue;
+            }
             if (!in_array($index_property, $properties)) {
                 throw new InvalidArgumentException(sprintf(t::_('An invalid property named %1$s was provided to the constructor of %2$s.'), $index_property, get_class($this) ));
             }
@@ -651,6 +654,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public function write(bool $force_write = false): ActiveRecordInterface
     {
 
+
         $start_time = microtime(true);
 
         //instead of setting the BypassAuthorizationProvider to bypass the authorization
@@ -721,6 +725,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         static::get_service('OrmStore')->update_record($this);
 
         $this->profile('CHECK 7', microtime(true) - $start_time);
+
 
         //reattach the pointer
         //$_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
@@ -1401,7 +1406,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function uses_meta(): bool
     {
-        return empty(static::CONFIG_RUNTIME['no_meta']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true);
+        return
+            empty(static::CONFIG_RUNTIME['no_meta'])
+            &&
+            !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true)
+            &&
+            !is_a(get_called_class(), LogEntry::class, true)
+            ;
     }
 
     /**
@@ -1410,7 +1421,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public static function uses_log(): bool
     {
-        return empty(static::CONFIG_RUNTIME['no_log']) && !is_a(get_called_class(), LogEntry::class, true);
+        return
+            empty(static::CONFIG_RUNTIME['no_log'])
+            &&
+            !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true)
+            &&
+            !is_a(get_called_class(), LogEntry::class, true)
+            ;
     }
 
     public function get_meta_data(): array

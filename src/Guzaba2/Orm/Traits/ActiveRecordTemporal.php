@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Orm\Traits;
 
 use Guzaba2\Event\Event;
+use Guzaba2\Orm\Exceptions\RecordNotFoundException;
 use Guzaba2\Orm\Interfaces\ActiveRecordTemporalInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 
@@ -53,9 +54,14 @@ trait ActiveRecordTemporal
         $temporal_class = $ActiveRecord::get_temporal_class();
         $index = $ActiveRecord->get_primary_index();
         $index['>'] = 'temporal_record_id';// '>' means sorting by this column DESC, '<' - means sorting by this column ASC
-        $Temporal = new $temporal_class($index);
-        $Temporal->temporal_record_to_microtime = $event_microtime;
-        $Temporal->write();
+        try {
+            $Temporal = new $temporal_class($index);
+            $Temporal->temporal_record_to_microtime = $event_microtime;
+            $Temporal->write();
+        } catch (RecordNotFoundException $Exception) {
+            //ignore - there is nothing to update
+        }
+
     }
 
     private static function create_new_temporal_record(ActiveRecordInterface $ActiveRecord, int $event_microtime): void

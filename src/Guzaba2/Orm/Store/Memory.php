@@ -262,7 +262,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             //possibly make the Permission class final...
             if ( ! ($ActiveRecord instanceof NonHookableInterface)) {
                 $_pointer =& $this->get_data_pointer_for_new_version(get_class($ActiveRecord), $ActiveRecord->get_primary_index());
-                foreach ($all_data as $key=>$value) {
+                foreach ($all_data['data'] as $key=>$value) {
                     $_pointer['data'][$key] = $value;
                 }
                 foreach ($all_data['meta'] as $key=>$value) {

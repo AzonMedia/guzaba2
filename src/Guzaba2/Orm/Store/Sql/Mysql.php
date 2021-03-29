@@ -830,14 +830,15 @@ VALUES
             //temporary fix
             //if (true) {
             //temporary fix end
-            if (!$ActiveRecord::uses_autoincrement()) {
-                //TODO IVO
-                $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
-                $field_names_arr = array_unique(array_merge($partition_fields, $main_index));
-                $field_names_str = implode(', ', $field_names_arr);
-                $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
-                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
-            } else {
+//            if (!$ActiveRecord::uses_autoincrement()) {
+//                //TODO IVO
+//                $index[$main_index[0]] = $ActiveRecord->db->get_new_id($partition_name, $main_index[0]);
+//                $field_names_arr = array_unique(array_merge($partition_fields, $main_index));
+//                $field_names_str = implode(', ', $field_names_arr);
+//                $placeholder_str = implode(', ', array_map($prepare_binding_holders_function, $field_names_arr));
+//                $data_arr = array_merge($record_data_to_save, $ActiveRecord->index);
+//            } else {
+            //assumed there is autoincrement
 
                 $field_names_arr = $ActiveRecord::get_column_names();//this includes the full index
 
@@ -861,7 +862,7 @@ VALUES
                 }, $field_names_arr));
 
                 $data_arr = $record_data_to_save;
-            }
+            //}
 
             //print 'Check 3: '.(microtime(true) - $start_time).PHP_EOL;
 
@@ -895,12 +896,12 @@ VALUES
     {$placeholder_str}
 )
             ";
-
             $Statement = $Connection->prepare($q);
 
             //print 'Check 6: '.(microtime(true) - $start_time).PHP_EOL;
 
             $Statement->execute($data_arr);
+
 
             //print 'Check 7: '.(microtime(true) - $start_time).PHP_EOL;
 

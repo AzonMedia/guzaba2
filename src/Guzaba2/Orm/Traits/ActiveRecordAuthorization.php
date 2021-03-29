@@ -11,6 +11,7 @@ use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Orm\Interfaces\ActiveRecordHistoryInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
+use Guzaba2\Orm\Interfaces\ActiveRecordTemporalInterface;
 use Guzaba2\Translator\Translator as t;
 use Guzaba2\Authorization\Role;
 use Monolog\Handler\MissingExtensionException;
@@ -38,7 +39,7 @@ trait ActiveRecordAuthorization
     public static function check_class_permission(string $action): void
     {
         $class = get_called_class();
-        if (static::uses_service('AuthorizationProvider') && static::uses_permissions()) {
+        if (static::uses_service('AuthorizationProvider') && static::uses_permissions() && !is_a($class, ActiveRecordTemporalInterface::class, true) ) {
             static::get_service('AuthorizationProvider')->check_class_permission($action, $class);
         }
         return;
@@ -84,7 +85,7 @@ trait ActiveRecordAuthorization
      */
     public static function uses_permissions(): bool
     {
-        return empty(static::CONFIG_RUNTIME['no_permissions']) && !is_a(get_called_class(), ActiveRecordHistoryInterface::class, true);
+        return empty(static::CONFIG_RUNTIME['no_permissions']) && !is_a(get_called_class(), ActiveRecordTemporalInterface::class, true);
     }
 
     /**
