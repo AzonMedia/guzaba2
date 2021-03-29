@@ -512,7 +512,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 //            $this->check_permission('read');
 //        }
 
-        if (method_exists($this, '_before_read') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_before_read') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_read'], $args);//must return void
         }
@@ -618,7 +618,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         self::get_service('Events')::create_event($this, '_after_read');
 
         //_after_load() event
-        if (method_exists($this, '_after_read') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_after_read') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
@@ -705,7 +705,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $Transaction = ActiveRecord::new_transaction($TR);
         $Transaction->begin();
 
-        if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_write'], $args);//must return void
         }
@@ -791,7 +791,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_after_write');
         self::get_service('Events')::create_event($this, '_after_write');
 
-        if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_write'], $args);//must return void
         }
@@ -859,7 +859,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $Transaction = ActiveRecord::new_transaction($TR);
         $Transaction->begin();
 
-        if (method_exists($this, '_before_delete') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_before_delete') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_before_delete'], $args);//must return void
         }
@@ -889,7 +889,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         //new Event($this, '_after_delete');
         self::get_service('Events')::create_event($this, '_after_delete');
 
-        if (method_exists($this, '_after_delete') && !$this->are_method_hooks_disabled()) {
+        if (method_exists($this, '_after_delete') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
             $args = func_get_args();
             call_user_func_array([$this,'_after_delete'], $args);//must return void
         }
