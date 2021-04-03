@@ -292,6 +292,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
      * Returns a pointer to the last unique_version of the gived class and $lookup_index
      * @param string $class
      * @param array $index
+     * @param bool $permission_checks_disabled
      * @return array
      * @throws LogicException
      * @throws RecordNotFoundException
@@ -308,7 +309,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
         }
 
         if (!$this->caching_enabled()) {
-            return $this->FallbackStore->get_data_pointer($class, $index);
+            return $this->FallbackStore->get_data_pointer($class, $index, $permission_checks_disabled);
         } else {
             //the provided index is array
             //check is the provided array matching the primary index
@@ -559,7 +560,8 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             } else {
                 //it is now possible this not to be set as the cache update is no longer done in get_data_pointer() if there is current transaction ongoing
                 //throw new LogicException(sprintf(t::_('The Memory store has no data for version %s of object of class %s and primary index %s while it is expected to have that data.'), $last_update_time, $class, print_r($primary_index, true)));
-                $current_record_data = $this->get_data_pointer($class, $primary_index);
+                //$current_record_data = $this->get_data_pointer($class, $primary_index);
+                $current_record_data = $this->get_data_pointer($class, $primary_index, $permission_checks_disabled = true);
 
                 //print $class.' check 2: '.(microtime(true) - $start_time).PHP_EOL;
 

@@ -923,8 +923,8 @@ VALUES
 
             //print 'Check 8: '.(microtime(true) - $start_time).PHP_EOL;
 
-
         } else {
+
             $record_data_to_save = [];
             $field_names = $modified_field_names = $ActiveRecord::get_column_names();
 

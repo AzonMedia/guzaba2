@@ -772,6 +772,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         $this->profile('CHECK 9', microtime(true) - $start_time);
 
+
         if ($this->was_new() && self::uses_permissions()) {
             /** @var AuthorizationProviderInterface $AuthorizationProvider */
             $AuthorizationProvider = self::get_service('AuthorizationProvider');

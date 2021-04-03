@@ -207,7 +207,8 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
                     //it is a new object and there are no permissions yet set to check
                 } else {
                     //recreate the object is if it is created with $permission_checks_disabled then check_permission() method can not be used
-                    $Object = new $this->class_name($this->object_id, $readonly = true);//checks the read permission
+                    //$Object = new $this->class_name($this->object_id, $readonly = true);//checks the read permission
+                    $Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);//checks the read permission
                     $Object->check_permission('grant_permission');
                 }
 

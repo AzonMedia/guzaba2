@@ -171,7 +171,7 @@ class ActiveRecordDefaultController extends ActiveRecordController
      */
     public function crud_action_create(): ResponseInterface
     {
-
+        
         //because this method handles multiple types of records the expected params can not be listed in the method signature
         $body_arguments = $this->get_request()->getParsedBody();
 
