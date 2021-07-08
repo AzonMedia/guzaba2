@@ -395,16 +395,6 @@ abstract class BaseException extends \Azonmedia\Exceptions\BaseException
         return $this->is_cloned_flag;
     }
 
-    public function getTimeCreated(): int
-    {
-        return $this->microtime_created / 1_000_000;
-    }
-
-    public function getMicrotimeCreated(): int
-    {
-        return $this->microtime_created;
-    }
-
     public function getSessioNSubjectId(): int
     {
         return $this->session_subject_id;

@@ -249,6 +249,15 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
 
     /**
+     * Detect is the current execution already in write().
+     * It is possible to call write() from _before & _after_write().
+     * Only the public properties are considered data properties for saving them in the ORM Store.
+     * @var int
+     */
+    protected int $nested_write_counter = 0;
+
+
+    /**
      * ActiveRecord constructor.
      * @param int $index
      * @param bool $read_only
@@ -329,10 +338,8 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
                     $message = sprintf(t::_('The class "%s" with primary table "%s" has a compound primary index consisting of "%s". Only a single scalar value "%s" was provided to the constructor which could be an error. For classes that use compound primary indexes please always provide arrays. If needed it is allowed the provided array to have less keys than components of the primary key.'), $called_class, static::get_main_table(), implode(', ', $primary_columns), $index);
                     throw new InvalidArgumentException($message);
                 }
-                //} elseif (strlen((string)$index) === 36) {
             } elseif (GeneralUtil::is_uuid((string) $index)) {
                 //this is UUID
-                //$index = ['object_uuid' => $index];
                 $index = ['meta_object_uuid' => $index];
             } elseif (is_string($index)) {
                 //try to do a lookup by object alias
@@ -642,6 +649,16 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     }
 
     /**
+     * write()s can be nested (for example invoking write() from _after_write()).
+     * This returns the nesting level.
+     * @return int
+     */
+    public function get_write_nesting(): int
+    {
+        return $this->nested_write_counter;
+    }
+
+    /**
      * @param bool $force_write Will do a write even if there are no modifications to the object
      * @return ActiveRecordInterface
      * @throws Exceptions\MultipleValidationFailedException
@@ -654,177 +671,184 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     public function write(bool $force_write = false): ActiveRecordInterface
     {
 
+        $this->nested_write_counter++;
+        try {
 
-        $start_time = microtime(true);
+            $start_time = microtime(true);
 
-        //instead of setting the BypassAuthorizationProvider to bypass the authorization
-        //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
-        if ($this->is_new()) {
-            //$this->check_permission('create');
-            $this->check_class_permission('create');
-        } else {
-            $this->check_permission('write');
-        }
-
-        $this->profile('CHECK 1', microtime(true) - $start_time);
-
-        if ($this->is_read_only()) {
-            throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id()));
-        }
-
-//read_only is set in constructor() if method is GET
-//        if (Coroutine::inCoroutine()) {
-//            $Request = Coroutine::getRequest();
-//            if ($Request->getMethodConstant() === Method::HTTP_GET) {
-//                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
-//            }
-//        }
-
-        if (!count($this->get_modified_properties_names()) && !$this->is_new() && !$force_write) {
-            return $this;
-        }
-
-        $this->profile('CHECK 2', microtime(true) - $start_time);
-
-        //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
-        //instead the lock level should be updated (lock reacquired)
-        if ($this->is_new() && static::is_locking_enabled()) {
-            $resource = MetaStore::get_key_by_object($this);
-//            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
-//            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-//            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
-//            unset($LR);
-            /** @var LockManagerInterface $LockManager */
-            $LockManager = static::get_service('LockManager');
-            $LockManager->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
-        }
-
-
-        $this->profile('CHECK 3', microtime(true) - $start_time);
-
-        $Transaction = ActiveRecord::new_transaction($TR);
-        $Transaction->begin();
-
-        if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_before_write'], $args);//must return void
-        }
-
-        $this->profile('CHECK 4', microtime(true) - $start_time);
-
-        //new Event($this, '_before_write');
-        self::get_service('Events')::create_event($this, '_before_write');
-
-
-        $this->profile('CHECK 5', microtime(true) - $start_time);
-
-        $this->validate();
-
-        $this->profile('CHECK 6', microtime(true) - $start_time);
-
-        static::get_service('OrmStore')->update_record($this);
-
-        $this->profile('CHECK 7', microtime(true) - $start_time);
-
-
-        //reattach the pointer
-        //$_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
-        //if get_data_pointer() is used this will return wrong data as the data is not yet stored in the main storage of Memory
-        //until the transaction is committed
-        //so until committed use get_data_pointer_for_new_version
-        $_pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index());
-
-        //not needed
-//        //CLASS_PROPERTIES - the returned data is as it is found in the store
-//        //it needs to be enriched with the current properties
-
-//        foreach (self::get_class_property_names() as $class_property_name) {
-////            if (!array_key_exists($class_property_name, $pointer['data'])) {
-//                $pointer['data'][$class_property_name] = $this->record_data[$class_property_name];
-////            }
-//        }
-
-        $this->record_data =& $_pointer['data'];
-        $this->meta_data =& $_pointer['meta'];
-        $_pointer['was_new_flag'] =& $this->was_new_flag;
-        //lets clear this after the write() is committed
-        //this way it will be available also in _after_write
-        //$this->record_modified_data = [];
-
-
-        //setting the flag to FALSE means that the record has UUID & ID assigned
-        //the record is not yet commited
-        if ($this->is_new_flag) {
-            $this->is_new_flag = false;
-            $this->was_new_flag = true;
-        }
-
-        $this->profile('CHECK 8', microtime(true) - $start_time);
-
-        //if (! ($this instanceof LogEntry)) {
-        if (self::uses_log()) {
-            if ($this->was_new()) {
-                $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
-            } else {
-                $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names())));
+            //instead of setting the BypassAuthorizationProvider to bypass the authorization
+            //it is possible not to set AuthorizationProvider at all (as this will save a lot of function calls
+            if ($this->nested_write_counter === 1) { //check the permissions only onf the first (outermost) call
+                if ($this->is_new()) {
+                    //$this->check_permission('create');
+                    $this->check_class_permission('create');
+                } else {
+                    $this->check_permission('write');
+                }
             }
-        }
 
-        $this->profile('CHECK 9', microtime(true) - $start_time);
+            $this->profile('CHECK 1', microtime(true) - $start_time);
 
-
-        if ($this->was_new() && self::uses_permissions()) {
-            /** @var AuthorizationProviderInterface $AuthorizationProvider */
-            $AuthorizationProvider = self::get_service('AuthorizationProvider');
-            /** @var CurrentUser $CurrentUser */
-            $CurrentUser = self::get_service('CurrentUser');
-            $Role = $CurrentUser->get()->get_role();
-            //create permission records for each action this record supports
-            $object_actions = self::get_object_actions();
-            foreach ($object_actions as $object_action) {
-                $AuthorizationProvider->grant_permission($Role, $object_action, $this);
+            if ($this->is_read_only()) {
+                throw new RunTimeException(sprintf(t::_('Trying to write/save a read-only instance of class %s with id %s.'), get_class($this), $this->get_id()));
             }
+
+    //read_only is set in constructor() if method is GET
+    //        if (Coroutine::inCoroutine()) {
+    //            $Request = Coroutine::getRequest();
+    //            if ($Request->getMethodConstant() === Method::HTTP_GET) {
+    //                throw new RunTimeException(sprintf(t::_('Trying to save object of class %s with id %s in GET request.'), get_class($this), $this->get_id()));
+    //            }
+    //        }
+
+            if (!count($this->get_modified_properties_names()) && !$this->is_new() && !$force_write) {
+                return $this;
+            }
+
+            $this->profile('CHECK 2', microtime(true) - $start_time);
+
+            //TODO - it is not correct to release the lock and acquire it again - someone may obtain it in the mean time
+            //instead the lock level should be updated (lock reacquired)
+            if ($this->is_new() && static::is_locking_enabled()) {
+                $resource = MetaStore::get_key_by_object($this);
+    //            $LR = '&';//this means that no scope reference will be used. This is because the lock will be released in another method/scope.
+    //            //self::LockManager()->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+    //            static::get_service('LockManager')->acquire_lock($resource, LockInterface::READ_LOCK, $LR);
+    //            unset($LR);
+                /** @var LockManagerInterface $LockManager */
+                $LockManager = static::get_service('LockManager');
+                $LockManager->acquire_lock($resource, LockInterface::WRITE_LOCK, $LR);
+            }
+
+
+            $this->profile('CHECK 3', microtime(true) - $start_time);
+
+            $Transaction = ActiveRecord::new_transaction($TR);
+            $Transaction->begin();
+
+            if (method_exists($this, '_before_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
+                $args = func_get_args();
+                call_user_func_array([$this,'_before_write'], $args);//must return void
+            }
+
+            $this->profile('CHECK 4', microtime(true) - $start_time);
+
+            //new Event($this, '_before_write');
+            self::get_service('Events')::create_event($this, '_before_write');
+
+
+            $this->profile('CHECK 5', microtime(true) - $start_time);
+
+            $this->validate();
+
+            $this->profile('CHECK 6', microtime(true) - $start_time);
+
+            static::get_service('OrmStore')->update_record($this);
+
+            $this->profile('CHECK 7', microtime(true) - $start_time);
+
+
+            //reattach the pointer
+            //$_pointer =& $this->Store->get_data_pointer(get_class($this), $this->get_primary_index());
+            //if get_data_pointer() is used this will return wrong data as the data is not yet stored in the main storage of Memory
+            //until the transaction is committed
+            //so until committed use get_data_pointer_for_new_version
+            $_pointer =& $this->Store->get_data_pointer_for_new_version(get_class($this), $this->get_primary_index());
+
+            //not needed
+    //        //CLASS_PROPERTIES - the returned data is as it is found in the store
+    //        //it needs to be enriched with the current properties
+
+    //        foreach (self::get_class_property_names() as $class_property_name) {
+    ////            if (!array_key_exists($class_property_name, $pointer['data'])) {
+    //                $pointer['data'][$class_property_name] = $this->record_data[$class_property_name];
+    ////            }
+    //        }
+
+            $this->record_data =& $_pointer['data'];
+            $this->meta_data =& $_pointer['meta'];
+            $_pointer['was_new_flag'] =& $this->was_new_flag;
+            //lets clear this after the write() is committed
+            //this way it will be available also in _after_write
+            //$this->record_modified_data = [];
+
+
+            //setting the flag to FALSE means that the record has UUID & ID assigned
+            //the record is not yet commited
+            if ($this->is_new_flag) {
+                $this->is_new_flag = false;
+                $this->was_new_flag = true;
+            }
+
+            $this->profile('CHECK 8', microtime(true) - $start_time);
+
+            //if (! ($this instanceof LogEntry)) {
+            if (self::uses_log()) {
+                if ($this->was_new()) {
+                    $this->add_log_entry('create', sprintf(t::_('A new record with ID %1$s and UUID %2$s is created.'), $this->get_id(), $this->get_uuid()));
+                } else {
+                    $this->add_log_entry('write', sprintf(t::_('The record was modified with the following properties being updated %1$s.'), implode(', ', $this->get_modified_properties_names())));
+                }
+            }
+
+            $this->profile('CHECK 9', microtime(true) - $start_time);
+
+
+            if ($this->was_new() && self::uses_permissions() && $this->nested_write_counter === 1) { //create the permissions only if this is the first call
+                /** @var AuthorizationProviderInterface $AuthorizationProvider */
+                $AuthorizationProvider = self::get_service('AuthorizationProvider');
+                /** @var CurrentUser $CurrentUser */
+                $CurrentUser = self::get_service('CurrentUser');
+                $Role = $CurrentUser->get()->get_role();
+                //create permission records for each action this record supports
+                $object_actions = self::get_object_actions();
+                foreach ($object_actions as $object_action) {
+                    $AuthorizationProvider->grant_permission($Role, $object_action, $this);
+                }
+            }
+
+            $this->profile('CHECK 10', microtime(true) - $start_time);
+
+
+            //new Event($this, '_after_write');
+            self::get_service('Events')::create_event($this, '_after_write');
+
+            if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
+                $args = func_get_args();
+                call_user_func_array([$this,'_after_write'], $args);//must return void
+            }
+
+            $this->profile('CHECK 11', microtime(true) - $start_time);
+
+            $Transaction->commit();
+
+            $this->profile('CHECK 12', microtime(true) - $start_time);
+
+            //if (static::is_locking_enabled()) {
+            if (!empty($LR)) {
+                /** @var LockManagerInterface $LockManager */
+                $LockManager = static::get_service('LockManager');
+                $LockManager->release_lock('', $LR);
+            }
+
+            //the flag is lowered only after the record is committed
+            $this->was_new_flag = false;
+            //the modified data will be cleared only after the transaction is over
+            $this->record_modified_data = [];
+
+            $end_time = microtime(true);
+
+            $this->profile('CHECK 13', microtime(true) - $start_time);
+
+            /** @var ProfilerInterface $Apm */
+            $Apm = self::get_service('Apm');
+            $object_key = str_replace('\\','_',get_class($this)).'_'.implode('_', $this->get_primary_index()).'_write_time';
+            $Apm->add_key($object_key);
+            $Apm->increment_value($object_key, $end_time - $start_time);
+
+        } finally {
+
         }
-
-        $this->profile('CHECK 10', microtime(true) - $start_time);
-
-
-        //new Event($this, '_after_write');
-        self::get_service('Events')::create_event($this, '_after_write');
-
-        if (method_exists($this, '_after_write') && !$this->are_method_hooks_disabled() && !($this instanceof ActiveRecordTemporalInterface) ) {
-            $args = func_get_args();
-            call_user_func_array([$this,'_after_write'], $args);//must return void
-        }
-
-        $this->profile('CHECK 11', microtime(true) - $start_time);
-
-        $Transaction->commit();
-
-        $this->profile('CHECK 12', microtime(true) - $start_time);
-
-        //if (static::is_locking_enabled()) {
-        if (!empty($LR)) {
-            /** @var LockManagerInterface $LockManager */
-            $LockManager = static::get_service('LockManager');
-            $LockManager->release_lock('', $LR);
-        }
-
-        //the flag is lowered only after the record is committed
-        $this->was_new_flag = false;
-        //the modified data will be cleared only after the transaction is over
-        $this->record_modified_data = [];
-
-        $end_time = microtime(true);
-
-        $this->profile('CHECK 13', microtime(true) - $start_time);
-
-        /** @var ProfilerInterface $Apm */
-        $Apm = self::get_service('Apm');
-        $object_key = str_replace('\\','_',get_class($this)).'_'.implode('_', $this->get_primary_index()).'_write_time';
-        $Apm->add_key($object_key);
-        $Apm->increment_value($object_key, $end_time - $start_time);
-
         return $this;
     }
 

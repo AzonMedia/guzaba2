@@ -450,7 +450,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 Kernel::exception_handler($Exception, LogLevel::DEBUG);
             }
         } catch (BaseException $Exception) {
-            $Response = Controller::get_structured_servererror_response([ 'message' => $Exception->getPrettyMessage() ]); //use getPrettymessage for unexpected exceptions like this one
+            //$Response = Controller::get_structured_servererror_response([ 'message' => $Exception->getPrettyMessage() ]); //use getPrettymessage for unexpected exceptions like this one
+            $Response = Controller::get_structured_servererror_response([ 'message' => $Exception->getMessage() ]); //use getPrettymessage for unexpected exceptions like this one
             Kernel::exception_handler($Exception);//this is an unexpected error - always print the backtrace
         } catch (\Throwable $Exception) {
             $Response = Controller::get_structured_servererror_response([ 'message' => $Exception->getMessage() ]); //no getPrettyMessage() is available here
