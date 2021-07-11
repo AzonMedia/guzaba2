@@ -79,10 +79,25 @@ class CurrentUser extends Base
 //    }
 
 
+    /**
+     * Returns a readonly instance of the current user.
+     * @return UserInterface
+     */
     public function get(): UserInterface
     {
 //        $this->initialize_user();
         return $this->User;
+    }
+
+    /**
+     * Returns a new (writable) instance of the User.
+     * Unlinke get() which returns a readonly instance.
+     * @return UserInterface
+     */
+    public function get_writable_instance(): UserInterface
+    {
+        $user_class = get_class($this->User);
+        return new $user_class($this->User->get_id());
     }
 
     public function set(UserInterface $User): void

@@ -224,6 +224,7 @@ class Request extends HandlerBase
 
             $message = '';
             if ($PsrResponse->getStatusCode() !== StatusCode::HTTP_OK) {
+
                 //on failure print additional information if found
                 //if ($PsrResponse->getContentType() === ContentType::TYPE_JSON) {
                 if (ContentType::get_content_type_from_message($PsrResponse) === ContentType::TYPE_JSON) {
@@ -238,7 +239,8 @@ class Request extends HandlerBase
             }
             $request_str = '';
             if (Application::is_development()) {
-                if ($PsrResponse->getStatusCode() === StatusCode::HTTP_BAD_REQUEST) {
+                //if ($PsrResponse->getStatusCode() === StatusCode::HTTP_BAD_REQUEST) {
+                if (true) {
                     //on bad requests dump the request
                     //if ($PsrRequest->getContentType() === ContentType::TYPE_JSON) {
                     if (ContentType::get_content_type_from_message($PsrRequest) === ContentType::TYPE_JSON) {
