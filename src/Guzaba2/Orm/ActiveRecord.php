@@ -1597,7 +1597,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * Returns all ActiveRecord objects that match the given criteria
      * @param  array  $index array of $property_name => $value
-     * @return iterable  list of ActiveRecord objects
+     * @return ActiveRecord[]  list of ActiveRecord objects
      * @throws RunTimeException
      */
     //public static function get_by(array $index = []): iterable
