@@ -172,8 +172,8 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
         if (!$this->class_name) {
             throw new ValidationFailedException($this, 'class_name', sprintf(t::_('No class name provided.')));
         }
-        if (!class_exists($this->class_name)) {
-            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class %s does not exist.'), $this->class_name));
+        if (!class_exists($this->class_name) && !interface_exists($this->class_name)) {
+            throw new ValidationFailedException($this, 'class_name', sprintf(t::_('The class or interface "%1$s" does not exist.'), $this->class_name));
         }
         if (!$this->action_name) {
             throw new ValidationFailedException($this, 'action_name', sprintf(t::_('No action name provided.')));
@@ -202,13 +202,19 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
                 //(new $this->class_name($this->object_id))->check_permission('grant_permission');
                 //$Object = new $this->class_name($this->object_id);
                 /** @var ActiveRecordInterface $Object */
-                $Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);
+                //$Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);
+                $class_name = $this->class_name;
+                if (interface_exists($class_name)) {
+                    $class_name = ActiveRecord::get_active_record_interface_implementation($class_name);//any implementation will do - this is just a permission check.
+                }
+                $Object = new $class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);
                 if ($Object->was_new()) {
                     //it is a new object and there are no permissions yet set to check
                 } else {
                     //recreate the object is if it is created with $permission_checks_disabled then check_permission() method can not be used
                     //$Object = new $this->class_name($this->object_id, $readonly = true);//checks the read permission
-                    $Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);//checks the read permission
+                    //$Object = new $this->class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);//checks the read permission
+                    $Object = new $class_name($this->object_id, $readonly = true, $permission_checks_disabled = true);//checks the read permission
                     $Object->check_permission('grant_permission');
                 }
 

@@ -12,6 +12,7 @@ use Guzaba2\Authorization\Interfaces\UserInterface;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Base\Exceptions\BadMethodCallException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
+use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Coroutine\Coroutine;
 use Guzaba2\Database\Exceptions\DuplicateKeyException;
@@ -113,6 +114,9 @@ class Mysql extends Database implements StructuredStoreInterface, CacheStatsInte
         $this->update_classes_data();
     }
 
+    /**
+     * @throws RunTimeException
+     */
     private function load_classes_data(): void
     {
         $Connection = $this->get_connection($CR);
@@ -131,18 +135,72 @@ ORDER BY
         }
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     */
     private function update_classes_data(): void
     {
         $this->load_classes_data();
-        $active_record_classes = ActiveRecord::get_active_record_classes(array_keys(Kernel::get_registered_autoloader_paths()));
+        $active_record_classes = ActiveRecord::get_active_record_classes();
         foreach ($active_record_classes as $class_name) {
             if (!$this->has_class_data($class_name)) {
                 $this->insert_new_class($class_name);//could be converted to coroutine call but new classes are added rarely and no point optimizing this...
             }
         }
+        $active_record_interfaces = ActiveRecord::get_active_record_interfaces();
+        foreach ($active_record_interfaces as $interface_name) {
+            if (!$this->has_class_data($interface_name)) {
+                $this->insert_new_interface($interface_name);//could be converted to coroutine call but new classes are added rarely and no point optimizing this...
+            }
+        }
         $this->load_classes_data();//reload the data
     }
 
+    /**
+     * @param string $interface_name
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    private function insert_new_interface(string $interface_name): void
+    {
+        $Connection = $this->get_connection($CR);
+        $q = "
+INSERT
+INTO
+    {$Connection::get_tprefix()}{$this::get_class_table()}
+    (class_uuid_binary, class_name, class_table)
+VALUES
+    (:class_uuid_binary, :class_name, :class_table)        
+        ";
+
+        $uuid = Uuid::uuid4();
+        $uuid_binary = $uuid->getBytes();
+
+        $implementing_class = ActiveRecord::get_active_record_interface_implementation($interface_name);
+        if (!$implementing_class) {
+            throw new LogicException(sprintf(t::_('No implementation for interface %1$s was found.'), $interface_name));
+        }
+
+        $b = [
+            'class_uuid_binary' => $uuid_binary,
+            'class_name'        => $interface_name,
+            'class_table'       => $implementing_class_found::get_main_table(),
+        ];
+        $Connection->prepare($q)->execute($b);
+
+        Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $interface_name, $uuid->toString()));
+    }
+
+    /**
+     * @param string $class_name
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
     private function insert_new_class(string $class_name): void
     {
         $Connection = $this->get_connection($CR);
@@ -165,7 +223,6 @@ VALUES
         ];
         $Connection->prepare($q)->execute($b);
 
-        //Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->getHex()));
         Kernel::log(sprintf(t::_('%1$s: Detected and added a new class %2$s with UUID %3$s.'), __CLASS__, $class_name, $uuid->toString()));
     }
 
@@ -180,8 +237,8 @@ VALUES
         if (!$class_name) {
             throw new InvalidArgumentException(sprintf(t::_('No $class_name argument provided.')));
         }
-        if (!class_exists($class_name)) {
-            throw new InvalidArgumentException(sprintf(t::_('There is no class %1$s.'), $class_name));
+        if (!class_exists($class_name) && !interface_exists($class_name)) {
+            throw new InvalidArgumentException(sprintf(t::_('There is no class or interface %1$s.'), $class_name));
         }
         return isset($this->classes_data[$class_name]);
     }
@@ -231,6 +288,10 @@ VALUES
      */
     public function get_class_id(string $class_name): ?int
     {
+        $active_record_interface = ActiveRecord::get_class_active_record_interface($class_name);
+        if ($active_record_interface) {
+            $class_name = $active_record_interface;
+        }
         return $this->has_class_data($class_name) ? $this->get_class_data($class_name)['class_id'] : null ;
     }
 
@@ -306,6 +367,12 @@ VALUES
      */
     public function get_unified_columns_data(string $class): array
     {
+
+        if (interface_exists($class)) {
+            //get one implementing class
+            $class = ActiveRecord::get_active_record_interface_implementation($class);
+        }
+
         if (!isset($this->unified_columns_data[$class])) {
             // TODO check deeper for a structured store
             if ($this->FallbackStore instanceof StructuredStoreInterface) {
@@ -1048,6 +1115,14 @@ ON DUPLICATE KEY UPDATE
      */
     public function &get_data_pointer(string $class, array $index, bool $permission_checks_disabled = false): array
     {
+
+        if (!is_a($class, ActiveRecordInterface::class, true)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class "%1$s" does not implement %2$s.'), $class, ActiveRecordInterface::class));
+        }
+        if (!class_exists($class)) {
+            throw new InvalidArgumentException(sprintf(t::_('The provided class "%1$s" does not exist (or is not a class).'), $class));
+        }
+
         if (array_key_exists('<', $index)) {
             if (!$index['<']) {
                 //throw
@@ -1077,6 +1152,13 @@ ON DUPLICATE KEY UPDATE
             $sort_desc = true;
             unset($index['>']);
         }
+
+//        $active_record_interface = $class::get_class_active_record_interface();
+//        //if there is an active record interface for the provided class the lookup should be done by this interface
+//        if ($active_record_interface) {
+//            $class = $active_record_interface;
+//        }
+
         //string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL
         $data = $this->get_data_by($class, $index, 0, 0, false, $sort_by, $sort_desc, $total_rows, $permission_checks_disabled);
 
@@ -1116,6 +1198,7 @@ ON DUPLICATE KEY UPDATE
             $ret['data'] = $record_data;
             $this->hits++;
         } else {
+
             $this->misses--;
             $this->throw_not_found_exception($class, self::form_lookup_index($index));
         }

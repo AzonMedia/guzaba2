@@ -1110,6 +1110,19 @@ BANNER;
     }
 
     /**
+     * @param array $ns_prefixes
+     * @param string $interface
+     * @return array
+     * @throws InvalidArgumentException
+     */
+    public static function get_interfaces(array $ns_prefixes = [], string $interface = ''): array
+    {
+        $classes = self::get_classes($ns_prefixes, $interface);
+        $classes = array_filter($classes, fn(string $class): bool => interface_exists($class) );
+        return $classes;
+    }
+
+    /**
      * Loads all classes found under the registered autoload paths.
      * @see self::$autoloader_lookup_paths
      * @see self::register_autoloader_path()

@@ -6,8 +6,9 @@ namespace Guzaba2\Authorization\Interfaces;
 
 use Guzaba2\Authorization\Role;
 use Guzaba2\Authorization\RolesHierarchy;
+use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 
-interface UserInterface
+interface UserInterface extends ActiveRecordInterface
 {
     public function get_uuid(): string;
 

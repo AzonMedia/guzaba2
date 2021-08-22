@@ -57,7 +57,9 @@ interface ActiveRecordInterface extends BaseInterface, ActiveRecordAliasInterfac
 
     public function get_primary_index(): array;
 
-    //public function read() : void; //this is a private implementation
+    public function read($index) : void;
+
+    public function change_owner(): void;
 
     public function write(): ActiveRecordInterface;
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Authorization;
 
+use Guzaba2\Authorization\Interfaces\RoleInterface;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\LogicException;
 use Guzaba2\Base\Exceptions\RunTimeException;
@@ -23,7 +24,7 @@ use ReflectionException;
  * @property bool role_is_user
  * @property string role_name
  */
-class Role extends ActiveRecord
+class Role extends ActiveRecord implements RoleInterface
 {
 
     protected const CONFIG_DEFAULTS = [
