@@ -847,7 +847,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             $Apm->increment_value($object_key, $end_time - $start_time);
 
         } finally {
-
+            $this->nested_write_counter--;
         }
         return $this;
     }
