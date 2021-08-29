@@ -1162,6 +1162,9 @@ ON DUPLICATE KEY UPDATE
         //string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, ?string $sort_by = NULL, bool $sort_desc = FALSE, ?int &$total_found_rows = NULL
         $data = $this->get_data_by($class, $index, 0, 0, false, $sort_by, $sort_desc, $total_rows, $permission_checks_disabled);
 
+
+
+
         if (count($data)) {
             $primary_index = $class::get_index_from_data($data[0]);
             if (is_null($primary_index)) {
@@ -1605,12 +1608,16 @@ WHERE
             }
         }
 
+        if ($class === 'Guzaba2\\Authorization\\Acl\\Permission') {
+            print_r($record_data);
+        }
+
 
         foreach ($record_data as $init_key=>$init_value) {
             $type = gettype($init_value);
             foreach ($data as &$_row) {
                 foreach ($_row as $key=>$value) {
-                    if ($key === $init_key) {
+                    if ($key === $init_key && !is_null($_row[$key])) { //if the column is nullable and the value is null - leave the value null and do not cast
                         settype($_row[$key], $type);
                     }
                 }
