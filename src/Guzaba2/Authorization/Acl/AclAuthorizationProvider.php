@@ -176,27 +176,40 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
 //        $permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> $ActiveRecord->get_id(), 'action_name' => $action] );
 //        $class_permissions = Permission::get_data_by( [ 'class_name' => get_class($ActiveRecord), 'object_id'=> NULL, 'action_name' => $action] );
 //        $permissions = array_merge($permissions, $class_permissions);
+
         //optimization
+//        if ($ActiveRecord instanceof ControllerInterface) {
+//            //usually we need the class permissions for the controllers (to execute a controller
+//            //only if there are no permissions found retrive the object permissions
+//            $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
+//            $ret = self::check_permissions($roles_ids, $class_permissions);
+//            if (!$ret) {
+//                //check the object permission
+//                $permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
+//                $ret = self::check_permissions($roles_ids, $permissions);
+//            }
+//        } else {
+//            //on the rest of the objects usually we are looking for object permissions, not class permissions
+//            //class permission will be needed only when CREATE is needed or there is a privilege
+//            $permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
+//            $ret = self::check_permissions($roles_ids, $permissions);
+//            if (!$ret) {
+//                //check the class permission
+//                $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
+//                $ret = self::check_permissions($roles_ids, $class_permissions);
+//            }
+//        }
+
+        //if the object is a controller - look only for class permissions
+        //the controllers' instances are not treated as ActiveRecord instances in this case because they have no corresponding records in the DB
+        //otherwise for the regular ActiveRecords check both class permission and object permission
         if ($ActiveRecord instanceof ControllerInterface) {
-            //usually we need the class permissions for the controllers (to execute a controller
-            //only if there are no permissions found retrive the object permissions
             $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
             $ret = self::check_permissions($roles_ids, $class_permissions);
-            if (!$ret) {
-                //check the object permission
-                $permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
-                $ret = self::check_permissions($roles_ids, $permissions);
-            }
         } else {
-            //on the rest of the objects usually we are looking for object permissions, not class permissions
-            //class permission will be needed only when CREATE is needed or there is a privilege
             $permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
-            $ret = self::check_permissions($roles_ids, $permissions);
-            if (!$ret) {
-                //check the class permission
-                $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
-                $ret = self::check_permissions($roles_ids, $class_permissions);
-            }
+            $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
+            $ret = self::check_permissions($roles_ids, $permissions) && self::check_permissions($roles_ids, $class_permissions);
         }
 
         //this will trigger object instantiations
