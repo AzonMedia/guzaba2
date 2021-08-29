@@ -196,6 +196,9 @@ class Permission extends ActiveRecord implements PermissionInterface, NonHookabl
         try {
             if ($this->object_id === null) {
                 $class_name = $this->class_name;
+                if (interface_exists($class_name)) {
+                    $class_name = ActiveRecord::get_active_record_interface_implementation($class_name);//any implementation will do - this is just a permission check.
+                }
                 $class_name::check_class_permission('grant_permission');
             } else {
                 //(new $this->class_name($this->object_id))->check_permission('chmod');
