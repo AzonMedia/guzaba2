@@ -1477,17 +1477,7 @@ WHERE
         $full_main_table_name = $Connection::get_tprefix() . $table_name;
         $roles_table = $Connection::get_tprefix() . Role::get_main_table();
         $from_str = "`$full_main_table_name` AS main_table";
-        //if ($class::uses_permissions()) {
-        if ($class::uses_permissions() && !$permission_checks_disabled) {
-            /** @var AuthorizationProviderInterface $AuthorizationProvider */
-            $AuthorizationProvider = self::get_service('AuthorizationProvider');
-            //$from_str .= $AuthorizationProvider::get_sql_permission_check($class);
-            $permission_sql = $AuthorizationProvider::get_sql_permission_check($class);
-            if ($permission_sql) { //some providers do not return SQL
-                $w[] = "main_table.{$main_index[0]} = (".$permission_sql.")";
-            }
 
-        }
 
         $w_str = implode(" AND ", $w);
 
@@ -1570,6 +1560,21 @@ WHERE
 
 ";
 
+//        $b_data = $b;
+//        $b_count = $b;
+//        unset($b);
+//        //if ($class::uses_permissions()) {
+//        if ($class::uses_permissions() && !$permission_checks_disabled) {
+//            /** @var AuthorizationProviderInterface $AuthorizationProvider */
+//            $AuthorizationProvider = self::get_service('AuthorizationProvider');
+////            $permission_sql = $AuthorizationProvider::get_sql_permission_check($class);
+////            if ($permission_sql) { //some providers do not return SQL
+////                $w[] = "main_table.{$main_index[0]} = (".$permission_sql.")";
+////            }
+//            $AuthorizationProvider->add_sql_permission_checks($q_data, $b_data);
+//            $AuthorizationProvider->add_sql_permission_checks($q_count, $b_count);
+//        }
+
 
         if ($limit) {
             if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {
@@ -1607,11 +1612,6 @@ WHERE
                 $record['class_name'] = $this->get_class_name($record['class_id']);
             }
         }
-
-        if ($class === 'Guzaba2\\Authorization\\Acl\\Permission') {
-            print_r($record_data);
-        }
-
 
         foreach ($record_data as $init_key=>$init_value) {
             $type = gettype($init_value);

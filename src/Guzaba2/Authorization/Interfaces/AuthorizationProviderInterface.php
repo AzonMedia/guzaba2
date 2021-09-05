@@ -6,6 +6,7 @@ namespace Guzaba2\Authorization\Interfaces;
 
 use Guzaba2\Authorization\Acl\Permission;
 use Guzaba2\Authorization\Exceptions\PermissionDeniedException;
+use Guzaba2\Database\Sql\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Role;
 
@@ -15,6 +16,11 @@ use Guzaba2\Authorization\Role;
  */
 interface AuthorizationProviderInterface
 {
+
+    public const PERMISSION_DENIED = [
+        'METHOD'    => 1,
+        'RECORD'    => 2,
+    ];
 
     /**
      * Returns the name of the class that this class uses for the implementation of PermissionInterface
@@ -29,7 +35,7 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool;
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool;
 
     /**
      * Returns a boolean can the provided $role perform the $action on the ActiveRecord $class.
@@ -38,7 +44,7 @@ interface AuthorizationProviderInterface
      * @param string $class
      * @return bool
      */
-    public function role_can_on_class(Role $Role, string $action, string $class): bool;
+    public function role_can_on_class(Role $Role, string $action, string $class, ?int &$permission_denied_reason = null): bool;
 
     /**
      * Returns a boolean can role of the currently logged user perform the $action on the object $ActiveRecord.
@@ -46,7 +52,7 @@ interface AuthorizationProviderInterface
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool;
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool;
 
     /**
      * Returns a boolean can role of the currently logged user perform the $action on the the ActiveRecord $class.
@@ -54,7 +60,7 @@ interface AuthorizationProviderInterface
      * @param string $class
      * @return bool
      */
-    public function current_role_can_on_class(string $action, string $class): bool;
+    public function current_role_can_on_class(string $action, string $class, ?int &$permission_denied_reason = null): bool;
 
     /**
      * Checks can the provided $role perform the $action on the object $ActiveRecord and if not a PermissionDeniedException is thrown.
@@ -147,6 +153,13 @@ interface AuthorizationProviderInterface
      * @return string The join part of the stamement that needs to be included in the query
      */
     public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string;
+
+    /**
+     * Adds the needed permission checks for each joined table of a class that uses permissions.
+     * @param string $main_table The main table from the main query to which the join should be applied
+     * @return string The join part of the stamement that needs to be included in the query
+     */
+    public function add_sql_permission_checks(string &$sql, array &$parameters, string $action, ConnectionInterface $Connection): void;
 
     /**
      * Whether this AuthorizationProvider checks permissions.

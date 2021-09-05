@@ -8,6 +8,7 @@ use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Role;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
+use Guzaba2\Database\Sql\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 
@@ -69,7 +70,7 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
         return [];
     }
 
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
     {
         $ret = false;
         $operations = Operation::get_data_by(['action_name' => $action, 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id()]);
@@ -92,7 +93,7 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
         }
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class): bool
+    public function role_can_on_class(Role $Role, string $action, string $class, ?int &$permission_denied_reason = null): bool
     {
         //TODO implement
         return false;
@@ -101,6 +102,11 @@ class RbacAuthorizationProvider extends Base implements AuthorizationProviderInt
     public static function get_used_active_record_classes(): array
     {
         return [Permission::class, Operation::class, PermissionOperation::class, RolePermission::class, Role::class];
+    }
+
+    public function add_sql_permission_checks(string &$sql, array &$parameters, string $action, ConnectionInterface $Connection): void
+    {
+
     }
 
     public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string

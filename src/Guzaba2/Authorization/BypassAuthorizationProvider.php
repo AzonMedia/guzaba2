@@ -8,6 +8,7 @@ use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Authorization\Interfaces\PermissionInterface;
 use Guzaba2\Authorization\Traits\AuthorizationProviderTrait;
 use Guzaba2\Base\Base;
+use Guzaba2\Database\Sql\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 
 /**
@@ -36,12 +37,12 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
         return static::CONFIG_RUNTIME['class_dependencies'][PermissionInterface::class];
     }
 
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class): bool
+    public function role_can_on_class(Role $Role, string $action, string $class, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
@@ -52,12 +53,12 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
 
-    public function current_role_can_on_class(string $action, string $class): bool
+    public function current_role_can_on_class(string $action, string $class, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
@@ -122,6 +123,11 @@ class BypassAuthorizationProvider extends Base implements AuthorizationProviderI
     public static function get_used_active_record_classes(): array
     {
         return [];
+    }
+
+    public function add_sql_permission_checks(string &$sql, array &$parameters, string $action, ConnectionInterface $Connection): void
+    {
+
     }
 
     public static function get_sql_permission_check(string $class, string $main_table = 'main_table', $action = 'read'): string

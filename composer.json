@@ -48,7 +48,8 @@
 
         "jbzoo/utils": "^2.3",
         "ramsey/uuid": "^3.8",
-        "symfony/cache": "^5.0"
+        "symfony/cache": "^5.0",
+        "phpmyadmin/sql-parser": "^5.4"
     },
     "autoload": {
 	    "files": ["src/Guzaba2/Kernel/Kernel.php"]

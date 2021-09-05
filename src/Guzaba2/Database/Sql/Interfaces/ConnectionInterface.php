@@ -16,6 +16,12 @@ interface ConnectionInterface
     public static function get_database(): string;
 
     /**
+     * Returns the table prefix.
+     * @return string
+     */
+    public static function get_tprefix(): string;
+
+    /**
      * Replaces the named parameters like :some_val with ? as required by some drivers (not all drivers require this).
      * @param string $named_params_query
      * @param array $expected_parameters
@@ -35,4 +41,7 @@ interface ConnectionInterface
     public static function array_placeholder(array $array, string $placeholder_name): string;
 
     public function prepare(string $query): StatementInterface ;
+
+
+    public function query(string $query, array $params): StatementInterface;
 }

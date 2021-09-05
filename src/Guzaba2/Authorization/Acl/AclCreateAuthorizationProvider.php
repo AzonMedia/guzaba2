@@ -24,12 +24,12 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord): bool
+    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class): bool
+    public function role_can_on_class(Role $Role, string $action, string $class, ?int &$permission_denied_reason = null): bool
     {
         $ret = true;
     }
@@ -40,12 +40,12 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord): bool
+    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }
 
-    public function current_role_can_on_class(string $action, string $class): bool
+    public function current_role_can_on_class(string $action, string $class, ?int &$permission_denied_reason = null): bool
     {
         return true;
     }

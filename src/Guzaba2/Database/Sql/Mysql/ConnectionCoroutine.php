@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Base\Base;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;

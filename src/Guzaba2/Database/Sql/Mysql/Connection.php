@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Guzaba2\Database\Sql\Mysql;
 
+use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Exceptions\QueryException;
@@ -23,6 +24,10 @@ abstract class Connection extends TransactionalConnection
         'database'  => '',
         'socket'    => '',
         'group_concat_max_len'  => 16384,
+
+        'services'  => [
+            'AuthorizationProvider',
+        ]
     ];
 
     protected const CONFIG_RUNTIME = [];
@@ -34,6 +39,29 @@ abstract class Connection extends TransactionalConnection
      * @var string
      */
     protected string $original_query = '';
+
+    /**
+     * Prepares and executes a query.
+     * Enforces permissions by invoking AuthorizationProvider::add_sql_permission_checks()
+     * @param string $query
+     * @param array $params
+     * @return StatementInterface
+     * @throws InvalidArgumentException
+     * @throws QueryException
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public function query(string $query, array $params): StatementInterface
+    {
+        /** @var AuthorizationProviderInterface $AuthorizationProvider */
+        $AuthorizationProvider = self::get_service('AuthorizationProvider');
+        $AuthorizationProvider->add_sql_permission_checks($query, $params);
+        $Statement = $this->prepare($query);
+        $Statement->execute($params);
+        return $Statement;
+    }
 
     protected function prepare_statement(string $query, string $statement_class, Connection $Connection): StatementInterface
     {
