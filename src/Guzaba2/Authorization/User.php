@@ -238,7 +238,7 @@ class User extends ActiveRecord implements UserInterface
     {
         if ($this->is_new() || $this->is_property_modified('user_name')) {
             try {
-                $User = new static(['user_name' => $this->user_name]);
+                $User = new static(index: ['user_name' => $this->user_name], permission_checks_disabled: true);
                 if ($User->get_id() !== $this->get_id()) {
                     return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
                 }
@@ -267,7 +267,7 @@ class User extends ActiveRecord implements UserInterface
             return new ValidationFailedException($this, 'user_email', sprintf(t::_('The provided email "%1$s" is not valid.'), $this->user_email));
         } elseif ($this->is_new() || $this->is_property_modified('user_email')) {
             try {
-                $User = new static(['user_email' => $this->user_email]);
+                $User = new static(index: ['user_email' => $this->user_email], permission_checks_disabled: true);
                 if ($User->get_id() !== $this->get_id()) {
                     return new ValidationFailedException($this, 'user_email', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
                 }

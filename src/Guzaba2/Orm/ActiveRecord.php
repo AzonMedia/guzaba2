@@ -670,7 +670,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
      */
-    public function write(bool $force_write = false): ActiveRecordInterface
+    public function write(bool $force_write = false, bool $disable_validation = false): ActiveRecordInterface
     {
 
         $this->nested_write_counter++;
@@ -741,7 +741,9 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
             $this->profile('CHECK 5', microtime(true) - $start_time);
 
-            $this->validate();
+            if (!$disable_validation) {
+                $this->validate();
+            }
 
             $this->profile('CHECK 6', microtime(true) - $start_time);
 
