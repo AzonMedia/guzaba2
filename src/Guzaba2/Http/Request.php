@@ -31,4 +31,12 @@ class Request extends \Azonmedia\Http\Request
     {
         return $this->getServer();
     }
+
+
+    public function __debugInfo(): array
+    {
+        $data = get_object_vars($this);
+        unset($data['Server']);
+        return $data;
+    }
 }

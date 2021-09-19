@@ -612,10 +612,13 @@ BANNER;
     {
         $frame = StackTraceUtil::get_stack_frame(2);
         $str = '';
-        $str = var_dump($var, true);
+        ob_start();
+        var_dump($var);
+        $str = ob_get_contents();
+        ob_end_clean();
         if ($frame) {
             //$str .= 'printed in '.$frame['file'].'#'.$frame['line'].PHP_EOL;
-            $str .= sprintf(t::_('printed in %s#%s'), $frame['file'], $frame['line']) . PHP_EOL;
+            $str .= PHP_EOL . sprintf(t::_('printed in %s#%s'), $frame['file'], $frame['line']) . PHP_EOL;
         }
         $str .= PHP_EOL;
         print $str;
@@ -802,6 +805,35 @@ BANNER;
             print $message;
         }
 
+    }
+
+
+
+    /**
+     * Logs a message using the default logger
+     *
+     * @param string $message
+     * @param string $level
+     * @param array $context
+     * @return bool
+     * @throws RunTimeException
+     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
+     * @throws \ReflectionException
+     */
+    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
+    {
+        $Logger = self::get_logger();
+        if (self::get_cid() > 0) {
+            $message = sprintf(t::_('Coroutine #%s: %s'), self::get_cid(), $message);
+        }
+        if (self::get_http_server() && self::get_http_server()->get_start_microtime()) {
+            //$message = 'Worker #'.self::get_worker_id().': '.$message;
+            $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message);
+        }
+
+        $Logger->log($level, $message, $context);
+        return true;
     }
 
     /**
@@ -1220,34 +1252,6 @@ BANNER;
             $ret = null;
         }
         return $ret;
-    }
-
-
-    /**
-     * Logs a message using the default logger
-     *
-     * @param string $message
-     * @param string $level
-     * @param array $context
-     * @return bool
-     * @throws RunTimeException
-     * @throws \Azonmedia\Exceptions\InvalidArgumentException
-     * @throws \Guzaba2\Coroutine\Exceptions\ContextDestroyedException
-     * @throws \ReflectionException
-     */
-    public static function log(string $message, string $level = LogLevel::INFO, array $context = []): bool
-    {
-        $Logger = self::get_logger();
-        if (self::get_cid() > 0) {
-            $message = sprintf(t::_('Coroutine #%s: %s'), self::get_cid(), $message);
-        }
-        if (self::get_http_server() && self::get_http_server()->get_start_microtime()) {
-            //$message = 'Worker #'.self::get_worker_id().': '.$message;
-            $message = sprintf(t::_('Worker #%s: %s'), self::get_worker_id(), $message);
-        }
-
-        $Logger->log($level, $message, $context);
-        return true;
     }
 
     /**

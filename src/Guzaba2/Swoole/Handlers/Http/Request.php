@@ -73,7 +73,8 @@ class Request extends HandlerBase
             $Body = new Stream();
             $Body->write($message);
             $Body->rewind();
-            $DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
+            //$DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
+            $DefaultResponse = (new Response(StatusCode::HTTP_NOT_FOUND, [], $Body))->withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime']);
         }
         $this->DefaultResponse = $DefaultResponse;
 
@@ -82,7 +83,8 @@ class Request extends HandlerBase
             $Body = new Stream();
             $Body->write($message);
             $Body->rewind();
-            $ServerErrorResponse = (new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
+            //$ServerErrorResponse = (new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $Body) )->withHeader('Content-Length', (string) strlen($message));
+            $ServerErrorResponse = (new Response(StatusCode::HTTP_INTERNAL_SERVER_ERROR, [], $Body) )->withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime']);
         }
         $this->ServerErrorResponse = $ServerErrorResponse;
     }
@@ -99,6 +101,7 @@ class Request extends HandlerBase
      */
     public function handle(\Swoole\Http\Request $SwooleRequest, \Swoole\Http\Response $SwooleResponse): void
     {
+
         //swoole cant use set_exception_handler so everything gets wrapped in try/catch and a manual call to the exception handler
 
         $start_time = microtime(true);
@@ -125,8 +128,8 @@ class Request extends HandlerBase
                 $StreamBody = new Stream(null, $json_string);
                 $DefaultResponse = $DefaultResponse->
                     withBody($StreamBody)->
-                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
-                    withHeader('Content-Length', (string) strlen($json_string));
+                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime']);
+                    //withHeader('Content-Length', (string) strlen($json_string));
             }
 
             //$FallbackHandler = new \Guzaba2\Http\RequestHandler($this->DefaultResponse);//this will produce 404
@@ -145,7 +148,9 @@ class Request extends HandlerBase
             //the above is no longer needed as there is dedicated code for executing subcoroutines Coroutine::executeMulti()
 
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
-
+            //$SwooleResponse->end();
+            //print_r($SwooleResponse);
+            //$SwooleResponse->end();
             //debug
 
             //$memory_usage = $Exception->get_memory_usage();
@@ -173,11 +178,11 @@ class Request extends HandlerBase
                 $StreamBody = new Stream(null, $json_string);
                 $PsrResponse = $PsrResponse->
                     withBody($StreamBody)->
-                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
-                    withHeader('Content-Length', (string) strlen($json_string));
+                    withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime']);
+                    //withHeader('Content-Length', (string) strlen($json_string));
             }
             PsrToSwoole::ConvertResponse($PsrResponse, $SwooleResponse);
-            $SwooleResponse->end();//this sends the response
+            //$SwooleResponse->end();//this sends the response
 
             //$end_time = microtime(TRUE);
 
@@ -186,6 +191,7 @@ class Request extends HandlerBase
             //Kernel::printk($message);
             unset($Exception);//destroy it now  instead of waiting unti lthe end of the scope
         } finally {
+
             //\Guzaba2\Coroutine\Coroutine::end();//no need
             $end_time = microtime(true);
             //$message = 'Request of '.$request_raw_content_length.' bytes for path '.$PsrRequest->getUri()->getPath().' served by worker #'.$this->HttpServer->get_worker_id().' in '.($end_time - $start_time).' seconds with response: code: '.$PsrResponse->getStatusCode().' response content length: '.$PsrResponse->getBody()->getSize().PHP_EOL;

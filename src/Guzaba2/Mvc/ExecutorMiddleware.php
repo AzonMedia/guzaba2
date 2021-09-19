@@ -211,7 +211,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 }
                 $controller_arguments += $body_params;
             } else {
-                $message = sprintf(t::_('Bad request. Request body is supported only for %1$s methods. %2$s request was received along with %3$s arguments.'), implode(', ', $methods_with_body_params), $Request->getMethod(), count($body_params));
+                $message = sprintf(t::_('Bad request. Request body is supported only for %1$s methods. %2$s request was received along with %3$s arguments.'), implode(', ', Method::get_methods($methods_with_body_params)), $Request->getMethod(), count($body_params));
                 throw new RunTimeException($message);
             }
         }
@@ -375,10 +375,7 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $Response = null;
 
         try {
-
-
             $ordered_arguments = [];
-
             foreach (self::$controllers_params[get_class($Controller)][$method] as $param) {
                 if (isset($controller_arguments[$param['name']])) {
                     $value = $controller_arguments[$param['name']];
@@ -486,8 +483,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
         $StreamBody = new Stream(null, $json_string);
         $Response = $Response->
             withBody($StreamBody)->
-            withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime'])->
-            withHeader('Content-Length', (string) strlen($json_string));
+            withHeader('Content-Type', ContentType::TYPES_MAP[ContentType::TYPE_JSON]['mime']);
+            //withHeader('Content-Length', (string) strlen($json_string));
 
         return $Response;
     }
@@ -571,8 +568,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                     $StreamBody = new Stream(null, $view_output);
                     $Response = $Response->
                         withBody($StreamBody)->
-                        withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime'])->
-                        withHeader('Content-Length', (string) strlen($view_output));
+                        withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime']);
+                        //withHeader('Content-Length', (string) strlen($view_output));
                     return $Response;
                 } else {
                     throw new RunTimeException(sprintf(t::_('The view class %s has no method %s.'), $view_class, $controller_callable[1]));
@@ -634,8 +631,8 @@ class ExecutorMiddleware extends Base implements MiddlewareInterface
                 $StreamBody = new Stream(null, $view_output);
                 $Response = $Response->
                 withBody($StreamBody)->
-                withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime'])->
-                withHeader('Content-Length', (string) strlen($view_output));
+                withHeader('Content-type', ContentType::TYPES_MAP[ContentType::TYPE_HTML]['mime']);
+                //withHeader('Content-Length', (string) strlen($view_output));
                 return $Response;
             } else {
                 if ($content_type === null) {

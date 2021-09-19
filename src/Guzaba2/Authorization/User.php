@@ -242,11 +242,9 @@ class User extends ActiveRecord implements UserInterface
                 if ($User->get_id() !== $this->get_id()) {
                     return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
                 }
-            } catch (RecordNotFoundException $Exception) {
+            } catch (RecordNotFoundException) {
                 return null;
-            } catch (PermissionDeniedException $Exception) {
-                return new ValidationFailedException($this, 'user_name', sprintf(t::_('There is already a user with user name "%1$s".'), $this->user_name));
-            }
+            } //leave the rest to bubble
         }
         return null;
     }
@@ -271,11 +269,13 @@ class User extends ActiveRecord implements UserInterface
                 if ($User->get_id() !== $this->get_id()) {
                     return new ValidationFailedException($this, 'user_email', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
                 }
-            } catch (RecordNotFoundException $Exception) {
+            } catch (RecordNotFoundException) {
                 return null;
-            } catch (PermissionDeniedException $Exception) {
-                return new ValidationFailedException($this, 'user_email', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
             }
+            //leave the rest to bubble
+//            catch (PermissionDeniedException) {
+//                return new ValidationFailedException($this, 'user_email', sprintf(t::_('There is already a user with email "%1$s".'), $this->user_email));
+//            }
         }
         return null;
     }
@@ -350,7 +350,7 @@ class User extends ActiveRecord implements UserInterface
         $this->user_is_disabled = true;
         $this->write();
 
-        $this->add_log_entry('enable', sprintf(t::_('The user %1$s was enabled.'), $this->user_name));
+        $this->add_log_entry('disable', sprintf(t::_('The user %1$s was disabled.'), $this->user_name));
 
         $Transaction->commit();
     }
