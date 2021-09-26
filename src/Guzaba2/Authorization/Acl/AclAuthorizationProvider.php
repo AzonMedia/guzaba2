@@ -13,6 +13,7 @@ use Guzaba2\Base\Exceptions\DeprecatedException;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
 use Guzaba2\Base\Exceptions\RunTimeException;
 use Guzaba2\Database\Sql\Interfaces\ConnectionInterface;
+use Guzaba2\Database\Sql\StatementTypes;
 use Guzaba2\Mvc\Interfaces\ControllerInterface;
 use Guzaba2\Orm\ActiveRecord;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
@@ -29,6 +30,14 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
     use AuthorizationProviderTrait;
 
     protected const CONFIG_DEFAULTS = [
+        'statement_type_actions'   => [
+            //insert is not checked since this will be controlled by the model method or controller
+            //it doesnt perform actions on existing records
+            StatementTypes::STATEMENT_TYPE_SELECT    => 'read',
+            StatementTypes::STATEMENT_TYPE_UPDATE    => 'write',
+            //StatementTypes::STATEMENT_TYPE_REPLACE   => 'write',//ignore this since it may insert new records
+            StatementTypes::STATEMENT_TYPE_DELETE    => 'delete',
+        ],
         'services'      => [
             'CurrentUser',
             'MysqlOrmStore',//needed because the get_class_id() method is used
@@ -317,105 +326,114 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
             return;
         }
 
-        $Parser = new \PhpMyAdmin\SqlParser\Parser($_sql);
-
-        if (count($Parser->statements) > 1) {
-            $message = sprintf(
-                t::_('"%1$s" supports only a single-statement SQL. %2$s statements were provided.'),
-                __METHOD__,
-                count($parser['statements'])
-            );
-            throw new RunTimeException();
-        }
-        $Statement = $Parser->statements[0];
-        if (!($Statement instanceof \PhpMyAdmin\SqlParser\Statements\SelectStatement)) {
-            $message = sprintf(
-                t::_('%1$s() supports adding permissions only to SELECT statements. "%2$s" statement was provided. Updating records should be done through the respective ActiveRecord or if mass update is needed with UPDATE statement the permissions must be checked manually.'),
-                __METHOD__,
-                get_class($Statement)
-            );
-            throw new RunTimeException($message);
-        }
-        //the tables array contains only tables that use permissions
-        $tables = [];
-        $tprefix = $Connection::get_tprefix();
-        foreach ($Statement->from as $From) {
-            $table = $From->table;
-            $table = str_replace($tprefix, '', $table);
-            if ($class = self::get_class_with_permissions_by_table($table)) {
-                if (count($class::get_primary_index_columns()) > 1) {
-                    $message = sprintf(
-                        t::_('%1$s() supports only classes with a single primary column. "%2$s" has %3$s primary columns.'),
-                        __METHOD__,
-                        $class,
-                        count($class::get_primary_index_columns())
-                    );
-                }
-                //$tables[$class] = $table;
-                $tables[] = [
-                    'class' => $class,
-                    'table' => $table,
-                    'alias' => $From->alias,
-                ];
-            }
-        }
-        foreach ($Statement->join as $Join) {
-            $table = $Join->expr->table;
-            $table = str_replace($tprefix, '', $table);
-            if ($class = self::get_class_with_permissions_by_table($table)) {
-                //check is the join left or right - in this case because the join on the permissions will be INNER
-                //it will change the nature of the statement
-                if ($Join->type !== $Join::$JOINS['INNER JOIN']) {
-                    $message = sprintf(
-                        t::_('The table "%1$s" for class "%2$s" which uses permissions is joined by using %3$s JOIN which is not supported. %4$s() supports only %5$s JOIN.'),
-                        $table,
-                        $class,
-                        $Join->type,
-                        __METHOD__,
-                        $Join::$JOINS['INNER JOIN']
-                    );
-                    throw new RunTimeException($message);
-                }
-                //$tables[$class] = $table;
-                $tables[] = [
-                    'class' => $class,
-                    'table' => $table,//without prefix
-                    'alias' => $Join->expr->alias,
-                ];
-            }
-
-        }
-
-        $permission_class = static::get_permission_class();
-        $permissions_table = $tprefix.$permission_class::get_main_table();
-        /*
-        $append_join = '';
-        foreach ($tables as $class => $table) {
-            $primary_column = $class::get_primary_index_columns()[0];
-            $append_join .= "
-INNER JOIN
-    {$permissions_table} AS permissions_{$table}
-    ON permissions_{$table}.object_id = {$tprefix}{$table}.{$primary_column}
-    AND permissions_{$table}.class_id = :{$table}_class_id
-";
-            $b[$table.'_class_id'] = $class::get_class_id();
-        }
-        */
         $new_params = [];
-        foreach ($tables as ['class' => $class, 'table' => $table, 'alias' => $alias]) {
-            $primary_column = $class::get_primary_index_columns()[0];
-            $Expression = new Expression(null, $permissions_table, null, 'permissions_'.$table);
-            $on_arr = [
-                new Condition("permissions_{$table}.object_id = {$alias}.{$primary_column}"),
-                new Condition("AND"),
-                new Condition("permissions_{$table}.class_id = :{$table}_class_id"),
-            ];
-            $Join = new JoinKeyword(JoinKeyword::$JOINS['INNER JOIN'], $Expression, $on_arr, null);
-            $Statement->join[] = $Join;
-            //$_parameters[$table.'_class_id'] = $class::get_class_id();
-            $new_params[$table.'_class_id'] = $class::get_class_id();
+        $statement_type = StatementTypes::get_statement_type($_sql);
+
+        if (!$action && in_array($statement_type, array_keys(self::CONFIG_RUNTIME['statement_type_actions']))) {
+            $action = self::CONFIG_RUNTIME['statement_type_actions'][$statement_type];
         }
-        $new_sql = $Statement->build();
+
+        //if (in_array($statement_type, array_keys(self::CONFIG_RUNTIME['statement_type_actions']))) {
+        if ($action) { //if there is no action provided or deduced the query is left untouched.
+            //the query needs to be amended
+            $Parser = new \PhpMyAdmin\SqlParser\Parser($_sql);
+
+            if (count($Parser->statements) > 1) {
+                $message = sprintf(
+                    t::_('"%1$s" supports only a single-statement SQL. %2$s statements were provided.'),
+                    __METHOD__,
+                    count($parser['statements'])
+                );
+                throw new RunTimeException();
+            }
+            $Statement = $Parser->statements[0];
+            if (!($Statement instanceof \PhpMyAdmin\SqlParser\Statements\SelectStatement)) {
+                $message = sprintf(
+                    t::_('%1$s() supports adding permissions only to SELECT statements. "%2$s" statement was provided. Updating records should be done through the respective ActiveRecord or if mass update is needed with UPDATE statement the permissions must be checked manually.'),
+                    __METHOD__,
+                    get_class($Statement)
+                );
+                throw new RunTimeException($message);
+            }
+            //the tables array contains only tables that use permissions
+            $tables = [];
+            $tprefix = $Connection::get_tprefix();
+            foreach ($Statement->from as $From) {
+                $table = $From->table;
+                $table = str_replace($tprefix, '', $table);
+                if ($class = self::get_class_with_permissions_by_table($table)) {
+                    if (count($class::get_primary_index_columns()) > 1) {
+                        $message = sprintf(
+                            t::_('%1$s() supports only classes with a single primary column. "%2$s" has %3$s primary columns.'),
+                            __METHOD__,
+                            $class,
+                            count($class::get_primary_index_columns())
+                        );
+                    }
+                    //$tables[$class] = $table;
+                    $tables[] = [
+                        'class' => $class,
+                        'table' => $table,
+                        'alias' => $From->alias,
+                    ];
+                }
+            }
+            foreach ($Statement->join as $Join) {
+                $table = $Join->expr->table;
+                $table = str_replace($tprefix, '', $table);
+                if ($class = self::get_class_with_permissions_by_table($table)) {
+                    //check is the join left or right - in this case because the join on the permissions will be INNER
+                    //it will change the nature of the statement
+                    if ($Join->type !== $Join::$JOINS['INNER JOIN']) {
+                        $message = sprintf(
+                            t::_('The table "%1$s" for class "%2$s" which uses permissions is joined by using %3$s JOIN which is not supported. %4$s() supports only %5$s JOIN.'),
+                            $table,
+                            $class,
+                            $Join->type,
+                            __METHOD__,
+                            $Join::$JOINS['INNER JOIN']
+                        );
+                        throw new RunTimeException($message);
+                    }
+                    //$tables[$class] = $table;
+                    $tables[] = [
+                        'class' => $class,
+                        'table' => $table,//without prefix
+                        'alias' => $Join->expr->alias,
+                    ];
+                }
+
+            }
+
+            $permission_class = static::get_permission_class();
+            $permissions_table = $tprefix.$permission_class::get_main_table();
+
+            foreach ($tables as ['class' => $class, 'table' => $table, 'alias' => $alias]) {
+                $primary_column = $class::get_primary_index_columns()[0];
+                $Expression = new Expression(null, $permissions_table, null, 'permissions_'.$table);
+                /** @var CurrentUser $CurrentUser */
+                $CurrentUser = self::get_service('CurrentUser');
+                $roles_ids = $CurrentUser->get()->get_role()->get_all_inherited_roles_ids();
+                $on_arr = [
+                    new Condition("permissions_{$table}.object_id = {$alias}.{$primary_column}"),
+                    new Condition("AND"),
+                    new Condition("permissions_{$table}.class_id = :{$table}_class_id"),
+                    new Condition("AND"),
+                    new Condition("permissions_{$table}.action_name = :{$table}_action_name"),
+                    new Condition("AND"),
+                    //new Condition("permissions_{$table}.role_id IN (:{$table}_role_id)"),
+                    new Condition("permissions_{$table}.role_id IN ({$Connection::array_placeholder($roles_ids, $table.'_role_id')})"),
+                ];
+                $Join = new JoinKeyword(JoinKeyword::$JOINS['INNER JOIN'], $Expression, $on_arr, null);
+                $Statement->join[] = $Join;
+                //$_parameters[$table.'_class_id'] = $class::get_class_id();
+                $new_params[$table.'_class_id'] = $class::get_class_id();
+                //$new_params[$table.'_action_name'] = self::CONFIG_RUNTIME['statement_type_actions'][$statement_type];
+                $new_params[$table.'_action_name'] = $action;
+                $new_params[$table.'_role_id'] = $roles_ids;
+            }
+            $new_sql = $Statement->build();
+        }
 
         $cache[$sql_hash]['sql'] = $new_sql;
         $cache[$sql_hash]['params'] = $new_params;

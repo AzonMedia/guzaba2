@@ -104,6 +104,10 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
         return $this->get_query();
     }
 
+    /**
+     * Returns the SQL query
+     * @return string
+     */
     public function get_query(): string
     {
         return $this->query;
@@ -131,7 +135,16 @@ abstract class Statement extends \Guzaba2\Database\Sql\Statement
         //validate the set parameters do they correspond to the expected parameters
         foreach ($this->expected_parameters as $expected_parameter) {
             if (!array_key_exists($expected_parameter, $parameters)) {
-                $message = sprintf(t::_('The prepared statement expects parameter named %s and this is not found in the provided parameters.'), $expected_parameter);
+                $message = sprintf(
+                    t::_('
+The prepared statement expects parameter named %s and this is not found in the provided parameters.
+The provided parameters are "%2$s".
+The query is "%3$s".
+                    '),
+                    $expected_parameter,
+                    print_r($parameters, true),
+                    \Guzaba2\Database\Sql\Connection::format_sql($this->get_query()),
+                );
                 throw new ParameterException($expected_parameter, $message, $this->query, $parameters);
             }
         }

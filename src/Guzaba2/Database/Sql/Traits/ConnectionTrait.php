@@ -14,6 +14,11 @@ trait ConnectionTrait
         return static::CONFIG_RUNTIME['database'];
     }
 
+    public static function format_sql(string $sql, array $options = []): string
+    {
+        return \PhpMyAdmin\SqlParser\Utils\Formatter::format($sql, $options);
+    }
+
     public static function convert_query_for_binding(string $named_params_query, array &$expected_parameters = []): string
     {
         preg_match_all('/:([a-zA-Z0-9_]*)/', $named_params_query, $matches);
