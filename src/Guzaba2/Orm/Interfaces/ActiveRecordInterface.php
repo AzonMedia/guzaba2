@@ -61,7 +61,7 @@ interface ActiveRecordInterface extends BaseInterface, ActiveRecordAliasInterfac
 
     public function change_owner(): void;
 
-    public function write(): ActiveRecordInterface;
+    public function write(bool $force_write = false, bool $disable_validation = false, bool $permission_checks_disabled = false): ActiveRecordInterface;
 
     public function delete(): void;
 
@@ -71,6 +71,23 @@ interface ActiveRecordInterface extends BaseInterface, ActiveRecordAliasInterfac
     public function current_role_can(string $action): bool;
 
     public function role_can(Role $Role, string $action): bool;
-
+    
     public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array;
+
+    public function disable_method_hooks(): void;
+
+    public function enable_method_hooks(): void;
+
+    public function are_method_hooks_disabled(): bool;
+
+    public function is_read_only(): bool;
+
+    public function are_permission_checks_disabled(): bool;
+
+    public function is_modified_data_tracking_disabled(): bool;
+
+    public function disable_modified_data_tracking(): void;
+
+    public function enable_modified_data_tracking(): void;
+
 }

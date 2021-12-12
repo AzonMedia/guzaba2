@@ -12,6 +12,7 @@ use Azonmedia\Utilities\ArrayUtil;
 use Azonmedia\Utilities\GeneralUtil;
 use Azonmedia\Http\Body\Structured;
 use Azonmedia\Http\Method;
+use CacheGoldStore\Store\Models\Item;
 use Guzaba2\Authorization\CurrentUser;
 use Guzaba2\Authorization\Interfaces\AuthorizationProviderInterface;
 use Guzaba2\Base\Exceptions\InvalidArgumentException;
@@ -171,12 +172,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     
     /**
      * Are the method hooks like _before_save enabled or not.
+     * Supports nesting.
      * @see activeRecord::disable_method_hooks()
      * @see activeRecord::enable_method_hooks()
      *
      * @var bool
      */
-    protected bool $disable_method_hooks_flag = false;
+    protected int $disable_method_hooks = 0;
 
     /**
      * @var bool
@@ -204,9 +206,10 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     private bool $permission_checks_disabled_flag = false;
 
     /**
-     * @var bool
+     * Supports nested calls
+     * @var int
      */
-    private bool $modified_data_tracking_disabled_flag = false;
+    private int $modified_data_tracking_disabled = 0;
 
 
     /**
@@ -284,13 +287,13 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         }
 
         //$this->read_lock_obtained_flag = $read_only;??? //TODO - check why this was here
-        $this->read_only_flag = $read_only;
+        $this->set_read_only($read_only);
         $this->permission_checks_disabled_flag = $permission_checks_disabled;
 
         if (Coroutine::inCoroutine()) {
             $Request = Coroutine::getRequest();
             if ($Request && Method::get_method_constant($Request) === Method::HTTP_GET) {
-                $this->read_only_flag = true;
+                //$this->set_read_only(true);
             }
         }
 
@@ -395,6 +398,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     {
         $class = get_called_class();
         $Object = new $class(0);
+        $Object->disable_modified_data_tracking();
         $class_properties = $class::get_class_property_names();
         foreach ($class::get_property_names() as $property) {
             if (!array_key_exists($property, $data)) {
@@ -429,7 +433,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             //this will set the values of the class property names
             $Object->_after_read();
         }
-
+        $Object->enable_modified_data_tracking();
         return $Object;
     }
 
@@ -621,7 +625,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         $this->is_new_flag = false;
 
-        $this->modified_data_tracking_disabled_flag = true;
+        $this->disable_modified_data_tracking();
 
         //new Event($this, '_after_read');
         self::get_service('Events')::create_event($this, '_after_read');
@@ -632,7 +636,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             call_user_func_array([$this,'_after_read'], $args);//must return void
         }
 
-        $this->modified_data_tracking_disabled_flag = false;
+        $this->enable_modified_data_tracking();
     }
 
     private function profile(string $checkpoint_name, float $time): void
@@ -670,7 +674,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ContextDestroyedException
      */
-    public function write(bool $force_write = false, bool $disable_validation = false): ActiveRecordInterface
+    public function write(bool $force_write = false, bool $disable_validation = false, bool $permission_checks_disabled = false): ActiveRecordInterface
     {
 
         $this->nested_write_counter++;
@@ -797,17 +801,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
             $this->profile('CHECK 9', microtime(true) - $start_time);
 
-
-            if ($this->was_new() && self::uses_permissions() && $this->nested_write_counter === 1) { //create the permissions only if this is the first call
-                /** @var AuthorizationProviderInterface $AuthorizationProvider */
-                $AuthorizationProvider = self::get_service('AuthorizationProvider');
-                /** @var CurrentUser $CurrentUser */
-                $CurrentUser = self::get_service('CurrentUser');
-                $Role = $CurrentUser->get()->get_role();
-                //create permission records for each action this record supports
-                $object_actions = self::get_object_actions();
-                foreach ($object_actions as $object_action) {
-                    $AuthorizationProvider->grant_permission($Role, $object_action, $this);
+            if (!$permission_checks_disabled) {
+                if ($this->was_new() && self::uses_permissions() && $this->nested_write_counter === 1) { //create the permissions only if this is the first call
+                    /** @var AuthorizationProviderInterface $AuthorizationProvider */
+                    $AuthorizationProvider = self::get_service('AuthorizationProvider');
+                    /** @var CurrentUser $CurrentUser */
+                    $CurrentUser = self::get_service('CurrentUser');
+                    $Role = $CurrentUser->get()->get_role();
+                    //create permission records for each action this record supports
+                    $object_actions = self::get_object_actions();
+                    foreach ($object_actions as $object_action) {
+                        $AuthorizationProvider->grant_permission($Role, $object_action, $this);
+                    }
                 }
             }
 
@@ -1088,13 +1093,14 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     /**
      * Returns the primary index (a scalar) of the record.
      * If the record has multiple columms please use get_primary_index (returns an array)
+     * @return int
      * @throws RunTimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      * @throws ReflectionException
      * @throws ContextDestroyedException
      * @see self::get_primary_index() which will return an associative array.
      */
-    public function get_id()  /* int|string */
+    public function get_id(): int
     {
         $primary_index_columns = static::get_primary_index_columns();
         if (count($primary_index_columns) > 1) {
@@ -1358,22 +1364,27 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
     
     public function disable_method_hooks(): void
     {
-        $this->disable_method_hooks_flag = true;
+        $this->disable_method_hooks++;
     }
 
     public function enable_method_hooks(): void
     {
-        $this->disable_method_hooks_flag = false;
+        $this->disable_method_hooks--;
     }
 
     public function are_method_hooks_disabled(): bool
     {
-        return $this->disable_method_hooks_flag;
+        return (bool) $this->disable_method_hooks;
     }
 
     public function is_read_only(): bool
     {
         return $this->read_only_flag;
+    }
+
+    private function set_read_only(bool $flag): void
+    {
+        $this->read_only_flag = $flag;
     }
 
     public function are_permission_checks_disabled(): bool
@@ -1383,7 +1394,17 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     public function is_modified_data_tracking_disabled(): bool
     {
-        return $this->modified_data_tracking_disabled_flag;
+        return (bool) $this->modified_data_tracking_disabled;
+    }
+
+    public function disable_modified_data_tracking(): void
+    {
+        $this->modified_data_tracking_disabled++;
+    }
+
+    public function enable_modified_data_tracking(): void
+    {
+        $this->modified_data_tracking_disabled--;
     }
 
     /**
@@ -1521,12 +1542,37 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
     public function is_property_modified(string $property): bool
     {
-
         if (!array_key_exists($property, $this->record_data)) {
             throw new RunTimeException(sprintf(t::_('Trying to check a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
         }
         return array_key_exists($property, $this->record_modified_data);
     }
+
+//    /**
+//     * Resets the modification history of a property.
+//     * Can be used if a property is modified in _after_read.
+//     * @param string $property
+//     * @return void
+//     * @throws RunTimeException
+//     * @throws \Azonmedia\Exceptions\InvalidArgumentException
+//     */
+//    public function reset_modified_property(string $property): void
+//    {
+//        if (!array_key_exists($property, $this->record_data)) {
+//            throw new RunTimeException(sprintf(t::_('Trying to check a non existing property "%s" of instance of "%s" (ORM class).'), $property, get_class($this)));
+//        }
+//        $this->record_modified_data[$property] = [];
+//    }
+//
+//    /**
+//     * Resets the modification history of all properties.
+//     * Can be used if a property is modified in _after_read.
+//     * @return void
+//     */
+//    public function reset_modified_properties(): void
+//    {
+//        $this->record_modified_data = [];
+//    }
 
     /**
      * Returns all old values
@@ -1605,10 +1651,19 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @throws RunTimeException
      */
     //public static function get_by(array $index = []): iterable
-    public static function get_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
+    public static function get_by(
+        array $index,
+        int $offset = 0,
+        int $limit = 0,
+        bool $use_like = false,
+        ?string $sort_by = null,
+        bool $sort_desc = false,
+        ?int &$total_found_rows = null,
+        bool $permission_checks_disabled = false
+    ): array
     {
         $class_name = static::class;
-        $data = static::get_data_by($index,  $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows);
+        $data = static::get_data_by($index,  $offset, $limit, $use_like, $sort_by, $sort_desc, $total_found_rows, $permission_checks_disabled);
 
 
         //$primary_index = static::get_primary_index_columns()[0];
@@ -1629,12 +1684,21 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param int $limit
      * @param bool $use_like
      * @param string $sort_by
-     * @param $sort_desc
+     * @param bool $sort_desc
      * @return iterable
      * @throws RunTimeException
      */
     //public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = FALSE, string $sort_by = 'none', bool $sort_desc = FALSE) : iterable
-    public static function get_data_by(array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null): array
+    public static function get_data_by(
+        array $index,
+        int $offset = 0,
+        int $limit = 0,
+        bool $use_like = false,
+        ?string $sort_by = null,
+        bool $sort_desc = false,
+        ?int &$total_found_rows = null,
+        bool $permission_checks_disabled = false
+    ): array
     {
         /** @var StoreInterface $OrmStore */
         $OrmStore = static::get_service('OrmStore');
