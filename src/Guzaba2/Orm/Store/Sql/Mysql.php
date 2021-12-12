@@ -1363,7 +1363,17 @@ WHERE
      * @throws BadMethodCallException
      * @throws \ReflectionException
      */
-    public function get_data_by(string $class, array $index, int $offset = 0, int $limit = 0, bool $use_like = false, ?string $sort_by = null, bool $sort_desc = false, ?int &$total_found_rows = null, bool $permission_checks_disabled = false): array
+    public function get_data_by(
+        string $class,
+        array $index,
+        int $offset = 0,
+        int $limit = 0,
+        bool $use_like = false,
+        ?string $sort_by = null,
+        bool $sort_desc = false,
+        ?int &$total_found_rows = null,
+        bool $permission_checks_disabled = false
+    ): array
     {
 
         //initialization
@@ -1575,6 +1585,13 @@ WHERE
 //            $AuthorizationProvider->add_sql_permission_checks($q_count, $b_count);
 //        }
 
+        //to avoid recursion in the services initialization get the AuthorizationProvider only if the class is using permissions
+        if ($class::uses_permissions() && !$permission_checks_disabled) {
+            /** @var AuthorizationProviderInterface $AuthorizationProvider */
+            $AuthorizationProvider = self::get_service('AuthorizationProvider');
+            $AuthorizationProvider->add_sql_permission_checks($q_data, $b, 'read', $Connection);
+            $AuthorizationProvider->add_sql_permission_checks($q_count, $b, 'read', $Connection);
+        }
 
         if ($limit) {
             if ($Connection instanceof \Guzaba2\Database\Sql\Mysql\ConnectionCoroutine) {

@@ -796,6 +796,7 @@ class Memory extends Store implements StoreInterface, CacheStatsInterface, Trans
             if (isset($this->data[$class_name][$object_id])) {
                 $timestamp = array_key_last($this->data[$class_name][$object_id]);
                 if (!$timestamp) {
+                    print_r($this->data[$class_name][$object_id]);// fix me
                     throw new LogicException(sprintf(t::_('No timestamp was found for object of class %1$s with index %2$s.'), $class_name, $object_id));
                 }
                 $ret = $this->data[$class_name][$object_id][$timestamp]['meta'];

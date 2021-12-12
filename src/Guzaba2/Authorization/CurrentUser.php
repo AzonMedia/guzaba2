@@ -28,6 +28,11 @@ class CurrentUser extends Base
 
     private string $default_user_class;
 
+    /**
+     * @var UserInterface[]
+     */
+    private array $substituted_users = [];
+
     //It may be reworked to accept $index and $class arguments and to create the instance only if needed
     //if only the $index is needed by the application then there is no need to create instance.
     public function __construct(UserInterface $User)
@@ -112,13 +117,30 @@ class CurrentUser extends Base
         $this->User = $User;
     }
 
+    public function execute_with_substituted_user(UserInterface $User, callable $callable) /* mixed */
+    {
+        array_push($this->substituted_users, $this->User);
+        $this->User = $User;
+        try {
+            return $callable($callable);
+        } finally { //it is executed no matter if there is an exception or return
+            $this->User = array_pop($this->substituted_users);
+        }
+    }
+
     public function substitute(UserInterface $User)
     {
         //TODO add ScopeReference too
+
     }
 
     public function restore()
     {
+    }
+
+    public function is_substituted(): bool
+    {
+        return (bool) count($this->substituted_users);
     }
 
 //    public function __get(string $property) /* mixed */

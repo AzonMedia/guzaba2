@@ -26,7 +26,7 @@ class RolesHierarchy extends ActiveRecord
         'main_table'            => 'roles_hierarchy',
         'route'                 => '/roles-hierarchy',//temporary route
 
-        'load_in_memory'        => true,
+        //'load_in_memory'        => true,//may trigger recursion in service initialization if enabled
 
         'no_permissions'        => true,//the roles do not use permissions
 

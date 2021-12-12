@@ -450,7 +450,8 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
             if ($class::get_main_table() === $table) {
                 if ($class::uses_permissions()) {
                     $ret = $class;
-                    break;
+                    //do not break - return the very last found class - there can be a longer chain of inheritance
+                    //and the children are included after the parents
                 }
             }
         }

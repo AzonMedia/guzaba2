@@ -10,4 +10,5 @@ use Guzaba2\Database\Sql\Traits\ConnectionTrait;
 abstract class Connection extends \Guzaba2\Database\Connection implements ConnectionInterface
 {
     use ConnectionTrait;
+    
 }

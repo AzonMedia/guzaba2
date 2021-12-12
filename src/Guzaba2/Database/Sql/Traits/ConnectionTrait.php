@@ -14,6 +14,13 @@ trait ConnectionTrait
         return static::CONFIG_RUNTIME['database'];
     }
 
+    /**
+     * Format to human readable form an SQL query.
+     * Uses \PhpMyAdmin\SqlParser
+     * @param string $sql
+     * @param array $options
+     * @return string
+     */
     public static function format_sql(string $sql, array $options = []): string
     {
         return \PhpMyAdmin\SqlParser\Utils\Formatter::format($sql, $options);

@@ -278,7 +278,7 @@ class Server extends \Guzaba2\Http\Server
             throw new RunTimeException(sprintf(t::_('The specified SSL certificate file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
         }
         if (!empty($options['ssl_key_file']) && !is_readable($options['ssl_key_file'])) {
-            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_cert_file']));
+            throw new RunTimeException(sprintf(t::_('The specified SSL key file %s is not readable. Please check the filesystem permissions. The file must be readable by the user executing the server.'), $options['ssl_key_file']));
         }
         //since Swoole 4.4.14 this is supported
         //if (!empty($options['open_http2_protocol']) && !empty($options['enable_static_handler'])) {

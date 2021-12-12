@@ -52,6 +52,12 @@ abstract class ClassInitialization extends Base implements ClassInitializationIn
         }
     }
 
+    /**
+     * Prefetch data
+     * Disabled currently
+     * @param array $ns_prefixes
+     * @throws \Guzaba2\Base\Exceptions\InvalidArgumentException
+     */
     public static function initialize_memory(array $ns_prefixes): void
     {
         $active_record_classes = ActiveRecord::get_active_record_classes($ns_prefixes);
