@@ -179,6 +179,7 @@ VALUES
         $uuid = Uuid::uuid4();
         $uuid_binary = $uuid->getBytes();
 
+        /** @var $implementing_class ActiveRecordInterface */
         $implementing_class = ActiveRecord::get_active_record_interface_implementation($interface_name);
         if (!$implementing_class) {
             throw new LogicException(sprintf(t::_('No implementation for interface %1$s was found.'), $interface_name));
@@ -187,7 +188,7 @@ VALUES
         $b = [
             'class_uuid_binary' => $uuid_binary,
             'class_name'        => $interface_name,
-            'class_table'       => $implementing_class_found::get_main_table(),
+            'class_table'       => $implementing_class::get_main_table(),
         ];
         $Connection->prepare($q)->execute($b);
 

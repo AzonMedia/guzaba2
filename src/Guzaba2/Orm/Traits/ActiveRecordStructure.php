@@ -209,7 +209,13 @@ trait ActiveRecordStructure
     }
 
     /**
-     * @return array
+     * Retruns the combined class properties and database columns (overloaded model properties)
+     * @return array{
+     *     string:array{
+     *       name:string, native_type: string, php_type: string, size: int, nullable: bool, column_id: int,
+     *       primary: int, default_value: mixed, autoincrement: bool, key_name: string, key_reference:string
+     *     }
+     * }
      */
     public static function get_property_names_with_types(): array
     {
@@ -217,7 +223,7 @@ trait ActiveRecordStructure
         //$columns_data = static::get_columns_data();
         $columns_data = static::get_properties_data();
         foreach ($columns_data as $columns_datum) {
-            $ret[$columns_datum['name']] = $columns_datum['type'];
+            $ret[$columns_datum['name']] = $columns_datum['php_type'];
         }
         return $ret;
     }

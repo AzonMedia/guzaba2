@@ -59,10 +59,9 @@ class StatementCoroutine extends Statement implements StatementInterface
         $this->disable_sql_cache_flag = $disable_sql_cache;
 
         $sql = $this->get_query();
-
         $statement_group_str = $this->get_statement_group_as_string();
         if ($statement_group_str === null) {
-            throw new RunTimeException(sprintf(t::_('The statement for query %s can not be determined of which type is (DQL, DML etc...).'), $sql));
+            throw new RunTimeException(sprintf(t::_('Can not determine statement type (DQL, DML,...) for query %1$s.'), $sql));
         }
 
         if (self::uses_service('QueryCache')) {
@@ -118,6 +117,7 @@ class StatementCoroutine extends Statement implements StatementInterface
         $Apm = self::get_service('Apm');
         $Apm->increment_value('cnt_' . strtolower($statement_group_str) . '_statements', 1);
         $Apm->increment_value('time_' . strtolower($statement_group_str) . '_statements', $exec_end_time - $exec_start_time);
+
         if ($exec_end_time - $exec_start_time > self::CONFIG_RUNTIME['slow_query_log_msec'] / 1000 ) {
             $message = sprintf(
                 t::_('The query took %1$s seconds to execute. The log threshold is %2$s. Query: %3$s . Params %4$s .'),

@@ -759,9 +759,9 @@ BANNER;
     {
         //TODO - would be nice if this can also print to any connected debugger session...
         //better - instead there can be Console sessions attached for these messages (which is different from debug session)
-        if (self::$init_microtime === null) {
-            self::$init_microtime = microtime(true);
-        }
+        //if (self::$init_microtime === null) {
+        self::$init_microtime = microtime(true);
+        //}
 
         if ($level !== LogLevel::INFO) {
             $message = '['.strtoupper($level).'] '.$message;

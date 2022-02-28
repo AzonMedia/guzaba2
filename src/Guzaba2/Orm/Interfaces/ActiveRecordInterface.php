@@ -90,4 +90,11 @@ interface ActiveRecordInterface extends BaseInterface, ActiveRecordAliasInterfac
 
     public function enable_modified_data_tracking(): void;
 
+    /**
+     * @param iterable $data
+     * @param bool $execute_after_read
+     * @return ActiveRecordInterface
+     */
+    public static function get_from_record(iterable $data, bool $execute_after_read = true): ActiveRecordInterface;
+
 }

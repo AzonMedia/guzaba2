@@ -290,12 +290,12 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
         $this->set_read_only($read_only);
         $this->permission_checks_disabled_flag = $permission_checks_disabled;
 
-        if (Coroutine::inCoroutine()) {
-            $Request = Coroutine::getRequest();
-            if ($Request && Method::get_method_constant($Request) === Method::HTTP_GET) {
-                //$this->set_read_only(true);
-            }
-        }
+//        if (Coroutine::inCoroutine()) {
+//            $Request = Coroutine::getRequest();
+//            if ($Request && Method::get_method_constant($Request) === Method::HTTP_GET) {
+//                $this->set_read_only(true);
+//            }
+//        }
 
         //$this->locking_enabled_flag = self::is_locking_enabled();
         
@@ -317,11 +317,24 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
 
         //unset all properties of the object (only the child class properties)
         //the property info has already been collected by initialize_structure()
-        $class_property_names = static::get_class_property_names();
-        foreach ($class_property_names as $class_property_name) {
+//        $class_properties = static::get_class_property_names();
+//        foreach ($class_properties as $class_property_name) {
+//            unset($this->{$class_property_name});
+//        }
+//        $class_properties = static::get_property_names_with_types();
+//        foreach ($class_properties as $class_property_name => $class_property_data) {
+//            unset($this->{$class_property_name});
+//            if ($class_property_data['nullable']) {
+//                $this->{$class_property_name} = null;
+//            }
+//        }
+        $class_properties_data = static::get_class_properties_data();
+        foreach ($class_properties_data as $class_property_name => $class_property_data) {
             unset($this->{$class_property_name});
+//            if ($class_property_data['nullable']) {
+//                $this->{$class_property_name} = null;
+//            }
         }
-
 
         $primary_columns = static::get_primary_index_columns();
 
@@ -394,7 +407,7 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      * @param iterable $data
      * @return ActiveRecordInterface
      */
-    public static function get_from_record(iterable $data, bool $execute_after_read = true): ActiveRecordInterface
+    public static function get_from_record(iterable $data, bool $execute_after_read = true, bool $set_meta = true): ActiveRecordInterface
     {
         $class = get_called_class();
         $Object = new $class(0);
@@ -417,16 +430,18 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
             //$Object->record_data[$property] = $data[$property];
         }
 
-        foreach ($class::get_meta_property_names() as $property) {
-            //TODO - fix this exception for mysql
-            if ($property === 'meta_object_uuid_binary') {
-                continue;
+        if ($set_meta) {
+            foreach ($class::get_meta_property_names() as $property) {
+                //TODO - fix this exception for mysql
+                if ($property === 'meta_object_uuid_binary') {
+                    continue;
+                }
+                if (!array_key_exists($property, $data)) {
+                    throw new RunTimeException(sprintf(t::_('The meta property %1$s needed by class %2$s does not exist in the provided data.'), $property, $class));
+                }
+                //can not use the overloading as the meta is read only
+                $Object->meta_data[$property] = $data[$property];
             }
-            if (!array_key_exists($property, $data)) {
-                throw new RunTimeException(sprintf(t::_('The meta property %1$s needed by class %2$s does not exist in the provided data.'), $property, $class));
-            }
-            //can not use the overloading as the meta is read only
-            $Object->meta_data[$property] = $data[$property];
         }
         $Object->is_new_flag = false;
         if (method_exists($Object, '_after_read') && $execute_after_read) {
@@ -514,8 +529,6 @@ class ActiveRecord extends Base implements ActiveRecordInterface, \JsonSerializa
      */
     public function read(/* int|string|array */ $index): void
     {
-
-
 
         if (!is_string($index) && !is_int($index) && !is_array($index)) {
             throw new InvalidArgumentException(sprintf(t::_('The $index argument of %s() must be int, string or array. %s provided instead.'), __METHOD__, gettype($index)));
