@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Guzaba2\Authorization\Acl;
 
 use Guzaba2\Authorization\Role;
+use Guzaba2\Database\Sql\Interfaces\ConnectionInterface;
 use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
 
 /**
@@ -13,7 +14,8 @@ use Guzaba2\Orm\Interfaces\ActiveRecordInterface;
  * Used to create ACL permissions.
  * The AuthorizationProvider interface is to be set to this one when the ACL permissions are setup initially.
  * Or when a new controller is added.
- * It overrides the AclAuthorizationProvider so that all actions are allowed (similar to the BypassAuthorizationProvider but unlike it it allows new permissions to be created).
+ * It overrides the AclAuthorizationProvider so that all actions are allowed
+ * (similar to the BypassAuthorizationProvider but unlike it it allows new permissions to be created).
  */
 class AclCreateAuthorizationProvider extends AclAuthorizationProvider
 {
@@ -24,13 +26,21 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function role_can(Role $Role, string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
-    {
+    public function role_can(
+        Role $Role,
+        string $action,
+        ActiveRecordInterface $ActiveRecord,
+        ?int &$permission_denied_reason = null
+    ): bool {
         return true;
     }
 
-    public function role_can_on_class(Role $Role, string $action, string $class, ?int &$permission_denied_reason = null): bool
-    {
+    public function role_can_on_class(
+        Role $Role,
+        string $action,
+        string $class,
+        ?int &$permission_denied_reason = null
+    ): bool {
         $ret = true;
     }
 
@@ -40,13 +50,19 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
      * @param ActiveRecordInterface $ActiveRecord
      * @return bool
      */
-    public function current_role_can(string $action, ActiveRecordInterface $ActiveRecord, ?int &$permission_denied_reason = null): bool
-    {
+    public function current_role_can(
+        string $action,
+        ActiveRecordInterface $ActiveRecord,
+        ?int &$permission_denied_reason = null
+    ): bool {
         return true;
     }
 
-    public function current_role_can_on_class(string $action, string $class, ?int &$permission_denied_reason = null): bool
-    {
+    public function current_role_can_on_class(
+        string $action,
+        string $class,
+        ?int &$permission_denied_reason = null
+    ): bool {
         return true;
     }
 
@@ -62,9 +78,21 @@ class AclCreateAuthorizationProvider extends AclAuthorizationProvider
         return;
     }
 
-    public static function get_sql_permission_check(string $class, string $main_table = 'main_table', string $action = 'read'): string
-    {
+    public static function get_sql_permission_check(
+        string $class,
+        string $main_table = 'main_table',
+        string $action = 'read'
+    ): string {
         return '';
+    }
+
+    public function add_sql_permission_checks(
+        string &$_sql,
+        array &$_parameters,
+        string $action,
+        ConnectionInterface $Connection
+    ): void {
+        //do nothing
     }
 
     /**

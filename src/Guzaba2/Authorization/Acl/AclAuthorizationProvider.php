@@ -232,14 +232,30 @@ class AclAuthorizationProvider extends Base implements AuthorizationProviderInte
         //the controllers' instances are not treated as ActiveRecord instances in this case because they have no corresponding records in the DB
         //otherwise for the regular ActiveRecords check both class permission and object permission
         if ($ActiveRecord instanceof ControllerInterface) {
-            $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
+            $class_permissions = self::get_permission_class()::get_data_by([
+                'class_name' => get_class($ActiveRecord),
+                'object_id' => null,
+                'action_name' => $action
+            ]);
             $ret = self::check_permissions($roles_ids, $class_permissions);
             if (!$ret) {
                 $permission_denied_reason |= AuthorizationProviderInterface::PERMISSION_DENIED['METHOD'];
             }
         } else {
-            $permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => $ActiveRecord->get_id(), 'action_name' => $action]);
-            $class_permissions = self::get_permission_class()::get_data_by([ 'class_name' => get_class($ActiveRecord), 'object_id' => null, 'action_name' => $action]);
+            $permissions = self::get_permission_class()::get_data_by(
+                [
+                    'class_name' => get_class($ActiveRecord),
+                    'object_id' => $ActiveRecord->get_id(),
+                    'action_name' => $action
+                ]
+            );
+            $class_permissions = self::get_permission_class()::get_data_by(
+                [
+                    'class_name' => get_class($ActiveRecord),
+                    'object_id' => null,
+                    'action_name' => $action
+                ]
+            );
             //$ret = self::check_permissions($roles_ids, $permissions) && self::check_permissions($roles_ids, $class_permissions);
             //lets check bot heven if the first one fails - in order to be able to return the proper reason (as bitmask)
             $ret_class = self::check_permissions($roles_ids, $class_permissions);

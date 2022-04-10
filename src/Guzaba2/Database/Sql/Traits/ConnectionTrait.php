@@ -50,7 +50,7 @@ trait ConnectionTrait
      * If a value is an array it gets converted to key0, key1, key2... etc to match the @see self::array_placeholder().
      * @param array $params
      * @return array
-     * @throws InvalidArgumentException
+     * @throws RuntimeException
      * @throws \Azonmedia\Exceptions\InvalidArgumentException
      */
     public static function prepare_params(array $params): array
@@ -58,7 +58,12 @@ trait ConnectionTrait
         foreach ($params as $param_name => $param_value) {
             if (is_array($param_value)) {
                 if (array_keys($param_value) !== range(0, count($param_value) - 1)) {
-                    throw new InvalidArgumentException(sprintf(t::_('The array for parameters %1$s is not an indexed array.'), $param_name));
+                    $message = sprintf(
+                        t::_('The array for parameters %1$s is not an indexed array. All params: %2$s'),
+                        $param_name,
+                        print_r($params, true)
+                    );
+                    throw new \RuntimeException($message);
                 }
                 for ($aa = 0; $aa < count($param_value); $aa++) {
                     $params[$param_name . $aa] = $param_value[$aa];

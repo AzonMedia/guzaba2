@@ -265,7 +265,7 @@ class Role extends ActiveRecord implements RoleInterface
             }
             self::get_service('ContextCache')->set('all_inherited_roles', (string) $role_id, $ret);
         }
-        $ret = array_unique($ret);
+        $ret = array_values(array_unique($ret));
 
         return $ret;
     }
